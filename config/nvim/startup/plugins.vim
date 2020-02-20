@@ -39,10 +39,12 @@ let g:nvim_typescript#javascript_support=1
 Plug 'davidsu/nvim-typescript', {'for': ['javascript', 'typescript'], 'do': './install.sh'}
 Plug 'davidsu/tern_for_vim', {'for': ['javascript', 'typescript'], 'do': 'npm i' } " intellijent navigation and refactor for javascript
 if(has('nvim'))
-    Plug 'Shougo/deoplete.nvim'
-    Plug 'Shougo/neco-vim', {'for': 'vim'}                          " deoplete source for vimscript
-    Plug 'zchee/deoplete-zsh', {'for': 'zsh'}                       " deoplete source for zsh
-    Plug 'davidsu/deoplete-ternjs', { 'for': 'javascript'}         " deoplete source for javascript
+    Plug 'neoclide/coc.nvim', {'branch': 'release'}
+
+    " Plug 'Shougo/deoplete.nvim'                                     " auto-complete
+    " Plug 'Shougo/neco-vim', {'for': 'vim'}                          " deoplete source for vimscript
+    " Plug 'zchee/deoplete-zsh', {'for': 'zsh'}                       " deoplete source for zsh
+    " Plug 'davidsu/deoplete-ternjs', { 'for': ['javascript', 'typescript']}         " deoplete source for javascript
 else
     Plug 'Shougo/neocomplete.vim', 
                 \{ 'for': ['javascript', 'css', 'scss', 'sh', 'vim', 'html'] }
@@ -78,7 +80,7 @@ Plug 'tpope/vim-surround'                                           " mappings t
 Plug 'tpope/vim-fugitive'                                           " amazing git wrapper for vim
 Plug 'tpope/vim-rhubarb'                                            " for `:Gbrowse`
 Plug 'tpope/vim-repeat'                                             " enables repeating other supported plugins with the . command
-Plug 'haya14busa/incsearch.vim'                                     " Improved incremental searching for Vim
+Plug 'martinda/Jenkinsfile-vim-syntax'                              " Jenkins syntax
 Plug 'davidsu/gv.vim'                                              " :GV browse commits like a pro
 Plug 'tpope/vim-sleuth'                                             " detect indent style (tabs vs. spaces)
 Plug 'sickill/vim-pasta'                                            " fix indentation when pasting

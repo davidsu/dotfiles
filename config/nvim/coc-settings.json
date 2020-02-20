@@ -1,0 +1,11 @@
+{
+    "list.insertMappings": {
+        "<C-c>": "do:exit"
+    },
+    "list.normalMappings": {
+        "<C-a>": "do:exit"
+    },
+    "suggest.enablePreview":true,
+    "diagnostic.messageTarget":"echo",
+    "diagnostic.enable": false
+}

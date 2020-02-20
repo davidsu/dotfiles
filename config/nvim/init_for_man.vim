@@ -8,7 +8,6 @@ Plug 'sudavid4/vim-airline-themes'                                  " themes for
 "             \Plug 'tiagofumo/vim-nerdtree-syntax-highlight' |
 "             \Plug 'ryanoasis/vim-devicons'                          " file drawer
 Plug 'sudavid4/mysql-mru.vim'
-Plug 'haya14busa/incsearch.vim'                                     " Improved incremental searching for Vim
 Plug 'henrik/vim-indexed-search'                                    " Match 123 of 456 /search term/ in Vim searches
 Plug 'sudavid4/vim-unimpaired'                                      " mappings which are simply short normal mode aliases for commonly used ex commands
 Plug 'yuttie/comfortable-motion.vim'                               " Brings physics-based smooth scrolling to the Vim world!

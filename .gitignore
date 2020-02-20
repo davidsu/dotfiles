@@ -17,3 +17,7 @@ atom.symlink/.gitignore
 bkup
 bin/outdated
 bin/versiondiff
+bin/consul-template
+config/karabiner/assets/
+config/karabiner/automatic_backups/
+config/coc/

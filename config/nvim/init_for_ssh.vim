@@ -26,7 +26,6 @@ Plug 'sudavid4/vim-unimpaired'                                      " mappings w
 Plug 'tpope/vim-surround'                                           " mappings to easily delete, change and add such surroundings in pairs, such as quotes, parens, etc.
 Plug 'tpope/vim-fugitive'                                           " amazing git wrapper for vim
 Plug 'tpope/vim-repeat'                                             " enables repeating other supported plugins with the . command
-Plug 'haya14busa/incsearch.vim'                                     " Improved incremental searching for Vim
 Plug 'sudavid4/gv.vim'                                              " :GV browse commits like a pro
 Plug 'tpope/vim-sleuth'                                             " detect indent style (tabs vs. spaces)
 Plug 'sickill/vim-pasta'                                            " fix indentation when pasting
