@@ -59,12 +59,3 @@ github.com:
 ```
 
 - to push to github (https with two factor authentication) you will need to use a token instead of your password. [Instructions here](https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/)
-
-## README todo
-
-------------------------------
-
-- powerfonts for nerdtree
-- change rouge to output with base16 
-- **_DO YOURSELF A FAVOUR AND START USING [fasd](https://github.com/clvv/fasd) INSTEAD OF AUTOJUMP_** [see somethings you may do with it + fzf](https://github.com/junegunn/fzf/wiki/Examples) and search for fasd 
-
