@@ -19,6 +19,8 @@ alias rg=" rg --smart-case \
    --colors path:style:bold "
 alias agd='cd $DOTFILES && ag --ignore ''plugged*'' --ignore-dir ''forkedProjects'' --ignore ''autoload*'''
 alias jm='cd $HOME/projects/MT.player'
+alias js='cd #HOME/Developer/surgeSites/blank-select-source'
+alias j_='cd $HOME/projects/tmp/_____player_____'
 alias je='cd $HOME/projects/editor.pagescript'
 alias jd='cd $HOME/.dotfiles'
 alias jp='cd $HOME/projects'
