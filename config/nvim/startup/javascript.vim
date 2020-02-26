@@ -84,7 +84,7 @@ command! TernRestartServer call TernRestartServer()
 augroup javascript
     autocmd!
     " autocmd FileType javascript silent! call LimeLightExtremeties()
-    autocmd BufNewFile,BufRead *.es6 set filetype=javascript
+    autocmd BufNewFile,BufRead *.js,*.jsx set filetype=typescript
     let g:markdown_fenced_languages = ['css', 'javascript', 'js=javascript', 'json=javascript', 'stylus', 'html']
     autocmd BufWritePost * call RunNeomakeEslint()
     autocmd FileType javascript,json call <SID>setmapping()
