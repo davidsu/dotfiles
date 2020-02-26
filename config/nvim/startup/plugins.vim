@@ -92,7 +92,8 @@ Plug 'gavocanov/vim-js-indent', { 'for': 'javascript' }             " JavaScript
 if expand('%:p') !~ '.git/index$'
     " yajs started making my vim annoyingly slow... going with pangloss for this reason
     " Plug 'othree/yajs.vim', { 'for': ['javascript', 'jsx'] }            " JavaScript syntax plugin
-    Plug 'pangloss/vim-javascript', { 'for': ['javascript', 'jsx'] }
+    " Plug 'pangloss/vim-javascript', { 'for': ['javascript', 'jsx'] }
+    Plug 'chemzqm/vim-jsx-improve',{ 'for': ['javascript', 'jsx'] } 
 endif
 " Plug 'maxmellon/vim-jsx-pretty'
 Plug 'elzr/vim-json', { 'for': 'json' }                             " JSON support
