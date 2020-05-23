@@ -196,24 +196,24 @@ function searchpdf() {
 }
 alias findpdf='searchpdf'
 
-function insist(){
-    while :
-    do
-osascript << 'END'
-tell application "Google Chrome"
-  activate
-  open location "http://pullrequest-tc.dev.wixpress.com/viewType.html?buildTypeId=Bolt_TestSsr_2&branch_Bolt=4635%2Fmerge&tab=buildTypeStatusDiv"
-  delay 5
-  execute front window's active tab javascript "window.document.querySelector('.btn.btn_mini').click()"
-  delay 5
-  tell its window 1
-    close active tab
-  end tell
-end tell
-END
-    sleep 120
-done
-}
+# function insist(){
+#     while :
+#     do
+# osascript << 'END'
+# tell application "Google Chrome"
+#   activate
+#   open location "http://pullrequest-tc.dev.wixpress.com/viewType.html?buildTypeId=Bolt_TestSsr_2&branch_Bolt=4635%2Fmerge&tab=buildTypeStatusDiv"
+#   delay 5
+#   execute front window's active tab javascript "window.document.querySelector('.btn.btn_mini').click()"
+#   delay 5
+#   tell its window 1
+#     close active tab
+#   end tell
+# end tell
+# END
+#     sleep 120
+# done
+# }
 
 function countlinesofcode(){
   if git rev-parse --git-dir > /dev/null 2>&1; then

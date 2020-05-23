@@ -78,8 +78,50 @@ function! FormatIndependentJSObject()
 	normal! D
 	execute 'read! cat '.tmpfile
 	normal! p
-	
+endfunction
+
+function! JsToJSON()
+    let tmpfile = tempname()
+    let contents = join(getline(0, 100000), "\n")
+    "edit in preview window
+    execute 'pedit '.tmpfile
+
+    "navigate to preview window
+    wincmd P
+
+    "convert original contents to formated json
+    put!='console.log(JSON.stringify('
+    put=contents
+    put=', null, 4))'
+    write
+    execute '%!node %'
+    write
+    execute '%! python -m json.tool'
+    write
+
+    "yank json result to register t
+    normal! ggVG"ty
+
+    "wipeout preview window
+	bd
+
+    "delete data from original file
+    normal! ggVG"_d
+
+    "paste data from register t
+    normal! "tp
+endfunction
+
+function! ToJSON()
+    try
+        call json_decode(join(getline(0, 10000)))
+        execute '%! python -m json.tool'
+        silent w
+    catch
+        call JsToJSON()
+    endtry
 endfunction
 
 xnoremap <space>jf :<c-u>silent call FormatIndependentJSObject()<cr>
-au! FileType json nnoremap <space>jf :execute '%! python -m json.tool'<cr>:silent w<cr>
+au! FileType json nnoremap <space>jf :silent call ToJSON()<cr>
+command! ToJSON call JsToJSON()

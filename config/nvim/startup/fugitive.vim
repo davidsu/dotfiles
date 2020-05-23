@@ -35,8 +35,8 @@ endfunction
 augroup fugitiveautocmd
 	autocmd!
 	autocmd BufEnter *.git/index nmap <buffer> <silent>q :q<cr>
-        autocmd BufEnter *.git/index nmap <buffer> <space>gd <C-w><C-o>D
-        autocmd BufEnter *.git/index nmap <buffer>gd <C-w><C-o>D
+        autocmd BufEnter *.git/index nmap <buffer> <space>gd <C-w><C-o>dd
+        autocmd BufEnter *.git/index nmap <buffer>gd <C-w><C-o>dd
         autocmd FileType git nnoremap <buffer>q :wincmd q<cr>
         " autocmd BufEnter *.git/COMMIT_EDITMSG silent! normal zMGzogg
         autocmd FileType gitcommit nmap <buffer> ]c <C-n>
