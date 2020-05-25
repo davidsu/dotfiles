@@ -18,43 +18,54 @@ function rerunIfFailed(count = 0) {
 
 function pollLoading(w) {
     while(w.activeTab.loading()) {
-        console.log('wait')
+        console.log('poll loading wait')
         delay(0.2)
     }
 }
 
-function closeTabIfOnPr(pr, w) {
-    if(new RegExp(pr).test(w.activeTab.url())) {
-        w.activeTab.close()
+function closeTabIfOnPr(prs, w) {
+    for(const pr of prs) {
+        if(new RegExp(pr).test(w.activeTab.url())) {
+            w.activeTab.close()
+        }
     }
 }
 
 function navigateToLatestBuild(w, url) {
     while(w.activeTab.url() === url) {
-        console.log('delay')
+        console.log(`wait window url to ${url}`)
         delay(0.2)
         w.activeTab.execute({javascript: 'document.querySelector(".JTable-row.JTable-row--rollOver").firstElementChild.click()'})
     }
 }
 
-function run(pr) {
-    if(/^\d/.test(pr)) {
-        pr = `PR-${pr}`
+const getPrsFromArgs = args => {
+    if(!Array.isArray(args)) {
+        args = [args]
     }
-    if(!/PR-\d{4}/.test(pr)) {
-        console.error('usage: insist.js PR-NNNN')
-        return
+    return args.filter(pr => /^(PR-)?\d{4}/.test(pr)).map(p => String(p).replace(/^(\d)/, 'PR-$1'))
+}
+function run(args) {
+    prs = getPrsFromArgs(args)
+    console.log('START => insist for prs: ', JSON.stringify(prs))
+    for(const pr of prs) {
+        if(!/PR-\d{4}/.test(pr)) {
+            console.error('usage: insist.js PR-NNNN')
+            return
+        }
+        const url =  `https://jenkins.walkmedev.com/blue/organizations/jenkins/sanity%2Fplayer/activity/?branch=${pr}`
+        const w = Application("Google Chrome").windows[0]
+
+        closeTabIfOnPr(prs, w)
+        w.tabs.push(Application("Google Chrome").Tab({url}))
+        pollLoading(w)
+
+        navigateToLatestBuild(w, url)
+        delay(0.5)
+        w.activeTab.execute({javascript: `(${rerunIfFailed.toString()})()`})
+        delay(3)
     }
-    const url =  `https://jenkins.walkmedev.com/blue/organizations/jenkins/sanity%2Fplayer/activity/?branch=${pr}`
-    const w = Application("Google Chrome").windows[0]
-
-    closeTabIfOnPr(pr, w)
-    w.tabs.push(Application("Google Chrome").Tab({url}))
-    pollLoading(w)
-
-    navigateToLatestBuild(w, url)
-    delay(0.5)
-    w.activeTab.execute({javascript: `(${rerunIfFailed.toString()})()`})
+    console.log('finish run, delay till next run')
     delay(60 * 7)
-    run(pr)
+    run(args)
 }
