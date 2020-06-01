@@ -53,7 +53,7 @@ function run(args) {
             console.error('usage: insist.js PR-NNNN')
             return
         }
-        const url =  `https://jenkins.walkmedev.com/blue/organizations/jenkins/sanity%2Fplayer/activity/?branch=${pr}`
+        const url = `https://jenkins-ecs.walkmernd.com/blue/organizations/jenkins/sanity%2Fplayer/activity/?branch=${pr}`
         const w = Application("Google Chrome").windows[0]
 
         closeTabIfOnPr(prs, w)
