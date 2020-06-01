@@ -9,7 +9,7 @@ function rerunIfFailed(count = 0) {
     if(!document.querySelector('.BasicHeader')) {
         return setTimeout(rerunIfFailed, 100)
     }
-    if(document.querySelector('.BasicHeader--failure')) {
+    if(document.querySelector('.BasicHeader--failure') || document.querySelector('.BasicHeader--unstable')) {
         document.querySelector('a.replay-button ').click()
     } else {
         return setTimeout(() => rerunIfFailed(count + 1), 300)
