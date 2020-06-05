@@ -58,6 +58,7 @@ function loadnvm(){
     source "$NVM_DIR/nvm.sh" --no-use
     export NVM_NODEJS_ORG_MIRROR=http://nodejs.org/dist
 
+    [[ `which node` == 'node not found' ]] && nvm use node 
     autoload -U add-zsh-hook
     add-zsh-hook chpwd nvm_auto_switch
 }
@@ -75,7 +76,7 @@ function load(){
 function loadall(){
     currPwd=$(pwd)
     export HAS_LOADED=1  
-    if [[ $NVM_BREW_PREFIX == '' ]]; then
+    if [[ $NVM_BREW_PREFIX == '' && `uname` != 'Linux' ]]; then
         export NVM_BREW_PREFIX=$(cat /tmp/brew_prefix_nvm)
     fi
     reloadforzgen=''

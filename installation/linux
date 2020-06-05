@@ -32,6 +32,7 @@ get neovim
 get ruby
 get zsh
 get python3-pip
+get silversearcher-ag
 getNvm
 getVimPlug
 getFzf
@@ -42,4 +43,6 @@ ln -s ~/.dotfiles/zsh/zshrc.symlink ~/.zshrc
 cd ~/.dotfiles
 git submodule init
 git submodule update
+git clone https://github.com/tarjoilija/zgen.git "${HOME}/.zgen
+sudo gem install rouge
 

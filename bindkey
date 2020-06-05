@@ -20,7 +20,7 @@ bindkey -M viins "^E" end-of-line # Command + right arrow
 bindkey -M vicmd "^E" end-of-line # Command + right arrow
 
 #make sure to re-read CUSTOMIZING ZSH’S RUN-HELP COMMAND in "From Bash to Z Shel" pg 101
-if [[ -z $(alias | grep 'run-help') ]]; then
+if [[ `uname` != 'Linux' && -z $(alias | grep 'run-help') ]]; then
     unalias run-help
     autoload -U run-help
     bindkey -M viins "^H" run-help # [Ctrl + H] open man page for currently typed command

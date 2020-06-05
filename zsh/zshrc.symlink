@@ -15,7 +15,7 @@ eval "$(fasd --init auto)"
 #do I need this???
 alias a='loadall'
 function reload(){
-  for f in ~/.dotFiles/* #foreach file in directory
+  for f in ~/.dotfiles/* #foreach file in directory
   do
     #if its a normal file (-f) then log and source it
     if [[ -f $f && $f != *'xterm'* && $f != *'Session.vim' && $f != *'README.md' ]]; then
@@ -27,14 +27,19 @@ function reload(){
   export PATH=$(echo "/usr/local/bin:${PATH}" | awk -v RS=':' -v ORS=":" '!a[$1]++')
 }
 reload
-startMySQLIfNeeded
+[[ `uname` != 'Linux' ]] && startMySQLIfNeeded
 #surround with `(...)` to avoid job controll output
-( echo $(brew --prefix nvm) > /tmp/brew_prefix_nvm & ) 
 
-# Go development
-# export GOPATH="${HOME}/.go"
-# export GOROOT="$(brew --prefix golang)/libexec"
-# export PATH="$PATH:${GOPATH}/bin:${GOROOT}/bin"
+[[ `uname` != 'Linux' ]] && ( echo $(brew --prefix nvm) > /tmp/brew_prefix_nvm & ) 
+
+if [[ `uname` == 'Linux' ]]; then
+    #capsLock to ctrl-or-escape
+    #see https://askubuntu.com/questions/177824/remapping-caps-lock-to-control-and-escape-not-the-usual-way/228379#228379
+  setxkbmap -option 'caps:ctrl_modifier'
+  xcape -e 'Caps_Lock=Escape'
+  setxkbmap -option 'caps:ctrl_modifier'
+  xcape -e 'Caps_Lock=Escape;Control_L=Escape;Control_R=Escape'
+fi
 
 # test -d "${GOPATH}" || mkdir "${GOPATH}"
 # test -d "${GOPATH}/src/github.com" || mkdir -p "${GOPATH}/src/github.com"

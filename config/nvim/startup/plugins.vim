@@ -51,7 +51,9 @@ else
 endif
 Plug 'Konfekt/FastFold'                                             " fold zyntax is too heavy for vim, makes neocomplete very slow. this plugin solves it
 Plug 'henrik/vim-indexed-search'                                    " Match 123 of 456 /search term/ in Vim searches
-Plug '/usr/local/opt/fzf' | Plug 'davidsu/fzf.vim'                 " fuzzy file finder and so much more
+" Plug '/usr/local/opt/fzf' | Plug 'davidsu/fzf.vim'                 " fuzzy file finder and so much more
+Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+Plug 'davidsu/fzf.vim'                                              " fuzzy file finder and so much more
 Plug 'davidsu/neomake-local-eslint.vim', 
             \{ 'for': ['javascript', 'typescript'] }                                " let neomake know how to find local eslint
 Plug 'benekastah/neomake', 
