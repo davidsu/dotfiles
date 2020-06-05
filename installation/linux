@@ -1,0 +1,45 @@
+function get() {
+  echo $1 
+  sudo apt-get -y install $1
+  echo ----------------------------
+}
+function getNvm() {
+  echo nvm ------------------------------------------------------------------------
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+  nvm install node
+}
+function getVimPlug() {
+  echo vimPlug -------------------------------------------------------
+  curl -fLo ~/.local/share/nvim/site/autoload/plug.vim --create-dirs \
+    https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
+}
+function getNeoVim() {
+  echo neovim -------------------------------------------------------------------
+  curl -LO https://github.com/neovim/neovim/releases/download/stable/nvim.appimage
+  chmod u+x nvim.appimage
+  ./nvim.appimage
+
+}
+function getFzf() {
+  echo fzf -----------------------------------------------------
+  git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+  ~/.fzf/install
+}
+get git
+get fasd
+get ripgrep
+get neovim
+get ruby
+get zsh
+get python3-pip
+getNvm
+getVimPlug
+getFzf
+pip3 install neovim
+chsh -s `which zsh`
+ln -s ~/.dotfiles/config/nvim ~/.config/nvim
+ln -s ~/.dotfiles/zsh/zshrc.symlink ~/.zshrc
+cd ~/.dotfiles
+git submodule init
+git submodule update
+
