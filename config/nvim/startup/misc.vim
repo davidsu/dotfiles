@@ -229,6 +229,11 @@ function! CDG()
        endif
    endif  
 endfunction
+function! ToSysClipboard(str) 
+   exe "let @*='".a:str."'"
+   exe "let @+='".a:str."'"
+endfunction
+
 "-----------------------------------------------------------------------------}}}
 "COMMANDS                                                                     {{{ 
 "--------------------------------------------------------------------------------
@@ -237,10 +242,10 @@ command! -complete=shellcmd -bang -nargs=+ Shell call utils#run_shell_command(<q
 command! -bang GPush call utils#run_shell_command('git push', <bang>0)
 command! -bang GPull call utils#run_shell_command('git pull', <bang>0)
 command! CherryPickHelp call cherry_pick_helper#buffer_commits_ordered_by_date()
-command! CopyFilePath :exe "let @*='".expand('%:p')."'"
-command! CopyFileName :exe "let @*='".expand('%:t')."'"
-command! CopyFileNameNoExtension :exe "let @*='".substitute(expand('%:t'), '\(.*\)\..*', '\1', '')."'"
-command! CopyRelativeFilePath exe "let @*='".substitute(expand('%:p'), getcwd().'/', '', '')."'"
+command! CopyFilePath call ToSysClipboard(expand('%:p'))
+command! CopyFileName call ToSysClipboard(expand('%:t'))
+command! CopyFileNameNoExtension call ToSysClipboard(substitute(expand('%:t'), '\(.*\)\..*', '\1', ''))
+command! CopyRelativeFilePath call ToSysClipboard(substitute(expand('%:p'), getcwd().'/', '', ''))
 command! ToStoreKey :%s#\C\(\<\u[a-z0-9]\+\|[a-z0-9]\+\)\(\u\)#\l\1_\l\2#gc
 
 " quick open snippets file for current filetype

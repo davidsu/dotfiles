@@ -27,10 +27,6 @@ function reload(){
   export PATH=$(echo "/usr/local/bin:${PATH}" | awk -v RS=':' -v ORS=":" '!a[$1]++')
 }
 reload
-[[ `uname` != 'Linux' ]] && startMySQLIfNeeded
-#surround with `(...)` to avoid job controll output
-
-[[ `uname` != 'Linux' ]] && ( echo $(brew --prefix nvm) > /tmp/brew_prefix_nvm & ) 
 
 if [[ `uname` == 'Linux' ]]; then
     #capsLock to ctrl-or-escape
@@ -39,6 +35,12 @@ if [[ `uname` == 'Linux' ]]; then
   xcape -e 'Caps_Lock=Escape'
   setxkbmap -option 'caps:ctrl_modifier'
   xcape -e 'Caps_Lock=Escape;Control_L=Escape;Control_R=Escape'
+  loadall
+else
+  startMySQLIfNeeded
+
+  #surround with `(...)` to avoid job controll output
+  ( echo $(brew --prefix nvm) > /tmp/brew_prefix_nvm & ) 
 fi
 
 # test -d "${GOPATH}" || mkdir "${GOPATH}"

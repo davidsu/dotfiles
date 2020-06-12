@@ -22,8 +22,7 @@ endfunction
 "--------------------------------------------------------------------------------
 
 function! RunNeomakeEslint()
-    if (exists("b:neomake_javascript_eslint_exe") && b:neomake_javascript_eslint_exe !~ 'eslint not found' && &ft =~ 'javascript' && filereadable(b:neomake_javascript_eslint_exe)) ||
-        \ (exists("b:neomake_typescript_eslint_exe") && b:neomake_typescript_eslint_exe !~ 'eslint not found' && &ft =~ 'typescript' && filereadable(b:neomake_typescript_eslint_exe))
+    if (&ft =~ '\(java\|type\)script' && filereadable(get(b:, 'neomake_javascript_eslint_exe')))
         Neomake
     endif
 endfunction

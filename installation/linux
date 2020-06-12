@@ -25,24 +25,40 @@ function getFzf() {
   git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
   ~/.fzf/install
 }
-get git
-get fasd
-get ripgrep
-get neovim
-get ruby
-get zsh
-get python3-pip
-get silversearcher-ag
+function symlinks() {
+  ln -s ~/.dotfiles/config/nvim ~/.config/nvim
+  ln -s ~/.dotfiles/zsh/zshrc.symlink ~/.zshrc
+  ln -s ~/.dotfiles/git/gitconfig.symlink ~/.gitconfig
+  ln -s ~/.dotfiles/git/gitignore_global.symlink ~/.gitignore_global
+}
+
+function submodules() {
+  cd ~/.dotfiles
+  git submodule init
+  git submodule update
+}
+
+function installPackages() {
+  get git
+  get jq
+  get fasd
+  get ripgrep
+  get neovim
+  get ruby
+  get zsh
+  get python3-pip
+  get silversearcher-ag
+  get xcape
+  get xclip
+}
+
+installPackages
 getNvm
 getVimPlug
 getFzf
 pip3 install neovim
 chsh -s `which zsh`
-ln -s ~/.dotfiles/config/nvim ~/.config/nvim
-ln -s ~/.dotfiles/zsh/zshrc.symlink ~/.zshrc
-cd ~/.dotfiles
-git submodule init
-git submodule update
-git clone https://github.com/tarjoilija/zgen.git "${HOME}/.zgen
+submodules
+git clone https://github.com/tarjoilija/zgen.git "${HOME}/.zgen"
 sudo gem install rouge
-
+symlinks
