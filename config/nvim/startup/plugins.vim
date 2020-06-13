@@ -7,7 +7,7 @@ call plug#begin('~/.config/nvim/plugged')
 " Plug 'tommcdo/vim-fubitive'
 Plug 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
 " Plug 'matthewtodd/vim-fustashtive'
-Plug 'junegunn/vim-peekaboo'
+" Plug 'junegunn/vim-peekaboo'
 Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
 Plug 'davidsu/comfortable-motion.vim'                               " Brings physics-based smooth scrolling to the Vim world!
 Plug 'tweekmonster/startuptime.vim', {'on': 'StartupTime'}  
@@ -51,9 +51,12 @@ else
 endif
 Plug 'Konfekt/FastFold'                                             " fold zyntax is too heavy for vim, makes neocomplete very slow. this plugin solves it
 Plug 'henrik/vim-indexed-search'                                    " Match 123 of 456 /search term/ in Vim searches
-" Plug '/usr/local/opt/fzf' | Plug 'davidsu/fzf.vim'                 " fuzzy file finder and so much more
-Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
-Plug 'davidsu/fzf.vim'                                              " fuzzy file finder and so much more
+if filereadable('/usr/local/opt/fzf')
+  Plug '/usr/local/opt/fzf' | Plug 'davidsu/fzf.vim'                 " fuzzy file finder and so much more
+else
+  Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+  Plug 'davidsu/fzf.vim'                                              " fuzzy file finder and so much more
+endif
 Plug 'davidsu/neomake-local-eslint.vim', 
             \{ 'for': ['javascript', 'typescript'] }                                " let neomake know how to find local eslint
 Plug 'benekastah/neomake', 
@@ -61,7 +64,6 @@ Plug 'benekastah/neomake',
 Plug 'dahu/vim-fanfingtastic'                                       " improved f F t T commands
 Plug 'airblade/vim-gitgutter'                                       " add git status for each modified line
 Plug 'davidsu/base16-vim'
-Plug 'kchmck/vim-coffee-script', {'for': 'coffee'}
 Plug 'NLKNguyen/papercolor-theme'
 Plug 'vim-airline/vim-airline'                                      " fancy statusline
 Plug 'davidsu/vim-airline-themes'                                  " themes for vim-airline
