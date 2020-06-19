@@ -28,6 +28,10 @@ function reload(){
 }
 reload
 
+if [ $TILIX_ID ] || [ $VTE_VERSION ]; then
+        source /etc/profile.d/vte.sh
+fi
+
 if [[ `uname` == 'Linux' ]]; then
     #capsLock to ctrl-or-escape
     #see https://askubuntu.com/questions/177824/remapping-caps-lock-to-control-and-escape-not-the-usual-way/228379#228379
