@@ -11,6 +11,7 @@ define_multipurpose_modmap(
 define_keymap(lambda wm_class: wm_class not in ("Tilix"), {
     K("Super-c"): K("C-c"),
     K("Super-v"): K("C-v"),
+    K("Super-a"): K("C-a"),
 })
 define_keymap(re.compile("Tilix"), {
     K("Super-c"): K("C-Shift-c"),
