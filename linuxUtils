@@ -1,5 +1,5 @@
 if [[ `uname` == 'Linux' ]]
 then
-    alias keymap='sudo -b nohup xkeysnail $HOME/.dotfiles/config/xkeysnail.config.py > /tmp/xkeysnail 2>&1'
+    alias keymap='sudo killall xkeysnail; sudo -b nohup xkeysnail $HOME/.dotfiles/config/xkeysnail.config.py > /tmp/xkeysnail 2>&1'
 fi
 
