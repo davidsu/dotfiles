@@ -13,7 +13,7 @@ define_keymap(lambda wm_class: wm_class not in ("Tilix"), {
     K("Super-v"): K("C-v"),
     K("Super-a"): K("C-a"),
 })
-define_keymap(re.compile("Tilix"), {
+define_keymap(re.compile("Tilix|Konsole"), {
     K("Super-c"): K("C-Shift-c"),
     K("Super-v"): K("C-Shift-v"),
 }, "Copy paste in tilix terminal")

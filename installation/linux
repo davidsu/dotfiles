@@ -1,6 +1,10 @@
 function get() {
   echo $1 
-  sudo apt-get -y install $1
+  if [[ -f "/etc/arch-release" ]]; then
+    sudo pacman -S $1 --noconfirm
+  else
+    sudo apt-get -y install $1
+  fi
   echo ----------------------------
 }
 function getNvm() {
@@ -26,10 +30,10 @@ function getFzf() {
   ~/.fzf/install
 }
 function symlinks() {
-  ln -s ~/.dotfiles/config/nvim ~/.config/nvim
-  ln -s ~/.dotfiles/zsh/zshrc.symlink ~/.zshrc
-  ln -s ~/.dotfiles/git/gitconfig.symlink ~/.gitconfig
-  ln -s ~/.dotfiles/git/gitignore_global.symlink ~/.gitignore_global
+  ln -sf ~/.dotfiles/config/nvim ~/.config/nvim
+  ln -sf ~/.dotfiles/zsh/zshrc.symlink ~/.zshrc
+  ln -sf ~/.dotfiles/git/gitconfig.symlink ~/.gitconfig
+  ln -sf ~/.dotfiles/git/gitignore_global.symlink ~/.gitignore_global
 }
 
 function submodules() {
@@ -38,6 +42,11 @@ function submodules() {
   git submodule update
 }
 
+function install_xkeysnail() {
+    git clone --depth 1 https://github.com/mooz/xkeysnail.git ~/Developer/xkeysnail
+    cd ~/Developer/xkeysnail
+    sudo pip3 install --upgrade .
+}
 function installPackages() {
   get git
   get jq
@@ -50,6 +59,9 @@ function installPackages() {
   get silversearcher-ag
   get xcape
   get xclip
+  get yarn
+  get the_silver_searcher
+  get tilix
 }
 
 installPackages
@@ -61,4 +73,10 @@ chsh -s `which zsh`
 submodules
 git clone https://github.com/tarjoilija/zgen.git "${HOME}/.zgen"
 sudo gem install rouge
+yarn global add neovim
 symlinks
+mkdir ~/Developer
+git clone https://github.com/davidsu/leetcodeFavorites.git ~/Developer/leetcodeFavorites
+install_xkeysnail
+nvm install 14
+yarn global add typescript
