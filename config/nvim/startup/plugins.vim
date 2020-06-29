@@ -5,7 +5,7 @@ if empty(glob('~/.vim/autoload/plug.vim'))
 endif
 call plug#begin('~/.config/nvim/plugged')
 " Plug 'tommcdo/vim-fubitive'
-Plug 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
+" Plug 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
 " Plug 'matthewtodd/vim-fustashtive'
 " Plug 'junegunn/vim-peekaboo'
 Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
