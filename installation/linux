@@ -62,6 +62,7 @@ function installPackages() {
   get yarn
   get the_silver_searcher
   get tilix
+  get fasd
 }
 
 installPackages
