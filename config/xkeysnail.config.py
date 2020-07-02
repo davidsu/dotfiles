@@ -11,14 +11,27 @@ define_multipurpose_modmap(
 define_keymap(lambda wm_class: wm_class not in ("Tilix"), {
     K("Super-c"): K("C-c"),
     K("Super-v"): K("C-v"),
-    K("Super-a"): K("C-a"),
 })
 define_keymap(re.compile("Tilix|Konsole"), {
+    # copy/paste
     K("Super-c"): K("C-Shift-c"),
     K("Super-v"): K("C-Shift-v"),
+    #new tab
+    K("Super-t"): K("C-Shift-t"),
+    #quit/close
+    K("Super-q"): K("C-Shift-q"),
+    K("Super-w"): K("C-Shift-w"),
 }, "Copy paste in tilix terminal")
 
 # Keybindings for Firefox/Chrome
 define_keymap(re.compile("Firefox|Google-chrome|Brave|Vivaldi"), {
     K("Super-l"): K("C-l"),
+    K("Super-r"): K("C-r"),
+    K("Super-l"): K("C-l"),
+}, "Browser")
+
+define_keymap(None, {
+    K("Super-EQUAL"): K("C-EQUAL"),
+    K("Super-MINUS"): K("C-MINUS"),
+    K("Super-a"): K("C-a"),
 }, "Browser")
