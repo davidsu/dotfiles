@@ -21,6 +21,9 @@ define_keymap(re.compile("Tilix|Konsole"), {
     #quit/close
     K("Super-q"): K("C-Shift-q"),
     K("Super-w"): K("C-Shift-w"),
+    #zoom
+    K("Super-EQUAL"): K("C-Shift-EQUAL"),
+    K("Super-MINUS"): K("C-MINUS"),
 }, "Copy paste in tilix terminal")
 
 # Keybindings for Firefox/Chrome
