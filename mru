@@ -1,12 +1,9 @@
 #!/bin/zsh
-mruselect='SELECT @rn:=@rn+1 AS \"rank\", _file, linenum 
-    FROM (
-      SELECT *
+mruselect='SET @rn=0;
+      SELECT @rn:=@rn+1 AS \"rank\", _file, linenum, ts
       FROM mru
-      WHERE _file NOT LIKE '\''% %'\''
-      ORDER BY ts DESC
-    ) t1, (SELECT @rn:=0) t2;'
-mrucmd='mysql -uroot --skip-column-names --batch -e "'${mruselect}'" mru_vim | xargs printf '\''%5s %s:%s\n'\'
+      ORDER BY ts DESC'
+mrucmd='mysql -uroot --skip-column-names --batch -e "'${mruselect}'" mru_vim | cut -f 1-3 | xargs printf '\''%5s %s:%s\n'\'
 
 
 mrwselect='SELECT @rn:=@rn+1 AS \"rank\", _file, linenum 

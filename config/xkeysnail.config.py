@@ -7,11 +7,7 @@ define_multipurpose_modmap(
     # Capslock is escape when pressed and released. Control when held down.
     Key.CAPSLOCK: [Key.ESC, Key.LEFT_CTRL]}
 )
-# [Global modemap] copy/paste ala-Mac
-define_keymap(lambda wm_class: wm_class not in ("Tilix"), {
-    K("Super-c"): K("C-c"),
-    K("Super-v"): K("C-v"),
-})
+
 define_keymap(re.compile("Tilix|Konsole"), {
     # copy/paste
     K("Super-c"): K("C-Shift-c"),
@@ -26,15 +22,14 @@ define_keymap(re.compile("Tilix|Konsole"), {
     K("Super-MINUS"): K("C-MINUS"),
 }, "Copy paste in tilix terminal")
 
-# Keybindings for Firefox/Chrome
-define_keymap(re.compile("Firefox|Google-chrome|Brave|Vivaldi"), {
-    K("Super-l"): K("C-l"),
-    K("Super-r"): K("C-r"),
-    K("Super-l"): K("C-l"),
-}, "Browser")
-
 define_keymap(None, {
     K("Super-EQUAL"): K("C-EQUAL"),
     K("Super-MINUS"): K("C-MINUS"),
+    K("Super-c"): K("C-c"),
+    K("Super-v"): K("C-v"),
     K("Super-a"): K("C-a"),
+    K("Super-w"): K("C-w"),
+    K("Super-q"): K("C-q"),
+    K("Super-l"): K("C-l"),
+    K("Super-r"): K("C-r"),
 }, "Browser")
