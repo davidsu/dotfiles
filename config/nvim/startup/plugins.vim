@@ -116,4 +116,4 @@ highlight def link jsxTag javascriptIdentifierName
 hi link javascriptReserved javascriptVariable
 hi link javascriptReservedCase javascriptVariable
 call plug#end()
-
+let g:sleuth_automatic = 1
