@@ -22,7 +22,7 @@ endfunction
 "--------------------------------------------------------------------------------
 
 function! RunNeomakeEslint()
-    if (&ft =~ '\(java\|type\)script' && (filereadable(get(b:, 'neomake_typescript_eslint_exe')) || filereadable(get(b:, 'neomake_javascript_eslint_exe'))))
+    if (!exists('b:neomake_disabled') && &ft =~ '\(java\|type\)script' && (filereadable(get(b:, 'neomake_typescript_eslint_exe')) || filereadable(get(b:, 'neomake_javascript_eslint_exe'))))
         Neomake
     endif
 endfunction
@@ -70,6 +70,13 @@ endfunction
 "     endif
 " endfunction
 
+function! DisableLintIfNeeded()
+    let l:eslintFile = utils#get_project_root(expand('%:p:h')) . '/.eslintrc'
+    if !filereadable(l:eslintFile) && !filereadable(l:eslintFile.'.js') && !filereadable(l:eslintFile.'.json')
+        silent! NeomakeDisableBuffer
+        let b:neomake_disabled=1
+    endif
+endfunction
 function! TernRestartServer()
     py3 tern_killServers()
     if filereadable(getcwd() . '.tern-port')
@@ -83,7 +90,8 @@ command! TernRestartServer call TernRestartServer()
 augroup javascript
     autocmd!
     " autocmd FileType javascript silent! call LimeLightExtremeties()
-    autocmd BufNewFile,BufRead *.js,*.jsx set filetype=typescript
+    autocmd BufNewFile,BufRead *.js,*.jsx,*.tsx set filetype=typescript
+    autocmd BufWinEnter *.tsx,*.ts call DisableLintIfNeeded()
     let g:markdown_fenced_languages = ['css', 'javascript', 'js=javascript', 'json=javascript', 'stylus', 'html']
     autocmd BufWritePost * call RunNeomakeEslint()
     autocmd FileType javascript,json call <SID>setmapping()
