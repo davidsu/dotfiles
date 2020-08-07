@@ -187,7 +187,7 @@ alias gmdc='git merge --no-commit --no-ff'
 
 alias ap='vim ~/Dropbox/ap.html'
 alias open8080='open http://localhost:8080'
-alias npmprivate='npm config set registry https://artifactory.walkmernd.com/artifactory/api/npm/npm/; yarn config set registry https://npm.walkmedev.com'
+alias npmprivate='npm config set registry https://artifactory.walkmernd.com/artifactory/api/npm/npm/; yarn config set registry https://artifactory.walkmernd.com/artifactory/api/npm/npm/'
 alias npmpublic='npm config set registry https://registry.npmjs.org/; yarn config set registry https://registry.yarnpkg.com'
 function spectrum_escape(){
     for COLOR in {0..255}
