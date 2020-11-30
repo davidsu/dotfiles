@@ -9,7 +9,6 @@ alias vim='if [[ -z $HAS_LOADED ]]; then loadrvm; else alias vim='\''nvim'\''; f
 alias vimdiff='nvim -d'
 alias -g vimjson=' | jq . -M > /tmp/vimjson.json && vim /tmp/vimjson.json'
 alias showlinked='ll node_modules G '\''@\s*->'\'
-alias npmlinked="ll node_modules G '@ ->'"
 alias ag='ag --color-match="1;031"'
 alias la='ls -lAh'
 alias rg=" rg --smart-case \
@@ -29,7 +28,8 @@ alias jl='cd $HOME/Developer/leetcodeFavorites'
 alias random='vim `get-random-interview-question`'
 alias -g E=' | egrep '
 alias yi='yarn install'
-alias killbg='kill -s INT $(sed -E '\''s/\[([[:digit:]]+)\].*/%\1/g'\'' <<< $(jobs))'
+alias killbg='kill $(sed -E '\''s/\[([[:digit:]]+)\].*/%\1/g'\'' <<< $(jobs))'
+# alias killbg='kill -s INT $(sed -E '\''s/\[([[:digit:]]+)\].*/%\1/g'\'' <<< $(jobs))'
 # alias -g F=' | fzf --bind '\''ctrl-g:toggle-preview'\'' --ansi --preview '\''$DOTFILES/bin/preview.rb {}'\'' --preview-window '\''top:50%'\'
 alias agc='ag --color '
 alias -g IB='--inspect-brk'
@@ -200,4 +200,14 @@ function spectrum_escape(){
         done
         echo
     done
+}
+function npmlinked(){
+   ll node_modules G "@ ->"
+   for namespace in $(ls node_modules | grep "^@"); do 
+      for module in $(ls node_modules/$namespace | grep '@$' ); do
+
+          _path=./node_modules/$namespace$module
+          ll ${_path: : -1}
+      done
+   done
 }
