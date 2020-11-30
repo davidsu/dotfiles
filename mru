@@ -52,7 +52,7 @@ function mru(){
         if [[ $1 -eq 1 ]]; then
             skipnvm=1
             cd $(sed -E 's#(.*)/[^/]+#\1#' <<< $filename)
-            git rev-parse --show-toplevel && cd $(git rev-parse --show-toplevel)
+            git rev-parse --show-toplevel > /dev/null 2>&1 && cd $(git rev-parse --show-toplevel)
             skipnvm=0
             [[ $(type nvm) != 'nvm not found' ]] && nvm_auto_switch
         fi
@@ -60,7 +60,7 @@ function mru(){
             loadall
         fi
         #open selected file in vim AND cd into git's root folder for project of selected file
-        echo  vim $linenum $filename -c 'silent :CDR'
+        # echo  vim $linenum $filename -c 'silent :CDR'
         vim $linenum $filename -c 'silent :CDR'
     fi
 }
