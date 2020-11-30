@@ -90,10 +90,12 @@ command! TernRestartServer call TernRestartServer()
 augroup javascript
     autocmd!
     " autocmd FileType javascript silent! call LimeLightExtremeties()
-    autocmd BufNewFile,BufRead *.js,*.jsx,*.tsx set filetype=typescript
+    autocmd BufNewFile,BufRead *.js set filetype=typescript
+    autocmd BufReadPost *.jsx,*.tsx set filetype=typescript.tsx
     autocmd BufWinEnter *.tsx,*.ts call DisableLintIfNeeded()
     let g:markdown_fenced_languages = ['css', 'javascript', 'js=javascript', 'json=javascript', 'stylus', 'html']
     autocmd BufWritePost * call RunNeomakeEslint()
+    autocmd BufWritePost *.jsx,*.tsx set filetype=typescript " hack to make go-to-declaration work AND coc tsx files work
     autocmd FileType javascript,json call <SID>setmapping()
     autocmd FileType javascript nnoremap <buffer>{ :call GoToNextFunction(-1, 0, 1)<cr>
     autocmd FileType javascript nnoremap <buffer>} :call GoToNextFunction(-1, 0, 0)<cr>

@@ -8,7 +8,7 @@ call plug#begin('~/.config/nvim/plugged')
 Plug 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
 " Plug 'matthewtodd/vim-fustashtive'
 " Plug 'junegunn/vim-peekaboo'
-Plug 'leafgarland/typescript-vim', {'for': 'typescript'}
+Plug 'leafgarland/typescript-vim', {'for': ['typescript', 'typescript.tsx']}
 Plug 'davidsu/comfortable-motion.vim'                               " Brings physics-based smooth scrolling to the Vim world!
 Plug 'tweekmonster/startuptime.vim', {'on': 'StartupTime'}  
 Plug 'tommcdo/vim-exchange'                                         " exchange text with cx
@@ -36,8 +36,8 @@ Plug 'davidsu/vim-plugin-AnsiEsc'                                  " type :AnsiE
 Plug 'blueyed/vim-diminactive' 
 let g:nvim_typescript#diagnosticsEnable=0
 let g:nvim_typescript#javascript_support=1
-Plug 'davidsu/nvim-typescript', {'for': ['javascript', 'typescript'], 'do': './install.sh'}
-Plug 'davidsu/tern_for_vim', {'for': ['javascript', 'typescript'], 'do': 'npm i' } " intellijent navigation and refactor for javascript
+Plug 'davidsu/nvim-typescript', {'for': ['javascript', 'typescript', 'typescript.tsx'], 'do': './install.sh'}
+Plug 'davidsu/tern_for_vim', {'for': ['javascript', 'typescript',  'typescript.tsx'], 'do': 'npm i' } " intellijent navigation and refactor for javascript
 if(has('nvim'))
     Plug 'neoclide/coc.nvim', {'branch': 'release'}
 
@@ -58,16 +58,16 @@ else
   Plug 'davidsu/fzf.vim'                                              " fuzzy file finder and so much more
 endif
 Plug 'davidsu/neomake-local-eslint.vim', 
-            \{ 'for': ['javascript', 'typescript'] }                                " let neomake know how to find local eslint
+            \{ 'for': ['javascript', 'typescript',  'typescript.tsx'] }                                " let neomake know how to find local eslint
 Plug 'benekastah/neomake', 
-            \{ 'for': ['javascript', 'typescript', 'html'] }                " neovim replacement for syntastic using neovim's job control functonality
+            \{ 'for': ['javascript', 'typescript',  'typescript.tsx', 'html'] }                " neovim replacement for syntastic using neovim's job control functonality
 Plug 'dahu/vim-fanfingtastic'                                       " improved f F t T commands
 Plug 'airblade/vim-gitgutter'                                       " add git status for each modified line
 Plug 'davidsu/base16-vim'
 Plug 'NLKNguyen/papercolor-theme'
 Plug 'vim-airline/vim-airline'                                      " fancy statusline
 Plug 'davidsu/vim-airline-themes'                                  " themes for vim-airline
-Plug 'davidsu/vim-js-goToDeclaration', {'for': ['javascript', 'typescript']}       " better ternjs gotodeclaration
+Plug 'davidsu/vim-js-goToDeclaration', {'for': ['javascript', 'typescript', 'typescript.tsx']}       " better ternjs gotodeclaration
 if isdirectory(expand('%:p'))
     Plug 'davidsu/nerdtree'
 else
