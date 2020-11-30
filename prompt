@@ -61,6 +61,11 @@ if [[ $SET_CUSTOM_PROMPT == "true" ]]; then
          if [[ -d './node_modules' ]]; then
              # linked=`ls -l node_modules G @ | perl -pe 's/.*?\s([-\w]*?)@.*/\1/'`
              linked=`ls -F node_modules G '@$'`
+             for i in $(ls node_modules | grep "^@"); do 
+                if [[ -z $linked ]]; then
+                    linked=$(ls -F node_modules/$i G "@$")
+                fi
+             done
              if [[ -n $linked ]]; then
                  echo "%{[38;5;13m%}@%{$reset_color%} " 
              fi
