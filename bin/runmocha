@@ -1,0 +1,31 @@
+#!/usr/bin/env node
+const fs = require('fs')
+const args = process.argv.splice(2)
+console.log(args)
+const isInspectBrk = arg => /--inspect-brk/.test(arg)
+
+function inspectBrk() {
+    if (args.find(isInspectBrk)) {
+        return '--inspect-brk --timeout 99999999'
+    }
+    return ''
+}
+function getHelperFile() {
+    const project = process.cwd().replace(/.*\/(.*)/, '$1')
+    switch(project) {
+        case 'dialog-processor': 
+            return '--file test/specs/helper.js'
+    }
+    return ''
+}
+
+function getOpts() {
+    if(fs.existsSync(`${process.cwd()}/.mocharc`)) {
+        return '--opts .mocharc'
+    }
+    return ''
+}
+
+const cmd = `TEST_MODE=true node node_modules/.bin/mocha ${inspectBrk()} ${getHelperFile()} ${getOpts()} ${args.filter(a => !isInspectBrk(a)).join(' ')}`
+console.log(cmd)
+require('child_process').execSync(cmd, {stdio: [0,1,2]})
