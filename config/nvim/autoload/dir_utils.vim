@@ -5,6 +5,7 @@ function! s:cache_dir(key, value)
         return
     endif
     let g:projectsRootDic[a:key] = a:value
+    call SaveProjectsRootDic()
 endfunction
 
 function! dir_utils#cd_project_root_or_cache(projRoot)

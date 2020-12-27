@@ -23,6 +23,14 @@ CREATE TABLE IF NOT EXISTS mru(
     PRIMARY KEY (_file)
 );
 
+drop table projectsRootDic;
+CREATE TABLE IF NOT EXISTS projectsRootDic(
+    id INT NOT NULL,
+    dict TEXT NOT NULL,
+    ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id)
+);
+
 
 CREATE TABLE IF NOT EXISTS mrw(
     _file VARCHAR(255) NOT NULL,

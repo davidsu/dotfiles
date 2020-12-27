@@ -210,7 +210,7 @@ function! ToggleDiffWhiteSpace()
       set diffopt+=iwhite
    endif
 endfunction
-command! ClearCache let g:projectsRootDic = {}
+command! ClearCache call ClearProjectsRootDic()
 command! ToggleDiffWhiteSpace call ToggleDiffWhiteSpace()
 if has('nvim')
    augroup multiProjectAutoCd
@@ -225,8 +225,10 @@ function! CDG()
    let pwd = getcwd()
    if &filetype != 'nerdtree'
        execute 'Rooter'
-       if currWorkingDir == pwd && has_key(g:projectsRootDic, pwd) && currWorkingDir =~ getcwd()
+       " if currWorkingDir == pwd && has_key(g:projectsRootDic, pwd) && currWorkingDir =~ getcwd()
+       if currWorkingDir =~ getcwd()
            let g:projectsRootDic[currWorkingDir] = getcwd()
+	   call SaveProjectsRootDic()
        endif
    endif  
 endfunction
