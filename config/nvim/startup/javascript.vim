@@ -96,7 +96,7 @@ augroup javascript
     let g:markdown_fenced_languages = ['css', 'javascript', 'js=javascript', 'json=javascript', 'stylus', 'html']
     autocmd BufWritePost * call RunNeomakeEslint()
     autocmd BufWritePost *.jsx,*.tsx set filetype=typescript " hack to make go-to-declaration work AND coc tsx files work
-    autocmd FileType javascript,json call <SID>setmapping()
+    autocmd FileType javascript,json,typescript,typescript.tsx call <SID>setmapping()
     autocmd FileType javascript nnoremap <buffer>{ :call GoToNextFunction(-1, 0, 1)<cr>
     autocmd FileType javascript nnoremap <buffer>} :call GoToNextFunction(-1, 0, 0)<cr>
     " autocmd FileType javascript nnoremap <buffer>cof :call JSToggleFoldMethod()<cr>
