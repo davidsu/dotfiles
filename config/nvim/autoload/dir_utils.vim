@@ -23,7 +23,11 @@ function! dir_utils#CdOnBufferEnter(isDirChange)
         return
     endif
     if !exists('g:projectsRootDic')
-        let g:projectsRootDic = {}
+        if exists('*GetProjectsRootDict')
+            let g:projectsRootDic = call GetProjectsRootDict()
+        else
+            let g:projectsRootDic = {}
+        endif
     endif
     let pwd = getcwd()
     let projRoot = utils#get_project_root(expand('%:p:h'))

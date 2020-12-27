@@ -212,14 +212,13 @@ function! ToggleDiffWhiteSpace()
 endfunction
 command! ClearCache call ClearProjectsRootDic()
 command! ToggleDiffWhiteSpace call ToggleDiffWhiteSpace()
-if has('nvim')
-   augroup multiProjectAutoCd
-      autocmd!
-      autocmd BufWinEnter * call dir_utils#CdOnBufferEnter(0)
-      autocmd WinEnter * call dir_utils#CdOnBufferEnter(0)
-      autocmd DirChanged * call dir_utils#CdOnBufferEnter(1)
-   augroup END
-endif
+function! SetupChangeDir() 
+   autocmd BufWinEnter * call dir_utils#CdOnBufferEnter(0)
+   autocmd WinEnter * call dir_utils#CdOnBufferEnter(0)
+   autocmd DirChanged * call dir_utils#CdOnBufferEnter(1)
+endfunction
+autocmd VimEnter * call SetupChangeDir()
+
 function! CDG()
    let currWorkingDir = utils#get_project_root(getcwd())
    let pwd = getcwd()
@@ -228,7 +227,7 @@ function! CDG()
        " if currWorkingDir == pwd && has_key(g:projectsRootDic, pwd) && currWorkingDir =~ getcwd()
        if currWorkingDir =~ getcwd()
            let g:projectsRootDic[currWorkingDir] = getcwd()
-	   call SaveProjectsRootDic()
+           call SaveProjectsRootDic()
        endif
    endif  
 endfunction

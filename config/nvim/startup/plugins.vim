@@ -6,7 +6,7 @@ endif
 call plug#begin('~/.config/nvim/plugged')
 " Plug 'tommcdo/vim-fubitive'
 Plug 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
-Plug 'davidsu/go-to-declaration'
+Plug 'davidsu/vim-js'
 " Plug 'matthewtodd/vim-fustashtive'
 " Plug 'junegunn/vim-peekaboo'
 Plug 'leafgarland/typescript-vim', {'for': ['typescript', 'typescript.tsx']}
