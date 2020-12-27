@@ -98,7 +98,7 @@ console.log(${VISUAL}$0)
 endsnippet
 
 snippet cjsons "console.log(JSON.stringify)" w
-console.log('${0:label}', JSON.stringify(${1:${VISUAL}}, null, 4))
+console.log('${1:${VISUAL:label}}', JSON.stringify(${0:${VISUAL}}, null, 4))
 endsnippet
 
 snippet ctime "console.time ... console.timeEnd"

@@ -4,7 +4,7 @@
 
 require 'shellwords'
 
-COMMAND = %[(rougify {} || cat {}) 2> /dev/null]
+COMMAND = %[(rougify highlight --theme base16.monokai {} || cat {}) 2> /dev/null]
 ANSI    = /\x1b\[[0-9;]*m/
 REVERSE = "\x1b[7m"
 RESET   = "\x1b[m"

@@ -24,6 +24,7 @@ set completeopt+=longest
 set ttyfast
 set diffopt+=vertical,iwhite
 set backupdir=~/.vim-tmp,~/.tmp,~/tmp,/var/tmp,/tmp
+set nobackup nowritebackup
 set directory=~/.vim-tmp,~/.tmp,~/tmp,/var/tmp,/tmp
 set noswapfile
 set laststatus=2          " show the satus line all the time

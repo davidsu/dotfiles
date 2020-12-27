@@ -5,7 +5,6 @@
     "list.normalMappings": {
         "<C-a>": "do:exit"
     },
-    "suggest.enablePreview":true,
-    "diagnostic.messageTarget":"echo",
+    "suggest.enablePreview":false,
     "diagnostic.enable": false
 }
