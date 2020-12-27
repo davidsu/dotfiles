@@ -1,5 +1,5 @@
 "help for fzf related stuff
-let s:previewrb = utils#get_root_directory().'/plugged/fzf.vim/bin/preview.rb'
+let s:previewrb = '$HOME/.dotfiles/bin/preview.rb' "preview.sh doesn't work, why??
 let g:fzf_preview_window = ['up:40%:hidden', 'ctrl-/']
 "-----------------------------------------------------------------------------}}}
 "UTILITIES                                                                      {{{ 
