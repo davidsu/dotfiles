@@ -6,6 +6,7 @@ endif
 call plug#begin('~/.config/nvim/plugged')
 " Plug 'tommcdo/vim-fubitive'
 Plug 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
+Plug 'davidsu/go-to-declaration'
 " Plug 'matthewtodd/vim-fustashtive'
 " Plug 'junegunn/vim-peekaboo'
 Plug 'leafgarland/typescript-vim', {'for': ['typescript', 'typescript.tsx']}
@@ -29,7 +30,7 @@ Plug 'junegunn/vim-xmark' , { 'do': 'make', 'for': 'markdown'}      " ❌ Markdo
 " I don't know how to use this.... need to learn
 Plug 'junegunn/vim-easy-align'                                      " A Vim alignment plugin
 Plug 'airblade/vim-rooter'                                          " cd into root of project
-Plug 'kshenoy/vim-signature'                                        " help for working with marks
+" Plug 'kshenoy/vim-signature'                                        " help for working with marks
 Plug 'plasticboy/vim-markdown', {'for': 'markdown'}                 " markdown
 Plug 'godlygeek/tabular', {'for': 'markdown'}                       " related to vim-markdown
 Plug 'davidsu/vim-plugin-AnsiEsc'                                  " type :AnsiEsc to get colors as terminal
