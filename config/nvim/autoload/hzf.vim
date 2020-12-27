@@ -1,5 +1,6 @@
 "help for fzf related stuff
 let s:previewrb = utils#get_root_directory().'/plugged/fzf.vim/bin/preview.rb'
+let g:fzf_preview_window = ['up:40%:hidden', 'ctrl-/']
 "-----------------------------------------------------------------------------}}}
 "UTILITIES                                                                      {{{ 
 "--------------------------------------------------------------------------------
@@ -70,7 +71,8 @@ function! hzf#leader_mappings_declarations()
                 \'source': 'cd $DOTFILES/config/nvim/startup; sh '.utils#get_bin_directory().'/leader_mappings_declaration.sh', 
                 \'sink': function('s:sink_leader_mapping'),
                 \'options': '--ansi --bind ''ctrl-s:toggle-sort'' '.
-                \'--preview "'''.s:previewrb.'''"\ -v\ {2} '
+                \'--preview "'''.s:previewrb.'''"\ -v\ $DOTFILES/config/nvim/startup/{2} '.
+                \'--preview-window up:40%'
                 \})
 endfunction
 "-----------------------------------------------------------------------------}}}
