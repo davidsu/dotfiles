@@ -212,12 +212,6 @@ function! ToggleDiffWhiteSpace()
 endfunction
 command! ClearCache call ClearProjectsRootDic()
 command! ToggleDiffWhiteSpace call ToggleDiffWhiteSpace()
-function! SetupChangeDir() 
-   autocmd BufWinEnter * call dir_utils#CdOnBufferEnter(0)
-   autocmd WinEnter * call dir_utils#CdOnBufferEnter(0)
-   autocmd DirChanged * call dir_utils#CdOnBufferEnter(1)
-endfunction
-autocmd VimEnter * call SetupChangeDir()
 
 function! CDG()
    let currWorkingDir = utils#get_project_root(getcwd())
@@ -258,10 +252,6 @@ command! DotVim call ListDotFiles('$DOTFILES/config/nvim/',  'git ls-files')
 command! DotPlugged call ListDotFiles('$DOTFILES/config/nvim/plugged',  'find . -type f | grep -vF .git ')
 command! DotPluggedDirectories call ListDotFiles('$DOTFILES/config/nvim/plugged',  'ls | grep -vF .git ')
 command! -nargs=? Vimrc call Vimrc(<q-args>)
-"not good enough CDR for filetype nerdtree but will do it for now
-command! CDG call CDG()
-command! CDR if &filetype == 'nerdtree' | execute 'CDC' | else | call utils#cd_project_root(expand('%:p:h')) | endif
-command! CDC if &filetype == 'nerdtree' | execute 'cd /'.join(b:NERDTreeRoot.path.pathSegments, '/') | else | cd %:p:h | endif
 command! ClearMessages call ClearMessages()
 command! AutoCDCancel let g:cancelAutoCd=1
 command! AutoCDEnable unlet! g:cancelAutoCd

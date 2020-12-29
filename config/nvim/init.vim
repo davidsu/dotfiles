@@ -3,6 +3,10 @@
 autocmd!
 " Load startup files{{{1--------------------------------------------------------------------------------------------------
 "-------------------------------------------------------------------------------------------------------------------------
+if($DEBUG_COC)
+    let g:coc_node_args = ['--nolazy', '--inspect-brk']
+endif
+set runtimepath^=$DOTFILES/config/nvim/vim-js
 function! SourceMyScripts()
     source $DOTFILES/config/nvim/startup/plugins.vim
     if !isdirectory($DOTFILES.'/config/nvim/plugged')
@@ -12,10 +16,10 @@ function! SourceMyScripts()
 
     for file in file_list
         if file !~ "Session.vim" && file !~ "plugins.vim"
-         " echom file
-		execute( 'source '.file )
-    endif
-	endfor
+            " echom file
+            execute( 'source '.file )
+        endif
+    endfor
 endfunction
 call SourceMyScripts()
 function! DeferGstatus(...)

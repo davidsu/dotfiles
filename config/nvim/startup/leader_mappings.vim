@@ -47,7 +47,8 @@ nmap <space>qp :pclose<cr>
 nmap <space>qh :helpclose<cr>
 noremap <space>oc :copen<cr>
 noremap <space>ol :lopen<cr>
-
+noremap <space>tt :GFiles!<cr>
+nmap <silent> \t :GFiles!<cr>
 " nnoremap - :silent call utils#toggle_window_to_nerd_tree()<cr>
 nnoremap - :let currfile = expand('%:p:t')<cr>:edit %:p:h<cr>:call search(currfile)<cr>
 nnoremap \\ "_
@@ -172,7 +173,6 @@ function! FixNerdSize()
 endfunction
 nmap 1f :call FixNerdSize()<cr>
 nmap <silent> 1N :NERDTreeFind<cr>
-nmap <silent> \t :NERDTreeToggle<cr>
 nmap <silent> <space>nn :NERDTreeToggle<cr>
 nmap <silent> <space>nf :NERDTreeFind<cr>
 nmap 1o :only<cr>
@@ -286,7 +286,7 @@ nmap <space>lc :LetterCommands<cr>
 nmap <space>lm :LeaderMappingsDeclaration<cr>
 nmap <space>cl :LetterCommands<cr>
 nmap <space>cc :CommandLineCommands<cr>
-nmap <space>cd :CDC<cr>
+nmap <space>cr :CocRestart<cr>
 nmap ]i :execute "BLines '".expand('<cword>')<cr>
 nmap [i :execute "BLines '".expand('<cword>')<cr>
 nmap ]I :execute 'AgAllBLines \b'.expand('<cword>').'\b'<cr>

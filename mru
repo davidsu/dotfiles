@@ -69,7 +69,7 @@ function mru(){
         fi
         #open selected file in vim AND cd into git's root folder for project of selected file
         # echo  vim $linenum $filename -c 'silent :CDR'
-        vim $linenum $filename -c 'silent :CDR'
+        vim $linenum $filename
     fi
 }
 function oldmru(){
@@ -95,7 +95,7 @@ function oldmru(){
             echo $(sed -E 's#(.*)/[^/]+#\1#' <<< $filename)
         fi
         #open selected file in vim AND cd into git's root folder for project of selected file
-        vim $linenum $filename -c 'silent :CDR'
+        vim $linenum $filename
     fi
 }
 function mrw(){
