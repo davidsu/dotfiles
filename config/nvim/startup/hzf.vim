@@ -31,7 +31,7 @@ let g:fzf_action = {
 "-----------------------------------------------------------------------------}}}
 "FUNCTIONS                                                                    {{{ 
 "--------------------------------------------------------------------------------
-let s:previewrb = '$HOME/.dotfiles/bin/preview.sh' "expand('<sfile>:h:h').'/plugged/fzf.vim/bin/preview.rb'
+let s:previewsh = '$HOME/.dotfiles/bin/preview.sh' "expand('<sfile>:h:h').'/plugged/fzf.vim/bin/preview.rb'
 let s:bin = expand('<sfile>:h:h').'/bin'
     
 function! Noop(...)
@@ -66,10 +66,10 @@ command! -nargs=+ FindFunction call FindFunction(<args>)
 command! -nargs=+ FindAssignment call FindAssignment(<args>)
 command! -nargs=+ FindUsage call FindUsage(<args>)
 command! -nargs=+ FindText call FindText(<args>)
-command! -nargs=+ FindNoTestFunction call FindFunction(<args>, $IGNORE_TESTS)
-command! -nargs=+ FindNoTestAssignment call FindAssignment(<args>, $IGNORE_TESTS)
-command! -nargs=+ FindNoTestUsage call FindUsage(<args>, $IGNORE_TESTS)
-command! -nargs=+ FindNoTestText call FindText(<args>, $IGNORE_TESTS)
+command! -nargs=+ FindNoTestFunction call FindFunction(<args>, s:ignoreTests)
+command! -nargs=+ FindNoTestAssignment call FindAssignment(<args>, s:ignoreTests)
+command! -nargs=+ FindNoTestUsage call FindUsage(<args>, s:ignoreTests)
+command! -nargs=+ FindNoTestText call FindText(<args>, s:ignoreTests)
 command! -nargs=+ FindOnlyTestFunction call FindFunction(<args>, onlyTest)
 command! -nargs=+ FindOnlyTestAssignment call FindAssignment(<args>, onlyTest)
 command! -nargs=+ FindOnlyTestUsage call FindUsage(<args>, onlyTest)
@@ -110,7 +110,32 @@ let vimhelpignores =
 \'--ignore ''change*'' '.
 \'--ignore ''gui_*'' '.
 \'--ignore ''eval'' '
-let vimhelp_default_options = ' --preview-window up:50% --preview "'''.s:previewrb.'''"\ \ {} --bind ''ctrl-g:toggle-preview,ctrl-s:toggle-sort''' 
+let vimhelp_default_options = ' --preview-window up:50% --preview "'''.s:previewsh.'''"\ \ {} --bind ''ctrl-g:toggle-preview,ctrl-s:toggle-sort''' 
+
+if exists('$IGNORE_TESTS')
+    let s:ignoreTests = $IGNORE_TESTS
+else
+    let s:ignoreTests = " --ignore '*.spec.js' --ignore '*.unit.js' --ignore '*.it.js' --ignore '*.*.spec.js' --ignore '*.*.*unit.js' --ignore '*.*.*it.js'"
+endif
+
+function! FindFunction(functionName, ...)
+  let gitRepo = utils#get_git_root_directory()
+  let additionalParams = ( a:0 > 0 ) ? a:1 : ''
+  " (?<=...) positive lookbehind: must constain
+  " (?=...) positive lookahead: must contain
+  let agcmd = '''(?<=function\s)'.a:functionName.'(?=\s*\()|'.
+        \'\b'.a:functionName.'\s*:|'.
+        \'^\s*'.a:functionName.'\([^)]*\)\s*\{\s*$|'.
+        \'(?<=prototype\.)'.a:functionName.'(?=\s*=\s*function)|'.
+        \'(var|let|const|this\.)\s*'.a:functionName.'(?=\s*=\s*(function|(\([^)]*\)|\w+)\s*=>)\s*)|'.
+        \'(public|private)\s+(async\s+)?'.a:functionName.'\(|'.
+        \'^\s+async\s+'.a:functionName.'\('.
+        \''' -p '''.gitRepo.'/.gitignore'' '.
+        \additionalParams
+
+  call fzf#vim#ag_raw(agcmd, hzf#defaultPreview(), 1)
+endfunction
+
 command! CommandLineCommands call fzf#vim#ag_raw('--nobreak --noheading '.
             \ vimhelpignores.
             \'''^\s*\|:''', 

@@ -9,16 +9,17 @@ function! hzf#headerKeyCombinationColor(keyCombination)
 endfunction
 
 function! hzf#defaultPreview()
-    return {'options': ' --preview-window up:50% '.
-                \'--preview "'''.s:previewrb.'''"\ -v\ {} '.
-                \'--header '''.hzf#headerKeyCombinationColor('CTRL-o').' - open without abort :: '.
+    return {'options': ['--preview-window', 'up:50%',
+                \'--preview',  '$HOME/.dotfiles/bin/preview.sh {}',
+                \'--header', hzf#headerKeyCombinationColor('CTRL-o').' - open without abort :: '.
                 \hzf#headerKeyCombinationColor('CTRL-s').' - toggle sort :: '.
                 \hzf#headerKeyCombinationColor('CTRL-g').' - toggle preview window :: '. 
-                \hzf#headerKeyCombinationColor('CTRL-l').' - select all(when multi enabled)'' '. 
-                \"--bind 'ctrl-g:toggle-preview,".
+                \hzf#headerKeyCombinationColor('CTRL-l').' - select all(when multi enabled)',
+                \'--bind', 'ctrl-g:toggle-preview,'.
                 \"ctrl-s:toggle-sort,".
                 \"ctrl-l:select-all,".
-                \"ctrl-o:execute:$DOTFILES/fzf/fhelp.sh {} > /dev/tty'",
+                \"ctrl-o:execute:$DOTFILES/fzf/fhelp.sh {} > /dev/tty",
+                \],
                 \'down': '100%'}
 
 endfunction
