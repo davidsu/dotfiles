@@ -10,5 +10,6 @@ else
 	gotolinenum=0
 fi
 
-$DOTFILES/fzf/fhelp.rb ${filename}:${linenum} | less -N +${gotolinenum}g
+# $DOTFILES/fzf/fhelp.rb ${filename}:${linenum} | less -N +${gotolinenum}g
+$DOTFILES/bin/preview.sh ${filename}:${linenum} | less -N +${gotolinenum}g
 

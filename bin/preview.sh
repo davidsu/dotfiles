@@ -53,7 +53,7 @@ if [ -z "$FZF_PREVIEW_COMMAND" ] && [ "${BATNAME:+x}" ]; then
   exit $?
 fi
 
-DEFAULT_COMMAND="highlight -O ansi -l {} || coderay {} || rougify {} || cat {}"
+DEFAULT_COMMAND="rougify highlight --theme base16.monokai -i {} || highlight -O ansi -l {} || coderay {} || rougify {} || cat {}"
 CMD=${FZF_PREVIEW_COMMAND:-$DEFAULT_COMMAND}
 CMD=${CMD//{\}/$(printf %q "$FILE")}
 
