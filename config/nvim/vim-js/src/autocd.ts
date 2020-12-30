@@ -88,7 +88,8 @@ module.exports = async () => {
 
   async function onChangeDirectory() {
     sessionSelectedDirectories = sessionSelectedDirectories.filter(a => !a.startsWith(workspace.cwd))
-    if (!isGitRoot(workspace.cwd)) {
+    const { cwd } = workspace
+    if (!isGitRoot(cwd) && cwd !== '/' && cwd !== os.homedir()) {
       sessionSelectedDirectories.push(workspace.cwd)
     }
   }
@@ -116,7 +117,7 @@ module.exports = async () => {
     const currentDir = await getCurrentBufferPath()
     const gitRoot = getGitRoot(currentDir)
     const projectRoot = getProjectRoot(currentDir)
-    if (gitRoot.startsWith(projectRoot || '')) {
+    if (projectRoot && gitRoot.startsWith(projectRoot as string)) {
       // looks like .../config/nvim/plugged/someproj
       return CD(gitRoot)
     }
@@ -126,6 +127,7 @@ module.exports = async () => {
     if (projectRoot) {
       return CD(projectRoot)
     }
+    CD(currentDir)
   }
   const debouncedBufferChange = debounce(onBufferChange, 30)
 
