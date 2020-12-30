@@ -6,6 +6,10 @@ autocmd!
 if($DEBUG_COC)
     let g:coc_node_args = ['--nolazy', '--inspect-brk']
 endif
+if filereadable($HOME.'/.nvm/versions/node/v14.15.3/bin/node')
+    let g:coc_node_path = $HOME.'/.nvm/versions/node/v14.15.3/bin/node'
+endif
+
 set runtimepath^=$DOTFILES/config/nvim/vim-js
 function! SourceMyScripts()
     source $DOTFILES/config/nvim/startup/plugins.vim
@@ -29,7 +33,6 @@ function! DeferGstatus(...)
         Gstatus
     endif
 endfunction
-
 
 "}}}----------------------------------------------------------------------------------------------------------------------
 
