@@ -213,18 +213,6 @@ endfunction
 command! ClearCache call ClearProjectsRootDic()
 command! ToggleDiffWhiteSpace call ToggleDiffWhiteSpace()
 
-function! CDG()
-   let currWorkingDir = utils#get_project_root(getcwd())
-   let pwd = getcwd()
-   if &filetype != 'nerdtree'
-       execute 'Rooter'
-       " if currWorkingDir == pwd && has_key(g:projectsRootDic, pwd) && currWorkingDir =~ getcwd()
-       if currWorkingDir =~ getcwd()
-           let g:projectsRootDic[currWorkingDir] = getcwd()
-           call SaveProjectsRootDic()
-       endif
-   endif  
-endfunction
 function! ToSysClipboard(str) 
    exe "let @*='".a:str."'"
    exe "let @+='".a:str."'"

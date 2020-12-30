@@ -11,18 +11,3 @@ alias stopserver='mysql.server stop'
 alias catmru='mysql -uroot --skip-column-names --batch -e "'${mruselect}'" mru_vim'
 alias insertdummy='mysql -uroot -e "use mru_vim; insert into mru(_file, linenum) values ('\''filename'\'', 5);"'
 alias showdatabase='mysql -uroot -e "show databases;"'
-function oldmruTomysql(){
-    origin=${1:-~/.mru}
-    while read p; do
-        filename=$(sed -E 's#(^[^:]*).*#\1#' <<< $p)
-        linenum=1
-
-        if [[ -f $filename ]]; then
-            if [[ $p =~ ':[[:digit:]]+$' ]]; then
-                linenum=$(sed 's#^[^:]*:#+#' <<< $p)
-            fi
-        fi
-        mysql -uroot -e "insert into mru(_file, linenum) values ('${filename}', ${linenum});" mru_vim
-        echo $p
-    done < $origin
-}

@@ -1,4 +1,0 @@
-#!/bin/sh
-ln -s -f ~/.dotfiles/githooks/commit-msg ~/projects/santa-editor/.git/hooks/commit-msg
-ln -s -f ~/.dotfiles/githooks/post-merge ~/projects/santa-editor/.git/hooks/post-merge
-ln -s -f ~/.dotfiles/githooks/post-rewrite ~/projects/santa-editor/.git/hooks/post-rewrite

@@ -7,30 +7,30 @@ j() {
 	cd ~$1
     fi
 }
-function pullMyProjects(){
-    skipnvm=1
-    pullIfMineAndNotDirty() {
-        if [[ $(git config --get remote.origin.url) =~ 'sudavid4' ]]; then
-	    echo "\033[38;5;6m"$(pwd)"\033[0m"
-            if [[ $(git diff --shortstat 2> /dev/null | tail -n1) == "" ]]; then
-                git pull
-            else
-                echo "\033[38;5;9m"---------------IS DIRTY--------------------------"\033[0m"
-            fi
-        fi
-    }
-    scan () {
-        curdir=$(pwd)
-        for x in $*
-        do
-            [[ -d $x ]] && [[ -d ${x}/.git ]] && cd $x &> /dev/null && pullIfMineAndNotDirty "$x" 2> /dev/null
-            cd $curdir &> /dev/null
-        done
-    }
-    scan * 
-    wait
-    skipnvm=0
-}
+# function pullMyProjects(){
+#     skipnvm=1
+#     pullIfMineAndNotDirty() {
+#         if [[ $(git config --get remote.origin.url) =~ 'sudavid4' ]]; then
+# 	    echo "\033[38;5;6m"$(pwd)"\033[0m"
+#             if [[ $(git diff --shortstat 2> /dev/null | tail -n1) == "" ]]; then
+#                 git pull
+#             else
+#                 echo "\033[38;5;9m"---------------IS DIRTY--------------------------"\033[0m"
+#             fi
+#         fi
+#     }
+#     scan () {
+#         curdir=$(pwd)
+#         for x in $*
+#         do
+#             [[ -d $x ]] && [[ -d ${x}/.git ]] && cd $x &> /dev/null && pullIfMineAndNotDirty "$x" 2> /dev/null
+#             cd $curdir &> /dev/null
+#         done
+#     }
+#     scan * 
+#     wait
+#     skipnvm=0
+# }
 
 function encrypt(){
 	if [ -f $1 ]; then
@@ -87,43 +87,43 @@ function dirtyprojs(){
     skipnvm=0
 }
 
-function put-color-by-pairity(){
-    local pairity=$3
-    if [[ $(expr ${pairity} % 2) == 0 ]]; then
-        echo -n $1
-    else
-        echo -n $2
-    fi
-}
-function branches(){
-    local color_grey='\033[38;5;246m'
-    local color_reset='\033[0m'
-    local color_pinkish='\033[38;5;132m'
-    local color_brownish='\033[38;5;95m'
-    skipnvm=1
-    curdir=$(pwd)
-    let pairity=-1
-    for x in *; do
-        if [[ -d $x ]] && [[ -d ${x}/.git ]]; then
-            cd $x &> /dev/null 
-            put-color-by-pairity $color_grey $color_reset $pairity
-            pairity=${pairity}+1
-            [[ $(expr ${pairity} % 5) == 0 ]] && printf '\n'
-            local bname=$(git rev-parse --abbrev-ref HEAD)
-            if [[ $bname != *'master'* ]]; then
-                put-color-by-pairity $color_pinkish $color_brownish $pairity
-            fi
-            printf '%s ' $x #print directory name
-            printf '-%.0s' {1..$(( 60 - ${#x} ))} # {1..$(( 60 - ${#x} ))} is a string 1234...[60 - length of x]
-            printf ' %s\n'  $bname #print branch name for directory x
-            echo -n '\033[0m'
-            cd $curdir &> /dev/null  
-        fi
-    done
-    wait
-    skipnvm=0
-}
-alias printbranches='branches'
+# function put-color-by-pairity(){
+#     local pairity=$3
+#     if [[ $(expr ${pairity} % 2) == 0 ]]; then
+#         echo -n $1
+#     else
+#         echo -n $2
+#     fi
+# }
+# function branches(){
+#     local color_grey='\033[38;5;246m'
+#     local color_reset='\033[0m'
+#     local color_pinkish='\033[38;5;132m'
+#     local color_brownish='\033[38;5;95m'
+#     skipnvm=1
+#     curdir=$(pwd)
+#     let pairity=-1
+#     for x in *; do
+#         if [[ -d $x ]] && [[ -d ${x}/.git ]]; then
+#             cd $x &> /dev/null 
+#             put-color-by-pairity $color_grey $color_reset $pairity
+#             pairity=${pairity}+1
+#             [[ $(expr ${pairity} % 5) == 0 ]] && printf '\n'
+#             local bname=$(git rev-parse --abbrev-ref HEAD)
+#             if [[ $bname != *'master'* ]]; then
+#                 put-color-by-pairity $color_pinkish $color_brownish $pairity
+#             fi
+#             printf '%s ' $x #print directory name
+#             printf '-%.0s' {1..$(( 60 - ${#x} ))} # {1..$(( 60 - ${#x} ))} is a string 1234...[60 - length of x]
+#             printf ' %s\n'  $bname #print branch name for directory x
+#             echo -n '\033[0m'
+#             cd $curdir &> /dev/null  
+#         fi
+#     done
+#     wait
+#     skipnvm=0
+# }
+# alias printbranches='branches'
 alias printdirtyprojs='dirtyprojs'
 alias printescapesequences='escape_ls'
 alias printgitprompt='gitprompt'
@@ -165,25 +165,25 @@ function nodedebugchrome() {
     end tell
 END
 }
-function createTernProj(){
-    echo '
-{
-  "ecmaVersion": 8,
-  "libs": [
-  ],
-  "plugins": {
-    "node": {},
-    "modules": {},
-    "es_modules": {},
-    "node_resolve": {},
-    "CommonJS": {},
-    "doc_comment": {
-      "fullDocs": true
-    }
-  }
-}' > .tern-project
-}
-alias generateTernProject='createTernProj'
+# function createTernProj(){
+#     echo '
+# {
+#   "ecmaVersion": 8,
+#   "libs": [
+#   ],
+#   "plugins": {
+#     "node": {},
+#     "modules": {},
+#     "es_modules": {},
+#     "node_resolve": {},
+#     "CommonJS": {},
+#     "doc_comment": {
+#       "fullDocs": true
+#     }
+#   }
+# }' > .tern-project
+# }
+# alias generateTernProject='createTernProj'
 for f in $DOTFILES/cheatSheets/*
 do
     if [[ -f $f ]]; then

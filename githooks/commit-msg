@@ -1,5 +1,0 @@
-#!/bin/sh
-if [[ -z $(egrep '^(#|\$)' $1) ]]; then
-    echo bad commit message
-    exit 1
-fi

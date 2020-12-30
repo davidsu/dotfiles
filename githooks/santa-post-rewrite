@@ -1,4 +1,0 @@
-#!/bin/sh
-echo davidsu client hook message: post-rewrite has kicked in
-$(nohup node ~/projects/ternProjGenerators/santa.js > ~/projects/santa/.tern-project & )
-echo davidsu client hook message: running ternProjGenerators in the background

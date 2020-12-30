@@ -12,44 +12,6 @@ function killeditor(){
     sudo kill -$signal $(sudo lsof -i tcp:443 -t)
 }
 
-function deepuicheckout () {
-    if [[ $# != 1 ]]; then
-        echo 'usage: deepuicheckout $desired_branch'
-        return 1
-    fi
-	for dir in ~/deepui/*
-	do
-		echo $dir
-		cd $dir
-        if [[ $(git diff --shortstat 2> /dev/null | tail -n1) == "" ]]; then
-            git reset --hard
-            git pull
-            git checkout $1
-            npm i
-        else
-            echo "\033[38;5;196m"$(pwd) is dirty, refusing to continue "\033[0m"
-        fi
-	done
-}
-function deepuistart() {
-    loadallifneeded
-    pg_isready || pg_ctl -D /usr/local/var/postgres start
-    cd ~/deepui/end-user/
-    echo 'yarn dev --> '$(pwd) 
-    nohup yarn dev &> /tmp/deepui-end-user &
-
-    cd ~/deepui/web-server/
-    echo 'yarn dev --> ' $(pwd)
-    nohup yarn dev &> /tmp/deepui-web-server < /dev/null &
-
-    cd ~/deepui/automaton-executor/
-    echo 'yarn dev --> ' $(pwd)
-    nohup yarn dev &> /tmp/deepui-automaton-executor &
-
-    cd ~/deepui/automaton-processor/
-    echo 'yarn start --> ' $(pwd)
-    nohup yarn start &> /tmp/deepui-automaton-processor &
-}
 function sshci() {
     if [[ $# != 1 ]]; then
         echo 'usage: sshci $machine_ip'
@@ -57,10 +19,5 @@ function sshci() {
     fi
     ssh -i $HOME/.ssh/dev-server.pem ec2-user@$1 -p 22 -v
 }
-alias showdeepuiprocessor='tail -f -n 1000 /tmp/deepui-automaton-processor'
-alias showdeepuiexecutor='tail -f  -n 1000 /tmp/deepui-automaton-executor'
-alias showdeepuiserver='tail -f    -n 1000 /tmp/deepui-web-server'
-alias showdeepuienduser='tail -f   -n 1000 /tmp/deepui-end-user'
-
 alias nolocal='[[ -f ~/walkme/settings.json ]] && mv ~/walkme/settings.json ~/walkme/_settings.json'
 alias setlocal='[[ -f ~/walkme/_settings.json ]] && mv ~/walkme/_settings.json ~/walkme/settings.json'
