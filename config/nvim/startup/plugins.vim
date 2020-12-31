@@ -6,7 +6,6 @@ endif
 call plug#begin('~/.config/nvim/plugged')
 " Plug 'tommcdo/vim-fubitive'
 Plug 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
-Plug 'davidsu/vim-js'
 " Plug 'matthewtodd/vim-fustashtive'
 " Plug 'junegunn/vim-peekaboo'
 Plug 'leafgarland/typescript-vim', {'for': ['typescript', 'typescript.tsx']}
@@ -35,7 +34,6 @@ Plug 'plasticboy/vim-markdown', {'for': 'markdown'}                 " markdown
 Plug 'godlygeek/tabular', {'for': 'markdown'}                       " related to vim-markdown
 Plug 'davidsu/vim-plugin-AnsiEsc'                                  " type :AnsiEsc to get colors as terminal
 Plug 'blueyed/vim-diminactive' 
-" set runtimepath^=/Users/david.susskind/developer/neovim/runtime
 " Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}  " We recommend updating the parsers on update
 
 let g:nvim_typescript#quiet_startup=1
@@ -44,7 +42,6 @@ let g:nvim_typescript#diagnosticsEnable=0
 let g:nvim_typescript#javascript_support=1
 " Plug 'davidsu/nvim-typescript', {'for': ['javascript', 'typescript', 'typescript.tsx'], 'do': './install.sh'}
 Plug 'mhartington/nvim-typescript', {'for': ['javascript', 'typescript', 'typescript.tsx'], 'do': './install.sh'}
-Plug 'davidsu/tern_for_vim', {'for': ['javascript', 'typescript',  'typescript.tsx'], 'do': 'npm i' } " intellijent navigation and refactor for javascript
 if(has('nvim'))
     Plug 'neoclide/coc.nvim', {'branch': 'release'}
     Plug 'neoclide/coc-tsserver', {'do': 'yarn install --frozen-lockfile'}
@@ -72,7 +69,6 @@ Plug 'davidsu/base16-vim'
 Plug 'NLKNguyen/papercolor-theme'
 Plug 'vim-airline/vim-airline'                                      " fancy statusline
 Plug 'davidsu/vim-airline-themes'                                  " themes for vim-airline
-Plug 'davidsu/vim-js-goToDeclaration', {'for': ['javascript', 'typescript', 'typescript.tsx']}       " better ternjs gotodeclaration
 if isdirectory(expand('%:p'))
     Plug 'davidsu/nerdtree'
 else
