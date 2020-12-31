@@ -21,14 +21,6 @@ endfunction
 "FUNCTIONS{{{
 "--------------------------------------------------------------------------------
 
-function! RunNeomakeEslint()
-    if (!exists('b:neomake_disabled') && &ft =~ '\(java\|type\)script' && (filereadable(get(b:, 'neomake_typescript_eslint_exe')) || filereadable(get(b:, 'neomake_javascript_eslint_exe'))))
-        Neomake
-    endif
-endfunction
-
-command! FixEslint let g:is_running_fixlint = 1 | Neomake fixlint
-command! FixLint let g:is_running_fixlint = 1 | Neomake fixlint
 function! GetCurrLineIndentation()
     return len(substitute(getline('.'), '\(\s*\).*', '\1', '')) 
 endfunction
@@ -94,7 +86,6 @@ augroup javascript
     autocmd BufReadPost *.jsx,*.tsx set filetype=typescript.tsx
     autocmd BufWinEnter *.tsx,*.ts call DisableLintIfNeeded()
     let g:markdown_fenced_languages = ['css', 'javascript', 'js=javascript', 'json=javascript', 'stylus', 'html']
-    autocmd BufWritePost * call RunNeomakeEslint()
     autocmd BufWritePost *.jsx,*.tsx set filetype=typescript " hack to make go-to-declaration work AND coc tsx files work
     autocmd FileType javascript,json,typescript,typescript.tsx call <SID>setmapping()
     autocmd FileType javascript nnoremap <buffer>{ :call GoToNextFunction(-1, 0, 1)<cr>

@@ -48,6 +48,7 @@ Plug 'davidsu/tern_for_vim', {'for': ['javascript', 'typescript',  'typescript.t
 if(has('nvim'))
     Plug 'neoclide/coc.nvim', {'branch': 'release'}
     Plug 'neoclide/coc-tsserver', {'do': 'yarn install --frozen-lockfile'}
+    Plug 'neoclide/coc-eslint', {'do': 'yarn install --frozen-lockfile && yarn build'}                                                  " 
 
     " Plug 'Shougo/deoplete.nvim'                                     " auto-complete
     " Plug 'Shougo/neco-vim', {'for': 'vim'}                          " deoplete source for vimscript
@@ -65,10 +66,6 @@ else
   Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
   Plug 'davidsu/fzf.vim'                                              " fuzzy file finder and so much more
 endif
-Plug 'davidsu/neomake-local-eslint.vim', 
-            \{ 'for': ['javascript', 'typescript',  'typescript.tsx'] }                                " let neomake know how to find local eslint
-Plug 'benekastah/neomake', 
-            \{ 'for': ['javascript', 'typescript',  'typescript.tsx', 'html'] }                " neovim replacement for syntastic using neovim's job control functonality
 Plug 'dahu/vim-fanfingtastic'                                       " improved f F t T commands
 Plug 'airblade/vim-gitgutter'                                       " add git status for each modified line
 Plug 'davidsu/base16-vim'
