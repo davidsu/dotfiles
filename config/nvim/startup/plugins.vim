@@ -56,7 +56,6 @@ else
                 \{ 'for': ['javascript', 'css', 'scss', 'sh', 'vim', 'html'] }
 endif
 Plug 'Konfekt/FastFold'                                             " fold zyntax is too heavy for vim, makes neocomplete very slow. this plugin solves it
-Plug 'henrik/vim-indexed-search'                                    " Match 123 of 456 /search term/ in Vim searches
 if filereadable('/usr/local/opt/fzf')
   Plug '/usr/local/opt/fzf' | Plug 'davidsu/fzf.vim'                 " fuzzy file finder and so much more
 else
