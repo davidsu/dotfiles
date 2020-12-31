@@ -1,7 +1,8 @@
 set nocompatible          " not compatible with vi
 " set maxmemtot=2000000     " give vim some memory - it get's stuck when working with very large files
 if has('nvim')
-    set shada=/1000,:1000,<1,'1,h,s5
+    " set shada=/1000,:1000,<1,'1,h,s5
+    " set shadafile = $HOME/.shada
     set listchars=tab:→\ ,eol:¬,trail:⋅,extends:❯,precedes:❮
     set showbreak=↪
 endif
@@ -26,6 +27,7 @@ set diffopt+=vertical,iwhite
 set backupdir=~/.vim-tmp,~/.tmp,~/tmp,/var/tmp,/tmp
 set nobackup nowritebackup
 set directory=~/.vim-tmp,~/.tmp,~/tmp,/var/tmp,/tmp
+set undofile              " enable undo after close and repoen file
 set noswapfile
 set laststatus=2          " show the satus line all the time
 set sessionoptions-=folds
