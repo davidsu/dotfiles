@@ -97,7 +97,6 @@ nmap <space>bl :BLines!<cr> |"view buffer lines
 nnoremap <silent><space>vl :AgAllBLines<cr> |"view loaded(all) buffer lines
 nmap <space>bd :call utils#buf_delete_current()<cr>
 "end diff --- clean close diff window
-nmap <space>ed <C-w><C-j><C-w><C-l><C-w><C-o>
 map <space>ev :source ~/.dotfiles/config/nvim/init.vim<cr> 
 "add explanation inside code
 nnoremap <space>ex O<esc>120i-<esc>o-<cr><esc>120i-<esc>V2k:Commentary<cr>j$xA
@@ -125,17 +124,8 @@ nmap <silent><space>gf :call hzf#git_log_follow()<cr>
 nmap <silent><space>bc :call hzf#git_log_follow()<cr>
 nmap <silent>gs :Gstatus<cr><C-n>
 
-function! GitDiff()
-    " hack to silence coc-eslint error in fugitive buffer
-    let g:coc_disable_uncaught_error = 1
-    Gdiff
-endfunction
-function! EndDiff()
-    let g:coc_disable_uncaught_error = 0
-    echon ''
-endfunction
-nmap <silent><space>gd :call GitDiff()<cr>
-nmap <space>ed <C-w><C-j><C-w><C-l><C-w><C-o>:call EndDiff()<cr>
+nmap <silent><space>gd :Gdiff<cr>
+nmap <space>ed <C-w><C-j><C-w><C-l><C-w><C-o>
 nmap <space>ge :Gedit<cr>
 
 "hunk stage

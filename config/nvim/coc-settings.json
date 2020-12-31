@@ -13,6 +13,7 @@
     "tsserver.disableAutomaticTypeAcquisition": false,
     "tsserver.npm": "/Users/david.susskind/.nvm/versions/node/v14.15.3/bin/npm",
     "diagnostic.errorSign": "✖",
-    "eslint.autoFixOnSave": true
+    "eslint.autoFixOnSave": true,
+    "eslint.quiet": true
 }
 
