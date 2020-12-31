@@ -100,7 +100,6 @@ nmap <space>bd :call utils#buf_delete_current()<cr>
 map <space>ev :source ~/.dotfiles/config/nvim/init.vim<cr> 
 "add explanation inside code
 nnoremap <space>ex O<esc>120i-<esc>o-<cr><esc>120i-<esc>V2k:Commentary<cr>j$xA
-" nnoremap <space>ex O120i-o120i-VkkgcjgccA
 " find any file
 nmap <silent><space>fa :FZFFiles<cr>
 nmap <silent><space>fh :Helptags<cr>
