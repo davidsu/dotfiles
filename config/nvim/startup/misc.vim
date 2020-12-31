@@ -33,6 +33,20 @@ function! ListDotFiles(dir, command)
 		\'source': a:command,
 		\'sink': 'e'})
 endfunction
+
+function! CursorPing(...)
+    let _cursorline = &cursorline
+    let _cursorcolumn = &cursorcolumn
+    set cursorline 
+    if !a:0
+	set cursorcolumn
+    endif
+    redraw
+    sleep 350m
+    let &cursorline = _cursorline
+    let &cursorcolumn = _cursorcolumn
+endfunction
+
 function! SynL()
    for i in map(synstack(line('.'), col('.')), 'synIDattr(v:val,"name")')
         exe 'highlight '.i   
@@ -191,6 +205,7 @@ augroup configgroup
     autocmd FileType vim call matchadd('vimComment', '|"[^''"]*$')
     
     autocmd FileType vim map <buffer><space>sc :source %<cr> 
+    autocmd FileType vim map <buffer>gd <plug>(coc-definition)
     autocmd FileType vim setlocal foldmethod=marker 
     autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
     autocmd InsertEnter * set cursorline nocursorcolumn
