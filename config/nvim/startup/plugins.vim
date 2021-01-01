@@ -28,8 +28,6 @@ Plug 'sbdchd/neoformat', { 'for':
 Plug 'junegunn/vim-xmark' , { 'do': 'make', 'for': 'markdown'}      " ❌ Markdown preview on OS X
 " I don't know how to use this.... need to learn
 Plug 'junegunn/vim-easy-align'                                      " A Vim alignment plugin
-Plug 'airblade/vim-rooter'                                          " cd into root of project
-" Plug 'kshenoy/vim-signature'                                        " help for working with marks
 Plug 'plasticboy/vim-markdown', {'for': 'markdown'}                 " markdown
 Plug 'godlygeek/tabular', {'for': 'markdown'}                       " related to vim-markdown
 Plug 'davidsu/vim-plugin-AnsiEsc'                                  " type :AnsiEsc to get colors as terminal
@@ -42,19 +40,24 @@ let g:nvim_typescript#diagnosticsEnable=0
 let g:nvim_typescript#javascript_support=1
 " Plug 'davidsu/nvim-typescript', {'for': ['javascript', 'typescript', 'typescript.tsx'], 'do': './install.sh'}
 Plug 'mhartington/nvim-typescript', {'for': ['javascript', 'typescript', 'typescript.tsx'], 'do': './install.sh'}
-if(has('nvim'))
-    Plug 'neoclide/coc.nvim', {'branch': 'release'}
-    Plug 'neoclide/coc-tsserver', {'do': 'yarn install --frozen-lockfile'}
-    Plug 'neoclide/coc-eslint', {'do': 'yarn install --frozen-lockfile && yarn build'}                                                  " 
-
-    " Plug 'Shougo/deoplete.nvim'                                     " auto-complete
-    " Plug 'Shougo/neco-vim', {'for': 'vim'}                          " deoplete source for vimscript
-    " Plug 'zchee/deoplete-zsh', {'for': 'zsh'}                       " deoplete source for zsh
-    " Plug 'davidsu/deoplete-ternjs', { 'for': ['javascript', 'typescript']}         " deoplete source for javascript
+" ------------------------------------------------------------------------------------------------------------------------
+" coc.nvim
+" ------------------------------------------------------------------------------------------------------------------------
+let coc_extension_npm = {'branch': 'master', 'do': 'yarn install --frozen-lockfile && yarn build --if-present'}                                                  " 
+Plug 'neoclide/coc.nvim', coc_extension_npm
+if !isdirectory($DOTFILES.'/config/nvim/plugged/coc-explorer') && !exists($NPM_COC)
+  let g:coc_global_extensions = ['coc-git', 'coc-explorer', 'coc-eslint', 'coc-tsserver', 'coc-vimlsp', 'coc-marketplace']
 else
-    Plug 'Shougo/neocomplete.vim', 
-                \{ 'for': ['javascript', 'css', 'scss', 'sh', 'vim', 'html'] }
+  Plug 'neoclide/coc-git', coc_extension_npm                                                  " 
+  Plug 'weirongxu/coc-explorer', coc_extension_npm                                                  " 
+  Plug 'neoclide/coc-eslint', coc_extension_npm                                               
+  Plug 'neoclide/coc-tsserver', coc_extension_npm
+  Plug 'iamcco/coc-vimlsp', coc_extension_npm                                                  " 
+  Plug 'fannheyward/coc-marketplace', coc_extension_npm                                                  " 
 endif
+
+
+
 Plug 'Konfekt/FastFold'                                             " fold zyntax is too heavy for vim, makes neocomplete very slow. this plugin solves it
 if filereadable('/usr/local/opt/fzf')
   Plug '/usr/local/opt/fzf' | Plug 'davidsu/fzf.vim'                 " fuzzy file finder and so much more
@@ -63,19 +66,10 @@ else
   Plug 'davidsu/fzf.vim'                                              " fuzzy file finder and so much more
 endif
 Plug 'dahu/vim-fanfingtastic'                                       " improved f F t T commands
-Plug 'airblade/vim-gitgutter'                                       " add git status for each modified line
 Plug 'davidsu/base16-vim'
 Plug 'NLKNguyen/papercolor-theme'
 Plug 'vim-airline/vim-airline'                                      " fancy statusline
 Plug 'davidsu/vim-airline-themes'                                  " themes for vim-airline
-if isdirectory(expand('%:p'))
-    Plug 'davidsu/nerdtree'
-else
-    Plug 'davidsu/nerdtree' ,{'on': ['NERDTreeFind', 'NERDTreeToggle']}
-endif
-Plug 'tiagofumo/vim-nerdtree-syntax-highlight' 
-Plug 'ryanoasis/vim-devicons', {'on': ['NERDTreeFind', 'NERDTreeToggle']} " file drawer
-set guifont=Droid\ Sans\ Mono\ for\ Powerline\ Nerd\ Font\ Complete
 " Plug 'mxw/vim-jsx', {'for': 'javascript'}
 " Plug 'maxmellon/vim-jsx-pretty', {'for': 'javascript'}
 Plug 'tpope/vim-commentary'                                         " comment stuff out

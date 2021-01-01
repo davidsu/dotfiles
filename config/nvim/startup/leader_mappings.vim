@@ -49,7 +49,6 @@ noremap <space>oc :copen<cr>
 noremap <space>ol :lopen<cr>
 noremap <space>tt :GFiles!<cr>
 nmap <silent> \t :GFiles!<cr>
-" nnoremap - :silent call utils#toggle_window_to_nerd_tree()<cr>
 nnoremap - :let currfile = expand('%:p:t')<cr>:edit %:p:h<cr>:call search(currfile)<cr>
 nnoremap \\ "_
 vnoremap \\ "_
@@ -127,24 +126,11 @@ nmap <silent><space>gd :Gdiff<cr>
 nmap <space>ed <C-w><C-j><C-w><C-l><C-w><C-o>
 nmap <space>ge :Gedit<cr>
 
-"hunk stage
-nmap <space>hs :GitGutterStageHunk<cr>
-nmap <space>hu :GitGutterUndoHunk<cr>
-"hunk before = hunk prev
-nmap <space>hb :GitGutterPrevHunk<cr>
-nmap <space>hN :GitGutterPrevHunk<cr>
-nmap [c <Plug>(GitGutterPrevHunk)
-nmap ]c <Plug>(GitGutterNextHunk)
-nmap <space>hv :call gitgutter#hunk#text_object(1)<cr>
-nmap 1H :GitGutterPrevHunk<cr>
-"highlight hunks
-nmap <space>hh :GitGutterLineHighlightsToggle<cr>
-nmap <space>ht :GitGutterLineHighlightsToggle<cr>
-"hunk next
-nmap <space>hn :GitGutterNextHunk<cr>
-nmap 1h :GitGutterNextHunk<cr>
-"hunk preview
-nmap <space>hp :GitGutterPreviewHunk<cr>
+nmap <space>hu :CocCommand git.chunkUndo<cr>
+nmap <space>hs :CocCommand git.chunkStage<cr>
+" navigate chunks of current buffer
+nmap [g <Plug>(coc-git-prevchunk)
+nmap ]g <Plug>(coc-git-nextchunk)
 nmap <space>gt :Buffers<cr>term://
 " moving up and down work as you would expect
 nnoremap <silent> j gj
@@ -157,24 +143,12 @@ nmap \w :wincmd q<cr>
 nmap \s :%s/\v
 vmap \s :s/\v
 nmap \d :GitGutterToggle<cr>:redraw!<cr>
-" Toggle NERDTree
 nmap <silent> 1t :execute '25Lexplore '.expand('%:p:h')<cr>
-" expand to the path of the file in the current buffer
-nmap <silent> 1n :call NERDTreeFindOrClose()<cr>
-function! FixNerdSize()
-    if &ft == 'nerdtree' 
-        vertical resize 30
-    else
-        let width=&columns - 30
-        execute 'vertical resize '.width
-        execute "normal! \<c-w>="
-    endif
-endfunction
-nmap 1f :call FixNerdSize()<cr>
-nmap <silent> 1N :NERDTreeFind<cr>
-nmap <silent> <space>nn :NERDTreeToggle<cr>
-nmap <silent> <space>nf :NERDTreeFind<cr>
 nmap 1o :only<cr>
+
+" 
+nmap 1n :execute 'CocCommand explorer --reveal '.expand('%:p')<cr>
+nmap <space>nn :CocCommand explorer<cr>
 
 "VIM-MARK: <space>hi for highlight interesting word
 nmap <silent><space>hi <Plug>MarkSet
@@ -269,6 +243,7 @@ function! GFilesIfNotHelp()
 endfunction
 nnoremap <c-t> :call GFilesIfNotHelp()<cr>
 imap <C-s>  <Esc>:w<cr>
+imap <C-e> <Esc>:call coc#float#close_all()<cr>:call feedkeys('a')<cr>
 map <C-s>  <Esc>:w<cr>
 nnoremap <C-s> :Snippets<cr>
 

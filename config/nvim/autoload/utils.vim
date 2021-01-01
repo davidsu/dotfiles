@@ -53,10 +53,6 @@ function! utils#buf_delete_current()
     let listedbuffers=s:list_buffers()
     let bufnextnr = 1
     let currbuffname = expand('%')
-    if(bufname('%') =~? 'NERD_tree')
-        let bufnextnr = 0
-        " buffer! #
-    endif
     if(len(listedbuffers) > bufnextnr)
         let l:bufnext = listedbuffers[bufnextnr]
         let alternate = listedbuffers[bufnextnr]
@@ -78,10 +74,6 @@ endfunction
 "-----------------------------------------------------------------------------}}}
 "BASEDIRS                                                                     {{{ 
 "--------------------------------------------------------------------------------
-function! utils#get_root_directory()
-    return s:root
-endfunction
-
 function! utils#get_git_root_directory()
     return s:get_git_root()
 endfunction
@@ -184,7 +176,7 @@ endfunction
 
 function! utils#restoreAlternateFile()
     let alternate = expand('#')
-    if ! len(alternate) || alternate == expand('%') || alternate =~ 'term://' || alternate =~ 'NERD_tree' || alternate =~ 'NetrwTree'
+    if ! len(alternate) || alternate == expand('%') || alternate =~ 'term://' || alternate =~ 'NetrwTree'
         let listedbuffers=utils#buffers_listed()
         if len(listedbuffers) > 1
             if expand(bufname(listedbuffers[1])) == expand('%')
@@ -240,24 +232,6 @@ function! utils#win_move(key)
         endif
         exec "wincmd ".a:key
     endif
-endfunction
-
-function! utils#toggle_window_to_nerd_tree()
-    "need to commit change in nerdtree and relate to it for this commit
-    " see sudavid4/nerdtree commit 909cf25722f206f82128554c7c6dd1ed34a95949 is needed for this to work properly
-    if ! exists('t:NERDTreeBuffName')
-        NERDTreeToggle
-        sleep 100m
-    endif
-    if g:NERDTree.IsOpen()
-        NERDTreeClose
-        sleep 100m
-    endif
-    "this is likely useless since sudavid4/nerdtree commit 909cf25722f206f82128554c7c6dd1ed34a95949 
-    let w:dontsavescreenstate = 1
-    let currfile = expand('%:p:t')
-    edit %:p:h
-    call search(currfile)
 endfunction
 
 function! utils#get_project_root(dirname)

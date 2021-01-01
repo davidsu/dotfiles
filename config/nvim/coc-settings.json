@@ -14,6 +14,19 @@
     "tsserver.npm": "/Users/david.susskind/.nvm/versions/node/v14.15.3/bin/npm",
     "diagnostic.errorSign": "✖",
     "eslint.autoFixOnSave": true,
-    "eslint.quiet": true
+    "eslint.quiet": true,
+    "explorer.icon.enableNerdfont": true,
+    "explorer.file.showHiddenFiles": true,
+    "explorer.file.tabCD": false,
+    "explorer.git.icon.rootStatus.modified": "✭",
+    "explorer.git.icon.rootStatus.added": "✚",
+    "explorer.git.icon.rootStatus.deleted": "✗",
+    "explorer.git.icon.rootStatus.renamed": "➦",
+    "explorer.git.icon.rootStatus.untracked": "✱",
+    "explorer.git.icon.status.modified": "✭",
+    "explorer.git.icon.status.added": "✚",
+    "explorer.git.icon.status.deleted": "✗",
+    "explorer.git.icon.status.renamed": "➦",
+    "explorer.git.icon.status.untracked": "✱",
+    "explorer.file.autoReveal": false
 }
-

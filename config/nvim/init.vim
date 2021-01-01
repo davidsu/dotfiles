@@ -38,7 +38,6 @@ endfunction
 
 
 " source $DOTFILES/config/nvim/startup/plugins.vim
-" source $DOTFILES/config/nvim/startup/NERDTree.vim
 " source $DOTFILES/config/nvim/startup/abbrev.vim
 " source $DOTFILES/config/nvim/startup/airline.vim
 " source $DOTFILES/config/nvim/startup/custom_fold.vim

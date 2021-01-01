@@ -15,9 +15,5 @@
 7. open nvim and run `:PlugInstall<cr>` -- Note: you'll get a ton of errors on the first time you open nvim. Ignore them, `:PlugInstall<cr>` and restart nvim
 8. run`:CocInstall coc-tsserver` so that typescript will play nice
 9. install mysql - needed for [mysql_mru.vim](https://github.com/sudavid4/mysql-mru.vim)  `brew install mysql`
-10. download and install a font compatible with nerdtree devicons:[nerd-fonts](https://github.com/ryanoasis/nerd-fonts#combinations). Once you've done that go to Iterm -> preferences -> profiles -> text -> change font -> choose "Droid Sans Mono for Powerline Nerd Font Complete.otf"
-    ```
-    cd ~/Library/Fonts && curl -fLo "Droid Sans Mono for Powerline Nerd Font Complete.otf" https://github.com/ryanoasis/nerd-fonts/raw/master/patched-fonts/DroidSansMono/complete/Droid%20Sans%20Mono%20Nerd%20Font%20Complete.otf
-    ```
-11. run `:UpdateRemotePlugins` inside vim
-12. run `:CheckHealth` inside vim
+10. run `:UpdateRemotePlugins` inside vim
+11. run `:CheckHealth` inside vim

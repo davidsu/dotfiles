@@ -8,7 +8,6 @@ let g:vimsyn_noerror = 1
 let g:peekaboo_window='vert bo 60new'
 let g:diminactive_buftype_blacklist = ['nowrite', 'acwrite']
 " let g:diminactive_enable_focus = 1
-let g:rooter_manual_only = 1
 let g:table_mode_corner = '|'
 let g:table_mode_separator = '|'
 let g:tern_request_timeout = 2
@@ -189,6 +188,7 @@ augroup configgroup
 
 
 
+    " autocmd BufEnter coc-settings.json set filetype=jsonc
     autocmd FileType css setlocal omnifunc=csscomplete#CompleteCSS
     autocmd FileType html setlocal ts=4 sts=4 sw=4 noexpandtab indentkeys-=*<return>
     autocmd FileType html,markdown setlocal omnifunc=htmlcomplete#CompleteTags
@@ -199,9 +199,10 @@ augroup configgroup
     " make quickfix windows take all the lower section of the screen
     " when there are multiple windows open
     autocmd FileType qf wincmd J
+    " close info window in coc-explorer on <esc>
+    autocmd FileType coc-explorer nmap <buffer><esc> kj
     " close help files on 'q'
     autocmd FileType qf,help nnoremap <buffer>q :bd<cr>
-    autocmd FileType vim set shiftwidth=4 
     autocmd FileType vim call matchadd('vimComment', '|"[^''"]*$')
     
     autocmd FileType vim map <buffer><space>sc :source %<cr> 

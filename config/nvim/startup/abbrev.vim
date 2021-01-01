@@ -17,6 +17,9 @@ call s:abbrev('gdb', 'GDiffBranch')
 call s:abbrev('man', 'tab Man')
 call s:abbrev('cdg', 'CDG')
 call s:abbrev('cdc', 'CDC')
+call s:abbrev('cc', 'CocCommand ')
+call s:abbrev('cl', 'CocList')
+call s:abbrev('con', 'CocConfig')
 
 "https://github.com/houtsnip/vim-emacscommandline/blob/master/plugin/emacscommandline.vim
 cmap <C-a> <Home>
