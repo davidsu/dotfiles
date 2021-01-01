@@ -21,6 +21,13 @@ call s:abbrev('cc', 'CocCommand ')
 call s:abbrev('cl', 'CocList')
 call s:abbrev('con', 'CocConfig')
 
+" set wildcharm=<C-Z>
+function! s:wildMapper(shortcut, expansion)
+    execute 'cnoremap <expr> '.a:shortcut.' wildmenumode() ? "\'.a:expansion.'" : "\'.a:shortcut.'"'
+endfunction
+call s:wildMapper('<C-j>', '<right>')
+call s:wildMapper('<C-k>', '<left>')
+"
 "https://github.com/houtsnip/vim-emacscommandline/blob/master/plugin/emacscommandline.vim
 cmap <C-a> <Home>
 cnoremap <c-l> <C-\>e<SID>ForwardWord()<CR>
