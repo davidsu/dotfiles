@@ -210,6 +210,7 @@ augroup configgroup
     autocmd FileType xml setlocal omnifunc=xmlcomplete#CompleteTags
     autocmd InsertEnter * set cursorline nocursorcolumn
     autocmd InsertLeave * call OnInsertLeave()
+    autocmd TextYankPost * silent! lua require'vim.highlight'.on_yank({timeout = 40})
     "THIS BACAME REDUNTANT SINCE `set clipboard+=unnamedplus`
     "keep clipboard synched to system
     " autocmd TextYankPost * let @*=@"
