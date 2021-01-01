@@ -1,0 +1,43 @@
+#!/usr/bin/env node
+const home = require('os').homedir()
+const { exec, execSync } = require('child_process');
+const { existsSync, mkdirSync, readFileSync } = require('fs')
+const path = require('path')
+
+const projectAbsolutePath = relativePath => path.join(home, 'projects', relativePath)
+
+// const projects = ['sdk/teachme', 'sdk/player-sdk', 'teachme-ui'].map(proj => path.join(home, 'projects', proj))
+const projects = {
+    'mockplatform': projectAbsolutePath('apps-data/packages/mockplatform'),
+    'player-sdk': projectAbsolutePath('sdk/player-sdk'),
+    teachme: projectAbsolutePath('sdk/teachme'),
+    'teachme-ui': projectAbsolutePath('teachme-ui'),
+}
+
+const logDir = path.join('/', 'tmp', 'teachme')
+
+function run(projectDir) {
+    console.log('building ', projectDir)
+
+    execSync(`source ${home}/.nvm/nvm.sh && nvm use && npm run ${/player-sdk/.test(projectDir) ? 'build:testkit' : 'build'}`, {cwd: projectDir})
+
+    console.log('#'.repeat(60))
+}
+
+function createLinks() {
+    const options = {stdio: [0,1,2], encoding: 'utf8'}
+    const command = `source ${home}/.nvm/nvm.sh && nvm use 12 && npm link`
+    console.log({command,options: {...options, cwd: projects['player-sdk']}}) 
+
+    execSync(command, {...options, cwd: projects['mockplatform']})
+    execSync(command, {...options, cwd: projects['player-sdk']})
+    execSync(command, {...options, cwd: projects['teachme']})
+
+    execSync(`${command} @walkme/mockplatform`, {...options, cwd: projects['player-sdk']})
+    execSync(`${command} @walkme/sdk`, {...options, cwd: projects['teachme-ui']})
+    execSync(`${command} wm-teachme`, {...options, cwd: projects['teachme-ui']})
+    execSync(`${command} @walkme/sdk`, {...options, cwd: projects.teachme})
+}
+
+createLinks()
+Object.values(projects).forEach(run)

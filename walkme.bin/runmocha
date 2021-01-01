@@ -4,6 +4,10 @@ const args = process.argv.splice(2)
 console.log(args)
 const isInspectBrk = arg => /--inspect-brk/.test(arg)
 
+const mochaHelperFile = {
+    'dialog-processor':  '--file test/specs/helper.js',
+    'player-sdk': '--file test/init.ts'
+}
 function inspectBrk() {
     if (args.find(isInspectBrk)) {
         return '--inspect-brk --timeout 99999999'
@@ -12,6 +16,7 @@ function inspectBrk() {
 }
 function getHelperFile() {
     const project = process.cwd().replace(/.*\/(.*)/, '$1')
+    return mochaHelperFile[project] || ''
     switch(project) {
         case 'dialog-processor': 
             return '--file test/specs/helper.js'
@@ -26,6 +31,15 @@ function getOpts() {
     return ''
 }
 
-const cmd = `TEST_MODE=true node node_modules/.bin/mocha ${inspectBrk()} ${getHelperFile()} ${getOpts()} ${args.filter(a => !isInspectBrk(a)).join(' ')}`
+function env() {
+    const project = process.cwd().replace(/.*\/(.*)/, '$1')
+    const TEST_MODE = 'TEST_MODE=true '
+    if(project === 'player-sdk') {
+        return `${TEST_MODE} TS_NODE_PROJECT=test/tsconfig.json `
+    }
+    return TEST_MODE
+}
+
+const cmd = `${env()} node node_modules/.bin/mocha ${inspectBrk()} ${getHelperFile()} ${getOpts()} ${args.filter(a => !isInspectBrk(a)).join(' ')}`
 console.log(cmd)
 require('child_process').execSync(cmd, {stdio: [0,1,2]})
