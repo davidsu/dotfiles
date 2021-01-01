@@ -13,18 +13,6 @@ let sessionSelectedDirectories: Array<string> = []
 const nvimConfigDir = path.join(os.homedir(), '.dotfiles/config/nvim')
 const getProjectsMap = () => JSON.parse(readFileSync(dirMap, { encoding: 'utf8' }))
 
-async function CD(dir) {
-  if (dir !== workspace.cwd) {
-    nvim.command(`cd ${dir}`)
-  }
-}
-
-async function isInvalidAutoCDBuffer() {
-  const ft = await nvim.getOption('filetype')
-  const currentDir = await getCurrentBufferPath()
-  return ft === 'nerdtree' || !currentDir.startsWith('/')
-}
-
 function getRoot(directory, isRoot) {
   if (!directory || directory === '/' || directory === os.homedir()) {
     return ''
@@ -39,83 +27,78 @@ const isGitRoot = dir => existsSync(path.join(dir, '.git'))
 
 const getProjectRoot = dir => getRoot(dir, p => existsSync(path.join(p, 'package.json')) || p === nvimConfigDir)
 const getGitRoot = dir => getRoot(dir, isGitRoot)
-const getCurrentBufferPath = () => nvim.callFunction('expand', '%:p:h')
 
-async function cdGitRoot() {
-  if (await isInvalidAutoCDBuffer()) {
-    //TODO warn(not git repo)
-    return
-  }
-  const root = await getGitRoot(await getCurrentBufferPath())
-  if (root) {
-    CD(root)
-    const projectsRootDicts = getProjectsMap()
-    projectsRootDicts.roots[root] = true
-    writeJsonSync(projectsRootDicts)
-  }
+const isInvalidAutoCDBuffer = (currentDir, ft) =>
+  !path.isAbsolute(currentDir) || ft === 'coc-explorer' || !currentDir.startsWith('/')
+
+const CD = dir => dir !== workspace.cwd && nvim.command(`cd ${dir}`)
+
+const executer = fn => async () => {
+  const [currentDir, fileType] = (await nvim.eval("[expand('%:p:h'), &filetype]")) as [string, string]
+  if (isInvalidAutoCDBuffer(currentDir, fileType)) return
+  fn({
+    fileType,
+    currentDir,
+    projectsRootDicts: getProjectsMap(),
+    gitRoot: getGitRoot(currentDir),
+    projectRoot: getProjectRoot(currentDir),
+  })
 }
 
-async function cdProjectRoot() {
-  if (await isInvalidAutoCDBuffer()) {
-    //TODO command! CDC if &filetype == 'nerdtree' | execute 'cd /'.join(b:NERDTreeRoot.path.pathSegments, '/') | else | cd %:p:h | endif
-    return
-  }
-  const currentBufferPath = await getCurrentBufferPath()
-  const root = getProjectRoot(currentBufferPath)
-  if (root) {
-    CD(root)
-    const projectsRootDicts = getProjectsMap()
-    delete projectsRootDicts.roots[getGitRoot(currentBufferPath)]
-    sessionSelectedDirectories = sessionSelectedDirectories.filter(a => !root.startsWith(a))
+const cdGitRoot = executer(function ({ gitRoot, projectsRootDicts }) {
+  if (gitRoot) {
+    CD(gitRoot)
+    projectsRootDicts.roots[gitRoot] = true
     writeJsonSync(projectsRootDicts)
   }
-}
+})
 
-async function cdCurrentPath() {
-  if (await isInvalidAutoCDBuffer()) {
-    //TODO? if &filetype == 'nerdtree' | execute 'cd /'.join(b:NERDTreeRoot.path.pathSegments, '/') | else | cd %:p:h | endif
-    return
+const cdProjectRoot = executer(function ({ projectsRootDicts, gitRoot, projectRoot }) {
+  if (projectRoot) {
+    CD(projectRoot)
+    delete projectsRootDicts.roots[gitRoot]
+    sessionSelectedDirectories = sessionSelectedDirectories.filter(a => !projectRoot.startsWith(a))
+    writeJsonSync(projectsRootDicts)
   }
-  const root = await getCurrentBufferPath()
-  CD(root)
+})
+
+const cdCurrentPath = executer(function ({ projectRoot, gitRoot }) {
+  CD(projectRoot)
   const projectsRootDicts = getProjectsMap()
-  delete projectsRootDicts.roots[getGitRoot(root)]
-  sessionSelectedDirectories = sessionSelectedDirectories.filter(a => !a.startsWith(root))
-  sessionSelectedDirectories.push(root)
+  delete projectsRootDicts.projectRoots[gitRoot]
+  sessionSelectedDirectories = sessionSelectedDirectories.filter(a => !a.startsWith(projectRoot))
+  sessionSelectedDirectories.push(projectRoot)
   writeJsonSync(projectsRootDicts)
-}
+})
 
-async function onChangeDirectory() {
-  sessionSelectedDirectories = sessionSelectedDirectories.filter(a => !a.startsWith(workspace.cwd))
+const onChangeDirectory = executer(function () {
   const { cwd } = workspace
-  if (!isGitRoot(cwd) && cwd !== '/' && cwd !== os.homedir() && cwd !== nvimConfigDir) {
+  sessionSelectedDirectories = sessionSelectedDirectories.filter(a => !a.startsWith(cwd))
+  if (!isGitRoot(cwd) && cwd !== os.homedir() && cwd !== nvimConfigDir) {
     sessionSelectedDirectories.push(workspace.cwd)
   }
-}
+})
 
-async function onBufferChange() {
-  if (await isInvalidAutoCDBuffer()) return
-  const currentDir = await getCurrentBufferPath()
-  const projectsRootDicts = getProjectsMap()
-  for (const path of [...sessionSelectedDirectories, ...Object.keys(projectsRootDicts.roots)].sort(
-    (a, b) => b.length - a.length
-  )) {
-    if (currentDir.startsWith(path)) {
-      CD(path)
-      return
+const onBufferChange = executer(
+  debounce(function ({ projectsRootDicts, currentDir, gitRoot, projectRoot }) {
+    sessionSelectedDirectories = sessionSelectedDirectories.filter(dir => !(gitRoot || projectRoot).startsWith(dir))
+
+    for (const dir of [...sessionSelectedDirectories, ...Object.keys(projectsRootDicts.roots)].sort(
+      (a, b) => b.length - a.length
+    )) {
+      if (currentDir.startsWith(dir)) {
+        CD(dir)
+        return
+      }
     }
-  }
-  onVimEnter()
-}
+    onVimEnter({ projectsRootDicts, currentDir, gitRoot, projectRoot })
+  }, 30)
+)
 
-async function onVimEnter() {
+function onVimEnter({ projectsRootDicts, currentDir, gitRoot, projectRoot }) {
   if (!existsSync(dirMap)) {
     writeJsonSync({ roots: {} })
   }
-  const projectsRootDicts = getProjectsMap()
-  const currentDir = await getCurrentBufferPath()
-  const gitRoot = getGitRoot(currentDir)
-  const projectRoot = getProjectRoot(currentDir)
   if (projectRoot && gitRoot.startsWith(projectRoot as string)) {
     // looks like .../config/nvim/plugged/someproj
     return CD(gitRoot)
@@ -128,11 +111,10 @@ async function onVimEnter() {
   }
   CD(currentDir)
 }
-const debouncedBufferChange = debounce(onBufferChange, 30)
 
 workspace.registerAutocmd({ event: 'DirChanged', request: true, callback: onChangeDirectory })
-workspace.registerAutocmd({ event: 'BufWinEnter', request: false, callback: debouncedBufferChange })
-workspace.registerAutocmd({ event: 'WinEnter', request: false, callback: debouncedBufferChange })
+workspace.registerAutocmd({ event: 'BufWinEnter', request: false, callback: onBufferChange })
+workspace.registerAutocmd({ event: 'WinEnter', request: false, callback: onBufferChange })
 
 commands.registerCommand('vim-js.cdGitRoot', cdGitRoot)
 commands.registerCommand('vim-js.cdProjectRoot', cdProjectRoot)
@@ -142,4 +124,4 @@ nvim.command('command! CDG :CocCommand vim-js.cdGitRoot')
 nvim.command('command! CDR :CocCommand vim-js.cdProjectRoot')
 nvim.command('command! CDC :CocCommand vim-js.cdCurrentPath')
 
-onVimEnter()
+executer(onVimEnter)()

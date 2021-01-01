@@ -5,6 +5,9 @@ module.exports = {
   parser: '@typescript-eslint/parser',
   extends: ['plugin:@typescript-eslint/recommended', 'plugin:prettier/recommended', 'prettier/@typescript-eslint'],
   rules: {
+    'require-await': 'error',
+    'no-shadow': 'error',
+    'no-unused-vars': 'error',
     'no-console': 'error',
     '@typescript-eslint/ban-ts-comment': 'off',
     '@typescript-eslint/no-explicit-any': 'off',

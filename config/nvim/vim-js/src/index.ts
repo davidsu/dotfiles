@@ -1,6 +1,5 @@
-import { commands, CompleteResult, ExtensionContext, listManager, sources, workspace } from 'coc.nvim'
-
-export async function activate(context: ExtensionContext): Promise<void> {
-  import('./autocd')
-  import('./goToDeclaration')
+//eslint-disable-next-line require-await
+export async function activate() {
+  require('./autocd')
+  require('./goToDeclaration')
 }

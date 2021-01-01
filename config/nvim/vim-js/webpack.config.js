@@ -1,4 +1,5 @@
-const path = require('path');
+/* eslint-disable @typescript-eslint/no-var-requires */
+const path = require('path')
 
 /** @type {import('webpack').Configuration} */
 module.exports = {
@@ -21,21 +22,12 @@ module.exports = {
       {
         test: /\.ts$/,
         include: [path.resolve(__dirname, 'src')],
-        use: [
-          {
-            loader: 'ts-loader',
-            options: {
-              compilerOptions: {
-                sourceMap: true,
-              },
-            },
-          },
-        ],
+        use: [{ loader: 'ts-loader' }],
       },
     ],
   },
   output: {
-    path: path.join(__dirname, 'lib'),
+    path: path.join(__dirname, 'dist'),
     filename: 'index.js',
     libraryTarget: 'commonjs',
   },
@@ -44,4 +36,4 @@ module.exports = {
     __dirname: false,
     __filename: false,
   },
-};
+}
