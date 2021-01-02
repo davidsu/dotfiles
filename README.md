@@ -46,16 +46,14 @@
 23. enable mouse scroll for less in iterm: ITerm -> Preferences -> Advanced and search for "scroll"
 24. unmark checkbox of iterm->Preferences->terminal->Shell Integration[Show mark indicators]
 25. make cmd+click filename in iterm open in terminal vim (or cd into dir) [Preferences -> Profiles -> Advanced, Under "Semantic History", choose "Run coprocess..". In the text field, put:`echo 'if [[ -d \1 ]]; then cd \1; else vim \1 \2; fi'`
-24. install fasd: `git clone https://github.com/akatrevorjay/fasd.git && cd fasd && make install`
+26. install fasd: `git clone https://github.com/akatrevorjay/fasd.git && cd fasd && make install`
     - don't use the brew version cuz it messes up the global alias V
-25. make changes in `_faasd_preexec` [like this](https://github.com/clvv/fasd/issues/120)
-26. install hub: `brew install hub`
-27. create a file in `~/.config/hub`
-```
----
-github.com:
-- oauth_token: TOKEN
-  user: sudavid4
-```
+27. make changes in `_faasd_preexec` [like this](https://github.com/clvv/fasd/issues/120)
+28. install hub: `brew install hub`
+29. setup universal <Command-alt-ctrl-t> to open chrome dedicated node devtools: <br>
+    https://www.howtogeek.com/286332/how-to-run-any-mac-terminal-command-with-a-keyboard-shortcut/#:~:text=Click%20the%20first%20field%2C%20then,the%20current%20time%20out%20loud. <br>
+    In short: set bin/nodedebugchrome.sh code through automator, open <br>
+    systemPreferences -> keyboard -> shortcut -> general -> <br>
+    add keyboard shortcut to what you've set up in the automator <br>
 
 - to push to github (https with two factor authentication) you will need to use a token instead of your password. [Instructions here](https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/)

@@ -1,9 +1,73 @@
 #!/usr/bin/env node
-const args = process.argv.splice(2)
-console.log(args)
-const isInspectBrk = arg => /--inspect-brk/.test(arg)
-const inspectBrk = args.find(isInspectBrk) || ''
+const { spawn, exec, execSync } = require('child_process')
+const  fetch  = require('node-fetch')
 
-const cmd = `node ${inspectBrk} node_modules/.bin/jest ${args.filter(a => !isInspectBrk(a)).join(' ')}`
-console.log(cmd)
-require('child_process').execSync(cmd, {stdio: [0,1,2]})
+//todo use yargs and clean up this mess
+const args = process.argv.splice(2)
+const isInspect = arg => /--inspect/.test(arg)
+const inspectBrk = args.find(isInspect) || ''
+const timeout = inspectBrk ? '--testTimeout=600000': ''
+const otherArgs = inspectBrk ? args.filter(a => !isInspect(a)) : args
+const spawnArgs = [inspectBrk, 'node_modules/.bin/jest', timeout, ...otherArgs].filter(a => a) 
+if(inspectBrk) {
+    // automatic kill application holding my debugging port
+    const port = Number(inspectBrk.split('=')[1]) || 9229
+    try {
+        execSync(`kill $(lsof -i tcp:${port} -t)`, console.log)
+    } catch(e) {}
+}
+
+console.log(`node ${spawnArgs.join(' ')}`)
+
+//force colored output, chalk reads it I guess
+process.env.FORCE_COLOR = true
+const jest = spawn('node', spawnArgs)
+
+function openChromeDevTools(url) {
+    // for some reason the appleScript `open location` command does't work with this url, worked around using sequence of keystrokes
+    // doesn't work from terminal `open -a 'Goole Chrome' ${url}` either
+    const osascript = `
+            osascript << 'END'
+            tell application "Google Chrome"
+                activate
+
+                #force open devtools, shouldn't have to do that, buggy computer at work
+                tell application "System Events" to keystroke "i" using { command down, option down }
+
+                tell application "System Events" to keystroke "l" using command down
+                delay 0.05
+                tell application "System Events" to keystroke "${url}"
+                tell application "System Events" to keystroke key code 36
+
+                #close the devtools that I opened by force
+                tell application "System Events" to keystroke "i" using { command down, option down }
+            end tell
+            END
+             `
+    // console.log(osascript)
+    exec(osascript)
+}
+function ondata(e, d) {
+    const data = d.toString()
+    console.log(data)
+
+    if(/Debugger listening on/.test(data)) {
+        //source https://github.com/ChromeDevTools/debugger-protocol-viewer/blob/33bdf34ea60c35c483261f398265a821f2e2c4f3/pages/index.md
+        fetch(`http://localhost:${Number(inspectBrk.split('=')[1]) || 9229}/json/list`)
+            .then(response => response.json())
+            .then(r => console.log('chrome url for debugging -> ', r) || r)
+            .then(([{devtoolsFrontendUrl, devtoolsFrontendUrlCompat}]) => openChromeDevTools(devtoolsFrontendUrl || devtoolsFrontendUrlCompat))
+            .catch(() => console.log('unable to get url to open devtools') )
+    }
+
+    if(/Waiting for the debugger to disconnect/.test(data)) {
+        process.exit(0)
+    }
+}
+
+jest.stdout.on('data', data => ondata('out', data));
+jest.stderr.on('data', data => ondata('err', data));
+jest.on('close', e => {
+    console.log('finished!!')
+    process.exit(e)
+});
