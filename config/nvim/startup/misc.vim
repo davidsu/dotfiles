@@ -89,7 +89,7 @@ function! Carmicat(...)
 		\fzf#vim#with_preview({'dir': '~/projects/bolt/', 'options': '--bind ctrl-s:toggle-sort'}, 'up:40%', 'ctrl-g'), 1)
 endfunction
 " Zoom - from https://github.com/junegunn/dotfiles/blob/master/vimrc<Paste>
-function! s:zoom()
+function! Zoom()
     if winnr('$') > 1
 	tab split
     elseif len(filter(map(range(tabpagenr('$')), 'tabpagebuflist(v:val + 1)'),
@@ -97,7 +97,7 @@ function! s:zoom()
 	tabclose
     endif
 endfunction
-nnoremap <silent> \z :call <sid>zoom()<cr>
+nnoremap <silent> \z :call Zoom()<cr>
 
 
 function! ClearMessages()

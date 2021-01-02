@@ -6,6 +6,8 @@ config/htop/*
 config/yarn/*
 config/oni/*
 config/gtk-2.0/*
+node_modules
+package-lock.json
 .DS_Store
 *.swp
 quando_o_build_ta_shavur

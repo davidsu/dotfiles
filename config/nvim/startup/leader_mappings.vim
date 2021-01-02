@@ -142,7 +142,7 @@ map <silent> gl :call utils#win_move('l')<cr>
 nmap \w :wincmd q<cr>
 nmap \s :%s/\v
 vmap \s :s/\v
-nmap \d :GitGutterToggle<cr>:redraw!<cr>
+nmap \d :redraw!<cr>
 nmap <silent> 1t :execute '25Lexplore '.expand('%:p:h')<cr>
 nmap 1o :only<cr>
 

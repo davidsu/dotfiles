@@ -3,7 +3,23 @@ if empty(glob('~/.vim/autoload/plug.vim'))
     \ https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
   autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
 endif
+
+function! SetupDebugger(...)
+    if !a:0
+        call plug#begin('~/.config/nvim/plugged')
+        Plug 'puremourning/vimspector'
+        call plug#end()
+    else
+        Plug 'puremourning/vimspector'
+    endif
+    autocmd! User VimspectorTerminalOpened :CocCommand vim-js.vimspector.start
+endfunction
+
 call plug#begin('~/.config/nvim/plugged')
+if $vimdebugger
+  call SetupDebugger(1)
+endif
+
 " Plug 'tommcdo/vim-fubitive'
 Plug 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
 " Plug 'matthewtodd/vim-fustashtive'

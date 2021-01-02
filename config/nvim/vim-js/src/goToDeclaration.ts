@@ -44,7 +44,6 @@ async function fallbackFZF() {
 
 async function jumpImport() {
   try {
-    const pos = await getCursorPosition()
     let fileName
     const line = await nvim.line
     const isImport = /^\s*import\b.*from\s+['"]/.test(line)
@@ -72,6 +71,7 @@ async function jumpImport() {
 
 commands.registerCommand('vim-js.goToDeclaration', async () => {
   api = await getApi()
+  debugger
   const pos = await getCursorPosition()
   ;(await jumpWithCoc(pos)) || (await jumpWithTsServer(pos)) || (await jumpImport()) || fallbackFZF()
 })
