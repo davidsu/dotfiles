@@ -187,7 +187,7 @@ END
 for f in $DOTFILES/cheatSheets/*
 do
     if [[ -f $f ]]; then
-        alias cheat$(basename $f)='cat '$f' | fzf'
+        alias cheat$(basename $f)='cat -n '$f' | egrep '\''^(\s|\d)*-'\'' | fzf --preview '\''cheatpreview.js {1} '$f\'' --preview-window "up:4"'
     fi
 done
 

@@ -1,53 +1,53 @@
-############   direcoty stack   ##########
-dirs -v    ==> show directory stack
-cd -n      ==> navigate to entry numbered "n" in directory stask
-############   Book: From Bash to Z Shell   ##########
-
-ps ==> show current running process
-tty ==> show number of current terminal
-bindkey ==> show key bindings
-HAVE A LOOK AT COMMAND vi-history-search-backward
-HAVE A LOOK AT COMMAND vi-history-search-forward
-zsh -f ==> skip startup files:w
-set -v ==> verbose
-set +v ==> unset verbose
-#
-############   History    ##########
-!! ==> repeat last cmd
-!x ==> repeat cmd @ line x of history
-!some ==> repeat latest cmd that start with "some"
-!?some ==> repeat latest command that contains "some"
-
-############   Redirection ##########
-#<<HERE ==> Here-Documents and Here-Strings
-<somefile ==> like cat but print what fits on screen and promt ":" for sroll
-
-############    End of Book: From Bash to Z Shell   ##########
-
-
-
-############   Book:  Learning Shell Scripting with Zsh.pdf  ##########
-spectrum_ls  ==> show all possible 256 zsh colors     ##https://gabri.me/blog/custom-colors-in-your-zsh-prompt
-############   ZLE   ##########
-Ctrl + r ==> search history incremental ==>pg 55
-Ctrl + u ==> delete current line
-Ctrl + w ==> delete last word
-Ctrl + a ==> move to beggining of line
-Ctrl + e ==> move to end line
-Esc + f ==> move forward one word
-Esc + b ==> move backward one word
-!! ==> redo last cmd
-!num ==>redo cmd numbered num in the history file
-history | grep something ==> see all cmds and numbers containing "something"
-
-############   keymaps   ##########
-bindkey -L ==> show current keybindings ==> pg 58
-read ==> enter this cmd (and enter) to see keystrokes codes ==>pg 58
-Ctrl+v ==> print the next pressed key's code
-find the key binding by command name:{
-    % # enter where-is mode via Esc + X
-    > Where is: capitalize-word > capitalize-word is on "^[C" "^[c" } ########### ADVANCED EDITING ############ Esc + return ==> enter improved multiline mode ==> better than \ escape ==>pg 66 echo *zsh(<Tab> ==> see options for echo ###### MAN ################## man -k "string" ==> find all related to "string"
-######ZSHLOVERS############
-tips, tricks and examples for the Z shell:{
-  http://grml.org/zsh/zsh-lovers.html
-}
+- ############   direcoty stack   ##########
+- dirs -v    ==> show directory stack
+- cd -n      ==> navigate to entry numbered "n" in directory stask
+- ############   Book: From Bash to Z Shell   ##########
+- 
+- ps ==> show current running process
+- tty ==> show number of current terminal
+- bindkey ==> show key bindings
+- HAVE A LOOK AT COMMAND vi-history-search-backward
+- HAVE A LOOK AT COMMAND vi-history-search-forward
+- zsh -f ==> skip startup files:w
+- set -v ==> verbose
+- set +v ==> unset verbose
+- #
+- ############   History    ##########
+- !! ==> repeat last cmd
+- !x ==> repeat cmd @ line x of history
+- !some ==> repeat latest cmd that start with "some"
+- !?some ==> repeat latest command that contains "some"
+- 
+- ############   Redirection ##########
+- #<<HERE ==> Here-Documents and Here-Strings
+- <somefile ==> like cat but print what fits on screen and promt ":" for sroll
+- 
+- ############    End of Book: From Bash to Z Shell   ##########
+- 
+- 
+- 
+- ############   Book:  Learning Shell Scripting with Zsh.pdf  ##########
+- spectrum_ls  ==> show all possible 256 zsh colors     ##https://gabri.me/blog/custom-colors-in-your-zsh-prompt
+- ############   ZLE   ##########
+- Ctrl + r ==> search history incremental ==>pg 55
+- Ctrl + u ==> delete current line
+- Ctrl + w ==> delete last word
+- Ctrl + a ==> move to beggining of line
+- Ctrl + e ==> move to end line
+- Esc + f ==> move forward one word
+- Esc + b ==> move backward one word
+- !! ==> redo last cmd
+- !num ==>redo cmd numbered num in the history file
+- history | grep something ==> see all cmds and numbers containing "something"
+- 
+- ############   keymaps   ##########
+- bindkey -L ==> show current keybindings ==> pg 58
+- read ==> enter this cmd (and enter) to see keystrokes codes ==>pg 58
+- Ctrl+v ==> print the next pressed key's code
+- find the key binding by command name:{
+-     % # enter where-is mode via Esc + X
+-     > Where is: capitalize-word > capitalize-word is on "^[C" "^[c" } ########### ADVANCED EDITING ############ Esc + return ==> enter improved multiline mode ==> better than \ escape ==>pg 66 echo *zsh(<Tab> ==> see options for echo ###### MAN ################## man -k "string" ==> find all related to "string"
+- ######ZSHLOVERS############
+- tips, tricks and examples for the Z shell:{
+-   http://grml.org/zsh/zsh-lovers.html
+- }
