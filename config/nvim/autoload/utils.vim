@@ -85,29 +85,6 @@ endfunction
 "-----------------------------------------------------------------------------}}}
 "SHELL                                                                      {{{ 
 "--------------------------------------------------------------------------------
-function! s:shell_cmd_completed(...) dict
-    wincmd P
-    setlocal modifiable
-    call append(line('$'), self.shell)
-    call append(line('$'), '########################FINISHED########################')
-    call append(line('$'), self.pid)
-    call jobstop(self.pid)
-    normal! G
-    setlocal nomodifiable
-    if exists(':DimInactiveBufferOn')
-        " DimInactiveBufferOn
-    endif
-    wincmd p
-endfunction
-
-function! s:JobHandler(job_id, data, event) dict
-    let str = join(a:data)
-    wincmd P
-    call append(line('$'), str)
-    normal! G
-    wincmd p
-endfunction
-
 function! utils#run_shell_command(cmdline, bang)
     let expanded_cmdline = a:cmdline
     if a:bang
@@ -124,24 +101,16 @@ function! utils#run_shell_command(cmdline, bang)
     execute 'pedit '.s:shell_tmp_output
     wincmd P
     wincmd J
-    if exists(':DimInactiveBufferOff')
-        DimInactiveBufferOff
-    endif
-    if exists(':AnsiEsc')
-        AnsiEsc
-    endif
     setlocal modifiable
     setlocal nobuflisted
-    nnoremap <buffer>q :bd<cr>
-    wincmd p
+    nnoremap <buffer>q :q!<cr>
     let s:callbacks = {
-    \ 'on_stdout': function('s:JobHandler'),
-    \ 'on_stderr': function('s:JobHandler'),
-    \ 'on_exit': function('s:shell_cmd_completed'),
-    \ 'shell': expanded_cmdline
+    \ 'on_stdout': { -> execute('normal G') },
+    \ 'on_stderr': { -> execute('normal G') },
+    \ 'on_exit': { -> execute('normal G') },
     \ }
-    let pid = jobstart(expanded_cmdline, s:callbacks)
-    let s:callbacks.pid = pid
+    call termopen(expanded_cmdline, s:callbacks)
+    wincmd p
 endfunction
 
 "-----------------------------------------------------------------------------}}}

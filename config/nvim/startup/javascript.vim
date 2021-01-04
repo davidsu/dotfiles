@@ -1,7 +1,7 @@
 "--------------------------------------------------------------------------------
 "MAPPINGS{{{
 "--------------------------------------------------------------------------------
-function! s:setmapping()
+function! s:setIndentMapping()
     " Moving back and forth between lines of same or lower indentation.
     " nnoremap <buffer><silent> [l :call indent_utils#next_indent(0, 0, 0, 1)<CR>
     " nnoremap <buffer><silent> ]l :call indent_utils#next_indent(0, 1, 0, 1)<CR>
@@ -15,6 +15,16 @@ function! s:setmapping()
     " onoremap <buffer><silent> ]l :call indent_utils#next_indent(0, 1, 0, 1)<CR>
     onoremap <buffer><silent> [[ :call indent_utils#prev_indent()<CR>
     onoremap <buffer><silent> ]] :call indent_utils#next_indent()<CR>
+endfunction
+
+function! s:setmapping()
+    nmap <buffer><space>ji :call utils#run_shell_command('runjest --inspect-brk '.expand('%'), 0)<cr>
+    nmap <buffer><space>jr :call utils#run_shell_command('runjest  '.expand('%'), 0)<cr>
+    nmap <buffer><space>jw :call utils#run_shell_command('runjest  '.expand('%').' --watch', 0)<cr>
+    nmap <buffer><space>ni :call utils#run_shell_command('node --inspect-brk '.expand('%'), 0)<cr>
+    nmap <buffer><space>nr :call utils#run_shell_command('node  '.expand('%'), 0)<cr>
+    nnoremap <buffer>{ :call GoToNextFunction(-1, 0, 1)<cr>
+    nnoremap <buffer>} :call GoToNextFunction(-1, 0, 0)<cr>
 endfunction
 
 "--------------------------------------------------------------------------------
@@ -62,34 +72,18 @@ endfunction
 "     endif
 " endfunction
 
-function! DisableLintIfNeeded()
-    let l:eslintFile = utils#get_project_root(expand('%:p:h')) . '/.eslintrc'
-    if !filereadable(l:eslintFile) && !filereadable(l:eslintFile.'.js') && !filereadable(l:eslintFile.'.json')
-        silent! NeomakeDisableBuffer
-        let b:neomake_disabled=1
-    endif
-endfunction
-function! TernRestartServer()
-    py3 tern_killServers()
-    if filereadable(getcwd() . '.tern-port')
-        system('rm '.getcwd().'/.tern-port')
-    endif
-endfunction
-command! TernRestartServer call TernRestartServer()
 "-----------------------------------------------------------------------------}}}
 "AUTOCOMMANDS                                                                 {{{
 "--------------------------------------------------------------------------------
 augroup javascript
     autocmd!
     " autocmd FileType javascript silent! call LimeLightExtremeties()
-    autocmd BufNewFile,BufRead *.js set filetype=typescript
+    " autocmd BufNewFile,BufRead *.js set filetype=typescript
     autocmd BufReadPost *.jsx,*.tsx set filetype=typescript.tsx
-    autocmd BufWinEnter *.tsx,*.ts call DisableLintIfNeeded()
     let g:markdown_fenced_languages = ['css', 'javascript', 'js=javascript', 'json=javascript', 'stylus', 'html']
     autocmd BufWritePost *.jsx,*.tsx set filetype=typescript " hack to make go-to-declaration work AND coc tsx files work
-    autocmd FileType javascript,json,typescript,typescript.tsx call <SID>setmapping()
-    autocmd FileType javascript nnoremap <buffer>{ :call GoToNextFunction(-1, 0, 1)<cr>
-    autocmd FileType javascript nnoremap <buffer>} :call GoToNextFunction(-1, 0, 0)<cr>
+    autocmd FileType javascript,json,typescript,typescript.tsx call <SID>setIndentMapping()
+    autocmd FileType javascript,typescript,typescript.tsx call <SID>setmapping()
     " autocmd FileType javascript nnoremap <buffer>cof :call JSToggleFoldMethod()<cr>
     " autocmd Filetype javascript vnoremap <buffer>1= :<C-u>setf jsx<cr>gv=:<C-u>setf javascript<cr>
 augroup END

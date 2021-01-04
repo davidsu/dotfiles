@@ -1,6 +1,10 @@
 {
+  "name": "dotfile-js",
+  "version": "1.0.0",
   "dependencies": {
     "chalk": "^4.1.0",
     "node-fetch": "^2.6.1"
-  }
+  },
+  "devDependencies": {},
+  "license": "ISC"
 }
