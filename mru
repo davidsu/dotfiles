@@ -72,40 +72,43 @@ function mru(){
         vim $linenum $filename
     fi
 }
-function oldmru(){
-    mrufile=${2:-.mru}
-    if [[ ! -f $HOME/$mrufile ]]; then
-        echo $HOME/$mrufile does not exist
-        return
+
+function newmru_auto_cd() {
+    skipnvm=1
+    cd $(dirname $(sed -E 's#(.*):.*:.*#\1#' <<< $1))
+    git rev-parse --show-toplevel > /dev/null 2>&1 && cd $(git rev-parse --show-toplevel)
+    skipnvm=0
+    [[ $(type nvm) != 'nvm not found' ]] && nvm_auto_switch
+
+    if [[ $HAS_LOADED != 1 ]]; then
+        loadall
     fi
-    #print file inverse order(tail) | put line numbers (nl) | fzf with sorting | remove line number from selected file (sed)
-    fzfresult=$(tail -r $HOME/$mrufile | nl | fzf --no-sort --exact \
-        --preview 'echo {} | sed -E '\''s#^[^/]*##'\'' | xargs $DOTFILES/bin/preview.rb -v' \
+
+}
+
+function newmru(){
+    fzfresult=$(curl --silent http://localhost:2021 --max-time 0.05 --retry 4 | fzf --no-sort --exact \
+        --preview '$DOTFILES/bin/preview.rb -v {1}' \
         --preview-window 'top:50%' \
         --header 'CTRL-o - open without abort(LESS) :: CTRL-s - toggle sort :: CTRL-g - toggle preview window' \
-        --bind 'ctrl-s:toggle-sort,ctrl-g:toggle-preview,ctrl-o:execute:$DOTFILES/fzf/fhelp.sh {} > /dev/tty' | sed -E 's#[^/]*(/.*$)#''\1''#')
-    filename=$(sed -E 's#(^[^:]*).*#\1#' <<< $fzfresult)
-    if [[ -f $filename ]]; then
-        if [[ $fzfresult =~ ':[[:digit:]]+$' ]]; then
-            linenum=$(sed 's#^[^:]*:#+#' <<< $fzfresult)
-        fi
-        #cd into directory of file (usage: "mru 1")
-        if [[ $1 -eq 1 ]]; then
-            cd $(sed -E 's#(.*)/[^/]+#\1#' <<< $filename)
-            echo $(sed -E 's#(.*)/[^/]+#\1#' <<< $filename)
-        fi
-        #open selected file in vim AND cd into git's root folder for project of selected file
-        vim $linenum $filename
+        --bind 'ctrl-s:toggle-sort,ctrl-g:toggle-preview,ctrl-o:execute:$DOTFILES/fzf/fhelp.sh $(sed -E '\''s#:\d+$##'\'' <<< {1}) > /dev/tty')
+
+    if [[ ! -z $fzfresult ]]; then
+        newmru_auto_cd $fzfresult
+        nvimcmd=$(sed -E 's/(.*):(.*):(.*)/nvim \1 '\''+call cursor(\2, \3)'\''/' <<< $fzfresult)
+        eval "$nvimcmd '+lua vim.defer_fn(function() vim.api.nvim_call_function('\''CursorPing'\'', {}) end, 100)'"
     fi
 }
+
 function mrw(){
     mru 0 $mrwcmd
 }
 function ideamru() {
     mru 1 $DOTFILES/js-helpers/ideamru/ideamru.js
 }
-alias 1m='mru 1'
+alias 1om='mru 1'
 alias 1w='mrw'
+alias 1m='newmru'
 function 1m1() {
     startMySQLIfNeeded
     filepath=$(mysql -uroot --skip-column-names --batch -e "SELECT _file FROM mru ORDER BY ts DESC LIMIT 1;" mru_vim )
@@ -114,6 +117,7 @@ function 1m1() {
 }
 alias cdm='1m1'
 function removeMruInvalidEntries(){
+    curl http://localhost:2021/removeMruInvalidEntries
     for f in mru mrw
     do
         mysql -uroot --skip-column-names --batch -e "select _file from "$f";" mru_vim > /tmp/tmpmru

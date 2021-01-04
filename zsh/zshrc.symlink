@@ -15,6 +15,12 @@ eval "$(fasd --init auto)"
 #do I need this???
 alias a='loadall'
 function reload(){
+  # spin up mru server if it's down
+  if ! $(command -v pm2 > /dev/null && curl --head --silent http://localhost:2021 --max-time 0.05 > /dev/null); then
+    echo 'mrujs not running, spinning it up'
+    npm run run --prefix $DOTFILES/mrujs
+    # pm2 start all
+  fi
   for f in ~/.dotfiles/* #foreach file in directory
   do
     #if its a normal file (-f) then log and source it
