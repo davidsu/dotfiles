@@ -19,10 +19,13 @@ endfunction
 
 function! s:setmapping()
     nmap <buffer><space>ji :call utils#run_shell_command('runjest --inspect-brk '.expand('%'), 0)<cr>
+    " run jest with ndb
+    nmap <buffer><space>jn :call utils#run_shell_command('FORCE_COLOR=1 ndb `yarn bin jest` '.expand('%'), 0)<cr>
     nmap <buffer><space>jr :call utils#run_shell_command('runjest  '.expand('%'), 0)<cr>
     nmap <buffer><space>jw :call utils#run_shell_command('runjest  '.expand('%').' --watch', 0)<cr>
-    nmap <buffer><space>ni :call utils#run_shell_command('node --inspect-brk '.expand('%'), 0)<cr>
-    nmap <buffer><space>nr :call utils#run_shell_command('node  '.expand('%'), 0)<cr>
+    nmap <buffer><space>ni :call utils#run_shell_command('node --inspect-brk '.expand('%:p'), 0)<cr>
+    nmap <buffer><space>nr :call utils#run_shell_command('node  '.expand('%:p'), 0)<cr>
+    nmap <buffer><space>nn :call utils#run_shell_command('node  '.expand('%:p'), 0)<cr>
     nnoremap <buffer>{ :call GoToNextFunction(-1, 0, 1)<cr>
     nnoremap <buffer>} :call GoToNextFunction(-1, 0, 0)<cr>
 endfunction

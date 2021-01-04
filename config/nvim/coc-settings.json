@@ -12,6 +12,7 @@
     "diagnostic.virtualText": true,
     "tsserver.disableAutomaticTypeAcquisition": false,
     "tsserver.npm": "/Users/david.susskind/.nvm/versions/node/v14.15.3/bin/npm",
+    "javascript.suggestionActions.enabled": false,
     "diagnostic.errorSign": "✖",
     "eslint.autoFixOnSave": true,
     "eslint.quiet": true,

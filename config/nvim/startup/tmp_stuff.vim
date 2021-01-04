@@ -114,7 +114,9 @@ endfunction
 
 function! ToJSON()
     try
+	silent w
         call json_decode(join(getline(0, 10000)))
+	"%! is used to rewrite contents of current buffer with output of external command
         execute '%! python -m json.tool'
         silent w
     catch

@@ -105,9 +105,9 @@ function! utils#run_shell_command(cmdline, bang)
     setlocal nobuflisted
     nnoremap <buffer>q :q!<cr>
     let s:callbacks = {
-    \ 'on_stdout': { -> execute('normal G') },
-    \ 'on_stderr': { -> execute('normal G') },
-    \ 'on_exit': { -> execute('normal G') },
+    \ 'on_stdout': { -> execute('wincmd P | silent normal G | wincmd p') },
+    \ 'on_stderr': { -> execute('wincmd P | silent normal G | wincmd p') },
+    \ 'on_exit': { -> execute('wincmd P | silent normal G | wincmd p') },
     \ }
     call termopen(expanded_cmdline, s:callbacks)
     wincmd p
