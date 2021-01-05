@@ -165,25 +165,7 @@ function nodedebugchrome() {
     end tell
 END
 }
-# function createTernProj(){
-#     echo '
-# {
-#   "ecmaVersion": 8,
-#   "libs": [
-#   ],
-#   "plugins": {
-#     "node": {},
-#     "modules": {},
-#     "es_modules": {},
-#     "node_resolve": {},
-#     "CommonJS": {},
-#     "doc_comment": {
-#       "fullDocs": true
-#     }
-#   }
-# }' > .tern-project
-# }
-# alias generateTernProject='createTernProj'
+
 for f in $DOTFILES/cheatSheets/*
 do
     if [[ -f $f ]]; then

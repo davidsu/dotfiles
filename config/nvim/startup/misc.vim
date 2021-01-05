@@ -16,7 +16,6 @@ let g:normal_cursor_line_column = &cursorcolumn
 let g:gitgutter_map_keys = 0
 let g:closetag_filenames = "*.html,*.xhtml,*.phtml,*.js,*.jsx"
 " " pass --presistent when starting server to avoid it from ever shutting down -- http://ternjs.net/doc/manual.html
-" let g:tern#arguments = ["--persistent"]
 " set a map leader for more key combos
 let mapleader = ','
 let g:mapleader = ','

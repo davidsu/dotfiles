@@ -1,29 +1,3 @@
-if has('nvim') && exists('*deoplete#custom#source')
-    let g:python3_host_prog='/usr/local/bin/python3'
-    let g:deoplete#enable_at_startup = 1
-    let g:deoplete#sources#ternjs#tern_bin = '/usr/local/bin/tern'
-    inoremap <Esc>  <Esc><Esc>
-    call deoplete#custom#option({
-    \ 'auto_complete_delay': 20,
-    \ 'smart_case': v:true,
-    \ 'auto_refresh_delay': 120
-    \ })
-
-    inoremap <silent><expr> <c-n>
-                \ pumvisible() ? "\<C-n>" : 
-                \ deoplete#is_enabled() ? deoplete#mappings#manual_complete() :
-                \ "\<C-x>\<C-n>"
-
-    " inoremap <silent> <CR> <C-r>=<SID>my_cr_function()<CR>
-    set completeopt-=preview
-    let g:deoplete#omni#functions = {}
-    let g:deoplete#omni#functions.javascript = [
-             \ 'tern#Complete',
-             \]
-    let g:deoplete#sources = {}
-    let g:deoplete#sources['javascript.jsx'] = ['buffer', 'ultisnips', 'ternjs']
-endif
-
 if exists('*coc#util#float_hide')
     nmap <C-c> <Plug>(coc-float-hide)
 endif
@@ -44,16 +18,3 @@ inoremap <c-space> <c-r>=UltiSnips#ExpandSnippet()<cr>
 "     " For no inserting <CR> key.
 "     return pumvisible() ? "\<C-y>" : "\<CR>"
 " endfunction
-
-let g:tern#command = ['tern']
-let g:tern#arguments = ['--persistent']
-let g:UltiSnipsExpandTrigger = '<c-space>'
-let g:UltiSnipsListSnippets = '<c-b>'
-let g:UltiSnipsJumpForwardTrigger = '<C-j>'
-let g:UltiSnipsJumpBackwardTrigger = '<C-k>'
-let g:UltiSnipsSnippetsDir = $DOTFILES.'/config/nvim/UltiSnip'
-let g:UltiSnipsSnippetDirectories = [$DOTFILES.'/config/nvim/UltiSnip']
-let g:UltiSnipsEnableSnipMate = 1
-if has('nvim') && exists('*deoplete#custom#source')
-    au VimEnter * call deoplete#custom#source('ultisnips', 'rank', 1000)
-endif

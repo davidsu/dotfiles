@@ -37,10 +37,10 @@ Plug 'idbrii/vim-mark'                                              " highlighti
 Plug 'davidsu/mysql-mru.vim'
 Plug 'schickling/vim-bufonly'                                       " delete all buffers but current
 Plug 'terryma/vim-expand-region'
-Plug 'sbdchd/neoformat', { 'for':                           
-            \['javascript', 'css', 'scss', 
-            \'sh', 'zsh', 'vim', 'html'] , 
-            \'do': 'npm -g install js-beautify'}                    " A (Neo)vim plugin for formatting code. - you will need jsbeautifier globally installed
+" Plug 'sbdchd/neoformat', { 'for':                           
+"             \['javascript', 'css', 'scss', 
+"             \'sh', 'zsh', 'vim', 'html'] , 
+"             \'do': 'npm -g install js-beautify'}                    " A (Neo)vim plugin for formatting code. - you will need jsbeautifier globally installed
 Plug 'junegunn/vim-xmark' , { 'do': 'make', 'for': 'markdown'}      " ❌ Markdown preview on OS X
 " I don't know how to use this.... need to learn
 Plug 'junegunn/vim-easy-align'                                      " A Vim alignment plugin
