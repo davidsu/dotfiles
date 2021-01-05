@@ -62,12 +62,12 @@ const cdProjectRoot = executer(function ({ projectsRootDicts, gitRoot, projectRo
   }
 })
 
-const cdCurrentPath = executer(function ({ projectRoot, gitRoot }) {
-  CD(projectRoot)
+const cdCurrentPath = executer(function ({ currentDir, gitRoot }) {
+  CD(currentDir)
   const projectsRootDicts = getProjectsMap()
-  delete projectsRootDicts.projectRoots[gitRoot]
-  sessionSelectedDirectories = sessionSelectedDirectories.filter(a => !a.startsWith(projectRoot))
-  sessionSelectedDirectories.push(projectRoot)
+  delete projectsRootDicts.roots[gitRoot]
+  sessionSelectedDirectories = sessionSelectedDirectories.filter(a => !a.startsWith(currentDir))
+  sessionSelectedDirectories.push(currentDir)
   writeJsonSync(projectsRootDicts)
 })
 
