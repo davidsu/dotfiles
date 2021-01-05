@@ -20,6 +20,7 @@ if $vimdebugger
   call SetupDebugger(1)
 endif
 
+Plug $DOTFILES.'/js/vim-js'
 " Plug 'tommcdo/vim-fubitive'
 Plug 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
 " Plug 'matthewtodd/vim-fustashtive'

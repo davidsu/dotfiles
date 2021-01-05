@@ -1,4 +1,5 @@
 vim/view/*
+yarn-error.log
 config/wireshark
 config/hub
 config/nvim/plugged/*

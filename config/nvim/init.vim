@@ -10,7 +10,6 @@ if filereadable($HOME.'/.nvm/versions/node/v14.15.3/bin/node')
     let g:coc_node_path = $HOME.'/.nvm/versions/node/v14.15.3/bin/node'
 endif
 
-set runtimepath^=$DOTFILES/config/nvim/vim-js
 function! SourceMyScripts()
     source $DOTFILES/config/nvim/startup/plugins.vim
     if !isdirectory($DOTFILES.'/config/nvim/plugged')

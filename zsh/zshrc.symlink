@@ -18,8 +18,8 @@ function reload(){
   # spin up mru server if it's down
   if ! $(command -v pm2 > /dev/null && curl --head --silent http://localhost:2021 --max-time 0.05 > /dev/null); then
     echo 'mrujs not running, spinning it up'
-    npm run run --prefix $DOTFILES/mrujs
-    # pm2 start all
+    pm2 delete mruserver > /dev/null 2&>1
+    pm2 --name mruserver start node -- $DOTFILES/js/mrujs/index.js
   fi
   for f in ~/.dotfiles/* #foreach file in directory
   do
