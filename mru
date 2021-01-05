@@ -1,79 +1,5 @@
 #!/bin/zsh
-mruselect='SET @rn=0;
-      SELECT @rn:=@rn+1 AS \"rank\", _file, linenum, ts
-      FROM mru
-      ORDER BY ts DESC'
-mrucmd='mysql -uroot --skip-column-names --batch -e "'${mruselect}'" mru_vim | cut -f 1-3 | xargs printf '\''%5s %s:%s\n'\'
-
-
-mrwselect='SELECT @rn:=@rn+1 AS \"rank\", _file, linenum 
-    FROM (
-      SELECT *
-      FROM mrw
-      WHERE _file NOT LIKE '\''% %'\''
-      ORDER BY ts DESC
-    ) t1, (SELECT @rn:=0) t2;'
-mrwcmd='mysql -uroot --skip-column-names --batch -e "'${mrwselect}'" mru_vim | xargs printf '\''%5s %s:%s\n'\'
-dbschema='CREATE DATABASE IF NOT EXISTS mru_vim;
-use mru_vim;
-CREATE TABLE IF NOT EXISTS mru(
-    _file VARCHAR(255) NOT NULL,
-    linenum INT NOT NULL DEFAULT 1,
-    ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (_file)
-);
-
-drop table projectsRootDic;
-CREATE TABLE IF NOT EXISTS projectsRootDic(
-    id INT NOT NULL,
-    dict TEXT NOT NULL,
-    ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id)
-);
-
-
-CREATE TABLE IF NOT EXISTS mrw(
-    _file VARCHAR(255) NOT NULL,
-    linenum INT NOT NULL DEFAULT 1,
-    ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (_file)
-);'
-
-function startMySQLIfNeeded() {
-    # mysql -uroot -e status &> /dev/null || { mysql.server start && mysql -uroot -e ${dbschema} && sleep 1 } 
-    mysql -uroot -e status &> /dev/null ||  mysql.server start 
-}
-function mru(){
-    startMySQLIfNeeded
-    _dbcmd=${2:-$mrucmd}
-    fzfresult=$( eval $_dbcmd | fzf --no-sort --exact \
-        --preview '$DOTFILES/bin/preview.rb -v {2}' \
-        --preview-window 'top:50%' \
-        --header 'CTRL-o - open without abort(LESS) :: CTRL-s - toggle sort :: CTRL-g - toggle preview window' \
-        --bind 'ctrl-s:toggle-sort,ctrl-g:toggle-preview,ctrl-o:execute:$DOTFILES/fzf/fhelp.sh {} > /dev/tty' | sed -E 's#[^/]*(/.*$)#''\1''#' )
-    filename=$(sed -E 's#(^[^:]*).*#\1#' <<< $fzfresult)
-    if [[ -f $filename ]]; then
-        if [[ $fzfresult =~ ':[[:digit:]]+$' ]]; then
-            linenum=$(sed 's#^[^:]*:#+#' <<< $fzfresult)
-        fi
-        #cd into directory of file (usage: "mru 1")
-        if [[ $1 -eq 1 ]]; then
-            skipnvm=1
-            cd $(sed -E 's#(.*)/[^/]+#\1#' <<< $filename)
-            git rev-parse --show-toplevel > /dev/null 2>&1 && cd $(git rev-parse --show-toplevel)
-            skipnvm=0
-            [[ $(type nvm) != 'nvm not found' ]] && nvm_auto_switch
-        fi
-        if [[ $HAS_LOADED != 1 ]]; then
-            loadall
-        fi
-        #open selected file in vim AND cd into git's root folder for project of selected file
-        # echo  vim $linenum $filename -c 'silent :CDR'
-        vim $linenum $filename
-    fi
-}
-
-function newmru_auto_cd() {
+function mru_auto_cd() {
     skipnvm=1
     cd $(dirname $(sed -E 's#(.*):.*:.*#\1#' <<< $1))
     git rev-parse --show-toplevel > /dev/null 2>&1 && cd $(git rev-parse --show-toplevel)
@@ -86,7 +12,7 @@ function newmru_auto_cd() {
 
 }
 
-function newmru(){
+function mru(){
     fzfresult=$(curl --silent http://localhost:2021 --max-time 0.05 --retry 4 | fzf --no-sort --exact \
         --preview '$DOTFILES/bin/preview.rb -v {1}' \
         --preview-window 'top:50%' \
@@ -94,40 +20,11 @@ function newmru(){
         --bind 'ctrl-s:toggle-sort,ctrl-g:toggle-preview,ctrl-o:execute:$DOTFILES/fzf/fhelp.sh $(sed -E '\''s#:\d+$##'\'' <<< {1}) > /dev/tty')
 
     if [[ ! -z $fzfresult ]]; then
-        newmru_auto_cd $fzfresult
+        mru_auto_cd $fzfresult
         nvimcmd=$(sed -E 's/(.*):(.*):(.*)/nvim \1 '\''+call cursor(\2, \3)'\''/' <<< $fzfresult)
         eval "$nvimcmd '+lua vim.defer_fn(function() vim.api.nvim_call_function('\''CursorPing'\'', {}) end, 100)'"
     fi
 }
 
-function mrw(){
-    mru 0 $mrwcmd
-}
-function ideamru() {
-    mru 1 $DOTFILES/js-helpers/ideamru/ideamru.js
-}
-alias 1om='mru 1'
-alias 1w='mrw'
-alias 1m='newmru'
-function 1m1() {
-    startMySQLIfNeeded
-    filepath=$(mysql -uroot --skip-column-names --batch -e "SELECT _file FROM mru ORDER BY ts DESC LIMIT 1;" mru_vim )
-    cd $(sed -E 's#(.*)/.+#\1#' <<< $filepath)
-    echo $(sed -E 's#(.*)/.+#\1#' <<< $filepath)
-}
-alias cdm='1m1'
-function removeMruInvalidEntries(){
-    curl http://localhost:2021/removeMruInvalidEntries
-    for f in mru mrw
-    do
-        mysql -uroot --skip-column-names --batch -e "select _file from "$f";" mru_vim > /tmp/tmpmru
-        while read line; do
-            currFileName=$(sed -E 's/^([^:]*).*/\1/' <<< $line)
-            if [[ ! -f $currFileName ]]; then
-                echo removing $currFileName  from $f
-                mysql -uroot -e "delete from "$f" where _file='"$currFileName"';" mru_vim
-            fi
-        done < /tmp/tmpmru
-        rm /tmp/tmpmru
-    done
-}
+alias 1m='mru'
+alias removeMruInvalidEntries='curl http://localhost:2021/removeMruInvalidEntries'

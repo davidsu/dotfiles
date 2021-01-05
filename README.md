@@ -25,7 +25,7 @@
 9. apply macos defaults: `sh ~/.dotfiles/macos/defaults`
 10. install rouge (I'll go ahead and suggest sudoing this, there must be a better way though): `sudo gem install rouge` 
 11. install [karabiner-elements](https://github.com/tekezo/Karabiner-Elements/blob/master/usage/README.md)
-12. install mysql for mru ( most recently used - vim plugin ): `brew install mysql`
+12. ---
 13. download and install [spactacle](https://www.spectacleapp.com/)
 14. do yourself a favor: [glances](https://github.com/nicolargo/glances) `pip3 install glances` OR `brew install htop` and stop using activity monitor
 15. `brew install coreutils` -- you need it for `realpath`

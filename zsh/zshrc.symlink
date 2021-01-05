@@ -48,8 +48,6 @@ if [[ `uname` == 'Linux' ]]; then
   xcape -e 'Caps_Lock=Escape;Control_L=Escape;Control_R=Escape'
   loadall
 else
-  startMySQLIfNeeded
-
   #surround with `(...)` to avoid job controll output
   ( echo $(brew --prefix nvm) > /tmp/brew_prefix_nvm & ) 
 fi

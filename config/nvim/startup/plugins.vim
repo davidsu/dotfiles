@@ -34,7 +34,6 @@ Plug 'davidsu/vim-bufkill'                                           " wipe buff
 Plug 'tpope/vim-scriptease'                                         " utilities for vim script authoring. Installed to use ':PP'=pretty print dictionary
 Plug 'inkarkat/vim-ingo-library'                                    "dependency of vim-mark
 Plug 'idbrii/vim-mark'                                              " highlighting of interesting words
-Plug 'davidsu/mysql-mru.vim'
 Plug 'schickling/vim-bufonly'                                       " delete all buffers but current
 Plug 'terryma/vim-expand-region'
 " Plug 'sbdchd/neoformat', { 'for':                           

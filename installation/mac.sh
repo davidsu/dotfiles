@@ -20,13 +20,13 @@ brew install ripgrep
 sudo gem install rouge
 brew install neovim
 brew install zsh
-brew install mysql
 brew install coreutils
 cd ~/.dotfiles
 git submodule update --init --recursive
 brew install yarn 
 yarn global add yarn-completions
 yarn global add tldr
+yarn global add pm2
 
 brew install fasd
 chsh -s /bin/zsh

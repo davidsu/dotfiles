@@ -14,6 +14,6 @@
 6. you'll need to symlink the config directory: `ln -s ~/.dotfiles/config ~/.config` - or from wherever you've downloaded these dotfiles to
 7. open nvim and run `:PlugInstall<cr>` -- Note: you'll get a ton of errors on the first time you open nvim. Ignore them, `:PlugInstall<cr>` and restart nvim
 8. run`:CocInstall coc-tsserver` so that typescript will play nice
-9. install mysql - needed for [mysql_mru.vim](https://github.com/sudavid4/mysql-mru.vim)  `brew install mysql`
+9. ----
 10. run `:UpdateRemotePlugins` inside vim
 11. run `:CheckHealth` inside vim

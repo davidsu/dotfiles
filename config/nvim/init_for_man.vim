@@ -5,7 +5,7 @@ Plug '/usr/local/opt/fzf' | Plug 'sudavid4/fzf.vim'                 " fuzzy file
 Plug 'sudavid4/base16-vim'
 Plug 'vim-airline/vim-airline'                                      " fancy statusline
 Plug 'sudavid4/vim-airline-themes'                                  " themes for vim-airline
-Plug 'sudavid4/mysql-mru.vim'
+Plug 'neoclide/coc.nvim'
 Plug 'henrik/vim-indexed-search'                                    " Match 123 of 456 /search term/ in Vim searches
 Plug 'sudavid4/vim-unimpaired'                                      " mappings which are simply short normal mode aliases for commonly used ex commands
 Plug 'yuttie/comfortable-motion.vim'                               " Brings physics-based smooth scrolling to the Vim world!
