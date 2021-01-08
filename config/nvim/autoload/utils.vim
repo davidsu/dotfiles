@@ -101,15 +101,15 @@ function! utils#run_shell_command(cmdline, bang)
     execute 'pedit '.s:shell_tmp_output
     wincmd P
     wincmd J
-    setlocal modifiable
-    setlocal nobuflisted
-    nnoremap <buffer>q :q!<cr>
     let s:callbacks = {
-    \ 'on_stdout': { -> execute('wincmd P | silent normal G | wincmd p') },
-    \ 'on_stderr': { -> execute('wincmd P | silent normal G | wincmd p') },
-    \ 'on_exit': { -> execute('wincmd P | silent normal G | wincmd p') },
+    \ 'on_stdout': { -> execute('silent! wincmd P | silent normal G | wincmd p') },
+    \ 'on_stderr': { -> execute('silent! wincmd P | silent normal G | wincmd p') },
+    \ 'on_exit': { ->   execute('silent! wincmd P | silent normal G | wincmd p') },
     \ }
     call termopen(expanded_cmdline, s:callbacks)
+    nnoremap <buffer>q :bwipeout!<cr>
+    setlocal modifiable
+    setlocal nobuflisted
     wincmd p
 endfunction
 

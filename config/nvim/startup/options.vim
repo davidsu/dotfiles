@@ -69,4 +69,4 @@ set smartindent
 set pastetoggle=<F6>
 set nolist
 set nospell
-set previewheight=20
+set previewheight=15
