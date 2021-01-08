@@ -61,11 +61,13 @@ fetch(`http://localhost:${port}/ping`, { timeout: 15 })
   .catch(() => {
     app.use(express.json());
     app.get("/", (req, res) => {
+      console.time("get");
       const result = [];
       tree.each(({ filename, line, column }) =>
         result.push(`${filename}:${line}:${column}`)
       );
       res.send(result.join("\n"));
+      console.timeEnd("get");
     });
 
     app.post("/mru", (req, res) => {
