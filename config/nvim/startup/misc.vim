@@ -136,15 +136,16 @@ endif
 syntax on
 
 let base16colorspace=256  " Access colors present in 256 colorspace"
-if has('nvim')
-    if ( $THEME =~ 'base16' )
-        execute "colorscheme ".$THEME
-    else
-        colorscheme base16-chalk
-    endif
-else
-    colorscheme PaperColor
-endif
+colorscheme base16-darktooth
+" if has('nvim')
+"     if ( $THEME =~ 'base16' )
+"         execute "colorscheme ".$THEME
+"     else
+"         colorscheme base16-chalk
+"     endif
+" else
+    " colorscheme PaperColor
+" endif
 
 
 " highlight conflicts
