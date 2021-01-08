@@ -30,7 +30,6 @@ Plug 'davidsu/comfortable-motion.vim'                               " Brings phy
 Plug 'tweekmonster/startuptime.vim', {'on': 'StartupTime'}  
 Plug 'tommcdo/vim-exchange'                                         " exchange text with cx
 Plug 'davidsu/vim-visual-star-search'                              " extends */# to do what you would expect in visual mode
-Plug 'SirVer/ultisnips'
 Plug 'davidsu/vim-bufkill'                                           " wipe buffer without closing it's window
 Plug 'tpope/vim-scriptease'                                         " utilities for vim script authoring. Installed to use ':PP'=pretty print dictionary
 Plug 'inkarkat/vim-ingo-library'                                    "dependency of vim-mark
@@ -48,7 +47,8 @@ Plug 'plasticboy/vim-markdown', {'for': 'markdown'}                 " markdown
 Plug 'godlygeek/tabular', {'for': 'markdown'}                       " related to vim-markdown
 Plug 'davidsu/vim-plugin-AnsiEsc'                                  " type :AnsiEsc to get colors as terminal
 Plug 'blueyed/vim-diminactive' 
-" Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}  " We recommend updating the parsers on update
+Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}  " We recommend updating the parsers on update
+Plug 'nvim-treesitter/playground'
 
 let g:nvim_typescript#quiet_startup=1
 let g:nvim_typescript#suggestions_enabled=0
@@ -133,3 +133,4 @@ hi link javascriptReserved javascriptVariable
 hi link javascriptReservedCase javascriptVariable
 call plug#end()
 let g:sleuth_automatic = 1
+lua require'nvim-treesitter.configs'.setup { highlight = { enable = true } }
