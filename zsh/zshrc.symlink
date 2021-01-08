@@ -47,15 +47,13 @@ if [[ `uname` == 'Linux' ]]; then
   setxkbmap -option 'caps:ctrl_modifier'
   xcape -e 'Caps_Lock=Escape;Control_L=Escape;Control_R=Escape'
   loadall
-else
-  #surround with `(...)` to avoid job controll output
-  ( echo $(brew --prefix nvm) > /tmp/brew_prefix_nvm & ) 
 fi
 
 # test -d "${GOPATH}" || mkdir "${GOPATH}"
 # test -d "${GOPATH}/src/github.com" || mkdir -p "${GOPATH}/src/github.com"
 
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+eval "$(fnm env --use-on-cd)"
 
 # tabtab source for yarn package
 # uninstall by removing these lines or running `tabtab uninstall yarn`

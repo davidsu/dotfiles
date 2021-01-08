@@ -11,7 +11,7 @@
     "diagnostic.messageTarget": "echo",
     "diagnostic.virtualText": true,
     "tsserver.disableAutomaticTypeAcquisition": false,
-    "tsserver.npm": "/Users/david.susskind/.nvm/versions/node/v14.15.3/bin/npm",
+    "tsserver.npm": "/Users/david.susskind/.fnm/node-versions/v14.15.3/installation/bin/npm",
     "javascript.suggestionActions.enabled": false,
     "diagnostic.errorSign": "✖",
     "eslint.autoFixOnSave": true,

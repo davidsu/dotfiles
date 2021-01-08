@@ -19,7 +19,7 @@
     or wherever is your better version of zsh installed
 4. install [zgen](https://github.com/tarjoilija/zgen): `git clone https://github.com/tarjoilija/zgen.git "${HOME}/.zgen"`
 5. install [fzf version 0.17.0](https://github.com/junegunn/fzf): `brew install fzf && /usr/local/opt/fzf/install`, find a way to use version 0.17.0 `brew switch fzf 0.17.0`
-6. install nvm using homebrew: `brew install nvm` -> use version `v0.33.0` of nvm to avoid error `not compatible with the npm config "prefix"`
+6. install fnm using homebrew: `brew install fnm`
 7. install [the-silver-searcher aka ag](https://github.com/ggreer/the_silver_searcher): `brew install the_silver_searcher`
 8. symlink all `.symlink` files to your home folder `ln -s PATH_TO_SOURCE_FILE.symlink ~/.FILE_NAME`
 9. apply macos defaults: `sh ~/.dotfiles/macos/defaults`

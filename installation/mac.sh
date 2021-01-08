@@ -14,7 +14,7 @@ if ! command -v fzf &> /dev/null; then
 	$(brew --prefix)/opt/fzf/install
 fi
 
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.3/install.sh | bash
+brew install fnm
 brew install the_silver_searcher
 brew install ripgrep
 sudo gem install rouge

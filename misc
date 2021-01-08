@@ -82,7 +82,7 @@ function dirtyprojs(){
             [[ -d $x ]] && [[ -d ${x}/.git ]] && cd $x &> /dev/null && _printdirty "$x" 2> /dev/null; cd $curdir &> /dev/null  
         done
     }
-    scan * | grep -v 'running nvm' | grep '^/User.*'
+    scan * | grep '^/User.*'
     wait
     skipnvm=0
 }

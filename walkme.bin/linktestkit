@@ -19,14 +19,14 @@ const logDir = path.join('/', 'tmp', 'teachme')
 function run(projectDir) {
     console.log('building ', projectDir)
 
-    execSync(`source ${home}/.nvm/nvm.sh && nvm use && npm run ${/player-sdk/.test(projectDir) ? 'build:testkit' : 'build'}`, {cwd: projectDir})
+    execSync(`eval "$(fnm env)" && fnm use && npm run ${/player-sdk/.test(projectDir) ? 'build:testkit' : 'build'}`, {cwd: projectDir})
 
     console.log('#'.repeat(60))
 }
 
 function createLinks() {
     const options = {stdio: [0,1,2], encoding: 'utf8'}
-    const command = `source ${home}/.nvm/nvm.sh && nvm use 12 && npm link`
+    const command = `eval "$(fnm env)" && fnm use 12 && npm link`
     console.log({command,options: {...options, cwd: projects['player-sdk']}}) 
 
     execSync(command, {...options, cwd: projects['mockplatform']})

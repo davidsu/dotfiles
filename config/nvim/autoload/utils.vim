@@ -88,7 +88,7 @@ endfunction
 function! utils#run_shell_command(cmdline, bang)
     let expanded_cmdline = a:cmdline
     if a:bang
-        let expanded_cmdline = 'source ~/.zshrc; loadall; [[ -f .nvmrc ]] && nvm use $(cat .nvmrc); '.expanded_cmdline
+        let expanded_cmdline = 'eval "$(fnm env)" && fnm use && '.expanded_cmdline
     endif
     " echo a:cmdline
     for part in split(a:cmdline, ' ')

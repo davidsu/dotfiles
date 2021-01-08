@@ -6,8 +6,9 @@ autocmd!
 if($DEBUG_COC)
     let g:coc_node_args = ['--nolazy', '--inspect-brk']
 endif
-if filereadable($HOME.'/.nvm/versions/node/v14.15.3/bin/node')
-    let g:coc_node_path = $HOME.'/.nvm/versions/node/v14.15.3/bin/node'
+" if filereadable($HOME.'/.nvm/versions/node/v14.15.3/bin/node')
+if filereadable($HOME.'/.fnm/node-versions/v14.15.3/installation/bin/node')
+    let g:coc_node_path = $HOME.'/.fnm/node-versions/v14.15.3/installation/bin/node'
 endif
 
 function! SourceMyScripts()

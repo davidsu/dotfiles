@@ -109,7 +109,7 @@ function findfunction(){
 }
 alias ff='findfunction'
 function findalias(){
-    for dir in $(echo ~/.dotFiles && echo $PATH | tr ':' '\n' | grep '^/Users/' | grep -v '\.nvm')
+    for dir in $(echo ~/.dotFiles && echo $PATH | tr ':' '\n' | grep '^/Users/' )
     do
        ag -a $@ $dir #ack is like grep, recursive by default, great option
     done
@@ -120,22 +120,8 @@ function findmanpage(){
         return
     fi
     rg -uu --line-number --follow --color "ansi" $@ /usr/share/man '/usr/local/Cellar/git/2.14.1/share/man'
+}
 
-    # for dir in $(echo /usr/share/man && echo $manpath | tr ':' '\n' | grep '^/Users/' | grep -v '\.nvm')
-    # do
-    #    ag -a $@ $dir #ack is like grep, recursive by default, great option
-    # done
-}
-function npminfo(){
-   # echo http://repo.dev.wix/artifactory/api/npm/npm-repos/"$1"
-   curl http://repo.dev.wix/artifactory/api/npm/npm-repos/"$1"
-}
-function npmlatest(){
-   # echo http://repo.dev.wix/artifactory/api/npm/npm-repos/"$1"
-   loadallifneeded
-   curl --no-progress-bar https://repo.dev.wixpress.com/artifactory/api/npm/npm-repos/"$1"/latest 2> /tmp/npmlatesterror | rougify -l json | egrep '"(version|url)"'
-   # curl --no-progress-bar http://repo.dev.wix/artifactory/api/npm/npm-repos/"$1"/latest 2> /tmp/npmlatesterror | egrep '"(version|url)"'
-}
 function goto(){
     #dirname removes the filename from path
     #realpath gives the path to the file, if symlinked it gives the path to the actual file, not the link

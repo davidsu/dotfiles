@@ -26,45 +26,7 @@ function loadrvm(){
     # echo "loading rvm"
     [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
 }
-function nvm_auto_switch {
-    #stolen from https://github.com/dijitalmunky/nvm-auto
 
-    [[ $skipnvm -eq 1 ]] && return
-    unset NVM_RC_VERSION
-    CUR_VERSION=$(node -v |cut -c 2-)
-    nvm_rc_version > /dev/null 2>&1
-
-    if [ -z "${NVM_RC_VERSION}" ]
-    then
-        local nvmrcversion='nvm default version:  '
-        export NVM_RC_VERSION=$(nvm_version default | cut -c 2-)
-    else
-      local nvmrcversion='nvmrc version:       '
-        NVM_RC_VERSION=$( cut -c 1- <<< $NVM_RC_VERSION ) 
-    fi
-
-    if [ $NVM_RC_VERSION != $CUR_VERSION ]
-    then
-        local version=$NVM_RC_VERSION
-        unset NVM_RC_VERSION
-        echo $nvmrcversion $version
-        echo 'current node version: ' $CUR_VERSION
-        # echo changing node version to $version
-        nvm use $version 
-    fi
-}
-function loadnvm(){
-    export NVM_DIR="$HOME/.nvm"
-    source "$NVM_DIR/nvm.sh" --no-use
-    export NVM_NODEJS_ORG_MIRROR=http://nodejs.org/dist
-
-    [[ `which node` == 'node not found' ]] && nvm use node 
-    autoload -U add-zsh-hook
-    add-zsh-hook chpwd nvm_auto_switch
-}
-function loadnvmAutocomplete(){
-    [ -s "${NVM_BREW_PREFIX}/etc/bash_completion.d/nvm" ] && . "${NVM_BREW_PREFIX}/etc/bash_completion.d/nvm"
-}
 function load(){
     export HAS_LOADED=1  
     reloadforzgen=''
@@ -76,29 +38,23 @@ function load(){
 function loadall(){
     currPwd=$(pwd)
     export HAS_LOADED=1  
-    if [[ $NVM_BREW_PREFIX == '' && `uname` != 'Linux' ]]; then
-        export NVM_BREW_PREFIX=$(cat /tmp/brew_prefix_nvm)
-    fi
     reloadforzgen=''
     loadzgen
     reloadforzgen=1
     loadrvm
-    loadnvm
-    loadnvmAutocomplete
     # rvm complains about not being first in path
     PATH=$(echo $PATH | tr ':' '\n' | uniq | tr '\n' ':')
     reload
     cd $currPwd
 }
 function loadallifneeded(){
-  if [[ ! $NVM_DIR =~ $HOME ]]; then
+  if [[ ! $HAS_LOADED ]]; then
       loadall
   fi
 }
 if [[ -z $loadallsourced ]]; then
     alias l='load'
     alias l!='loadall'
-    alias lnvm='loadnvm && loadnvmAutocomplete && cd ./'
     alias lall='loadall'
     loadallsourced=1
 fi

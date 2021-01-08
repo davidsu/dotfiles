@@ -27,7 +27,7 @@ function run(projectDir) {
     const {scripts} = require(`${projectDir}/package.json`)
     let cmd
     if(scripts.start) {
-        cmd = `source ${home}/.nvm/nvm.sh && nvm use && npm start &> ${logFile}`
+        cmd = `eval "$(fnm env)" && fnm use && npm start &> ${logFile}`
     } else if(scripts.build) {
         cmd = 'npm run build'
     }
@@ -52,7 +52,7 @@ function forceLink(target, path) {
 }
 function createLinks() {
     const options = {stdio: [0,1,2], encoding: 'utf8'}
-    const command = `source ${home}/.nvm/nvm.sh && nvm use 12 && npm link`
+    const command = `eval "$(fnm env)" && fnm use 12 && npm link`
     forceLink(projects.sdkLoader, path.join(projects.teachme, 'node_modules', '@walkme', 'sdk'))
     forceLink(projects.sdkLoader, path.join(projects['teachme-ui'], 'node_modules', '@walkme', 'sdk'))
     forceLink(projects.communication, path.join(projects.sdkRuntime, 'node_modules', 'wm-sdk-app-communication'))
