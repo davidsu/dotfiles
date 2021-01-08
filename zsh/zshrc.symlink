@@ -16,7 +16,7 @@ eval "$(fasd --init auto)"
 alias a='loadall'
 function reload(){
   # spin up mru server if it's down
-  if ! $(command -v pm2 > /dev/null && curl --head --silent http://localhost:2021 --max-time 0.05 > /dev/null); then
+  if ! $(command -v pm2 > /dev/null 2&>1 && curl --head --silent http://localhost:2021 --max-time 0.05 > /dev/null); then
     echo 'mrujs not running, spinning it up'
     pm2 delete mruserver > /dev/null 2&>1
     pm2 --name mruserver start node -- $DOTFILES/js/mrujs/index.js
