@@ -25,23 +25,25 @@
 9. apply macos defaults: `sh ~/.dotfiles/macos/defaults`
 10. install rouge (I'll go ahead and suggest sudoing this, there must be a better way though): `sudo gem install rouge` 
 11. install [karabiner-elements](https://github.com/tekezo/Karabiner-Elements/blob/master/usage/README.md)
-12. ---
-13. download and install [spactacle](https://www.spectacleapp.com/)
-14. do yourself a favor: [glances](https://github.com/nicolargo/glances) `pip3 install glances` OR `brew install htop` and stop using activity monitor
-15. `brew install coreutils` -- you need it for `realpath`
-16. update submodules: `git submodule update --init --recursive`
-17. install yarn: `brew install yarn --without-node`
-18. install yarn completions:`yarn global add yarn-completions`
-20. install tldr `yarn global add tldr` for [simplified man pages](https://github.com/tldr-pages/tldr)
-21. install iterm and set colors as follows:
+12. download and install [spectacle](https://www.spectacleapp.com/)
+13. do yourself a favor: [glances](https://github.com/nicolargo/glances) `pip3 install glances` OR `brew install htop` and stop using activity monitor
+14. `brew install coreutils` -- you need it for `realpath`
+15. update submodules: `git submodule update --init --recursive`
+16. install yarn: `brew install yarn --without-node`
+17. install yarn completions:`yarn global add yarn-completions`
+19. install tldr `yarn global add tldr` for [simplified man pages](https://github.com/tldr-pages/tldr)
+20. install iterm and set colors as follows:
     - black: 727272
-    - red: e64856
-    - green: 35c13c
+    - red: bf6054
+    - green: 5b965e
     - yellow: b7b334
     - blue: 88a2f3
     - magenta: cb31ca
-    - cyan: a5eaf0
+    - cyan: 7db6bb
     - white: c7c7c7
+    - foreground: b2b2ac
+21. set itemr's "minimal contrast" slider to 0
+
 22. install [ITerm2 shell integration](https://www.iterm2.com/documentation-shell-integration.html): `curl -L https://iterm2.com/misc/install_shell_integration.sh | bash`
 23. enable mouse scroll for less in iterm: ITerm -> Preferences -> Advanced and search for "scroll"
 24. unmark checkbox of iterm->Preferences->terminal->Shell Integration[Show mark indicators]
