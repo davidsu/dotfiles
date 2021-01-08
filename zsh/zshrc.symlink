@@ -1,19 +1,24 @@
-PROMPT="%~$ "
-DISABLE_AUTO_UPDATE=true
-export LC_ALL=en_US.UTF-8
-export DOTFILES=$HOME/.dotfiles
-export PATH=~/Library/Python/3.7/bin:$PATH:$HOME/.dotfiles/bin #:$HOME/.zgen/paulirish/git-open-master
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-[ -f ~/.fzf/shell/completion.zsh ] && source ~/.fzf/shell/completion.zsh
-[ -f ~/Dropbox/terminal/quickOpen.sh ] && source ~/Dropbox/terminal/quickOpen.sh
-export FZF_DEFAULT_COMMAND='ag --hidden --ignore .git -g ""'
-export FZF_TMUX_HEIGHT=0 #make fzf fullscreen on terminal
-export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-export FZF_DEFAULT_OPTS='--reverse'
-export THEME
-eval "$(fasd --init auto)"
-#do I need this???
-alias a='loadall'
+function loadzgen(){
+    source ~/.zgen/zgen.zsh
+    if ! zgen saved; then
+        zgen oh-my-zsh
+        # zgen load psyrendust/alf
+        zgen load zsh-users/zsh-syntax-highlighting
+        zgen load zsh-users/zsh-history-substring-search
+        # zgen load zsh-users/zsh-autosuggestions
+        zgen oh-my-zsh plugins/yarn
+        # zgen oh-my-zsh plugins/zsh-autosuggestions
+        # zgen load paulirish/git-open
+    fi
+    #unset SET_CUSTOM_PROMPT value if you want to test other prompt than
+    #the custom in ~/.dotFiles/prompt
+    #need to source prompt after oh-my-zsh cuz they mess it up
+    SET_CUSTOM_PROMPT=true
+    source $DOTFILES/prompt
+    #need to source fzf keybinding after oh-my-zsh cuz they mess it up
+    [ -f ~/.fzf/shell/key-bindings.zsh ] && source ~/.fzf/shell/key-bindings.zsh
+}
+
 function reload(){
   # spin up mru server if it's down
   if ! $(command -v pm2 > /dev/null 2&>1 && curl --head --silent http://localhost:2021 --max-time 0.05 > /dev/null); then
@@ -32,7 +37,22 @@ function reload(){
   #make sure brew is before system in path then remove duplicates from path
   export PATH=$(echo "/usr/local/bin:${PATH}" | awk -v RS=':' -v ORS=":" '!a[$1]++')
 }
-reload
+export DOTFILES=$HOME/.dotfiles
+PROMPT="%~$ "
+DISABLE_AUTO_UPDATE=true
+export LC_ALL=en_US.UTF-8
+export PATH=~/Library/Python/3.7/bin:$PATH:$HOME/.dotfiles/bin #:$HOME/.zgen/paulirish/git-open-master
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+[ -f ~/.fzf/shell/completion.zsh ] && source ~/.fzf/shell/completion.zsh
+[ -f ~/Dropbox/terminal/quickOpen.sh ] && source ~/Dropbox/terminal/quickOpen.sh
+export FZF_DEFAULT_COMMAND='ag --hidden --ignore .git -g ""'
+export FZF_TMUX_HEIGHT=0 #make fzf fullscreen on terminal
+export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+export FZF_DEFAULT_OPTS='--reverse'
+export THEME
+eval "$(fasd --init auto)"
+#do I need this???
+alias a='loadzgen'
 
 if [ $TILIX_ID ] || [ $VTE_VERSION ]; then
         source /etc/profile.d/vte.sh
@@ -53,8 +73,8 @@ fi
 # test -d "${GOPATH}/src/github.com" || mkdir -p "${GOPATH}/src/github.com"
 
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
+# loadzgen
+reload
 eval "$(fnm env --use-on-cd)"
-
-# tabtab source for yarn package
-# uninstall by removing these lines or running `tabtab uninstall yarn`
-[[ -f /Users/davidsu/.dotfiles/config/yarn/global/node_modules/tabtab/.completions/yarn.zsh ]] && . /Users/davidsu/.dotfiles/config/yarn/global/node_modules/tabtab/.completions/yarn.zsh
+source ~/zsh-defer/zsh-defer.plugin.zsh
+zsh-defer loadzgen

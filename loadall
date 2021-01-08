@@ -1,68 +1,4 @@
 #!/bin/zsh
-function loadzgen(){
-    source $DOTFILES/theme
-
-    source ~/.zgen/zgen.zsh
-    if ! zgen saved; then
-        zgen oh-my-zsh
-        zgen load zsh-users/zsh-syntax-highlighting
-        zgen load zsh-users/zsh-history-substring-search
-        # zgen load zsh-users/zsh-autosuggestions
-        zgen oh-my-zsh plugins/yarn
-        # zgen oh-my-zsh plugins/zsh-autosuggestions
-        # zgen load paulirish/git-open
-    fi
-    #unset SET_CUSTOM_PROMPT value if you want to test other prompt than
-    #the custom in ~/.dotFiles/prompt
-    SET_CUSTOM_PROMPT=true
-    #fix prompt but also fix back my options that oh-my-zsh fucks up, e.g:ls output style
-    [[ -n $reloadforzgen ]] && reload
-    #we need to re-source fzf here otherwise oh-my-zsh overwrites its bindings!!!
-    [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-}
-reloadforzgen=1
-function loadrvm(){
-    export PATH="$PATH:$HOME/.rvm/bin:$HOME/.bin" # Add RVM to PATH for scripting
-    # echo "loading rvm"
-    [[ -s "$HOME/.rvm/scripts/rvm" ]] && source "$HOME/.rvm/scripts/rvm" # Load RVM into a shell session *as a function*
-}
-
-function load(){
-    export HAS_LOADED=1  
-    reloadforzgen=''
-    loadzgen
-    reloadforzgen=1
-    loadrvm
-    reload
-}
-function loadall(){
-    currPwd=$(pwd)
-    export HAS_LOADED=1  
-    reloadforzgen=''
-    loadzgen
-    reloadforzgen=1
-    loadrvm
-    # rvm complains about not being first in path
-    PATH=$(echo $PATH | tr ':' '\n' | uniq | tr '\n' ':')
-    reload
-    cd $currPwd
-}
-function loadallifneeded(){
-  if [[ ! $HAS_LOADED ]]; then
-      loadall
-  fi
-}
-if [[ -z $loadallsourced ]]; then
-    alias l='load'
-    alias l!='loadall'
-    alias lall='loadall'
-    loadallsourced=1
-fi
-
-
-
-#this doesn't seem to work here... need to learn more
-ZDOTDIR='~/.dotFiles/zsh'
 # completion
 autoload -U compinit
 compinit
@@ -77,5 +13,5 @@ HISTORY_SUBSTRING_SEARCH_HIGHLIGHT_FOUND='fg=red,bold' # zsh-users/zsh-history-s
 
 export LSCOLORS=GxFxCxDxBxegedabagaced #better colors for ls
 
-autoload zmv # => pg 88 Learning Shell scripting with ZSH
+# autoload zmv # => pg 88 Learning Shell scripting with ZSH
 setopt HIST_VERIFY # !! => copy cmd from history before executing

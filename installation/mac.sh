@@ -9,6 +9,10 @@ fi
 if [ ! -d "$HOME/.zgen" ]; then
 	git clone https://github.com/tarjoilija/zgen.git "${HOME}/.zgen"
 fi
+
+if [ ! -d "$HOME/zsh-defer" ]; then
+    git clone https://github.com/romkatv/zsh-defer.git ~/zsh-defer
+fi
 if ! command -v fzf &> /dev/null; then
 	brew install fzf
 	$(brew --prefix)/opt/fzf/install
