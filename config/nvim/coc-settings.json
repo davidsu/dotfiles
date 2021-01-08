@@ -29,5 +29,6 @@
     "explorer.git.icon.status.deleted": "✗",
     "explorer.git.icon.status.renamed": "➦",
     "explorer.git.icon.status.untracked": "✱",
-    "explorer.file.autoReveal": false
+    "explorer.file.autoReveal": false,
+    "snippets.userSnippetsDirectory": "$DOTFILES/config/nvim/UltiSnip"
 }

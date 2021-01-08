@@ -61,16 +61,22 @@ Plug 'mhartington/nvim-typescript', {'for': ['javascript', 'typescript', 'typesc
 " ------------------------------------------------------------------------------------------------------------------------
 let coc_extension_npm = {'branch': 'master', 'do': 'yarn install --frozen-lockfile && yarn build --if-present'}                                                  " 
 Plug 'neoclide/coc.nvim', coc_extension_npm
-if !isdirectory($DOTFILES.'/config/nvim/plugged/coc-explorer') && !exists($NPM_COC)
-  let g:coc_global_extensions = ['coc-git', 'coc-explorer', 'coc-eslint', 'coc-tsserver', 'coc-vimlsp', 'coc-marketplace']
-else
-  Plug 'neoclide/coc-git', coc_extension_npm                                                  " 
-  Plug 'weirongxu/coc-explorer', coc_extension_npm                                                  " 
-  Plug 'neoclide/coc-eslint', coc_extension_npm                                               
-  Plug 'neoclide/coc-tsserver', coc_extension_npm
-  Plug 'iamcco/coc-vimlsp', coc_extension_npm                                                  " 
-  Plug 'fannheyward/coc-marketplace', coc_extension_npm                                                  " 
-endif
+Plug 'neoclide/coc-git', coc_extension_npm                                                  " 
+Plug 'weirongxu/coc-explorer', coc_extension_npm                                                  " 
+Plug 'neoclide/coc-eslint', coc_extension_npm                                               
+Plug 'neoclide/coc-tsserver', coc_extension_npm
+Plug 'iamcco/coc-vimlsp', coc_extension_npm                                                  " 
+Plug 'fannheyward/coc-marketplace', coc_extension_npm                                                  " 
+Plug 'neoclide/coc-snippets', coc_extension_npm
+" let g:coc_global_extensions = [
+"       \'coc-git',
+"       \'coc-explorer',
+"       \'coc-eslint',
+"       \'coc-tsserver',
+"       \'coc-vimlsp',
+"       \'coc-marketplace',
+"       \'coc-snippets'
+"       \]
 
 
 
