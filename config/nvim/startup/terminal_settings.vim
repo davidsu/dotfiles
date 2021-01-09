@@ -10,6 +10,7 @@ if has('nvim')
     " stop fg job and rerun last command
     tmap <C-x> <C-c><C-l><C-\><C-n>:call ClearTermScrollback()<cr>i<C-p><cr>
     tnoremap ,, <C-\><C-n>
+    tnoremap <C-q> <C-\><C-n>:wincmd q<cr>
     tnoremap <C-o> <C-\><C-n>
     tnoremap ,k <C-\><C-n>:wincmd k<cr>
     tnoremap ,j <C-\><C-n>:wincmd j<cr>

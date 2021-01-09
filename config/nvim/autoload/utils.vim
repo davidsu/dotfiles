@@ -134,10 +134,15 @@ function! utils#toTerminal()
         let bufnames = utils#buffers_names(utils#buffers_all())
         call utils#isTerminal('', '')
         let term = filter(bufnames, 'v:val =~ ''^term://''')
+
+        if len(tabpagebuflist(tabpagenr()))
+            " only one window, open on the left side
+            call utils#win_move('l')
+        endif
         if get(term, 0, '') != ''
             execute 'e '.term[0]
         else
-            te
+            terminal
         endif
     endif
     startinsert
