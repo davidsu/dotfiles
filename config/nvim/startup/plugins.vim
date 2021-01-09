@@ -25,7 +25,7 @@ Plug $DOTFILES.'/js/vim-js'
 Plug 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
 " Plug 'matthewtodd/vim-fustashtive'
 " Plug 'junegunn/vim-peekaboo'
-Plug 'leafgarland/typescript-vim', {'for': ['typescript', 'typescript.tsx']}
+" Plug 'leafgarland/typescript-vim', {'for': ['typescript', 'typescript.tsx']}
 Plug 'davidsu/comfortable-motion.vim'                               " Brings physics-based smooth scrolling to the Vim world!
 Plug 'tweekmonster/startuptime.vim', {'on': 'StartupTime'}  
 Plug 'tommcdo/vim-exchange'                                         " exchange text with cx
@@ -90,8 +90,9 @@ endif
 Plug 'dahu/vim-fanfingtastic'                                       " improved f F t T commands
 Plug 'davidsu/base16-vim'
 Plug 'NLKNguyen/papercolor-theme'
-Plug 'vim-airline/vim-airline'                                      " fancy statusline
-Plug 'davidsu/vim-airline-themes'                                  " themes for vim-airline
+
+Plug 'glepnir/galaxyline.nvim', {'branch': 'main'}
+
 " Plug 'mxw/vim-jsx', {'for': 'javascript'}
 " Plug 'maxmellon/vim-jsx-pretty', {'for': 'javascript'}
 Plug 'tpope/vim-commentary'                                         " comment stuff out

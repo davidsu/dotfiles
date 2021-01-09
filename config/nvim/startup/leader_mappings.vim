@@ -1,26 +1,5 @@
-function! FixPowerlineFontsAndSave()
-    " can't load powerline fonts on startup, it looks terrible. This is a hacky workaround
-    execute('source '.expand('$DOTFILES/config/nvim/startup/airline.vim'))
-    execute('source '.expand('$DOTFILES/config/nvim/startup/options.vim'))
-    iunmap ,,
-    vunmap ,,
-    nunmap ,,
-    vunmap <space><space>
-    nunmap <space><space>
-    silent! update
-    "there is an issue with airline not updating when `:update` writes, running twice `:update` solves it
-    "nnn
-    inoremap ,, <esc>:update<cr>:update<cr>
-    nmap ,, :update<cr>:update<cr>
-    vmap ,, :update<cr>:update<cr>
-    nmap <space><space> :update<cr>:update<cr>
-    vmap <space><space> :update<cr>:update<cr>
-endfunction
-inoremap ,, <esc>:call FixPowerlineFontsAndSave()<cr>
-nmap ,, :call FixPowerlineFontsAndSave()<cr>
-vmap ,, :call FixPowerlineFontsAndSave()<cr>
-nmap <space><space> :call FixPowerlineFontsAndSave()<cr>
-vmap <space><space> :call FixPowerlineFontsAndSave()<cr>
+nmap <space><space> :update<cr>:update<cr>
+vmap <space><space> :update<cr>:update<cr>
 function! NextClosedFold(dir)
     let cmd = 'norm!z' . a:dir
     let view = winsaveview()
@@ -36,7 +15,7 @@ function! NextClosedFold(dir)
 endfunction
 
 nmap ' ` |"when goto mark, allways take cursor position
-nmap ,. :call utils#restoreAlternateFile()<cr><c-^>
+nmap m, :call utils#restoreAlternateFile()<cr><c-^>
 nmap sa :call utils#restoreAlternateFile()<cr><c-^>
 
 nmap <space>gx m`0y$:@"<cr><c-o>  |" execute current line
@@ -155,9 +134,6 @@ nmap <silent><space>hi <Plug>MarkSet
 vmap <silent><space>hi <Plug>MarkSet
 " <space>hc for "highlight clear" clear all "interesting words" highlighting
 nmap <space>hc :silent MarkClear<cr>
-nmap ,n ,*
-nmap ,N ,#
-nmap <N ,#
 nmap 1zDisableVimMarkStarMap <Plug>MarkSearchNext
 nmap 1zDisableVimMarkHashMap <Plug>MarkSearchPrev
 nmap 1zDisableVimMarkMarkClear  <Plug>MarkClear
