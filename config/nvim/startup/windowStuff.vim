@@ -46,7 +46,6 @@ endfunction
 let g:forcehorizontalresize = 0
 nnoremap + :call WinSize('+')<cr><esc>
 nnoremap _ :call WinSize('-')<cr>
-nnoremap ,v :call ToggleForceVerticalResize()<cr>
 nnoremap <space>v :call ToggleForceVerticalResize()<cr>
 "invert split resizing
 nnoremap <space>is :call ToggleForceVerticalResize()<cr>
@@ -72,6 +71,3 @@ function! HtmlUnEscape()
   silent s/&gt;/>/eg
   silent s/&amp;/\&/eg
 endfunction
-
-nnoremap <silent> ,u :call HtmlUnEscape()<cr>
-

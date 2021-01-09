@@ -4,6 +4,8 @@ command! FixLint CocCommand eslint.executeAutofix
 "refactor visual selection
 xmap <space>rf <Plug>(coc-codeaction-selected)
 nmap <space>lo :CocDiagnostics<cr>
+nmap <C-c> <Plug>(coc-float-hide)
+nmap <space>cf <Plug>(coc-fix-current)
 
 inoremap <silent><expr> <TAB>
   \ pumvisible() ? coc#_select_confirm() :
@@ -22,19 +24,3 @@ function! s:check_back_space() abort
 endfunction
 
 let g:coc_snippet_next = '<tab>'
-nmap <space>cf <Plug>(coc-fix-current)
-
-" function! s:disableDiagnosticsForTests()
-"     if expand('%:p') =~ '/test'
-"         let b:coc_diagnostic_disable = 1 
-"     endif
-" endfunction
-" augroup davidsu-coc
-"   au!
-"   autocmd BufEnter javascript,typescript call <SID>disableDiagnosticsForTests()
-" augroup END
-" hack to stop coc annoying underlines, wouldn't work without defering
-" lua vim.defer_fn(function() vim.api.nvim_command('hi CocUnderline cterm=NONE gui=NONE') end, 100)
-" " lua vim.defer_fn(function() vim.api.nvim_command('hi clear SpellBad') end, 100)
-" lua vim.defer_fn(function() vim.api.nvim_command('hi CocErrorVirtualText guifg=#69302a') end, 500)
-" lua vim.defer_fn(function() vim.api.nvim_command('hi CocErrorSign guifg=#ba2614 guibg=#32302F') end, 500)

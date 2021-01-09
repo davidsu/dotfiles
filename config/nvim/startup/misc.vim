@@ -1,4 +1,4 @@
-"-----------------------------------------------------------------------------}}}
+"----------------------------------------------------------------------------}}}
 "VARIABLES                                                                    {{{ 
 "--------------------------------------------------------------------------------
 "see :h sh.vim line 2871... in /bin/sh $(command) is an error 
@@ -17,8 +17,8 @@ let g:gitgutter_map_keys = 0
 let g:closetag_filenames = "*.html,*.xhtml,*.phtml,*.js,*.jsx"
 " " pass --presistent when starting server to avoid it from ever shutting down -- http://ternjs.net/doc/manual.html
 " set a map leader for more key combos
-let mapleader = ','
-let g:mapleader = ','
+let mapleader = '0'
+let g:mapleader = '0'
 let g:ack_use_dispatch = 1
 " don't hide quotes in json files
 let g:vim_json_syntax_conceal = 0
@@ -106,10 +106,6 @@ inoremap jk <esc>:update<cr>
 inoremap jj <esc>
 inoremap <C-h> <C-o>h
 inoremap <C-l> <C-o>a
-nnoremap ,h <C-w>h
-nnoremap ,l <C-w>l
-nnoremap ,j <C-w>j
-nnoremap ,k <C-w>k
 
 cnoremap jk <C-c>
 
