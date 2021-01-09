@@ -12,13 +12,6 @@ async function jumpWithCoc(pos) {
   return str(pos) !== str(newPos)
 }
 
-async function jumpWithTsServer(pos) {
-  await api.nvim_command('TSDef')
-  await new Promise(r => setTimeout(r, 40))
-  const newPos = await getCursorPosition()
-  return str(pos) !== str(newPos)
-}
-
 async function fallbackFZF() {
   const line = await nvim.line
   const pos = await getCursorPosition()
@@ -73,6 +66,6 @@ commands.registerCommand('vim-js.goToDeclaration', async () => {
   api = await getApi()
   debugger
   const pos = await getCursorPosition()
-  ;(await jumpWithCoc(pos)) || (await jumpWithTsServer(pos)) || (await jumpImport()) || fallbackFZF()
+  ;(await jumpWithCoc(pos)) || (await jumpImport()) || fallbackFZF()
 })
 nvim.command('command! JSGoToDeclaration :CocCommand vim-js.goToDeclaration')

@@ -167,7 +167,6 @@ augroup myfzfgroup
     autocmd!
     " autocmd FileType javascript,typescript,typescript.tsx nnoremap <buffer>gd :normal! m`<cr>:call GoToDeclaration()<cr>
     autocmd FileType javascript,typescript,typescript.tsx nnoremap <buffer>gd :normal! m`<cr>:JSGoToDeclaration<cr>
-    autocmd FileType javascript,typescript,typescript.tsx nnoremap <buffer><space>ts :TSDef<cr>
     autocmd FileType gitcommit nnoremap <buffer>,<Tab> :call FugitiveMappings()<cr>
     autocmd FileType gitcommit nnoremap <buffer>\<Tab> :call FugitiveMappings()<cr>
 augroup END

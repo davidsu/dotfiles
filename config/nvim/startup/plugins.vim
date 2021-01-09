@@ -50,12 +50,6 @@ Plug 'blueyed/vim-diminactive'
 Plug 'nvim-treesitter/nvim-treesitter', {'do': ':TSUpdate'}  " We recommend updating the parsers on update
 Plug 'nvim-treesitter/playground'
 
-let g:nvim_typescript#quiet_startup=1
-let g:nvim_typescript#suggestions_enabled=0
-let g:nvim_typescript#diagnosticsEnable=0
-let g:nvim_typescript#javascript_support=1
-" Plug 'davidsu/nvim-typescript', {'for': ['javascript', 'typescript', 'typescript.tsx'], 'do': './install.sh'}
-Plug 'mhartington/nvim-typescript', {'for': ['javascript', 'typescript', 'typescript.tsx'], 'do': './install.sh'}
 " ------------------------------------------------------------------------------------------------------------------------
 " coc.nvim
 " ------------------------------------------------------------------------------------------------------------------------
