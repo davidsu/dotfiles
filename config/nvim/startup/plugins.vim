@@ -128,4 +128,15 @@ hi link javascriptReserved javascriptVariable
 hi link javascriptReservedCase javascriptVariable
 call plug#end()
 let g:sleuth_automatic = 1
-lua require'nvim-treesitter.configs'.setup { highlight = { enable = true } }
+" lua require'nvim-treesitter.configs'.setup { highlight = { enable = true }, 
+
+" incremental_selection = {
+"   enable = true,
+"   keymaps = {
+"     init_selection = "gnn",
+"     node_incremental = "grn",
+"     scope_incremental = "grc",
+"     node_decremental = "grm",
+"   },
+" },
+" }
