@@ -35,10 +35,10 @@ unless File.readable? path
   exit 1
 end
 
-if file !~ /.vim$/ && `file --mime "#{file}"` =~ /binary/
-  puts "#{file} is a binary file"
-  exit 0
-end
+# if file !~ /.vim$/ && `file --mime "#{file}"` =~ /binary/
+#   puts "#{file} is a binary file"
+#   exit 0
+# end
 # puts "#{center}"
 center = (center || 0).to_i
 height = File.readable?('/dev/tty') ? `stty size < /dev/tty`.split.first.to_i : 40

@@ -5,7 +5,7 @@ alias ..='cd ../'
 alias ../='cd ../'
 
 #we wish to have rvm in vim for proper coloring in preview(fzf) for viml files
-alias vim='if [[ -z $HAS_LOADED ]]; then loadrvm; else alias vim='\''nvim'\''; fi; nvim'
+alias vim='nvim'
 alias vimdiff='nvim -d'
 alias -g vimjson=' | jq . -M > /tmp/vimjson.json && vim /tmp/vimjson.json'
 alias showlinked='ll node_modules G '\''@\s*->'\'

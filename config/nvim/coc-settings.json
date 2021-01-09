@@ -9,6 +9,7 @@
     "diagnostic.enable": true,
     "diagnostic.level": "error",
     "diagnostic.messageTarget": "echo",
+    "diagnostic.enableMessage": "never",
     "diagnostic.virtualText": true,
     "tsserver.disableAutomaticTypeAcquisition": false,
     "tsserver.npm": "/Users/david.susskind/.fnm/node-versions/v14.15.3/installation/bin/npm",

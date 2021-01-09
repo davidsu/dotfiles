@@ -13,7 +13,7 @@ set autowriteall          " just :w implicitly, allways
 set grepprg=ag\ --vimgrep\ $*
 set grepformat=%f:%l:%c:%m
 set backspace=indent,eol,start
-set history=10000          " change history to 10000
+set history=2000          " change history to 10000
 set textwidth=1000        " don't automatic insert newlines on me!!!
 set expandtab             " insert tabs rather than spaces for <Tab>
 set smarttab              " tab respects 'tabstop', 'shiftwidth', and 'softtabstop'
@@ -70,3 +70,4 @@ set pastetoggle=<F6>
 set nolist
 set nospell
 set previewheight=15
+set relativenumber
