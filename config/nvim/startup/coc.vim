@@ -1,6 +1,17 @@
 command! Rename call CocActionAsync('rename')
 command! FixLint CocCommand eslint.executeAutofix
 
+function! FocusInExplorer()
+  let windows = filter(getwininfo(), 'v:val.tabnr == '.gettabinfo()[0].tabnr)
+  for window in getwininfo()
+    if getbufvar(window.bufnr, '&ft') == 'coc-explorer'
+      execute window.winnr . 'wincmd q'
+    endif
+  endfor
+  execute 'CocCommand explorer --reveal '.expand('%:p')
+endfunction
+
+nmap <space>nf :call FocusInExplorer()<cr>
 "refactor visual selection
 xmap <space>rf <Plug>(coc-codeaction-selected)
 nmap <space>lo :CocDiagnostics<cr>
