@@ -12,6 +12,7 @@
   "scripts": {
     "start": "lerna run start --parallel -- --color",
     "lint": "lerna run lint --parallel -- --color"
+    "build": "lerna run build"
   },
   "devDependencies": {
     "@types/node": "^14.14.10",
