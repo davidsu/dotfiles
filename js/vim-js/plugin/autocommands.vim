@@ -34,7 +34,7 @@ endfunction
 let s:previewrb = '$HOME/.dotfiles/bin/preview.rb'
 function! s:viewMru()
   call fzf#run({
-        \  'source': 'curl --silent http://localhost:2021 --max-time 0.05 --retry 4', 
+        \  'source': 'wget -q -O - http://localhost:2021 ', 
         \  'sink':    function('s:sinkMru'),
         \  'options': '--no-sort --exact  --preview-window up:50% '.
         \'--preview "'''.s:previewrb.''' -v {1}" '.

@@ -5,7 +5,8 @@ function mru_auto_cd() {
 }
 
 function mru(){
-    fzfresult=$(curl --silent http://localhost:2021 --max-time 0.05 --retry 4 | fzf --no-sort --exact \
+    # fzfresult=$(curl --silent http://localhost:2021 --max-time 0.05 --retry 4 | fzf --no-sort --exact \
+    fzfresult=$(wget -q -O - http://localhost:2021 | fzf --no-sort --exact \
         --preview '$DOTFILES/bin/preview.rb -v {1}' \
         --preview-window 'top:50%' \
         --header 'CTRL-o - open without abort(LESS) :: CTRL-s - toggle sort :: CTRL-g - toggle preview window' \

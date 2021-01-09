@@ -25,6 +25,7 @@ sudo gem install rouge
 brew install neovim
 brew install zsh
 brew install coreutils
+brew install wget
 cd ~/.dotfiles
 git submodule update --init --recursive
 brew install yarn 
