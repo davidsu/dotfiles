@@ -131,22 +131,6 @@ endif
 " switch syntax highlighting on
 syntax on
 
-let base16colorspace=256  " Access colors present in 256 colorspace"
-colorscheme base16-darktooth
-" if has('nvim')
-"     if ( $THEME =~ 'base16' )
-"         execute "colorscheme ".$THEME
-"     else
-"         colorscheme base16-chalk
-"     endif
-" else
-    " colorscheme PaperColor
-" endif
-
-
-" highlight conflicts
-" match ErrorMsg '^\(<\|=\|>\)\{7\}\([^=].\+\)\?$'
-
 "-----------------------------------------------------------------------------}}}
 "AUTOCOMMANDS                                                                 {{{ 
 "--------------------------------------------------------------------------------

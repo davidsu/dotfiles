@@ -12,10 +12,6 @@ if filereadable($HOME.'/.fnm/node-versions/v14.15.3/installation/bin/node')
 endif
 
 function! SourceMyScripts()
-    source $DOTFILES/config/nvim/startup/plugins.vim
-    if !isdirectory($DOTFILES.'/config/nvim/plugged')
-        PlugInstall
-    endif
     let file_list = split(globpath("$DOTFILES/config/nvim/startup/", "*.vim"), '\n')
 
     for file in file_list
@@ -33,9 +29,13 @@ function! DeferGstatus(...)
         Gstatus
     endif
 endfunction
-:lua require('init')
+lua require('init')
 
-"}}}----------------------------------------------------------------------------------------------------------------------
+let g:nvcode_termcolors=256
+colorscheme darktooth
+" let base16colorspace=256  " Access colors present in 256 colorspace"
+" colorscheme base16-darktooth
+" }}}----------------------------------------------------------------------------------------------------------------------
 
 
 " source $DOTFILES/config/nvim/startup/plugins.vim

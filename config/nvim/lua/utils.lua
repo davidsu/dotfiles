@@ -1,4 +1,6 @@
-function isModuleAvailable(name)
+local M = {}
+
+M.isModuleAvailable = function (name)
   if package.loaded[name] then
     return true
   else
@@ -13,4 +15,8 @@ function isModuleAvailable(name)
   end
 end
 
-return isModuleAvailable
+M.hasPacker = function()
+  return vim.loop.fs_stat(os.getenv('HOME') .. '/.local/share/nvim/site/pack/packer/opt/packer.nvim')
+end
+
+return M
