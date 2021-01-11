@@ -27,6 +27,7 @@ brew install neovim
 brew install zsh
 brew install coreutils
 brew install wget
+brew install entr # watch file changes in terminal
 cd ~/.dotfiles
 git submodule update --init --recursive
 brew install yarn 
