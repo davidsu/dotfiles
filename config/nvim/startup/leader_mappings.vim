@@ -55,7 +55,7 @@ nnoremap <silent> <space>fotw "fyaw:FindOnlyTestText '<C-r>f'<cr>
 nnoremap <silent> <space>fotu :FindOnlyTestUsage expand("<cword>")<cr>
 vmap / /\v
 vmap ? ?\v
-
+nnoremap <c-q> :q<cr>
 let g:shortstatusline = 0
 nnoremap <space>at :let g:shortstatusline=(g:shortstatusline + 1)%2<cr>:lua require("galaxyline").load_galaxyline()<cr>
 nnoremap \c :Commands<cr>

@@ -17,6 +17,7 @@ function loadzgen(){
     source $DOTFILES/prompt
     #need to source fzf keybinding after oh-my-zsh cuz they mess it up
     [ -f ~/.fzf/shell/key-bindings.zsh ] && source ~/.fzf/shell/key-bindings.zsh
+    source $DOTFILES/aliases
 }
 
 function reload(){
@@ -52,7 +53,7 @@ export FZF_DEFAULT_OPTS='--reverse'
 export THEME
 eval "$(fasd --init auto)"
 #do I need this???
-alias a='loadzgen'
+alias a='loadzgen && reload'
 
 if [ $TILIX_ID ] || [ $VTE_VERSION ]; then
         source /etc/profile.d/vte.sh
@@ -74,6 +75,9 @@ fi
 
 test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell_integration.zsh"
 # loadzgen
+setopt auto_cd
+DIRSTACKSIZE=12
+setopt autopushd pushdminus pushdsilent pushdtohome
 reload
 eval "$(fnm env --use-on-cd)"
 source ~/zsh-defer/zsh-defer.plugin.zsh

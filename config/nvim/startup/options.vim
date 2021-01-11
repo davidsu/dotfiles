@@ -19,7 +19,7 @@ set expandtab             " insert tabs rather than spaces for <Tab>
 set smarttab              " tab respects 'tabstop', 'shiftwidth', and 'softtabstop'
 set tabstop=4             " the visible width of tabs
 set softtabstop=4         " edit as if the tabs are 4 characters wide
-set shiftwidth=4          " number of spaces to use for indent and unindent
+" set shiftwidth=4          " number of spaces to use for indent and unindent
 set shiftround            " round indent to a multiple of 'shiftwidth'
 set completeopt+=longest
 set ttyfast
@@ -31,7 +31,8 @@ set undofile              " enable undo after close and repoen file
 set noswapfile
 set laststatus=2          " show the satus line all the time
 set sessionoptions-=folds
-set foldmethod=syntax     " fold based on indent
+set foldmethod=expr
+set foldexpr=nvim_treesitter#foldexpr()
 set foldnestmax=10        " deepest fold is 10 levels
 set nofoldenable          " don't fold by default
 set foldlevelstart=99     " start with all folds open

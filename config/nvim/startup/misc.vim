@@ -22,6 +22,7 @@ let g:mapleader = '0'
 let g:ack_use_dispatch = 1
 " don't hide quotes in json files
 let g:vim_json_syntax_conceal = 0
+let g:sleuth_automatic = 1
 "-----------------------------------------------------------------------------}}}
 "FUNCTIONS                                                                      {{{ 
 "--------------------------------------------------------------------------------
