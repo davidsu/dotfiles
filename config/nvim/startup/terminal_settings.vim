@@ -33,6 +33,7 @@ if has('nvim')
     augroup terminal_group
 	au!
 	au TermOpen *FZF tmap <buffer> <C-k> <C-k>
+	au TermOpen *FZF tmap <buffer> <C-o> <C-o>
 	au TermOpen *zsh setlocal nobuflisted | 
 		    \nmap <buffer><C-x> :startinsert<cr><C-x> |
 		    \nmap <buffer><C-c> :startinsert<cr><C-c>

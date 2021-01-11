@@ -2,7 +2,6 @@ command! Rename call CocActionAsync('rename')
 command! FixLint CocCommand eslint.executeAutofix
 
 function! FocusInExplorer()
-  let windows = filter(getwininfo(), 'v:val.tabnr == '.gettabinfo()[0].tabnr)
   for window in getwininfo()
     if getbufvar(window.bufnr, '&ft') == 'coc-explorer'
       execute window.winnr . 'wincmd q'
@@ -11,13 +10,16 @@ function! FocusInExplorer()
   execute 'CocCommand explorer --reveal '.expand('%:p')
 endfunction
 
+nmap <C-n> :execute 'CocCommand explorer --reveal '.expand('%:p')<cr>
+nmap 1n :execute 'CocCommand explorer --reveal '.expand('%:p')<cr>
+"leave this here for now.... muscle memory :)
 nmap <space>nf :call FocusInExplorer()<cr>
 "refactor visual selection
 xmap <space>rf <Plug>(coc-codeaction-selected)
 nmap <space>lo :CocDiagnostics<cr>
 nmap <C-c> <Plug>(coc-float-hide)
 nmap <space>cf <Plug>(coc-fix-current)
-
+imap <C-e> <Esc>:call coc#float#close_all()<cr>:call feedkeys('a')<cr>
 inoremap <silent><expr> <TAB>
   \ pumvisible() ? coc#_select_confirm() :
   \ coc#expandableOrJumpable() ?

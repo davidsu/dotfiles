@@ -1,4 +1,4 @@
-local isModuleAvailable = require 'davidsu-utils'
+local isModuleAvailable = require 'utils'.isModuleAvailable
 if not isModuleAvailable('galaxyline') then
   return
 end
@@ -23,6 +23,7 @@ local colors = {
   red = '#96141a'
 }
 
+function islongstatus() return vim.api.nvim_get_var('shortstatusline') == 0 end
 local buffer_not_empty = function()
   if vim.fn.empty(vim.fn.expand('%:t')) ~= 1 then
     return true
@@ -85,6 +86,7 @@ local ViMode = {
     end
     return text
   end,
+  condition = islongstatus,
   highlight = {colors.darkblue,colors.yellow,'bold'},
 }
 local ViModeSeparator = {
@@ -95,11 +97,22 @@ local ViModeSeparator = {
         vim.api.nvim_command('hi GalaxyViModeSeparator guibg='..colors.purple..' guifg='..color)
         return leftSeparator
     end,
+    condition = islongstatus,
     highlight = {colors.yellow,colors.purple},
 }
 
-local GitIcon = { provider = function() if(vcs.get_git_branch()) then return '   ' end return '' end, 1, condition = vcs.get_git_branch, highlight = {colors.orange,colors.purple} }
-local GitBranch = { provider = 'GitBranch', condition = buffer_not_empty, highlight = {colors.grey,colors.purple} }
+function gitContition() 
+  return buffer_not_empty() and
+    islongstatus() and
+    vcs.get_git_branch()
+end
+
+local GitIcon = { 
+  provider = function() if(vcs.get_git_branch()) then return '   ' end return '' end,
+  condition = gitContition,
+  highlight = {colors.orange,colors.purple}
+}
+local GitBranch = { provider = 'GitBranch', condition = gitContition, highlight = {colors.grey,colors.purple} }
 local GitSeparator = { provider = function() return '' end, separator =  leftSeparator, separator_highlight = {colors.purple,colors.darkblue} }
 
 RelativeFilePath = {
@@ -147,9 +160,16 @@ local Cwd = {
   end,
   separator = rightSeparator,
   separator_highlight = {colors.darkblue,colors.bg},
+  condition = islongstatus,
   highlight = {colors.magenta,colors.darkblue}
 }
-local LineSeparator = { provider = function() return ' ' end, separator = rightSeparator, separator_highlight = {colors.purple,colors.darkblue}, highlight = {colors.purple,colors.purple} }
+local LineSeparator = { 
+  provider = function() return ' ' end,
+  condition = islongstatus,
+  separator = rightSeparator,
+  separator_highlight = {colors.purple,colors.darkblue},
+  highlight = {colors.purple,colors.purple}
+}
 local LineInfo = { provider = function() return ' ' .. fileinfo.line_column() .. ' ' end, highlight = {colors.grey,colors.purple}, }
 local PerCent = { provider = 'LinePercent', separator = rightSeparator, separator_highlight = {colors.yellow,colors.purple}, highlight = {colors.darkblue,colors.yellow}, }
 
@@ -159,4 +179,13 @@ gls.right = {
   {LineSeparator = LineSeparator},
   {LineInfo = LineInfo},
   {PerCent = PerCent},
+}
+
+gls.short_line_left[1] = {
+  BufferType = {
+    provider = 'FileName',
+    separator = '',
+    separator_highlight = {colors.purple,colors.bg},
+    highlight = {colors.grey,colors.purple}
+  }
 }

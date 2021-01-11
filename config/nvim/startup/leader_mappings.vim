@@ -56,7 +56,8 @@ nnoremap <silent> <space>fotu :FindOnlyTestUsage expand("<cword>")<cr>
 vmap / /\v
 vmap ? ?\v
 
-nnoremap <space>at :AirlineToggleShowingAllSections<cr>
+let g:shortstatusline = 0
+nnoremap <space>at :let g:shortstatusline=(g:shortstatusline + 1)%2<cr>:lua require("galaxyline").load_galaxyline()<cr>
 nnoremap \c :Commands<cr>
 nnoremap 1: :History:<cr>
 nnoremap 1; :History:<cr>
@@ -124,10 +125,6 @@ vmap \s :s/\v
 nmap \d :redraw!<cr>
 nmap <silent> 1t :execute '25Lexplore '.expand('%:p:h')<cr>
 nmap 1o :only<cr>
-
-" 
-nmap 1n :execute 'CocCommand explorer --reveal '.expand('%:p')<cr>
-nmap <space>nn :CocCommand explorer<cr>
 
 "VIM-MARK: <space>hi for highlight interesting word
 nmap <silent><space>hi <Plug>MarkSet
@@ -219,13 +216,11 @@ function! GFilesIfNotHelp()
 endfunction
 nnoremap <c-t> :call GFilesIfNotHelp()<cr>
 imap <C-s>  <Esc>:w<cr>
-imap <C-e> <Esc>:call coc#float#close_all()<cr>:call feedkeys('a')<cr>
 map <C-s>  <Esc>:w<cr>
 nnoremap <C-s> :Snippets<cr>
 
 nmap <silent> \b :Buffers<cr>
 nmap <silent> 1b :Buffers<cr>
-nmap <silent> \f :call hzf#g_files()<cr>
 
 " Start interactive EasyAlign in visual mode (e.g. vipga)
 xmap ga <Plug>(EasyAlign)
