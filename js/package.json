@@ -11,7 +11,7 @@
   "license": "MIT",
   "scripts": {
     "start": "lerna run start --parallel -- --color",
-    "lint": "lerna run lint --parallel -- --color"
+    "lint": "lerna run lint --parallel -- --color",
     "build": "lerna run build"
   },
   "devDependencies": {
