@@ -11,7 +11,7 @@
   export LESS_TERMCAP_us=$'\E[04;38;5;146m' # begin underline
 
   export LESS='-Ri -x4'       #reasonable less flags
-  [[ `uname` != 'Linux' ]] && export MANPAGER="nvim -u $HOME/.config/nvim/init_for_man.vim -c 'set ft=man' -"
+  [[ `uname` != 'Linux' ]] && export MANPAGER="nvim -c 'set ft=man' -"
 
   # export LESS_TERMCAP_so=$'\E[01;37;04;41m'
   ###########################################################################################################################
