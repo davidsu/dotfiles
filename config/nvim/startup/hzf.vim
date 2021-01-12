@@ -155,10 +155,7 @@ command! -nargs=? AgAllBLines call hzf#ag_all_blines(<q-args>)
 " command! LeaderMappingsDeclaration call fzf#vim#ag('^\s*[^"\s]*map.*' . s:leaderOrAltChars . '[!-~]*', fzf#vim#with_preview({'dir':'$DOTFILES/config/nvim/startup', 'down': '100%'},'up:30%', 'ctrl-g'))
 command! Options call hzf#options()
 command! Variables call hzf#variables()
-command! Scripts call fzf#run({
-            \'source': map(scriptease#scriptnames_qflist(), 'v:val.filename'),
-            \'sink': 'e',
-            \})
+command! Scripts lua require('hzf').Scripts()
 
 "-----------------------------------------------------------------------------}}}
 "AUTOCOMMANDS                                                                 {{{
