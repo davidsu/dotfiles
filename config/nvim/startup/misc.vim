@@ -39,14 +39,25 @@ function! SynL()
    endfor
 endfunction
 command! SynL call SynL()
-function! IntoTemp(cmd)
-   redir => cout
-   silent execute a:cmd
-   redir END
-   e /tmp/vimredirected
-   put=cout
 
+"https://vim.fandom.com/wiki/Capture_ex_command_output
+function! TabMessage(cmd)
+   "use this to output ex command to buffer
+   "instead of the annoying way vim displays long messages
+  redir => message
+  silent execute a:cmd
+  redir END
+  if empty(message)
+    echoerr "no output"
+  else
+    " use "new" instead of "tabnew" below if you prefer split windows instead of tabs
+    tabnew
+    setlocal buftype=nofile bufhidden=wipe noswapfile nobuflisted nomodified
+    silent put=message
+  endif
 endfunction
+command! -nargs=+ -complete=command TabMessage call TabMessage(<q-args>)
+
 function! Vimrc(...)
     let query = get(a:000, 0, '^')
     if !len(query)
