@@ -57,42 +57,46 @@ return require('packer').startup(function()
   use 'davidsu/comfortable-motion.vim'                               
   use( os.getenv('DOTFILES') .. '/js/vim-js' )
   use { 'tweekmonster/startuptime.vim', cmd = 'StartupTime' }  
-  use 'tommcdo/vim-exchange'                                         -- exchange text with cx
-  use 'davidsu/vim-visual-star-search'                               -- extends */# to do what you would expect in visual mode
-  -- use 'davidsu/vim-bufkill'                                          -- wipe buffer without closing it's window
-  use 'tpope/vim-scriptease'                                         -- utilities for vim script authoring. Installed to use ':PP'=pretty print dictionary
-  use 'inkarkat/vim-ingo-library'                                    -- dependency of vim-mark
-  use 'idbrii/vim-mark'                                              -- highlighting of interesting words
-  use { 'schickling/vim-bufonly', cmd = 'BufOnly' }                  -- delete all buffers but current
-  use { 'davidsu/vim-plugin-AnsiEsc', cmd = 'AnsiEsc' }              -- type :AnsiEsc to get colors as terminal
+  use 'tommcdo/vim-exchange'                                           -- exchange text with cx
+  use 'davidsu/vim-visual-star-search'                                 -- extends */# to do what you would expect in visual mode
+  -- use 'davidsu/vim-bufkill'                                         -- wipe buffer without closing it's window
+  use 'tpope/vim-scriptease'                                           -- utilities for vim script authoring. Installed to use ':PP'=pretty print dictionary
+  use 'inkarkat/vim-ingo-library'                                      -- dependency of vim-mark
+  use { 'idbrii/vim-mark', requires = { 'inkarkat/vim-ingo-library' }} -- highlighting of interesting words
+  use { 'schickling/vim-bufonly', cmd = 'BufOnly' }                    -- delete all buffers but current
+  use { 'davidsu/vim-plugin-AnsiEsc', cmd = 'AnsiEsc' }                -- type :AnsiEsc to get colors as terminal
   use 'blueyed/vim-diminactive' 
-  use {'nvim-treesitter/nvim-treesitter', run = ':TSUpdate' }        -- We recommend updating the parsers on update
+  use {'nvim-treesitter/nvim-treesitter', run = ':TSUpdate' }          -- We recommend updating the parsers on update
   use 'nvim-treesitter/playground'
-  use 'dahu/vim-fanfingtastic'                                       -- improved f F t T commands
-  -- use 'davidsu/base16-vim'
+  use 'dahu/vim-fanfingtastic'                                         -- improved f F t T commands
   use 'davidsu/nvcode-color-schemes.vim'
 
   use { 'glepnir/galaxyline.nvim', branch = 'main' }
-  use 'tpope/vim-commentary'                                         -- comment stuff out
-  use 'davidsu/vim-unimpaired'                                       -- mappings which are simply short normal mode aliases for commonly used ex commands
-  use 'tpope/vim-surround'                                           -- mappings to easily delete, change and add such surroundings in pairs, such as quotes, parens, etc.
-  use 'tpope/vim-fugitive'                                           -- amazing git wrapper for vim
-  use 'tpope/vim-rhubarb'                                            -- for `:Gbrowse`
-  use 'tpope/vim-repeat'                                             -- enables repeating other supported plugins with the . command
-  use { 'davidsu/gv.vim', cmd = 'GV' }                               -- :GV browse commits like a pro
-  use 'tpope/vim-sleuth'                                             -- detect indent style (tabs vs. spaces)
-  use 'sickill/vim-pasta'                                            -- fix indentation when pasting
-  use { 'junegunn/limelight.vim', cmd = 'Limelight' }                -- focus tool. Good for presentating with vim
-  use { 'mattn/emmet-vim', ft = 'html' }                             -- emmet support for vim - easily create markdup wth CSS-like syntax
+  use 'tpope/vim-commentary'                                           -- comment stuff out
+  use 'davidsu/vim-unimpaired'                                         -- mappings which are simply short normal mode aliases for commonly used ex commands
+  use 'tpope/vim-surround'                                             -- mappings to easily delete, change and add such surroundings in pairs, such as quotes, parens, etc.
+  use 'tpope/vim-fugitive'                                             -- amazing git wrapper for vim
+  use 'tpope/vim-rhubarb'                                              -- for `:Gbrowse`
+  use 'tpope/vim-repeat'                                               -- enables repeating other supported plugins with the . command
+  use { 'davidsu/gv.vim', cmd = 'GV' }                                 -- :GV browse commits like a pro
+  use 'tpope/vim-sleuth'                                               -- detect indent style (tabs vs. spaces)
+  use 'sickill/vim-pasta'                                              -- fix indentation when pasting
+  use { 'junegunn/limelight.vim', cmd = 'Limelight' }                  -- focus tool. Good for presentating with vim
+  use { 'mattn/emmet-vim', ft = 'html' }                               -- emmet support for vim - easily create markdup wth CSS-like syntax
   use 'alvan/vim-closetag'
-  use { 'othree/html5.vim', ft = 'html' }                            -- html5 support
-  use { 'cakebaker/scss-syntax.vim', ft = 'scss' }                   -- sass scss syntax support
+  use { 'othree/html5.vim', ft = 'html' }                              -- html5 support
+  use { 'cakebaker/scss-syntax.vim', ft = 'scss' }                     -- sass scss syntax support
   use 'norcalli/nvim-colorizer.lua'
-  use { 'hail2u/vim-css3-syntax', ft = 'css' }                       -- CSS3 syntax support
-  use { 'wavded/vim-stylus', ft = {'stylus', 'markdown'} }           -- markdown support
-  use { 'dhruvasagar/vim-table-mode', ft = 'markdown'}
-  use {'junegunn/vim-xmark' , run = 'make', ft = { 'markdown' }}     -- ❌ Markdown preview on OS X
-  use {'plasticboy/vim-markdown', ft = 'markdown'}                   -- markdown
-  use {'godlygeek/tabular', ft = 'markdown'}                         -- related to vim-markdown
+  use { 'hail2u/vim-css3-syntax', ft = 'css' }                         -- CSS3 syntax support
+  use 'iloginow/vim-stylus' -- for some reason markdown files throw on enter without this
+  -- use { 'wavded/vim-stylus', ft = {'stylus', 'markdown'} }           -- markdown support
+  -- use { 'dhruvasagar/vim-table-mode', ft = 'markdown'}
+  use { -- render mardown html in browser
+    'iamcco/markdown-preview.nvim', 
+    ft = { 'markdown' }, 
+    run = 'cd app && yarn install'  
+  }
+  -- use {'plasticboy/vim-markdown', ft = 'markdown'}                   -- markdown
+  -- use {'godlygeek/tabular', ft = 'markdown'}                         -- related to vim-markdown
 end)
 
