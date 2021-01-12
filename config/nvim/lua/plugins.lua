@@ -13,14 +13,28 @@ function cocTable(cocPlugin)
   }
 end
 return require('packer').startup(function()
+  use { 'wbthomason/packer.nvim', cmd='PackerInstall'} --packer: I'm requiring it, this prevents it from uninstalling itself on PackerClear
   use(cocTable('neoclide/coc.nvim'))
   use(cocTable('neoclide/coc-git'))
-  use(cocTable('weirongxu/coc-explorer'))
   use(cocTable('neoclide/coc-eslint'))
   use(cocTable('neoclide/coc-tsserver'))
   use(cocTable('iamcco/coc-vimlsp'))
   use(cocTable('fannheyward/coc-marketplace'))
   use(cocTable('neoclide/coc-snippets'))
+  use(cocTable('neoclide/coc-git'))
+  -- use(cocTable('weirongxu/coc-explorer'))
+  use 'kyazdani42/nvim-web-devicons'
+  use 'kyazdani42/nvim-tree.lua'
+
+  -- use { --not stable, see https://github.com/lewis6991/gitsigns.nvim/issues/44
+  --   'lewis6991/gitsigns.nvim',
+  --   requires = {
+  --     'nvim-lua/plenary.nvim'
+  --   },
+  --   config = function()
+  --     require('gitsigns').setup()
+  --   end
+  -- }
   -- let g:coc_global_extensions = [
   --       \'coc-git',
   --       \'coc-explorer',
