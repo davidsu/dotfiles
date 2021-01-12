@@ -103,8 +103,14 @@ function! hzf#g_files()
     endif
     let s:fpath_start = substitute(getcwd(), groot.'/', '', '').'/'
     let args = ' | grep '''.s:fpath_start.''' | sed ''s#^'.s:fpath_start.'##'' '
+
+    "list git files as well as untracked non-ignored files
+    let t1 = split(system('cd '.groot.' ; git ls-files '.args), '\n')
+    let t2 = split(system('cd '.groot.' ; git ls-files --others --exclude-standard '.args), '\n')
+    call extend(t1, t2)
+
     call fzf#run({
-                \ 'source':  'git ls-files '.args,
+                \ 'source':  t1,
                 \ 'dir':     groot,
                 \ 'options': '--prompt "GitFiles> "',
                 \ 'sink*': function('s:sink_gfiles')
