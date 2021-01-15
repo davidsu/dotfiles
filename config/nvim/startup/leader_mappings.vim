@@ -27,7 +27,7 @@ nmap <space>qh :helpclose<cr>
 noremap <space>oc :copen<cr>
 noremap <space>ol :lopen<cr>
 noremap <space>tt :GFiles!<cr>
-nmap <silent> \t :GFiles!<cr>
+nmap <silent> \t :call hzf#g_files(1)<cr>
 nnoremap - :let currfile = expand('%:p:t')<cr>:edit %:p:h<cr>:call search(currfile)<cr>
 nnoremap \\ "_
 vnoremap \\ "_
@@ -211,7 +211,7 @@ function! GFilesIfNotHelp()
     if &ft == 'help'
         execute "normal! \<c-t>"
     else
-        call hzf#g_files()
+        call hzf#g_files(0)
     endif
 endfunction
 nnoremap <c-t> :call GFilesIfNotHelp()<cr>

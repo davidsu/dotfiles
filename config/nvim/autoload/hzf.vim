@@ -93,16 +93,20 @@ function! s:sink_gfiles(fname)
     execute 'edit '.s:fpath_start.a:fname[0]
 endfunction
 
-function! hzf#g_files()
+function! hzf#g_files(forceRunOnRoot)
     let groot = utils#get_git_root_directory()
-    let args = ''
-    if groot == getcwd()
-        let s:fpath_start = ''
-        GFiles!
-        return
-    endif
+    " let args = ''
+    " if groot == getcwd() && ! a:0
+    "     let s:fpath_start = ''
+    "     GFiles!
+    "     return
+    " endif
     let s:fpath_start = substitute(getcwd(), groot.'/', '', '').'/'
     let args = ' | grep '''.s:fpath_start.''' | sed ''s#^'.s:fpath_start.'##'' '
+    if a:forceRunOnRoot || groot == getcwd()
+       let args = ''
+       let s:fpath_start = ''
+    endif
 
     "list git files as well as untracked non-ignored files
     let t1 = split(system('cd '.groot.' ; git ls-files '.args), '\n')
