@@ -135,7 +135,7 @@ function! utils#toTerminal()
         call utils#isTerminal('', '')
         let term = filter(bufnames, 'v:val =~ ''^term://''')
 
-        if len(tabpagebuflist(tabpagenr())) == 1
+        if len(tabpagebuflist(tabpagenr())) == 1 && winwidth('.') > 140
             " only one window, open on the left side
             call utils#win_move('l')
         endif
