@@ -1,6 +1,8 @@
 import { commands, workspace } from 'coc.nvim'
+import { existsSync } from 'fs'
 import { execSync } from 'child_process'
 import { getApi } from './api'
+import path from 'path'
 const { nvim } = workspace
 let api
 const getCursorPosition = () => api.nvim_win_get_cursor(0)
@@ -48,7 +50,14 @@ async function jumpImport() {
     } else if (isRequireOrDynamicImport) {
       fileName = line.replace(/.*\b(require|import)\(['"](.*)['"].*/, '$2')
     }
-    if (fileName) {
+    if (/^\./.test(fileName)) {
+      const desiredFilePath = path.join(await api.nvim_eval("expand('%:p:h')"), fileName)
+      const filePath = [desiredFilePath, `${desiredFilePath}.js`, `${desiredFilePath}.ts`].find(p => existsSync(p))
+      if (filePath) {
+        nvim.command('edit ' + filePath)
+        return true
+      }
+    } else if (fileName) {
       const getFilePathCMD = `node -e 'console.log(require.resolve("${fileName}", {paths: ["${currentBufferPath}"]}))'`
 
       const absolutePath = execSync(getFilePathCMD).toString().trim()
