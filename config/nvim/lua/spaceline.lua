@@ -46,6 +46,7 @@ function modeColor()
         ['r?'] = ':CONFIRM',
         c= 'COMMAND',
         fzf = 'FZF',
+        nvimtree = 'NvimTree',
         i = 'INSERT',
         modified = 'MODIFIED',
         n = 'NORMAL',
@@ -64,6 +65,10 @@ function modeColor()
     if vim.fn.match(vim.fn.expand('%:t'), 'FZF$') ~= -1 then
         mode = 'fzf'
     end
+    if vim.bo.filetype == 'NvimTree' then
+      mode = 'nvimtree'
+    end
+
     return {
         text = alias[mode] or '',
         color = color
@@ -89,6 +94,7 @@ local ViMode = {
   condition = islongstatus,
   highlight = {colors.darkblue,colors.yellow,'bold'},
 }
+
 local ViModeSeparator = {
     provider = function() 
         local vars = modeColor()
@@ -104,7 +110,8 @@ local ViModeSeparator = {
 function gitContition() 
   return buffer_not_empty() and
     islongstatus() and
-    vcs.get_git_branch()
+    vcs.get_git_branch() and
+    vim.bo.filetype ~= 'NvimTree'
 end
 
 local GitIcon = { 
@@ -121,6 +128,10 @@ RelativeFilePath = {
     if #filepath > 200 and vim.fn.match(filepath, 'FZF$') then
         return ''
     end
+    if vim.bo.filetype == 'NvimTree' then
+      return ''
+    end
+
     if string.match(filepath, '^term://') then
       return ' ' .. vim.fn.expand('%:t')
     end
@@ -145,7 +156,16 @@ gls.left = {
 }
 
 local rightSeparator = ''
-local FileType = { provider = function() return vim.bo.filetype .. '   ' end, condition = buffer_not_empty, highlight = {colors.white,colors.bg}, }
+local FileType = { 
+  provider = function() return vim.bo.filetype .. '   ' end,
+  condition = function() return buffer_not_empty() and vim.bo.filetype ~= 'NvimTree' end,
+  highlight = {colors.white,colors.bg}, 
+}
+function cwdCondition()
+  return islongstatus() and 
+    vim.bo.filetype ~= 'fzf' and
+    vim.bo.filetype ~= 'NvimTree'
+end
 local Cwd = {
   provider = function()
     local cwd = vim.fn.getcwd()
@@ -158,10 +178,14 @@ local Cwd = {
     end
     return ' ' .. withoutHome .. ' '
   end,
+  condition = cwdCondition,
+  highlight = {colors.magenta,colors.darkblue}
+}
+local cwdSeparator = {
+  provider = function() return '' end,
   separator = rightSeparator,
   separator_highlight = {colors.darkblue,colors.bg},
   condition = islongstatus,
-  highlight = {colors.magenta,colors.darkblue}
 }
 local LineSeparator = { 
   provider = function() return ' ' end,
@@ -170,11 +194,19 @@ local LineSeparator = {
   separator_highlight = {colors.purple,colors.darkblue},
   highlight = {colors.purple,colors.purple}
 }
-local LineInfo = { provider = function() return ' ' .. fileinfo.line_column() .. ' ' end, highlight = {colors.grey,colors.purple}, }
+local LineInfo = { 
+  provider = function()
+    if vim.bo.filetype == 'NvimTree' then
+      return ''
+    end
+    return ' ' .. fileinfo.line_column() .. ' ' 
+  end,
+  highlight = {colors.grey,colors.purple}, }
 local PerCent = { provider = 'LinePercent', separator = rightSeparator, separator_highlight = {colors.yellow,colors.purple}, highlight = {colors.darkblue,colors.yellow}, }
 
 gls.right = {
   {FileType = FileType},
+  {cwdSeparator = cwdSeparator},
   {Cwd = Cwd},
   {LineSeparator = LineSeparator},
   {LineInfo = LineInfo},
