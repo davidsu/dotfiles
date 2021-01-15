@@ -1,4 +1,5 @@
 #!/bin/zsh
+export MRU_TXT="$HOME/.local/share/jsMRU.txt"
 function mru_auto_cd() {
     cd $(dirname $(sed -E 's#(.*):.*:.*#\1#' <<< $1))
     git rev-parse --show-toplevel > /dev/null 2>&1 && cd $(git rev-parse --show-toplevel)
@@ -7,7 +8,7 @@ function mru_auto_cd() {
 function mru(){
     # fzfresult=$(curl --silent http://localhost:2021 --max-time 0.05 --retry 4 | fzf --no-sort --exact \
     fzfresult=$( \
-        wget --quiet --timeout=0.025 --tries=4 -O - http://localhost:2021 | \
+        cat $MRU_TXT | \
         fzf --no-sort --exact \
         --preview '$DOTFILES/bin/preview.rb -v {1}' \
         --preview-window 'top:50%' \
