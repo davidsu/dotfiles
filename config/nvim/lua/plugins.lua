@@ -53,6 +53,7 @@ return require('packer').startup(function()
     use 'davidsu/fzf.vim'
   end
 
+  use {'glacambre/firenvim', run = ':call firenvim#install(0)' }
   use 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
   use 'davidsu/comfortable-motion.vim'                               
   use( os.getenv('DOTFILES') .. '/js/vim-js' )
@@ -61,7 +62,6 @@ return require('packer').startup(function()
   use 'davidsu/vim-visual-star-search'                                 -- extends */# to do what you would expect in visual mode
   -- use 'davidsu/vim-bufkill'                                         -- wipe buffer without closing it's window
   use 'tpope/vim-scriptease'                                           -- utilities for vim script authoring. Installed to use ':PP'=pretty print dictionary
-  use 'inkarkat/vim-ingo-library'                                      -- dependency of vim-mark
   use { 'idbrii/vim-mark', requires = { 'inkarkat/vim-ingo-library' }} -- highlighting of interesting words
   use { 'schickling/vim-bufonly', cmd = 'BufOnly' }                    -- delete all buffers but current
   use { 'davidsu/vim-plugin-AnsiEsc', cmd = 'AnsiEsc' }                -- type :AnsiEsc to get colors as terminal
