@@ -2,6 +2,7 @@ packer_compiled.vim
 vim/view/*
 yarn-error.log
 config/wireshark
+config/exercism
 config/hub
 config/nvim/plugged/*
 config/htop/*
