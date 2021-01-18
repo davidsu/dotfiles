@@ -8,8 +8,8 @@ let api
 const getCursorPosition = () => api.nvim_win_get_cursor(0)
 const str = obj => JSON.stringify(obj)
 
-async function jumpImplementation(pos) {
-  await api.nvim_call_function('CocAction', ['jumpImplementation'])
+async function jumpWithCoc(pos, method) {
+  await api.nvim_call_function('CocAction', [method])
   await new Promise(r => setTimeout(r, 25))
   const newPos = await getCursorPosition()
   return str(pos) !== str(newPos)
@@ -74,8 +74,10 @@ async function jumpImport() {
 
 commands.registerCommand('vim-js.goToDeclaration', async () => {
   api = await getApi()
-  debugger
   const pos = await getCursorPosition()
-  ;(await jumpImplementation(pos)) || (await jumpImport()) || fallbackFZF()
+  ;(await jumpWithCoc(pos, 'jumpImplementation')) ||
+    (await jumpWithCoc(pos, 'jumpDefinition')) ||
+    (await jumpImport()) ||
+    fallbackFZF()
 })
 nvim.command('command! JSGoToDeclaration :CocCommand vim-js.goToDeclaration')
