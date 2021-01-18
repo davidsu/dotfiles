@@ -13,6 +13,7 @@ augroup END
 ]], {})
 
 require('spaceline')
+require('lsp_configuration')
 
 if isModuleAvailable('nvim-treesitter.configs') then
 require'nvim-treesitter.configs'.setup {

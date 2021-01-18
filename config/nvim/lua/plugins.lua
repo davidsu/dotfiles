@@ -13,7 +13,7 @@ function cocTable(cocPlugin)
   }
 end
 return require('packer').startup(function()
-  use { 'wbthomason/packer.nvim', cmd='PackerInstall'} --packer: I'm requiring it, this prevents it from uninstalling itself on PackerClear
+  use { 'wbthomason/packer.nvim', cmd={'PackerInstall', 'PackerClean'}} --packer: I'm requiring it, this prevents it from uninstalling itself on PackerClear
   use(cocTable('neoclide/coc.nvim'))
   use(cocTable('neoclide/coc-git'))
   use(cocTable('neoclide/coc-eslint'))
@@ -69,6 +69,7 @@ return require('packer').startup(function()
   use 'blueyed/vim-diminactive' 
   use {'nvim-treesitter/nvim-treesitter', run = ':TSUpdate' }          -- We recommend updating the parsers on update
   use 'nvim-treesitter/playground'
+  -- use 'neovim/nvim-lspconfig'
   use 'dahu/vim-fanfingtastic'                                         -- improved f F t T commands
   use 'davidsu/nvcode-color-schemes.vim'
 
