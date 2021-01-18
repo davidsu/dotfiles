@@ -55,7 +55,8 @@ return require('packer').startup(function()
 
   use {'glacambre/firenvim', run = ':call firenvim#install(0)' }
   use 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
-  use 'davidsu/comfortable-motion.vim'                               
+  -- use 'davidsu/comfortable-motion.vim'                               
+  use 'psliwka/vim-smoothie'
   use( os.getenv('DOTFILES') .. '/js/vim-js' )
   use { 'tweekmonster/startuptime.vim', cmd = 'StartupTime' }  
   use 'tommcdo/vim-exchange'                                           -- exchange text with cx
