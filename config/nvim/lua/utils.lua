@@ -19,4 +19,8 @@ M.hasPacker = function()
   return vim.loop.fs_stat(os.getenv('HOME') .. '/.local/share/nvim/site/pack/packer/opt/packer.nvim')
 end
 
+_G.dump = function(table) 
+  print(require 'pl.pretty'.dump(table))
+end
+
 return M
