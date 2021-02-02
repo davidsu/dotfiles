@@ -22,7 +22,7 @@ return require('packer').startup(function()
   use(cocTable('fannheyward/coc-marketplace'))
   use(cocTable('neoclide/coc-snippets'))
   use(cocTable('neoclide/coc-git'))
-  -- use(cocTable('weirongxu/coc-explorer'))
+  use(cocTable('weirongxu/coc-explorer'))
   use 'kyazdani42/nvim-web-devicons'
   use 'kyazdani42/nvim-tree.lua'
 
@@ -98,6 +98,7 @@ return require('packer').startup(function()
     ft = { 'markdown' }, 
     run = 'cd app && yarn install'  
   }
+  use 'gabrielelana/vim-markdown'
   -- use {'plasticboy/vim-markdown', ft = 'markdown'}                   -- markdown
   -- use {'godlygeek/tabular', ft = 'markdown'}                         -- related to vim-markdown
 end)

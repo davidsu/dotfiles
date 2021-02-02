@@ -1,5 +1,7 @@
 " nmap 1n :lua require('nvim-tree').buf_enter()<cr>:NvimTreeRefresh<cr>:NvimTreeFindFile<cr>
-nmap 1n :lua require('lib.lib').change_dir(vim.fn.getcwd())<cr>:NvimTreeRefresh<cr>:NvimTreeFindFile<cr>
+" nmap 1n :lua require('lib.lib').change_dir(vim.fn.getcwd())<cr>:NvimTreeRefresh<cr>:NvimTreeFindFile<cr>
+nmap <c-n> :lua require('lib.lib').change_dir(vim.fn.getcwd())<cr>:NvimTreeRefresh<cr>:NvimTreeFindFile<cr>
+" nmap 1n :lua require('lib.lib').change_dir(vim.fn.getcwd())<cr>:NvimTreeRefresh<cr>:NvimTreeFindFile<cr>
 nmap <space>nt :NvimTreeToggle<cr>
 
 function s:nvimTreeUpDir()

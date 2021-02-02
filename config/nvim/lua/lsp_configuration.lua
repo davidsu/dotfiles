@@ -1,6 +1,5 @@
 local isModuleAvailable = require 'utils'.isModuleAvailable
 if not isModuleAvailable('lspconfig/configs') or not isModuleAvailable('lspconfig/util') then
-  print('missing modules')
   return
 end
 local M = {}

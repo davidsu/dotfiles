@@ -47,6 +47,7 @@ function modeColor()
         c= 'COMMAND',
         fzf = 'FZF',
         nvimtree = 'NvimTree',
+        explorer = 'Explorer',
         i = 'INSERT',
         modified = 'MODIFIED',
         n = 'NORMAL',
@@ -67,6 +68,9 @@ function modeColor()
     end
     if vim.bo.filetype == 'NvimTree' then
       mode = 'nvimtree'
+    end
+    if vim.bo.filetype == 'coc-explorer' then
+      mode = 'explorer'
     end
 
     return {
@@ -111,7 +115,8 @@ function gitContition()
   return buffer_not_empty() and
     islongstatus() and
     vcs.get_git_branch() and
-    vim.bo.filetype ~= 'NvimTree'
+    vim.bo.filetype ~= 'NvimTree' and
+    vim.bo.filetype ~= 'coc-explorer'
 end
 
 local GitIcon = { 
@@ -128,7 +133,7 @@ RelativeFilePath = {
     if #filepath > 200 and vim.fn.match(filepath, 'FZF$') then
         return ''
     end
-    if vim.bo.filetype == 'NvimTree' then
+    if vim.bo.filetype == 'NvimTree' or vim.bo.filetype == 'coc-explorer' then
       return ''
     end
 
@@ -158,13 +163,18 @@ gls.left = {
 local rightSeparator = ''
 local FileType = { 
   provider = function() return vim.bo.filetype .. '   ' end,
-  condition = function() return buffer_not_empty() and vim.bo.filetype ~= 'NvimTree' end,
+  condition = function() 
+    return buffer_not_empty() and 
+      vim.bo.filetype ~= 'NvimTree' and
+      vim.bo.filetype ~= 'coc-explorer'
+    end,
   highlight = {colors.white,colors.bg}, 
 }
 function cwdCondition()
   return islongstatus() and 
     vim.bo.filetype ~= 'fzf' and
-    vim.bo.filetype ~= 'NvimTree'
+    vim.bo.filetype ~= 'NvimTree' and
+    vim.bo.filetype ~= 'coc-explorer'
 end
 local Cwd = {
   provider = function()

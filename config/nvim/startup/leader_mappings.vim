@@ -233,8 +233,8 @@ nmap <space>lm :LeaderMappingsDeclaration<cr>
 nmap <space>cl :LetterCommands<cr>
 nmap <space>cc :CommandLineCommands<cr>
 nmap <space>cr :CocRestart<cr>
-nmap ]i :execute "BLines '".expand('<cword>')<cr>
-nmap [i :execute "BLines '".expand('<cword>')<cr>
+nmap ]i :execute "BLines ".expand('<cword>')<cr>
+nmap [i :execute "BLines ".expand('<cword>')<cr>
 nmap ]I :execute 'AgAllBLines \b'.expand('<cword>').'\b'<cr>
 nmap [I :execute 'AgAllBLines \b'.expand('<cword>').'\b'<cr>
 " i don't like the unimpaired ]l, [l commands, it's too much little finger
