@@ -1,5 +1,5 @@
 [user]
-	name = David
+	name = David Susskind
 	email = david.susskind@walkme.com
 [core]
 	excludesfile = ~/.gitignore_global

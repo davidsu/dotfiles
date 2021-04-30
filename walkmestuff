@@ -19,5 +19,21 @@ function sshci() {
     fi
     ssh -i $HOME/.ssh/dev-server.pem ec2-user@$1 -p 22 -v
 }
+
+function Connect2AppsProdCluster() {
+    gimme-aws-creds
+    aws eks --region us-east-1 update-kubeconfig --name eks-prod
+}
+
+function Connect2AppsQACluster() {
+    gimme-aws-creds
+    aws eks --region eu-west-1 update-kubeconfig --name eks-qa
+}
+
+function Connect2AppsEUProdCluster() {
+    gimme-aws-creds
+    aws eks --region eu-central-1 update-kubeconfig --name eks-euprod
+}
+
 alias nolocal='[[ -f ~/walkme/settings.json ]] && mv ~/walkme/settings.json ~/walkme/_settings.json'
 alias setlocal='[[ -f ~/walkme/_settings.json ]] && mv ~/walkme/_settings.json ~/walkme/settings.json'

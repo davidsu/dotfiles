@@ -8,7 +8,8 @@ const { readFileSync, writeFile, existsSync } = require("fs");
 const app = express();
 const port = 2021;
 const mruJsonPath = path.join(os.homedir(), ".local/share/jsMRU.json");
-const mruTxt = process.env.MRU_TXT;
+const mruTxt =
+  process.env.MRU_TXT || path.join(os.homedir(), ".local/share/jsMRU.txt");
 
 let mru;
 function init() {
@@ -22,10 +23,18 @@ init();
 
 const writeMru = debounce(() => {
   console.time("writeFile");
-  writeFile(mruTxt, mruString(), (err) => err && console.log(err));
+  writeFile(mruTxt, mruString(), (err) => {
+    if (err) {
+      console.log(err);
+      console.log(mruString());
+      console.log({ mruTxt });
+      process.exit(1);
+    }
+  });
   writeFile(mruJsonPath, JSON.stringify(mru), (err) => {
     if (err) {
       console.log({ err });
+      process.exit(1);
     }
     console.timeEnd("writeFile");
   });

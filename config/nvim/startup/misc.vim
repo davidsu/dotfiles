@@ -181,7 +181,7 @@ augroup configgroup
     " close info window in coc-explorer on <esc>
     autocmd FileType coc-explorer nmap <buffer><esc> kj
     " close help files on 'q'
-    autocmd FileType qf,help nnoremap <buffer>q :bd<cr>
+    autocmd FileType qf,help,fugitiveblame nnoremap <buffer>q :bd<cr>
     autocmd FileType vim call matchadd('vimComment', '|"[^''"]*$')
     
     autocmd FileType vim map <buffer><space>sc :source %<cr> 

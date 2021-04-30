@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 const { spawn, exec, execSync } = require('child_process')
 const  fetch  = require('node-fetch')
+process.env.NOT_GREEDY = true
+const { openChromeOnDebuggerUrl } = require('./debugger')
 
 //todo use yargs and clean up this mess
 const args = process.argv.splice(2)
@@ -8,7 +10,7 @@ const isInspect = arg => /--inspect/.test(arg)
 const inspectBrk = args.find(isInspect) || ''
 const timeout = inspectBrk ? '--testTimeout=600000': ''
 const otherArgs = inspectBrk ? args.filter(a => !isInspect(a)) : args
-const spawnArgs = [inspectBrk, 'node_modules/.bin/jest', timeout, ...otherArgs].filter(a => a) 
+const spawnArgs = [inspectBrk, '../../node_modules/.bin/jest', timeout, ...otherArgs].filter(a => a) 
 if(inspectBrk) {
     // automatic kill application holding my debugging port
     const port = Number(inspectBrk.split('=')[1]) || 9229
@@ -23,41 +25,13 @@ console.log(`node ${spawnArgs.join(' ')}`)
 process.env.FORCE_COLOR = true
 const jest = spawn('node', spawnArgs)
 
-function openChromeDevTools(url) {
-    // for some reason the appleScript `open location` command does't work with this url, worked around using sequence of keystrokes
-    // doesn't work from terminal `open -a 'Goole Chrome' ${url}` either
-    const osascript = `
-            osascript << 'END'
-            tell application "Google Chrome"
-                activate
-
-                #force open devtools, shouldn't have to do that, buggy computer at work
-                tell application "System Events" to keystroke "i" using { command down, option down }
-
-                tell application "System Events" to keystroke "l" using command down
-                delay 0.05
-                tell application "System Events" to keystroke "${url}"
-                tell application "System Events" to keystroke key code 36
-
-                #close the devtools that I opened by force
-                tell application "System Events" to keystroke "i" using { command down, option down }
-            end tell
-            END
-             `
-    // console.log(osascript)
-    exec(osascript)
-}
 function ondata(e, d) {
     const data = d.toString()
     console.log(data)
 
     if(/Debugger listening on/.test(data)) {
         //source https://github.com/ChromeDevTools/debugger-protocol-viewer/blob/33bdf34ea60c35c483261f398265a821f2e2c4f3/pages/index.md
-        fetch(`http://localhost:${Number(inspectBrk.split('=')[1]) || 9229}/json/list`)
-            .then(response => response.json())
-            .then(r => console.log('chrome url for debugging -> ', r) || r)
-            .then(([{devtoolsFrontendUrl, devtoolsFrontendUrlCompat}]) => openChromeDevTools(devtoolsFrontendUrl || devtoolsFrontendUrlCompat))
-            .catch(() => console.log('unable to get url to open devtools') )
+        openChromeOnDebuggerUrl(Number(inspectBrk.split('=')[1]) || 9229)
     }
 
     if(/Waiting for the debugger to disconnect/.test(data)) {

@@ -98,7 +98,11 @@ return require('packer').startup(function()
     ft = { 'markdown' }, 
     run = 'cd app && yarn install'  
   }
-  use 'gabrielelana/vim-markdown'
+  use 'maksimr/vim-jsbeautify'
+  use {
+    'gabrielelana/vim-markdown',
+    run = 'git submodule update --init --recursive'
+  }
   -- use {'plasticboy/vim-markdown', ft = 'markdown'}                   -- markdown
   -- use {'godlygeek/tabular', ft = 'markdown'}                         -- related to vim-markdown
 end)

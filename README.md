@@ -42,17 +42,18 @@
     - cyan: 7db6bb
     - white: c7c7c7
     - foreground: b2b2ac
-21. set itemr's "minimal contrast" slider to 0
+21. set iterm's "minimal contrast" slider to 0
+22. if needed, disable iterm's setting application tab title(e.g: you run yarn start in multiple tabs but still want to see pwd in tab title): iterm->Preferences->profiles->general->Title->uncheck 'applications may change the title'
 
-22. install [ITerm2 shell integration](https://www.iterm2.com/documentation-shell-integration.html): `curl -L https://iterm2.com/misc/install_shell_integration.sh | bash`
-23. enable mouse scroll for less in iterm: ITerm -> Preferences -> Advanced and search for "scroll"
-24. unmark checkbox of iterm->Preferences->terminal->Shell Integration[Show mark indicators]
-25. make cmd+click filename in iterm open in terminal vim (or cd into dir) [Preferences -> Profiles -> Advanced, Under "Semantic History", choose "Run coprocess..". In the text field, put:`echo 'if [[ -d \1 ]]; then cd \1; else vim \1 \2; fi'`
-26. install fasd: `git clone https://github.com/akatrevorjay/fasd.git && cd fasd && make install`
+23. install [ITerm2 shell integration](https://www.iterm2.com/documentation-shell-integration.html): `curl -L https://iterm2.com/misc/install_shell_integration.sh | bash`
+24. enable mouse scroll for less in iterm: ITerm -> Preferences -> Advanced and search for "scroll"
+25. unmark checkbox of iterm->Preferences->terminal->Shell Integration[Show mark indicators]
+26. make cmd+click filename in iterm open in terminal vim (or cd into dir) [Preferences -> Profiles -> Advanced, Under "Semantic History", choose "Run coprocess..". In the text field, put:`echo 'if [[ -d \1 ]]; then cd \1; else vim \1 \2; fi'`
+27. install fasd: `git clone https://github.com/akatrevorjay/fasd.git && cd fasd && make install`
     - don't use the brew version cuz it messes up the global alias V
-27. make changes in `_faasd_preexec` [like this](https://github.com/clvv/fasd/issues/120)
-28. install hub: `brew install hub`
-29. setup universal <Command-alt-ctrl-t> to open chrome dedicated node devtools: <br>
+28. make changes in `_faasd_preexec` [like this](https://github.com/clvv/fasd/issues/120)
+29. install hub: `brew install hub`
+30. setup universal <Command-alt-ctrl-t> to open chrome dedicated node devtools: <br>
     https://www.howtogeek.com/286332/how-to-run-any-mac-terminal-command-with-a-keyboard-shortcut/#:~:text=Click%20the%20first%20field%2C%20then,the%20current%20time%20out%20loud. <br>
     In short: set bin/nodedebugchrome.sh code through automator, open <br>
     systemPreferences -> keyboard -> shortcut -> general -> <br>
