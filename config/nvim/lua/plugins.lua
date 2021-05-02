@@ -14,15 +14,16 @@ function cocTable(cocPlugin)
 end
 return require('packer').startup(function()
   use { 'wbthomason/packer.nvim', cmd={'PackerInstall', 'PackerClean'}} --packer: I'm requiring it, this prevents it from uninstalling itself on PackerClear
-  use(cocTable('neoclide/coc.nvim'))
-  use(cocTable('neoclide/coc-git'))
-  use(cocTable('neoclide/coc-eslint'))
-  use(cocTable('neoclide/coc-tsserver'))
-  use(cocTable('iamcco/coc-vimlsp'))
-  use(cocTable('fannheyward/coc-marketplace'))
-  use(cocTable('neoclide/coc-snippets'))
-  use(cocTable('neoclide/coc-git'))
-  use(cocTable('weirongxu/coc-explorer'))
+  use 'neoclide/coc.nvim'
+--   use(cocTable('neoclide/coc.nvim'))
+--   use(cocTable('neoclide/coc-git'))
+--   use(cocTable('neoclide/coc-eslint'))
+--   use(cocTable('neoclide/coc-tsserver'))
+--   use(cocTable('iamcco/coc-vimlsp'))
+--   use(cocTable('fannheyward/coc-marketplace'))
+--   use(cocTable('neoclide/coc-snippets'))
+--   use(cocTable('neoclide/coc-git'))
+--   use(cocTable('weirongxu/coc-explorer'))
   use 'kyazdani42/nvim-web-devicons'
   use 'kyazdani42/nvim-tree.lua'
 
@@ -35,15 +36,6 @@ return require('packer').startup(function()
   --     require('gitsigns').setup()
   --   end
   -- }
-  -- let g:coc_global_extensions = [
-  --       \'coc-git',
-  --       \'coc-explorer',
-  --       \'coc-eslint',
-  --       \'coc-tsserver',
-  --       \'coc-vimlsp',
-  --       \'coc-marketplace',
-  --       \'coc-snippets'
-  --       \]
 
   if vim.loop.fs_stat('/usr/local/opt/fzf') then
     use '/usr/local/opt/fzf' 
