@@ -98,7 +98,6 @@ return require('packer').startup(function()
     ft = { 'markdown' }, 
     run = 'cd app && yarn install'  
   }
-  use 'maksimr/vim-jsbeautify'
   use {
     'gabrielelana/vim-markdown',
     run = 'git submodule update --init --recursive'
