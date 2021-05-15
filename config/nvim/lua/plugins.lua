@@ -14,8 +14,9 @@ function cocTable(cocPlugin)
 end
 return require('packer').startup(function()
   use 'wbthomason/packer.nvim'
-  use 'neoclide/coc.nvim'
---   use(cocTable('neoclide/coc.nvim'))
+  -- use 'neoclide/coc.nvim'
+  use(cocTable('neoclide/coc.nvim'))
+  use 'neoclide/jsonc.vim'
 --   use(cocTable('neoclide/coc-git'))
 --   use(cocTable('neoclide/coc-eslint'))
 --   use(cocTable('neoclide/coc-tsserver'))

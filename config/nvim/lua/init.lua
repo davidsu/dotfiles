@@ -17,7 +17,10 @@ require('lsp_configuration')
 
 if isModuleAvailable('nvim-treesitter.configs') then
 require'nvim-treesitter.configs'.setup {
-  highlight = { enable = true }, 
+  highlight = { 
+    enable = true,
+    disable = {'json', 'jsonc'}
+  }, 
   incremental_selection = {
     enable = true,
     keymaps = {
