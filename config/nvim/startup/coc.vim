@@ -42,6 +42,8 @@ let g:coc_global_extensions = [
       \'coc-tsserver',
       \'coc-vimlsp',
       \'coc-marketplace',
-      \'coc-snippets'
+      \'coc-snippets',
+      \'coc-swagger'
       \]
-let g:coc_snippet_next = '<tab>'
+let g:coc_snippet_next = '<Tab>'
+let g:coc_snippet_prev = '<S-Tab>'

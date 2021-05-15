@@ -2,12 +2,11 @@ snippet #! "shebang" b
 #!/usr/bin/env node
 endsnippet
 
-snippet us "'use strict'"
-'use strict'
+snippet writeFile 
+require('fs').writeFileSync('/tmp/${1:${VISUAL:a.json}}', ${2:${VISUAL:js}})
 endsnippet
-
-snippet strict "'use strict'"
-'use strict'
+snippet wf "fs.writeFile"
+require('fs').writeFileSync('/tmp/${1:${VISUAL:a.json}}', ${2:${VISUAL:js}})
 endsnippet
 
 snippet : "key: value"

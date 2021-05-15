@@ -1,6 +1,7 @@
 {
    "diagnostic.enable": true,
    "tsserver.implicitProjectConfig.checkJs": false,
+   // "tsserver.trace.server": "verbose",
    "diagnostic.virtualText": true,
    "suggest.enablePreview":false,
    "diagnostic.level": "error",
