@@ -2,7 +2,7 @@
 export async function activate() {
   require('./autocd')
   require('./goToDeclaration')
-  require('./prettyHtml')
+  require('./formatBufferByType')
   // require('./vimspectorHelper')
   // require('./jest-runner')
 }

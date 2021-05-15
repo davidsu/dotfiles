@@ -183,9 +183,10 @@ xmap gS  <Plug>VgSurround
 
 map <space>tc :tabclose<cr>
 map <space>te :call utils#toTerminal()<cr>
-map <space>sn :UltiSnipsEdit<cr>
+map <space>sn :CocCommand snippets.openSnippetFiles<cr>
 map <space>st :Scripts<cr>
 
+nnoremap <space>jf :CocCommand vim-js.formatBufferByType<cr>
 "visual mode on pasted text
 nnoremap <space>vp `[v`]
 "same as :quit
