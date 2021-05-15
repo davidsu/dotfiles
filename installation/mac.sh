@@ -36,6 +36,7 @@ function installBrewWithDependencies() {
 	fi
 
 	brew install \
+		git \
 		fnm \
 		the_silver_searcher \
 		ripgrep \
