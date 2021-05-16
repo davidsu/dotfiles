@@ -187,6 +187,7 @@ map <space>sn :CocCommand snippets.openSnippetFiles<cr>
 map <space>st :Scripts<cr>
 
 nnoremap <space>jf :CocCommand vim-js.formatBufferByType<cr>
+nmap <space>bo :BufOnly!<cr>:tabonly<cr>
 "visual mode on pasted text
 nnoremap <space>vp `[v`]
 "same as :quit
@@ -251,7 +252,7 @@ nmap <space>lj :lnext<cr>
 nmap <space>lk :lprev<cr>
 
 " run test (well, if available)
-nmap <space>rt :Shell! export MOCHA_OPTIONS='--colors'; npm run test<cr>
+nmap <space>rt :CocCommand vim-js.runjest<cr>
 "<c-l> complete to longest possible
 "<c-d> list all possibilities
 cnoremap <c-space> <C-l><C-d>
