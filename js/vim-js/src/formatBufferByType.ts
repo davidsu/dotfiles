@@ -48,6 +48,6 @@ async function formatBuffer() {
   }
 }
 commands.registerCommand('vim-js.formatBufferByType', formatBuffer)
-nvim.command('command! PrettyHtml :CocCommand vim-js.prettyHtml')
-nvim.command('command! PrettyJson :CocCommand vim-js.prettyHtml')
-nvim.command('command! FormatFileByType :CocCommand vim-js.prettyHtml')
+nvim.command('command! PrettyHtml :CocCommand vim-js.formatBufferByType')
+nvim.command('command! PrettyJson :CocCommand vim-js.formatBufferByType')
+nvim.command('command! FormatFileByType :CocCommand vim-js.formatBufferByType')
