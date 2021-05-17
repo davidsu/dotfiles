@@ -85,6 +85,11 @@ endfunction
 "-----------------------------------------------------------------------------}}}
 "SHELL                                                                      {{{ 
 "--------------------------------------------------------------------------------
+function! utils#scroll_preview(...) 
+    silent! wincmd P
+    normal! G
+    silent! wincmd p
+endfunction
 function! utils#run_shell_command(cmdline, bang)
     let expanded_cmdline = a:cmdline
     if a:bang
@@ -101,15 +106,15 @@ function! utils#run_shell_command(cmdline, bang)
     execute 'pedit '.s:shell_tmp_output
     wincmd P
     wincmd J
+    let DoScroll=function('utils#scroll_preview')
     let s:callbacks = {
-    \ 'on_stdout': { -> execute('silent! wincmd P | silent normal G | wincmd p') },
-    \ 'on_stderr': { -> execute('silent! wincmd P | silent normal G | wincmd p') },
-    \ 'on_exit': { ->   execute('silent! wincmd P | silent normal G | wincmd p') },
+    \ 'on_stdout': DoScroll,
+    \ 'on_stderr': DoScroll,
+    \ 'on_exit': DoScroll,
     \ }
     call termopen(expanded_cmdline, s:callbacks)
     nnoremap <buffer>q :bwipeout!<cr>
-    setlocal modifiable
-    setlocal nobuflisted
+    setlocal modifiable bufhidden=wipe noswapfile nobuflisted nomodified
     wincmd p
 endfunction
 

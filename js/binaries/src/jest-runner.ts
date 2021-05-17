@@ -25,13 +25,23 @@ function getTestCommand(projectRoot, isInspect) {
 }
 
 const isInspectArg = arg => /--inspect/.test(arg)
+function killPortHolderIfExists(inspect) {
+  if (inspect) {
+    // automatic kill application holding my debugging port
+    const port = Number(inspect.split('=')[1]) || 9229
+    try {
+      console.log(execSync(`kill $(lsof -i tcp:${port} -t)`).toString())
+    } catch (e) {}
+  }
+}
 export function runjest(args, projectRoot) {
-  const isInspect = !!args.find(isInspectArg)
-  const [runner, ...spawnArgs] = getTestCommand(projectRoot, isInspect).split(' ')
+  const inspect = args.find(isInspectArg)
+  const [runner, ...spawnArgs] = getTestCommand(projectRoot, !!inspect).split(' ')
   const otherArgs = args.filter(a => !isInspectArg(a))
   const allSpawnArgs = [...spawnArgs, ...otherArgs].filter(a => !!a)
   console.log(JSON.stringify({ cwd: projectRoot, env: { CI: '1', FORCE_COLOR: '1' } }, null, 2))
   console.log(`${runner} ${allSpawnArgs.join(' ')}`)
+  killPortHolderIfExists(inspect)
   const jest = spawn(runner, allSpawnArgs, { cwd: projectRoot, env: { CI: '1', FORCE_COLOR: '1', ...process.env } })
 
   function ondata(e, d) {
