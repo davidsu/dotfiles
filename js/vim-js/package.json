@@ -42,6 +42,8 @@
     "*"
   ],
   "dependencies": {
+    "binaries": "^1.0.0",
+    "common": "^1.0.0",
     "debounce": "^1.2.0",
     "fs-extra": "^9.0.1",
     "js-beautify": "^1.13.13",

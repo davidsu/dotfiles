@@ -42,7 +42,7 @@ export DOTFILES=$HOME/.dotfiles
 PROMPT="%~$ "
 DISABLE_AUTO_UPDATE=true
 export LC_ALL=en_US.UTF-8
-export PATH=~/Library/Python/3.7/bin:$PATH:$HOME/.dotfiles/bin #:$HOME/.zgen/paulirish/git-open-master
+export PATH=~/Library/Python/3.7/bin:$PATH:$HOME/.dotfiles/bin:$HOME/.dotfiles/js/node_modules/.bin #:$HOME/.zgen/paulirish/git-open-master
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 [ -f ~/.fzf/shell/completion.zsh ] && source ~/.fzf/shell/completion.zsh
 [ -f ~/Dropbox/terminal/quickOpen.sh ] && source ~/Dropbox/terminal/quickOpen.sh

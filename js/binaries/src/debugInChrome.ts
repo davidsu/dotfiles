@@ -1,10 +1,11 @@
-#!/usr/bin/env node
-const  fetch  = require('node-fetch')
-const { exec } = require('child_process')
+/* eslint-disable no-console */
+import fetch from 'node-fetch'
+import { exec } from 'child_process'
+
 function openChromeDevTools(url) {
-    // for some reason the appleScript `open location` command does't work with this url, worked around using sequence of keystrokes
-    // doesn't work from terminal `open -a 'Goole Chrome' ${url}` either
-    const osascript = `
+  // for some reason the appleScript `open location` command does't work with this url, worked around using sequence of keystrokes
+  // doesn't work from terminal `open -a 'Goole Chrome' ${url}` either
+  const osascript = `
             osascript << 'END'
             tell application "Google Chrome"
                 activate
@@ -22,17 +23,22 @@ function openChromeDevTools(url) {
             end tell
             END
              `
-    // console.log(osascript)
-    exec(osascript)
+  // console.log(osascript)
+  exec(osascript)
 }
 
-const openChromeOnDebuggerUrl = (port = 9229) => fetch(`http://localhost:${port}/json/list`) //curl http://localhost:9229/json/list
+export const openChromeOnDebuggerUrl = (port = 9229, retry = 0) =>
+  fetch(`http://localhost:${port}/json/list`) //curl http://localhost:9229/json/list
     .then(response => response.json())
+    //@ts-expect-error
     .then(r => console.log('chrome url for debugging -> ', r) || r)
-    .then(([{devtoolsFrontendUrl, devtoolsFrontendUrlCompat}]) => openChromeDevTools(devtoolsFrontendUrl || devtoolsFrontendUrlCompat))
-    .catch(() => console.log('unable to get url to open devtools') )
-
-if(!process.env.NOT_GREEDY) {
-    openChromeOnDebuggerUrl()
-}
-module.exports = { openChromeOnDebuggerUrl }
+    .then(([{ devtoolsFrontendUrl, devtoolsFrontendUrlCompat }]) =>
+      openChromeDevTools(devtoolsFrontendUrl || devtoolsFrontendUrlCompat)
+    )
+    .catch(() => {
+      if (retry < 50) {
+        setTimeout(() => openChromeOnDebuggerUrl(port, retry + 1), 20)
+      } else {
+        console.log('unable to get url to open devtools')
+      }
+    })

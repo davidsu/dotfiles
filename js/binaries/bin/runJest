@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+const { runjest } = require('../dist/jest-runner')
+const { getProjectRoot } = require('common/dist/utils')
+runjest(process.argv.splice(2), getProjectRoot(process.cwd()))

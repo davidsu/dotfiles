@@ -1,8 +1,7 @@
-import { execSync } from 'child_process'
 import { commands, workspace, BasicList, listManager } from 'coc.nvim'
 import { existsSync, writeFileSync } from 'fs'
 import path from 'path'
-import { getProjectRoot, getGitRoot } from './utils'
+import { getProjectRoot, getGitRoot } from 'common/src/utils'
 const { nvim } = workspace
 
 const vimspectorFunctions = [
