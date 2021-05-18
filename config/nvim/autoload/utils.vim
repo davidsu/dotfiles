@@ -90,11 +90,9 @@ function! utils#scroll_preview(...)
     normal! G
     silent! wincmd p
 endfunction
+
 function! utils#run_shell_command(cmdline, bang)
     let expanded_cmdline = a:cmdline
-    if a:bang
-        let expanded_cmdline = 'eval "$(fnm env)" && fnm use && '.expanded_cmdline
-    endif
     " echo a:cmdline
     for part in split(a:cmdline, ' ')
         if part[0] =~ '\v[%#<]'
@@ -105,7 +103,6 @@ function! utils#run_shell_command(cmdline, bang)
     let s:shell_tmp_output = tempname()
     execute 'pedit '.s:shell_tmp_output
     wincmd P
-    wincmd J
     let DoScroll=function('utils#scroll_preview')
     let s:callbacks = {
     \ 'on_stdout': DoScroll,
@@ -115,7 +112,13 @@ function! utils#run_shell_command(cmdline, bang)
     call termopen(expanded_cmdline, s:callbacks)
     nnoremap <buffer>q :bwipeout!<cr>
     setlocal modifiable bufhidden=wipe noswapfile nobuflisted nomodified
-    wincmd p
+    if(a:bang) 
+        call Zoom()
+    else
+        wincmd J
+        wincmd p
+    endif
+
 endfunction
 
 "-----------------------------------------------------------------------------}}}

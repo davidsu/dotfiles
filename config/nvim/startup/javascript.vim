@@ -18,6 +18,18 @@ function! s:setIndentMapping()
 endfunction
 
 function! s:setmapping()
+
+    " run test (well, if available)
+    nnoremap <buffer><space>rt :CocCommand vim-js.runjest<cr>
+    nnoremap <buffer><space>dt :CocCommand vim-js.runjest --inspect-brk<cr>
+    nnoremap <buffer><space>rT :CocCommand vim-js.runjest BANG<cr>
+    nnoremap <buffer><space>dT :CocCommand vim-js.runjest --inspect-brk BANG<cr>
+
+    nnoremap <buffer><space>tr :CocCommand vim-js.runjest<cr>
+    nnoremap <buffer><space>ti :CocCommand vim-js.runjest --inspect-brk<cr>
+    nnoremap <buffer><space>tR :CocCommand vim-js.runjest BANG<cr>
+    nnoremap <buffer><space>tI :CocCommand vim-js.runjest --inspect-brk BANG<cr>
+
     nnoremap <buffer>{ :call GoToNextFunction(-1, 0, 1)<cr>
     nnoremap <buffer>} :call GoToNextFunction(-1, 0, 0)<cr>
     nmap <buffer>K :call CocAction('doHover')<cr>
@@ -84,3 +96,5 @@ augroup javascript
     " autocmd Filetype javascript vnoremap <buffer>1= :<C-u>setf jsx<cr>gv=:<C-u>setf javascript<cr>
 augroup END
 "-----------------------------------------------------------------------------}}}
+
+command! NoCheck call append(0, '//@ts-nocheck')

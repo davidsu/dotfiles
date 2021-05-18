@@ -20,7 +20,7 @@ function getTestCommand(projectRoot, isInspect) {
   const testCommand = test.replace(/.*\b(react-app-rewired|react-scripts|jest)\b.*/, '$1')
   const testCommandPrefix =
     testCommand === 'jest' ? getJestCommand(projectRoot, isInspect) : getReactTestCommand(isInspect, testCommand)
-  const testCommandPostfix = isInspect ? '--testTimeout=0' : ''
+  const testCommandPostfix = isInspect ? `--testTimeout=${2 ** 31 - 1}` : ''
   return `${testCommandPrefix} ${testCommandPostfix}`
 }
 

@@ -251,10 +251,6 @@ nmap [I :execute 'AgAllBLines \b'.expand('<cword>').'\b'<cr>
 nmap <space>lj :lnext<cr>
 nmap <space>lk :lprev<cr>
 
-" run test (well, if available)
-nmap <space>rt :CocCommand vim-js.runjest<cr>
-nmap <space>tr :CocCommand vim-js.runjest<cr>
-nmap <space>ti :CocCommand vim-js.runjest --inspect-brk<cr>
 "<c-l> complete to longest possible
 "<c-d> list all possibilities
 cnoremap <c-space> <C-l><C-d>
