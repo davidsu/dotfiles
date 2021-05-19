@@ -13,7 +13,7 @@ endfunction
 nmap 1n :<c-u>CocCommand explorer<cr>
 nmap <space>nf :call FocusInExplorer()<cr>
 
-nmap <space>cd <Plug>(coc-definition)
+nmap <space>cd :call coc#float#close_all()<cr>:call CocActionAsync('jumpDefinition')<cr>
 xmap <space>rf <Plug>(coc-codeaction-selected)
 nmap <space>lo :CocDiagnostics<cr>
 nmap <C-c> <Plug>(coc-float-hide)
