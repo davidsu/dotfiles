@@ -89,9 +89,10 @@ augroup javascript
     " autocmd BufNewFile,BufRead *.js set filetype=typescript
     autocmd BufReadPost *.jsx,*.tsx set filetype=typescript.tsx
     let g:markdown_fenced_languages = ['css', 'javascript', 'js=javascript', 'json=javascript', 'stylus', 'html']
-    autocmd BufWritePost *.jsx,*.tsx set filetype=typescript " hack to make go-to-declaration work AND coc tsx files work
-    autocmd FileType javascript,json,typescript,typescript.tsx call <SID>setIndentMapping()
+    " autocmd BufWritePost *.jsx,*.tsx set filetype=typescript " hack to make go-to-declaration work AND coc tsx files work
+    autocmd FileType javascript,json,typescript,typescript.tsx,html call <SID>setIndentMapping()
     autocmd FileType javascript,typescript,typescript.tsx call <SID>setmapping()
+    autocmd FileType html set foldmethod=indent
     " autocmd FileType javascript nnoremap <buffer>cof :call JSToggleFoldMethod()<cr>
     " autocmd Filetype javascript vnoremap <buffer>1= :<C-u>setf jsx<cr>gv=:<C-u>setf javascript<cr>
 augroup END
