@@ -1,7 +1,9 @@
 import { commands, workspace } from 'coc.nvim'
 import { getApi } from './api'
-import { format } from 'prettier'
 import sortKeys from 'sort-keys'
+//using prettier standalone + parserHtml to get ~1M bundle instead of 13M
+import { format } from 'prettier/standalone'
+import parserHtml from 'prettier/parser-html'
 
 const { nvim } = workspace
 
@@ -16,7 +18,7 @@ async function writeLines(lines, api) {
   await api.nvim_buf_set_lines(0, 0, split.length + 1000, false, split)
 }
 async function prettyHtml(api) {
-  const pretty = format(await getLines(api), { parser: 'html', printWidth: 240 })
+  const pretty = format(await getLines(api), { parser: 'html', printWidth: 240, plugins: [parserHtml] })
   await writeLines(pretty, api)
 }
 
