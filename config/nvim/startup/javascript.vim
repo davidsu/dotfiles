@@ -92,7 +92,8 @@ augroup javascript
     " autocmd BufWritePost *.jsx,*.tsx set filetype=typescript " hack to make go-to-declaration work AND coc tsx files work
     autocmd FileType javascript,json,typescript,typescript.tsx,html call <SID>setIndentMapping()
     autocmd FileType javascript,typescript,typescript.tsx call <SID>setmapping()
-    autocmd FileType html set foldmethod=indent
+    autocmd FileType html setlocal foldmethod=indent
+    autocmd FileType html setlocal foldnestmax=10000
     " autocmd FileType javascript nnoremap <buffer>cof :call JSToggleFoldMethod()<cr>
     " autocmd Filetype javascript vnoremap <buffer>1= :<C-u>setf jsx<cr>gv=:<C-u>setf javascript<cr>
 augroup END

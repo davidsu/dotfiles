@@ -76,10 +76,10 @@ return require('packer').startup(function()
   use { 'davidsu/gv.vim', cmd = 'GV' }                                 -- :GV browse commits like a pro
   use 'tpope/vim-sleuth'                                               -- detect indent style (tabs vs. spaces)
   use 'sickill/vim-pasta'                                              -- fix indentation when pasting
-  use { 'junegunn/limelight.vim', cmd = 'Limelight' }                  -- focus tool. Good for presentating with vim
-  use { 'mattn/emmet-vim', ft = 'html' }                               -- emmet support for vim - easily create markdup wth CSS-like syntax
-  use 'alvan/vim-closetag'
-  use { 'othree/html5.vim', ft = 'html' }                              -- html5 support
+  -- use { 'junegunn/limelight.vim', cmd = 'Limelight' }                  -- focus tool. Good for presentating with vim
+  -- use { 'mattn/emmet-vim', ft = 'html' }                               -- emmet support for vim - easily create markdup wth CSS-like syntax
+  -- use 'alvan/vim-closetag'
+  -- use { 'othree/html5.vim', ft = 'html' }                              -- html5 support
   use { 'cakebaker/scss-syntax.vim', ft = 'scss' }                     -- sass scss syntax support
   use 'norcalli/nvim-colorizer.lua'
   use { 'hail2u/vim-css3-syntax', ft = 'css' }                         -- CSS3 syntax support

@@ -1,6 +1,6 @@
 import { commands, workspace } from 'coc.nvim'
-import { html } from 'js-beautify'
 import { getApi } from './api'
+import { format } from 'prettier'
 import sortKeys from 'sort-keys'
 
 const { nvim } = workspace
@@ -16,7 +16,7 @@ async function writeLines(lines, api) {
   await api.nvim_buf_set_lines(0, 0, split.length + 1000, false, split)
 }
 async function prettyHtml(api) {
-  const pretty = html(await getLines(api), { wrap_attributes: 'force', inline: [] })
+  const pretty = format(await getLines(api), { parser: 'html', printWidth: 240 })
   await writeLines(pretty, api)
 }
 
