@@ -26,7 +26,8 @@ async function bufferToObject(api) {
     return JSON.parse(lines)
   } catch (e) {
     //assume we have javascript object in buffer
-    return JSON.parse(eval(`JSON.stringify(${lines})`))
+    //use (0, eval) to satisfy esbuild.js
+    return JSON.parse((0, eval)(`JSON.stringify(${lines})`))
   }
 }
 async function formatJson(api) {
@@ -41,6 +42,7 @@ const formaters = {
   json: formatJson,
 }
 async function formatBuffer() {
+  debugger
   const api = await getApi()
   const ft = await api.nvim_buf_get_option(0, 'filetype')
   if (ft in formaters) {
