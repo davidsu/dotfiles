@@ -26,7 +26,6 @@ return require('packer').startup(function()
 --   use(cocTable('neoclide/coc-git'))
 --   use(cocTable('weirongxu/coc-explorer'))
   use 'kyazdani42/nvim-web-devicons'
-  use 'kyazdani42/nvim-tree.lua'
 
   -- use { --not stable, see https://github.com/lewis6991/gitsigns.nvim/issues/44
   --   'lewis6991/gitsigns.nvim',
