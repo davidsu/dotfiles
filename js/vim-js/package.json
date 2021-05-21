@@ -22,8 +22,7 @@
     "printWidth": 120,
     "semi": false
   },
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "activationEvents": [
     "*"
   ],
@@ -31,6 +30,7 @@
     "binaries": "^1.0.0",
     "common": "^1.0.0",
     "debounce": "^1.2.0",
+    "js-beautify": "^1.13.13",
     "node-fetch": "^2.6.1",
     "sort-keys": "^5.0.0"
   }
