@@ -250,6 +250,8 @@ nmap [I :execute 'AgAllBLines \b'.expand('<cword>').'\b'<cr>
 " i don't like the unimpaired ]l, [l commands, it's too much little finger
 nmap <space>lj :lnext<cr>
 nmap <space>lk :lprev<cr>
+nmap <C-n> :tabnext<cr>
+nmap <C-p> :tabprev<cr>
 
 "<c-l> complete to longest possible
 "<c-d> list all possibilities
