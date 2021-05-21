@@ -101,8 +101,14 @@ function! utils#run_shell_command(cmdline, bang)
         endif
     endfor
     let s:shell_tmp_output = tempname()
-    execute 'pedit '.s:shell_tmp_output
-    wincmd P
+    if(a:bang) 
+        tabnew
+        execute 'pedit '.s:shell_tmp_output
+        only
+    else
+        execute 'pedit '.s:shell_tmp_output
+        wincmd P
+    endif
     let DoScroll=function('utils#scroll_preview')
     let s:callbacks = {
     \ 'on_stdout': DoScroll,
@@ -112,7 +118,7 @@ function! utils#run_shell_command(cmdline, bang)
     call termopen(expanded_cmdline, s:callbacks)
     nnoremap <buffer>q :bwipeout!<cr>
     setlocal modifiable bufhidden=wipe noswapfile nobuflisted nomodified
-    if(a:bang) 
+    if(!a:bang) 
         call Zoom()
     else
         wincmd J
