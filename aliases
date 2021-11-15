@@ -49,7 +49,7 @@ alias -g ME='--author=david.susskind'
 alias -g NO='--name-only'
 alias -g PJ='package.json'
 alias -g NP='NOPRETTY=true'
-alias -g NY="':!yarn.lock' ':!*/yarn.lock'"
+alias -g NY="':!yarn.lock' ':!*/yarn.lock' ':!package-lock.json'"
 alias -g NOYARN="':!yarn.lock' ':!*/yarn.lock'"
 alias -g NS='--name-status'
 alias -g MC='--max-count=100'
@@ -80,19 +80,16 @@ alias gbw='git-branch-wipeout'
 function gsv() {
     gitstatus=$(git status)
     if [[ $gitstatus =~ 'both modified' ]]; then
+       echo 'this flow is likely broken :)'
         vim -u $HOME/.dotfiles/config/nvim/init_for_gsv.vim \
            -c 'let g:tmp=search("both modi")' \
            -c 'call feedkeys("\<C-n>dv:Gstatus\<cr>\<C-w>K".g:tmp."G") ' \
            $(git rev-parse --show-toplevel)/.git/index 
-     elif [[ $1 ]]; then
-        vim -c 'call feedkeys(":Gstatus\<cr>\<C-n>D:call DeferGstatus()\<cr>") ' 
      else
-        vim -u $HOME/.dotfiles/config/nvim/init_for_gsv.vim \
-           -c 'call feedkeys("\<C-n>D:Gstatus\<cr>\<C-n>\<C-w>K") ' \
-            $(git rev-parse --show-toplevel)/.git/index
+      vim -c 'call feedkeys(":Git\<cr>]mdd\<C-K>") ' 
     fi
 }
-alias gsva='gsv 1'
+alias gsva='gsv'
 # alias gsv='vim -c '\''source $DOTFILES/config/nvim/startup/fugitive.vim'\'' -c '\''call feedkeys("\<C-n>D:Gstatus\<cr>\<C-n>\<C-w>K") '\'' $(git rev-parse --show-toplevel)/.git/index'
 # alias chrome='/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --disable-web-security --user-data-dir'
 # alias chrome='/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --user-data-dir --no-default-browser-check --no-first-run --disable-default-apps --disable-popup-blocking --disable-translate --disable-background-timer-throttling --disable-device-discovery-notifications'

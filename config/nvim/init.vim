@@ -1,4 +1,3 @@
-" //todo: how to automatic open fold when jumping into it?
 " vim: foldmethod=marker
 autocmd!
 " Load startup files{{{1--------------------------------------------------------------------------------------------------
@@ -22,13 +21,6 @@ function! SourceMyScripts()
     endfor
 endfunction
 call SourceMyScripts()
-function! DeferGstatus(...)
-    if(a:0 == 0)
-        call timer_start(3, 'DeferGstatus', {'repeat':1})
-    else
-        Gstatus
-    endif
-endfunction
 lua require('init')
 
 let g:nvcode_termcolors=256
