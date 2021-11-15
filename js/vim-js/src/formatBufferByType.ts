@@ -24,6 +24,9 @@ async function prettyHtml(api) {
     inline: [],
   })
     .replace(/(<svg.*?\/svg>)/gm, (_, g) => g.replace(/\s+/g, ' '))
+    .replace(/(<\w+)([^>]*?)(data-testid="[^"]+")/g, (_, tag, rest, testid) =>
+      `${tag} ${testid} ${rest}`.replace(/\s\s+/, ' ')
+    )
     .replace(/\n\s+(\w)/g, ' $1')
   await writeLines(pretty, api)
 }
