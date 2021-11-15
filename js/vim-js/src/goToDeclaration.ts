@@ -29,9 +29,10 @@ async function fallbackFZF() {
   } else {
     const options = [
       '--preview-window up:50%',
-      "--preview '$HOME/.dotfiles/config/nvim/plugged/fzf.vim/bin/preview.rb'\\ -v\\ {}",
+      "--preview '$HOME/.dotfiles/bin/preview.rb'\\ -v\\ {}",
       "--header 'CTRL-o - open without abort :: CTRL-s - toggle sort :: CTRL-g - toggle preview window'",
       "--bind 'ctrl-g:toggle-preview,ctrl-o:execute:$DOTFILES/fzf/fhelp.sh {} > /dev/tty'",
+      "--query '!build/ !coverage/'",
     ].join(' ')
     const down = '100%'
     api.nvim_call_function('fzf#vim#ag', [`\\b${word}\\b`, { options, down }, 1])
@@ -72,12 +73,56 @@ async function jumpImport() {
   }
 }
 
-commands.registerCommand('vim-js.goToDeclaration', async () => {
+async function isTSTypeFile() {
+  const filePath = await api.nvim_eval("expand('%:p')")
+  return /\.d\.ts$/.test(filePath)
+}
+
+async function definitionFileHandler() {
+  await rewind('<c-o>')
+  fallbackFZF()
+}
+
+const isCocList = async () => (await api.nvim_buf_get_option(0, 'filetype')) === 'list'
+
+async function cocListHandler() {
+  const lineCount = await api.nvim_buf_line_count(0)
+  const lines = await api.nvim_buf_get_lines(0, 0, lineCount, false)
+  const nonTypeDefinition = lines.map((line, i) => [line, i]).filter(line => !/\.d\.ts\b/.test(line))
+  if (nonTypeDefinition.length === 0) {
+    await rewind('<esc>')
+    fallbackFZF()
+  } else if (nonTypeDefinition.length === 1) {
+    await rewind(`%{nonTypeDefinition[0][1]}G<cr>`)
+  }
+}
+
+async function rewind(rewindKeys, wait = 50) {
+  const escapedRewindKeys = await api.nvim_replace_termcodes(rewindKeys, true, false, true)
+  await api.nvim_feedkeys(escapedRewindKeys, 'n', true)
+  await new Promise(r => setTimeout(r, wait))
+}
+
+async function goToDeclaration() {
   api = await getApi()
   const pos = await getCursorPosition()
-  ;(await jumpWithCoc(pos, 'jumpImplementation')) ||
+  const jumpFail = !(
+    (await jumpWithCoc(pos, 'jumpImplementation')) ||
     (await jumpWithCoc(pos, 'jumpDefinition')) ||
-    (await jumpImport()) ||
+    (await jumpImport())
+  )
+
+  if (await isTSTypeFile()) {
+    definitionFileHandler()
+  } else if (await isCocList()) {
+    cocListHandler()
+  } else if (jumpFail && str(pos) === str(await getCursorPosition())) {
     fallbackFZF()
+  }
+}
+
+commands.registerCommand('vim-js.goToDeclaration', () => {
+  goToDeclaration()
 })
+
 nvim.command('command! JSGoToDeclaration :CocCommand vim-js.goToDeclaration')
