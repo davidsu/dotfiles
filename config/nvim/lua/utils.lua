@@ -16,7 +16,7 @@ M.isModuleAvailable = function (name)
 end
 
 M.hasPacker = function()
-  return vim.loop.fs_stat(os.getenv('HOME') .. '/.local/share/nvim/site/pack/packer/opt/packer.nvim')
+  return vim.loop.fs_stat(os.getenv('HOME') .. '/.local/share/nvim/site/pack/packer/start/packer.nvim')
 end
 
 _G.dump = function(table) 
