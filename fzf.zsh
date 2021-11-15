@@ -9,7 +9,7 @@ chromehistory() {
   #whenever you need to find what is the proper history file use this piece of code from ...Support/Google/
   #taken from https://stackoverflow.com/questions/4561895/how-to-recursively-find-the-latest-modified-file-in-a-directory
   #find . -type f -print0 | xargs -0 stat -f "%m %N" | sort -rn | head -1 | cut -f2- -d" "
-  historyfile=~/Library/Application\ Support/Google/Chrome/Profile\ 5/History
+  historyfile=~/Library/Application\ Support/Google/Chrome/Profile\ 1/History
   if [[ ! -f $historyfile ]]; then
       historyfile=~/Library/Application\ Support/Google/Chrome/Default/History
       if [[ ! -f $historyfile ]]; then
