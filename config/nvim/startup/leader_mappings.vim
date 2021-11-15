@@ -98,17 +98,17 @@ nmap <silent><space>ws :OpenInWebstorm()<cr>
 nmap <silent><space>ow :OpenInWebstorm<cr>
 nmap <silent><space>oa :call utils#open_in_atom()<cr>
 nmap <silent><space>ov :call utils#open_in_visual_studio_code()<cr>
-nmap <silent><space>gb :Gblame<cr>nmap <silent>,gd :Gdiff<cr>
-nmap <silent><space>gb :Gblame<cr>
-nmap <silent>gb :Gblame<cr>
+" nmap <silent><space>gb :Git blame<cr>nmap <silent>,gd :Gdiff<cr>
+" nmap <silent><space>gb :Git blame<cr>
+nmap <silent>gb :Git blame<cr>
 nmap <silent><space>gr :Gread<cr>
-nmap <silent><space>gs :Gstatus<cr><C-n>
+nmap <silent><space>gs :Git<cr><C-n>
 nmap <silent><space>gc :Gcommit -v<cr>
 nmap <silent><space>gl :call hzf#git_log()<cr>
 "gf cuz the git command is 'git log --follow $FileName' 
 nmap <silent><space>gf :call hzf#git_log_follow()<cr>
 nmap <silent><space>bc :call hzf#git_log_follow()<cr>
-nmap <silent>gs :Gstatus<cr><C-n>
+nmap <silent>gs :Git<cr><C-n>
 
 nmap <silent><space>gd :Gdiff<cr>
 nmap <space>ed <C-w><C-j><C-w><C-l><C-w><C-o>
