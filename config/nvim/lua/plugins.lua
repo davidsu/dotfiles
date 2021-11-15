@@ -4,7 +4,6 @@ if not hasPacker() then
 end
 vim.api.nvim_command('packadd packer.nvim')
 
-
 function cocTable(cocPlugin)
   return {
     cocPlugin,
@@ -46,7 +45,7 @@ return require('packer').startup(function()
   end
 
   use {'glacambre/firenvim', run = ':call firenvim#install(0)' }
-  use 'ssh://git@git.walkmedev.com:7999/~david.susskind/walkme-vim-gbrowse.git'
+  use 'davidsu/walkme-vim-gbrowse'
   -- use 'davidsu/comfortable-motion.vim'                               
   use 'psliwka/vim-smoothie'
   use( os.getenv('DOTFILES') .. '/js/vim-js' )
