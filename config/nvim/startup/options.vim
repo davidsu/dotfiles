@@ -71,4 +71,4 @@ set pastetoggle=<F6>
 set nolist
 set nospell
 set previewheight=15
-set relativenumber
+set norelativenumber
