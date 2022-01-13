@@ -46,6 +46,7 @@ return require('packer').startup(function()
 
   use {'glacambre/firenvim', run = ':call firenvim#install(0)' }
   use 'davidsu/walkme-vim-gbrowse'
+  use 'suy/vim-context-commentstring'
   -- use 'davidsu/comfortable-motion.vim'                               
   use 'psliwka/vim-smoothie'
   use( os.getenv('DOTFILES') .. '/js/vim-js' )

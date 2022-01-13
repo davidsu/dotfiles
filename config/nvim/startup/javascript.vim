@@ -97,6 +97,9 @@ augroup javascript
     " autocmd FileType javascript nnoremap <buffer>cof :call JSToggleFoldMethod()<cr>
     " autocmd Filetype javascript vnoremap <buffer>1= :<C-u>setf jsx<cr>gv=:<C-u>setf javascript<cr>
 augroup END
+try
+    let g:context#commentstring#table['typescriptreact'] = g:context#commentstring#table['typescript.tsx']
+endtry
 "-----------------------------------------------------------------------------}}}
 
 command! NoCheck call append(0, '//@ts-nocheck')
