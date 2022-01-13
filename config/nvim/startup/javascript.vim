@@ -33,6 +33,7 @@ function! s:setmapping()
     nnoremap <buffer>{ :call GoToNextFunction(-1, 0, 1)<cr>
     nnoremap <buffer>} :call GoToNextFunction(-1, 0, 0)<cr>
     nmap <buffer>K :call CocAction('doHover')<cr>
+    set suffixesadd=.js,.json,.ts,.tsx,.jsx
 endfunction
 
 "--------------------------------------------------------------------------------
@@ -90,8 +91,8 @@ augroup javascript
     autocmd BufReadPost *.jsx,*.tsx set filetype=typescriptreact
     let g:markdown_fenced_languages = ['css', 'javascript', 'js=javascript', 'json=javascript', 'html']
     " autocmd BufWritePost *.jsx,*.tsx set filetype=typescript " hack to make go-to-declaration work AND coc tsx files work
-    autocmd FileType javascript,json,typescript,typescript.tsx,html call <SID>setIndentMapping()
-    autocmd FileType javascript,typescript,typescript.tsx call <SID>setmapping()
+    autocmd FileType javascript,json,typescript,typescript.tsx,html,typescriptreact call <SID>setIndentMapping()
+    autocmd FileType javascript,typescript,typescript.tsx,typescriptreact call <SID>setmapping()
     autocmd FileType html,json setlocal foldmethod=indent
     autocmd FileType html,json setlocal foldnestmax=10000
     " autocmd FileType javascript nnoremap <buffer>cof :call JSToggleFoldMethod()<cr>
@@ -100,6 +101,8 @@ augroup END
 try
     let g:context#commentstring#table['typescriptreact'] = g:context#commentstring#table['typescript.tsx']
 endtry
+
+
 "-----------------------------------------------------------------------------}}}
 
 command! NoCheck call append(0, '//@ts-nocheck')
