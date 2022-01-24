@@ -33,6 +33,7 @@ function! s:setmapping()
     nnoremap <buffer>{ :call GoToNextFunction(-1, 0, 1)<cr>
     nnoremap <buffer>} :call GoToNextFunction(-1, 0, 0)<cr>
     nmap <buffer>K :call CocAction('doHover')<cr>
+    nmap <buffer><space>dp :call CocAction('doHover', 'preview')<cr>
     set suffixesadd=.js,.json,.ts,.tsx,.jsx
 endfunction
 
