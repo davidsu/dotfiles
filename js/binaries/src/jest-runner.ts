@@ -17,7 +17,7 @@ function getTestCommand(projectRoot, isInspect) {
   const {
     scripts: { test },
   } = JSON.parse(readFileSync(`${projectRoot}/package.json`).toString())
-  const testCommand = test.replace(/.*\b(react-app-rewired|react-scripts|jest)\b.*/, '$1')
+  const testCommand = (test || 'jest').replace(/.*\b(react-app-rewired|react-scripts|jest)\b.*/, '$1')
   const testCommandPrefix =
     testCommand === 'jest' ? getJestCommand(projectRoot, isInspect) : getReactTestCommand(isInspect, testCommand)
   const testCommandPostfix = isInspect ? `--testTimeout=${2 ** 31 - 1}` : ''
