@@ -35,6 +35,8 @@ function! s:setmapping()
     nmap <buffer>K :call CocAction('doHover')<cr>
     nmap <buffer><space>dp :call CocAction('doHover', 'preview')<cr>
     set suffixesadd=.js,.json,.ts,.tsx,.jsx
+    set commentstring=//%s
+
 endfunction
 
 "--------------------------------------------------------------------------------
@@ -107,3 +109,5 @@ endtry
 "-----------------------------------------------------------------------------}}}
 
 command! NoCheck call append(0, '//@ts-nocheck')
+command! ReactComment set commentstring={/*%s*/}
+map <space>cx :ReactComment<cr>gcc
