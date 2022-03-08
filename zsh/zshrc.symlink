@@ -26,6 +26,7 @@ function reload(){
     #if its a normal file (-f) then log and source it
     if [[ -f $f && $f != *'xterm'* && $f != *'Session.vim' && $f != *'README.md' && $f != *'package'* ]]; then
         # { time ( source $f; printf $f ) } 2>&1 
+        # echo $f
         source $f
     fi
   done
@@ -42,7 +43,7 @@ export DOTFILES=$HOME/.dotfiles
 PROMPT="%~$ "
 DISABLE_AUTO_UPDATE=true
 export LC_ALL=en_US.UTF-8
-export PATH=~/Library/Python/3.7/bin:$PATH:$HOME/.dotfiles/bin:$HOME/.dotfiles/js/node_modules/.bin #:$HOME/.zgen/paulirish/git-open-master
+export PATH=~/Library/Python/3.7/bin:$PATH:$HOME/.dotfiles/bin:$HOME/.dotfiles/js/node_modules/.bin:$HOME/go/bin #:$HOME/.zgen/paulirish/git-open-master
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 [ -f ~/.fzf/shell/completion.zsh ] && source ~/.fzf/shell/completion.zsh
 [ -f ~/Dropbox/terminal/quickOpen.sh ] && source ~/Dropbox/terminal/quickOpen.sh
