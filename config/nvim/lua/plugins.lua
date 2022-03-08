@@ -82,6 +82,7 @@ return require('packer').startup(function()
   use { 'cakebaker/scss-syntax.vim', ft = 'scss' }                     -- sass scss syntax support
   use 'norcalli/nvim-colorizer.lua'
   use { 'hail2u/vim-css3-syntax', ft = 'css' }                         -- CSS3 syntax support
+  use { 'fatih/vim-go', ft = 'go' }
   use 'iloginow/vim-stylus' -- for some reason markdown files throw on enter without this
   -- use { 'wavded/vim-stylus', ft = {'stylus', 'markdown'} }           -- markdown support
   -- use { 'dhruvasagar/vim-table-mode', ft = 'markdown'}
