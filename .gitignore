@@ -1,4 +1,9 @@
 packer_compiled.vim
+config/glab-cli/
+config/.jira/
+config/iterm2/
+config/mdless/
+hyper/
 vim/view/*
 yarn-error.log
 config/wireshark
