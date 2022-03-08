@@ -110,7 +110,10 @@ fshow() {
 FZF-EOF"
 }
 
-alias chromebookmarks='$DOTFILES/fzf/chromebookmarks.rb'
+alias fab=chromebookmarks
+alias fcab=chromebookmarks
+alias bookmarks=chromebookmarks
+alias cb=chromebookmarks
 function jfzf(){
   dir=`fasd_cd -ds | egrep '^\S+\s+/' | tac | fzf --no-sort --bind 'ctrl-s:toggle-sort'`
   if [[ -n dir ]]; then

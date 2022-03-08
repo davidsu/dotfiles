@@ -1,0 +1,49 @@
+#!/usr/bin/env node
+const os = require('os')
+const fs = require('fs')
+const cp = require('child_process')
+const chalk = require('chalk')
+
+const home = os.homedir()
+const chromeBookmarksSource = home + '/Library/Application Support/Google/Chrome/Profile 1/Bookmarks'
+const chromeBookmarksJson = JSON.parse(fs.readFileSync(chromeBookmarksSource).toString())
+const sourcesFile = '/tmp/bookmarks'
+
+// console.log(chromeBookmarksSource.replaceAll(' ', '\\ '))
+const getName = name => (/(Other Bookmarks|Bookmarks Bar)/.test(name) ? '' : name)
+function buildSources() {
+  const q = Object.values(chromeBookmarksJson.roots).map(val => ['', val])
+  const result = []
+  while (q.length) {
+    const [key, value] = q.pop()
+    if (value.url) {
+      result.push({ url: value.url, key: `${key}/${value.name}` })
+    } else if (value.children) {
+      for (const child of value.children) {
+        q.push([`${key}/${getName(value.name)}`, child])
+      }
+    }
+  }
+  return result
+}
+function writeSourceFile(sources) {
+  const longestKey = Math.min(
+    sources.reduce((res, { key }) => Math.max(key.length, res), 0),
+    95
+  )
+  const finalKey = key => key.replace('//', '/').replace(/^\//, '').padEnd(longestKey, ' ').substring(0, longestKey)
+  const finalValue = value => chalk.cyan(value)
+  const sourcesStr = sources
+    .map(({ key, url }) => `${finalKey(key)} ${finalValue(url)}`)
+    .sort((a, b) => (a[0] < b[0] || a < b ? -1 : 1))
+    .join('\n')
+  fs.writeFileSync(sourcesFile, sourcesStr)
+}
+
+const sources = buildSources()
+writeSourceFile(sources)
+
+cp.spawn(
+  `cat ${sourcesFile} | fzf --ansi --multi --no-hscroll --tiebreak=begin --bind 'ctrl-o:execute!open {2}!' | perl -pe "s#.* (.*)#\\1#" | xargs open`,
+  { stdio: 'inherit', shell: true }
+)

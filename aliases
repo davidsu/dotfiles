@@ -18,7 +18,9 @@ alias rg=" rg --smart-case \
    --colors path:style:bold "
 alias agd='cd $DOTFILES && ag --ignore ''plugged*'' --ignore-dir ''forkedProjects'' --ignore ''autoload*'''
 alias jm='cd $HOME/projects/MT.player'
-alias js='cd #HOME/Developer/surgeSites/blank-select-source'
+alias js='cd $HOME/projects/sdk/player-sdk'
+alias ja='cd $HOME/projects/jira-cli'
+export shrugging=' ¯\_(ツ)_/¯'
 alias j_='cd $HOME/projects/tmp/_____player_____'
 alias je='cd $HOME/projects/editor.pagescript'
 alias jd='cd $HOME/.dotfiles'
@@ -99,7 +101,6 @@ alias vlc="/Applications/VLC.app/Contents/MacOS/VLC"
 alias glv='git log --max-count=500 --name-only V'
 # alias todo="vim ~/projects/todo.md -c 'set nowrap'"
 alias todo="vim ~/Dropbox/todo.md -c 'set nowrap'"
-alias gbrowse='open https://github.$(git config remote.origin.url | cut -f2 -d. | tr ':' /)'
 function specialchars(){echo '⇧ ⌘ ⌥ ⇥ ⌫  ⌦  ⎋  ⌃ '}
 function findfunction(){
     ag '(function\s+'$1')|('$1'\s*:)' ${@:2}
