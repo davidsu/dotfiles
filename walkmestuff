@@ -1,4 +1,17 @@
 #!/bin/zsh
+
+export PATH=$HOME/projects/apps-cli/sh:$PATH
+alias apps='node $HOME/projects/apps-cli/bin/index.js'
+alias openmr='node $HOME/projects/apps-cli/bin/index.js openmr'
+alias openjenkins='node $HOME/projects/apps-cli/bin/index.js openjenkins'
+alias createissue="apps jira issue create"
+alias cissue='createissue'
+# function createissue() {
+#     glab issue create \
+#         --yes \
+#         --label backlog \
+#         -t $@
+# }
 function quickbuild() {
     cd ~/projects/menu-organizer/packages/wrapper && \
         yarn build && \
@@ -53,3 +66,4 @@ function Connect2AppsEUProdCluster() {
 
 alias nolocal='[[ -f ~/walkme/settings.json ]] && mv ~/walkme/settings.json ~/walkme/_settings.json'
 alias setlocal='[[ -f ~/walkme/_settings.json ]] && mv ~/walkme/_settings.json ~/walkme/settings.json'
+
