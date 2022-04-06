@@ -95,7 +95,7 @@ return require('packer').startup(function()
     'gabrielelana/vim-markdown',
     run = 'git submodule update --init --recursive'
   }
-  -- use {'plasticboy/vim-markdown', ft = 'markdown'}                   -- markdown
+  use {'junegunn/vim-easy-align', ft = 'markdown'}                   -- markdown
   -- use {'godlygeek/tabular', ft = 'markdown'}                         -- related to vim-markdown
 end)
 
