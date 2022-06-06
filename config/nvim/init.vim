@@ -6,8 +6,8 @@ if($DEBUG_COC)
     let g:coc_node_args = ['--nolazy', '--inspect-brk']
 endif
 " if filereadable($HOME.'/.nvm/versions/node/v14.15.3/bin/node')
-if filereadable($HOME.'/.fnm/node-versions/v14.15.3/installation/bin/node')
-    let g:coc_node_path = $HOME.'/.fnm/node-versions/v14.15.3/installation/bin/node'
+if filereadable($HOME.'/Library/Caches/fnm_multishells/72876_1652339420691/bin/node')
+    let g:coc_node_path = $HOME.'/Library/Caches/fnm_multishells/72876_1652339420691/bin/node'
 endif
 
 function! SourceMyScripts()

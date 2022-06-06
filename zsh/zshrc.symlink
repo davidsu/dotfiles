@@ -79,10 +79,10 @@ test -e "${HOME}/.iterm2_shell_integration.zsh" && source "${HOME}/.iterm2_shell
 setopt auto_cd
 DIRSTACKSIZE=12
 setopt autopushd pushdminus pushdsilent pushdtohome
-reload
 eval "$(fnm env --use-on-cd)"
 source ~/zsh-defer/zsh-defer.plugin.zsh
 zsh-defer loadzgen
+reload
 
 # The next line updates PATH for the Google Cloud SDK.
 if [ -f '/Users/david.susskind/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/david.susskind/Downloads/google-cloud-sdk/path.zsh.inc'; fi

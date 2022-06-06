@@ -1,4 +1,5 @@
 local hasPacker = require 'utils'.hasPacker
+local isFirstSetup = not hasPacker()
 if not hasPacker() then
   os.execute('git clone https://github.com/wbthomason/packer.nvim ~/.local/share/nvim/site/pack/packer/start/packer.nvim')
 end
@@ -96,6 +97,26 @@ return require('packer').startup(function()
     run = 'git submodule update --init --recursive'
   }
   use {'junegunn/vim-easy-align', ft = 'markdown'}                   -- markdown
+  use {'theHamsta/nvim_rocks', run = 'pip3 install --user hererocks && python3 -mhererocks . -j2.1.0-beta3 -r3.0.0 && cp nvim_rocks.lua lua'}
+
+  -- use_rocks 'penlight'
+  if isFirstSetup then
+    require('packer').sync()
+    -- use_rocks not working!!!
+    require('nvim_rocks').install('penlight')
+  end
   -- use {'godlygeek/tabular', ft = 'markdown'}                         -- related to vim-markdown
+  -- use {
+  --   "folke/todo-comments.nvim",
+  --   requires = "nvim-lua/plenary.nvim",
+  --   config = function()
+  --     require("todo-comments").setup {
+  --       -- your configuration comes here
+  --       -- or leave it empty to use the default settings
+  --       -- refer to the configuration section below
+  --       TODO = { icon = " ", color = "warning" },
+  --     }
+  --   end
+  -- }
 end)
 

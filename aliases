@@ -17,8 +17,9 @@ alias rg=" rg --smart-case \
    --colors path:fg:green       \
    --colors path:style:bold "
 alias agd='cd $DOTFILES && ag --ignore ''plugged*'' --ignore-dir ''forkedProjects'' --ignore ''autoload*'''
-alias jm='cd $HOME/projects/MT.player'
-alias js='cd $HOME/projects/sdk/player-sdk'
+alias jm='cd $HOME/projects/player'
+alias js='cd $HOME/projects/player-sdk'
+alias jw='cd $HOME/projects/workstation'
 alias ja='cd $HOME/projects/jira-cli'
 export shrugging=' ¯\_(ツ)_/¯'
 alias j_='cd $HOME/projects/tmp/_____player_____'
