@@ -5,10 +5,10 @@ import { html } from 'js-beautify'
 
 const { nvim } = workspace
 
-async function getLines(api) {
+async function getLines(api, filter = (arg: string) => true) {
   const lineCount = await api.nvim_buf_line_count(0)
   const lines = await api.nvim_buf_get_lines(0, 0, lineCount, false)
-  return lines.join('')
+  return lines.filter(filter).join('')
 }
 
 async function writeLines(lines, api) {
@@ -32,7 +32,7 @@ async function prettyHtml(api) {
 }
 
 async function bufferToObject(api) {
-  const lines = await getLines(api)
+  const lines = await getLines(api, line => !/^\s+\/\//.test(line))
   try {
     return JSON.parse(lines)
   } catch (e) {
@@ -51,6 +51,7 @@ async function formatJson(api) {
 const formaters = {
   html: prettyHtml,
   json: formatJson,
+  jsonc: formatJson,
 }
 async function formatBuffer() {
   debugger
