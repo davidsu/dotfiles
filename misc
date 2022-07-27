@@ -76,13 +76,14 @@ function dirtyprojs(){
         [[ $(git diff --shortstat 2> /dev/null | tail -n1) != "" ]] && echo $(pwd);
     }
 
-    function scan {
-        curdir=$(pwd)
-        for x in $*; do
-            [[ -d $x ]] && [[ -d ${x}/.git ]] && cd $x &> /dev/null && _printdirty "$x" 2> /dev/null; cd $curdir &> /dev/null  
-        done
-    }
-    scan * | grep '^/User.*'
+    curdir=$(pwd)
+    for i in $(find . -type d -maxdepth 5 -iname .git); do
+		dir=$(sed -E 's#/.git$##' <<< $i)
+		cd $dir &> /dev/null
+		# echo $(pwd)
+		_printdirty $dir 2> /dev/null
+		cd $curdir &> /dev/null  
+    done
     wait
     skipnvm=0
 }
