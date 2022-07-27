@@ -125,11 +125,11 @@ function! FindFunction(functionName, ...)
   " (?=...) positive lookahead: must contain
   let agcmd = '''(?<=function\s)'.a:functionName.'(?=\s*\()|'.
         \'\b'.a:functionName.'\s*:|'.
-        \'^\s*'.a:functionName.'\([^)]*\)\s*\{\s*$|'.
+        \'^[\t ]*'.a:functionName.'\([^)]*\)\s*\{\s*$|'.
         \'(?<=prototype\.)'.a:functionName.'(?=\s*=\s*function)|'.
         \'(var|let|const|this\.)\s*'.a:functionName.'(?=\s*=\s*(function|(\([^)]*\)|\w+)\s*=>)\s*)|'.
         \'(public|private)\s+(async\s+)?'.a:functionName.'\(|'.
-        \'^\s+async\s+'.a:functionName.'\('.
+        \'^[\t ]+async\s+'.a:functionName.'\('.
         \''' -p '''.gitRepo.'/.gitignore'' '.
         \additionalParams
 
