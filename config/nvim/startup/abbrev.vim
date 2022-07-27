@@ -20,6 +20,7 @@ call s:abbrev('cdc', 'CDC')
 call s:abbrev('cc', 'CocCommand ')
 call s:abbrev('cl', 'CocList')
 call s:abbrev('con', 'CocConfig')
+call s:abbrev('f', 'CocFix')
 
 " set wildcharm=<C-Z>
 function! s:wildMapper(shortcut, expansion)
