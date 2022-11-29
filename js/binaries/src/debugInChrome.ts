@@ -5,6 +5,7 @@ import { exec } from 'child_process'
 function openChromeDevTools(url) {
   // for some reason the appleScript `open location` command does't work with this url, worked around using sequence of keystrokes
   // doesn't work from terminal `open -a 'Goole Chrome' ${url}` either
+  console.log({ url })
   const osascript = `
             osascript << 'END'
             tell application "Google Chrome"

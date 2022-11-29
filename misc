@@ -87,6 +87,26 @@ function dirtyprojs(){
     wait
     skipnvm=0
 }
+function notonmaster(){
+	skipnvm=1
+	function _printdirty {
+		local branchName=$(git branch --show-current)
+		if [[ $branchName != 'master' && $branchName != 'staging' && $branchName != 'development' && $branchName != 'develop' ]]; then
+		  echo $(pwd) :: $branchName
+		fi
+	}
+
+	curdir=$(pwd)
+	for i in $(find . -type d -maxdepth 5 -iname .git); do
+		dir=$(sed -E 's#/.git$##' <<< $i)
+		cd $dir &> /dev/null
+		# echo $(pwd)
+		_printdirty $dir 2> /dev/null
+		cd $curdir &> /dev/null  
+	done
+	wait
+	skipnvm=0
+}
 
 # function put-color-by-pairity(){
 #     local pairity=$3

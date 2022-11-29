@@ -1,5 +1,7 @@
 command! Rename call CocActionAsync('rename')
 command! FixLint CocCommand eslint.executeAutofix
+command! -nargs=* -range CocAction :call coc#rpc#notify('codeActionRange', [<line1>, <line2>, <f-args>])
+command! -nargs=* -range CocFix    :call coc#rpc#notify('codeActionRange', [<line1>, <line2>, 'quickfix'])
 
 function! FocusInExplorer()
   for window in getwininfo()

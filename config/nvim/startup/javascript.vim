@@ -33,6 +33,13 @@ function! s:setmapping()
     nnoremap <buffer>{ :call GoToNextFunction(-1, 0, 1)<cr>
     nnoremap <buffer>} :call GoToNextFunction(-1, 0, 0)<cr>
     nmap <buffer>K :call CocAction('doHover')<cr>
+    " how to get fully expanded typescript type definitions:
+    " 1. find the relevent tsserver ( …/node_modules/typescript/lib/tsserver.js )
+    " 2. find `defaultMaximumTruncationLength` and change its value to 10000+
+    " ```
+    "     export type Debug<T> = T extends object ? { [K in keyof T]: Debug<T[K]> } : T
+    "     type toInspect = Debug<typeof SOME_FUNNY_TYPE>
+    " ```
     nmap <buffer><space>dp :call CocAction('doHover', 'preview')<cr>
     set suffixesadd=.js,.json,.ts,.tsx,.jsx
     set commentstring=//%s

@@ -25,6 +25,7 @@ lua require('init')
 
 let g:nvcode_termcolors=256
 colorscheme darktooth
+" colorscheme shine
 " let base16colorspace=256  " Access colors present in 256 colorspace"
 " colorscheme base16-darktooth
 " }}}----------------------------------------------------------------------------------------------------------------------

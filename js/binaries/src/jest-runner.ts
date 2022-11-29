@@ -1,10 +1,9 @@
 /* eslint-disable no-console */
-import { execSync, spawn } from 'child_process'
+import { execSync, spawn, exec } from 'child_process'
 import { readFileSync } from 'fs'
-import { openChromeOnDebuggerUrl } from './debugInChrome'
 function getJestCommand(projectRoot, isInspect) {
   const jestBin = execSync('yarn bin jest', { cwd: projectRoot }).toString().trim()
-  const runner = isInspect ? 'ndb' : 'node'
+  const runner = isInspect ? 'node --inspect-brk' : 'node'
   return `${runner} ${jestBin}`
 }
 
@@ -25,10 +24,11 @@ function getTestCommand(projectRoot, isInspect) {
 }
 
 const isInspectArg = arg => /--inspect/.test(arg)
+const getPort = inspect => Number(inspect.split('=')[1]) || 9229
 function killPortHolderIfExists(inspect) {
   if (inspect) {
     // automatic kill application holding my debugging port
-    const port = Number(inspect.split('=')[1]) || 9229
+    const port = getPort(inspect)
     try {
       console.log(execSync(`kill $(lsof -i tcp:${port} -t)`).toString())
     } catch (e) {}
@@ -49,8 +49,7 @@ export function runjest(args, projectRoot) {
     console.log(data)
 
     if (/Debugger listening on/.test(data)) {
-      //source https://github.com/ChromeDevTools/debugger-protocol-viewer/blob/33bdf34ea60c35c483261f398265a821f2e2c4f3/pages/index.md
-      openChromeOnDebuggerUrl(Number(args.find(isInspectArg).split('=')[1]) || 9229)
+      exec(`source ${process.env.DOTFILES}/bin/inspect ${getPort(inspect)}`)
     }
 
     if (/Waiting for the debugger to disconnect/.test(data)) {
