@@ -16,10 +16,14 @@ function loadzgen(){
     SET_CUSTOM_PROMPT=true
     source $DOTFILES/prompt
     #need to source fzf keybinding after oh-my-zsh cuz they mess it up
-    [ -f ~/.fzf/shell/key-bindings.zsh ] && source ~/.fzf/shell/key-bindings.zsh
+    loadFzfHelpers
     source $DOTFILES/aliases
 }
 
+function loadFzfHelpers() {
+  [ -f $(brew --prefix fzf)/shell/key-bindings.zsh ] && source $(brew --prefix fzf)/shell/key-bindings.zsh
+  [ -f $(brew --prefix fzf)/shell/completion.zsh ] && source $(brew --prefix fzf)/shell/completion.zsh
+}
 function calctabname() {
   export PROMPT_COMMAND='echo -ne $(sed -E '\''s#.*(/[^/]+)#\1#'\'' <<< $(sed -E '\''s#(.*)(/src)#\1#'\'' <<< $(PWD)))':"$PROMPT_COMMAND";
 }
@@ -50,8 +54,7 @@ PROMPT="%~$ "
 DISABLE_AUTO_UPDATE=true
 export LC_ALL=en_US.UTF-8
 export PATH=~/Library/Python/3.7/bin:$PATH:$HOME/.dotfiles/bin:$HOME/.dotfiles/js/node_modules/.bin:$HOME/go/bin #:$HOME/.zgen/paulirish/git-open-master
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-[ -f ~/.fzf/shell/completion.zsh ] && source ~/.fzf/shell/completion.zsh
+loadFzfHelpers
 [ -f ~/Dropbox/terminal/quickOpen.sh ] && source ~/Dropbox/terminal/quickOpen.sh
 export FZF_DEFAULT_COMMAND='ag --hidden --ignore .git -g ""'
 export FZF_TMUX_HEIGHT=0 #make fzf fullscreen on terminal
@@ -89,9 +92,3 @@ eval "$(fnm env --use-on-cd)"
 source ~/zsh-defer/zsh-defer.plugin.zsh
 zsh-defer loadzgen
 reload
-
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/david.susskind/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/david.susskind/Downloads/google-cloud-sdk/path.zsh.inc'; fi
-
-# The next line enables shell command completion for gcloud.
-if [ -f '/Users/david.susskind/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/david.susskind/Downloads/google-cloud-sdk/completion.zsh.inc'; fi

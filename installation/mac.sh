@@ -48,8 +48,11 @@ function installBrewWithDependencies() {
 		fasd \
 		python3 
 
+	brew install --cask karabiner-elements
+
 	if ! command -v fzf &> /dev/null; then
 		brew install fzf
+		#why am I installing through fzf after installing with homebrew??? Doesn't seem to make much sense really
 		$(brew --prefix)/opt/fzf/install
 	fi
 }
