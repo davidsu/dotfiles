@@ -24,7 +24,7 @@
 8. symlink all `.symlink` files to your home folder `ln -s PATH_TO_SOURCE_FILE.symlink ~/.FILE_NAME`
 9. apply macos defaults: `sh ~/.dotfiles/macos/defaults`
 10. install rouge (I'll go ahead and suggest sudoing this, there must be a better way though): `sudo gem install rouge` 
-11. install [karabiner-elements](https://github.com/tekezo/Karabiner-Elements/blob/master/usage/README.md)
+11. install [karabiner-elements](https://github.com/pqrs-org/Karabiner-Elements)
 12. download and install [spectacle](https://www.spectacleapp.com/)
 13. do yourself a favor: [glances](https://github.com/nicolargo/glances) `pip3 install glances` OR `brew install htop` and stop using activity monitor
 14. `brew install coreutils` -- you need it for `realpath`
