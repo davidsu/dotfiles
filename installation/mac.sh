@@ -3,7 +3,7 @@
 #I hope this works!!!
 #I hope this works!!!
 function echoStep() {
-	echo '###################################       '$1'       ###################################'
+	echo '\033[38;5;2m###################################       '$1'       ###################################\033[0m'
 }
 function sudoGemDependencies() {
 	echoStep sudoGemDependencies
@@ -25,7 +25,7 @@ function installZshDependencies() {
 	fi
 
 	if [ ! -d "$HOME/zsh-defer" ]; then
-		git clone https://github.com/romkatv/zsh-defer.git ~/zsh-defer
+		git clone https://github.com/romkatv/zsh-defer.git $HOME/zsh-defer
 	fi
 }
 
@@ -46,9 +46,8 @@ function installBrewWithDependencies() {
 		entr \
 		yarn \
 		fasd \
+		neovim \
 		python3 
-
-	brew install --cask karabiner-elements
 
 	if ! command -v fzf &> /dev/null; then
 		brew install fzf
@@ -74,14 +73,37 @@ function installNeovimNightly() {
 function installYarnDependencies() {
 	echoStep installYarnDependencies
 	yarn global add \
-		yarn-completions \
-		tldr \
 		pm2 \
-		ndb \
 		neovim \
 		typescript
 }
 
+function installPipDependencies() {
+	echoStep installPipDependencies
+	pip3 install neovim
+}
+
+function installDocker() {
+	echoStep installDocker
+	curl 'https://desktop.docker.com/mac/main/arm64/Docker.dmg?utm_source=docker&utm_medium=webreferral&utm_campaign=dd-smartbutton&utm_location=module' -o $HOME/Downloads/Docker.dmg
+	open $HOME/Downloads/Docker.dmg
+}
+
+function installKarabinerElements() {
+	echoStep installKarabinerElements
+	curl 'https://github.com/pqrs-org/Karabiner-Elements/releases/download/v14.10.0/Karabiner-Elements-14.10.0.dmg' -o $HOME/Downloads/Karabiner-Elements.dmg
+	open $HOME/Downloads/Karabiner-Elements.dmg
+}
+
+function installGCP() {
+	echoStep installGCP
+	if [[ ! -d $HOME/developer ]]; then
+		mkdir $HOME/developer
+	fi
+	curl 'https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-411.0.0-darwin-arm.tar.gz?utm_source=cloud.google.com&utm_medium=referral' -o $HOME/developer/gcp.tar.gz
+	tar -xvf $HOME/developer/gcp.tar.gz -C $HOME/developer
+	source $HOME/developer/google-cloud-sdk/install.sh
+}
 
 function symlinks() {
 	echoStep symlinks
@@ -89,35 +111,48 @@ function symlinks() {
 	for i in `git ls-files | grep symlink`; do 
 		ln -sf $HOME/$i $HOME/.`sed -e "s#.symlink##" <<< $i`; 
 	done
-	ln -fs ~/.dotfiles/config/ ~/.config
+	ln -fs $HOME/.dotfiles/config/ $HOME/.config
 	cd $HOME
 }
 
 function finishDotfileInstall() {
-	cd ~/.dotfiles
+	echoStep finishDotfileInstall
+	cd $HOME/.dotfiles
 	git submodule update --init --recursive
 	npm i
-	cd ~/.dotfiles/js
+	cd $HOME/.dotfiles/js
 	yarn
 	yarn build
 }
 
-sudoGemDependencies
-cloneDotFiles
-installBrewWithDependencies
-installNeovimNightly
-installYarnDependencies
-installZshDependencies
-symlinks
+function finishNvimInstall() {
+	echoStep finishNvimInstall
+	git clone https://github.com/wbthomason/packer.nvim $HOME/.local/share/nvim/site/pack/packer/start/packer.nvim
+	nvim -u $HOME/.dotfiles/installation/initNeovim.vim
+}
 
-pip3 install neovim
-curl -L https://iterm2.com/shell_integration/install_shell_integration.sh | bash
+function installProcedure() {
+	installDocker
+	installKarabinerElements
+	installGCP
+	sudoGemDependencies
+	cloneDotFiles
+	installBrewWithDependencies
+	# installNeovimNightly
+	installYarnDependencies
+	installZshDependencies
+	installPipDependencies
+	symlinks
+	finishDotfileInstall
+	finishNvimInstall
 
-cd ~/Library/Fonts && curl -fLo "Droid Sans Mono for Powerline Nerd Font Complete.otf" https://github.com/ryanoasis/nerd-fonts/raw/master/patched-fonts/DroidSansMono/complete/Droid%20Sans%20Mono%20Nerd%20Font%20Complete.otf
+	curl -L https://iterm2.com/shell_integration/install_shell_integration.sh | bash
 
-chsh -s /bin/zsh
-#install nvim's plugins and quit
-#could do headless but what if it fails to download something... is it stuck??
-#besides, nice to see things happening 
-nvim -c 'au User PackerComplete quit' -c 'lua require("packer").install()'
-zsh
+	cd $HOME/Library/Fonts && curl -fLo "Droid Sans Mono for Powerline Nerd Font Complete.otf" https://github.com/ryanoasis/nerd-fonts/raw/master/patched-fonts/DroidSansMono/complete/Droid%20Sans%20Mono%20Nerd%20Font%20Complete.otf
+
+	chsh -s /bin/zsh
+	zsh
+}
+if [[ -z $NO_GREEDY ]]; then
+	installProcedure
+fi

@@ -110,7 +110,7 @@ nmap <silent><space>gf :call hzf#git_log_follow()<cr>
 nmap <silent><space>bc :call hzf#git_log_follow()<cr>
 nmap <silent>gs :Git<cr><C-n>
 
-nmap <silent><space>gd :Gdiff<cr>
+nmap <silent><space>gd :Gdiffsplit<cr>
 nmap <space>ed <C-w><C-j><C-w><C-l><C-w><C-o>
 nmap <space>ge :Gedit<cr>
 

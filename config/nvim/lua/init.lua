@@ -18,7 +18,7 @@ require('spaceline')
 require('lsp_configuration')
 if isModuleAvailable('nvim-treesitter.configs') then
   require'nvim-treesitter.configs'.setup {
-    ensure_installed = { "typescript" },
+    ensure_installed = { "typescript", "lua", "vim", "python" },
     highlight = { 
       enable = true,
       disable = {'json', 'jsonc'}
@@ -32,6 +32,18 @@ if isModuleAvailable('nvim-treesitter.configs') then
         node_decremental = "_",
       },
     },
+  }
+  local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
+  parser_config.dockerfile = {
+    install_info = {
+      url = "https://github.com/camdencheek/tree-sitter-dockerfile", -- local path or git repo
+      files = {"src/parser.c"},
+      -- optional entries:
+      branch = "main", -- default branch in case of git repo if different from master
+      generate_requires_npm = false, -- if stand-alone parser without npm dependencies
+      requires_generate_from_grammar = true, -- if folder contains pre-generated src/parser.c
+    },
+    filetype = "dockerfile", -- if filetype does not match the parser name
   }
 end
 -- vim.opt.foldmethod = 'expr'

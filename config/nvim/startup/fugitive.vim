@@ -34,14 +34,14 @@ function! JiraCommit()
 endfunction
 augroup fugitiveautocmd
 	autocmd!
-	autocmd BufEnter *.git/index nmap <buffer> <silent>q :q<cr>
-        autocmd BufEnter *.git/index nmap <buffer> <space>gd <C-w><C-o>dd
-        autocmd BufEnter *.git/index nmap <buffer>gd <C-w><C-o>dd
-        autocmd FileType git nnoremap <buffer>q :wincmd q<cr>
-        " autocmd BufEnter *.git/COMMIT_EDITMSG silent! normal zMGzogg
-        autocmd FileType gitcommit nmap <buffer> ]c <C-n>
-        autocmd FileType gitcommit nmap <buffer> [c <C-p>
-        autocmd FileType gitcommit nmap <buffer> <space>jc :call JiraCommit()<cr>
+	autocmd FileType fugitive nmap <buffer> <silent>q :q<cr>
+    autocmd FileType fugitive nmap <buffer> <space>gd <C-w><C-o>dd
+    autocmd FileType fugitive nmap <buffer>gd <C-w><C-o>dd
+    autocmd FileType git nnoremap <buffer>q :wincmd q<cr>
+    " autocmd BufEnter *.git/COMMIT_EDITMSG silent! normal zMGzogg
+    autocmd FileType gitcommit nmap <buffer> ]c <C-n>
+    autocmd FileType gitcommit nmap <buffer> [c <C-p>
+    autocmd FileType gitcommit nmap <buffer> <space>jc :call JiraCommit()<cr>
 augroup END
 command! DiffInWebstorm !git difftool -t=webstorm %
 

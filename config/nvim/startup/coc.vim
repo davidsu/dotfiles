@@ -21,14 +21,7 @@ nmap <space>lo :CocDiagnostics<cr>
 nmap <C-c> <Plug>(coc-float-hide)
 nmap <space>cf <Plug>(coc-fix-current)
 imap <C-e> <Esc>:call coc#float#close_all()<cr>:call feedkeys('a')<cr>
-inoremap <silent><expr> <TAB>
-  \ pumvisible() ? coc#_select_confirm() :
-  \ coc#expandableOrJumpable() ?
-  \ "\<C-r>=coc#rpc#request('doKeymap', ['snippets-expand-jump',''])\<CR>" :
-  \ <SID>check_back_space() ? "\<TAB>" :
-  \ coc#refresh()
-
-function! s:check_back_space() abort
+function! Check_back_space() abort
   let col = col('.') - 1
   let result = !col || getline('.')[col - 1]  =~# '\s'
   echom 'checkbackspace'
@@ -36,6 +29,19 @@ function! s:check_back_space() abort
   echom result
   return result
 endfunction
+imap <silent><expr> <TAB>
+  \ coc#pum#visible() ? "\<C-Y>" :
+  \ coc#expandableOrJumpable() ?
+  \ "\<C-r>=coc#rpc#request('doKeymap', ['snippets-expand-jump',''])\<CR>" :
+  \ Check_back_space() ? "\<TAB>" :
+  \ coc#refresh()
+" inoremap <silent><expr> <TAB>
+"   \ pumvisible() ? coc#_select_confirm() :
+"   \ coc#expandableOrJumpable() ?
+"   \ "\<C-r>=coc#rpc#request('doKeymap', ['snippets-expand-jump',''])\<CR>" :
+"   \ Check_back_space() ? "\<TAB>" :
+"   \ coc#refresh()
+
 
 let g:coc_global_extensions = [
       \'coc-git',
