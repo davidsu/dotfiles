@@ -1,6 +1,9 @@
 /* eslint-disable no-console */
 import fetch from 'node-fetch'
 import { exec } from 'child_process'
+//@ts-ignore
+import dns from 'node:dns'
+dns.setDefaultResultOrder('ipv4first')
 
 function openChromeDevTools(url) {
   // for some reason the appleScript `open location` command does't work with this url, worked around using sequence of keystrokes
