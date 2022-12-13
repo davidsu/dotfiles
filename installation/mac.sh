@@ -95,6 +95,12 @@ function installKarabinerElements() {
 	open $HOME/Downloads/Karabiner-Elements.dmg
 }
 
+function installFlyCut() {
+	echoStep installFlyCut
+	curl -L 'https://github.com/TermiT/Flycut/releases/download/1.9.6/Flycut.1.9.6.zip' > $HOME/Downloads/flycut.zip
+	sudo unzip $HOME/Downloads/flycut.zip -d /Applications
+}
+
 function installGCP() {
 	echoStep installGCP
 	if [[ ! -d $HOME/developer ]]; then
@@ -145,6 +151,7 @@ function installProcedure() {
 	symlinks
 	finishDotfileInstall
 	finishNvimInstall
+	installFlyCut
 
 	curl -L https://iterm2.com/shell_integration/install_shell_integration.sh | bash
 
