@@ -60,7 +60,13 @@ return require('packer').startup(function()
   use { 'schickling/vim-bufonly', cmd = 'BufOnly' }                    -- delete all buffers but current
   use { 'davidsu/vim-plugin-AnsiEsc', cmd = 'AnsiEsc' }                -- type :AnsiEsc to get colors as terminal
   use 'blueyed/vim-diminactive' 
-  use {'nvim-treesitter/nvim-treesitter', run = ':TSUpdate' }          -- We recommend updating the parsers on update
+   use {
+        'nvim-treesitter/nvim-treesitter',
+        run = function()
+            local ts_update = require('nvim-treesitter.install').update({ with_sync = true })
+            ts_update()
+        end,
+    }
   use 'nvim-treesitter/playground'
   -- use 'neovim/nvim-lspconfig'
   use 'dahu/vim-fanfingtastic'                                         -- improved f F t T commands
@@ -97,13 +103,14 @@ return require('packer').startup(function()
     run = 'git submodule update --init --recursive'
   }
   use {'junegunn/vim-easy-align', ft = 'markdown'}                   -- markdown
-  use {'theHamsta/nvim_rocks', run = 'pip3 install --user hererocks && python3 -mhererocks . -j2.1.0-beta3 -r3.0.0 && cp nvim_rocks.lua lua'}
+  -- use {'theHamsta/nvim_rocks', run = 'pip3 install --user hererocks && python3 -mhererocks . -j2.1.0-beta3 -r3.0.0 && cp nvim_rocks.lua lua'}
+  use_rocks 'penlight'
 
   -- use_rocks 'penlight'
   if isFirstSetup then
     require('packer').sync()
     -- use_rocks not working!!!
-    require('nvim_rocks').install('penlight')
+    -- require('nvim_rocks').install('penlight')
   end
   -- use {'godlygeek/tabular', ft = 'markdown'}                         -- related to vim-markdown
   -- use {
