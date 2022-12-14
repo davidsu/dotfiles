@@ -8,7 +8,7 @@ function echoStep() {
 function sudoGemDependencies() {
 	echoStep sudoGemDependencies
 	sudo gem install neovim
-	sudo gem install rouge
+	sudo gem install rouge -v 3.30.0
 }
 
 function cloneDotFiles() {
@@ -91,7 +91,7 @@ function installDocker() {
 
 function installKarabinerElements() {
 	echoStep installKarabinerElements
-	curl 'https://github.com/pqrs-org/Karabiner-Elements/releases/download/v14.10.0/Karabiner-Elements-14.10.0.dmg' -o $HOME/Downloads/Karabiner-Elements.dmg
+	curl -L 'https://github.com/pqrs-org/Karabiner-Elements/releases/download/v14.10.0/Karabiner-Elements-14.10.0.dmg' > $HOME/Downloads/Karabiner-Elements.dmg
 	open $HOME/Downloads/Karabiner-Elements.dmg
 }
 
@@ -99,6 +99,12 @@ function installFlyCut() {
 	echoStep installFlyCut
 	curl -L 'https://github.com/TermiT/Flycut/releases/download/1.9.6/Flycut.1.9.6.zip' > $HOME/Downloads/flycut.zip
 	sudo unzip $HOME/Downloads/flycut.zip -d /Applications
+}
+
+function installSpectacle() {
+	echoStep installSpectacle
+	curl -L https://github.com/eczarny/spectacle/releases/download/1.2/Spectacle+1.2.zip > /$HOME/Downloads/spectacle
+	sudo unzip $HOME/Downloads/spectacle -d /Applications
 }
 
 function installGCP() {
@@ -111,13 +117,19 @@ function installGCP() {
 	source $HOME/developer/google-cloud-sdk/install.sh
 }
 
+function installIterm() {
+	curl -L https://iterm2.com/downloads/stable/latest > $HOME/Downloads/iterm.zip
+	sudo unzip $HOME/Downloads/iterm.zip -d /Applications
+}
+
 function symlinks() {
 	echoStep symlinks
 	cd $HOME/.dotfiles
 	for i in `git ls-files | grep symlink`; do 
-		ln -sf $HOME/$i $HOME/.`sed -e "s#.symlink##" <<< $i`; 
+		echo ln -sf $HOME/.dotfiles/$i $HOME/.`sed -e "s#.symlink##" <<< $(basename $i)`; 
+		ln -sf $HOME/.dotfiles/$i $HOME/.`sed -e "s#.symlink##" <<< $(basename $i)`; 
 	done
-	ln -fs $HOME/.dotfiles/config/ $HOME/.config
+	ln -fs $HOME/.dotfiles/config $HOME/.config
 	cd $HOME
 }
 
@@ -125,7 +137,6 @@ function finishDotfileInstall() {
 	echoStep finishDotfileInstall
 	cd $HOME/.dotfiles
 	git submodule update --init --recursive
-	npm i
 	cd $HOME/.dotfiles/js
 	yarn
 	yarn build
@@ -138,12 +149,11 @@ function finishNvimInstall() {
 }
 
 function installProcedure() {
-	installDocker
 	installKarabinerElements
-	installGCP
+	installBrewWithDependencies
+	fnm install 18
 	sudoGemDependencies
 	cloneDotFiles
-	installBrewWithDependencies
 	# installNeovimNightly
 	installYarnDependencies
 	installZshDependencies
@@ -152,6 +162,10 @@ function installProcedure() {
 	finishDotfileInstall
 	finishNvimInstall
 	installFlyCut
+	installSpectacle
+	installDocker
+	installGCP
+	installIterm
 
 	curl -L https://iterm2.com/shell_integration/install_shell_integration.sh | bash
 
