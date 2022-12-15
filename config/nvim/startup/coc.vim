@@ -51,6 +51,7 @@ let g:coc_global_extensions = [
       \'coc-vimlsp',
       \'coc-marketplace',
       \'coc-snippets',
+      \'coc-yaml',
       \'coc-swagger'
       \]
 let g:coc_snippet_next = '<Tab>'

@@ -41,5 +41,8 @@
       "-": ["wait", "gotoParent"]
    },
    "snippets.userSnippetsDirectory": "$DOTFILES/config/nvim/UltiSnip",
-   "coc.preferences.extensionUpdateCheck": "never"
+   "coc.preferences.extensionUpdateCheck": "never",
+   "yaml.schemas": {
+      "kubernetes": "/*.yaml"
+   }
 }
