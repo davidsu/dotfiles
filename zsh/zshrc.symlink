@@ -8,7 +8,8 @@ function loadzgen(){
         # zgen load zsh-users/zsh-autosuggestions
         zgen oh-my-zsh plugins/yarn
         # zgen oh-my-zsh plugins/zsh-autosuggestions
-        # zgen load paulirish/git-open
+        zgen load paulirish/git-open
+        # zgen load "MichaelAquilina/zsh-autoswitch-virtualenv"
     fi
     #unset SET_CUSTOM_PROMPT value if you want to test other prompt than
     #the custom in ~/.dotFiles/prompt
@@ -94,7 +95,7 @@ zsh-defer loadzgen
 reload
 
 # The next line updates PATH for the Google Cloud SDK.
-if [ -f "$HOME/developer/google-cloud-sdk/path.zsh.inc" ]; then . "$HOME/developer/google-cloud-sdk/path.zsh.inc"; fi
+if [ -f '/Users/NG-MAN-DavidS/developer/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/NG-MAN-DavidS/developer/google-cloud-sdk/path.zsh.inc'; fi
 
 # The next line enables shell command completion for gcloud.
-if [ -f "$HOME/developer/google-cloud-sdk/completion.zsh.inc" ]; then . "$HOME/developer/google-cloud-sdk/completion.zsh.inc"; fi
+if [ -f '/Users/NG-MAN-DavidS/developer/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/NG-MAN-DavidS/developer/google-cloud-sdk/completion.zsh.inc'; fi
