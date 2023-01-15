@@ -1,37 +1,43 @@
+export __HIST__=~/Library/Application\ Support/Google/Chrome/Profile\ 2/History
 # c - browse chrome history
 # copied from https://junegunn.kr/2015/04/browsing-chrome-history-with-fzf/
 chromehistory() {
-  local cols sep 
-  cols=$(( COLUMNS / 3 ))
-  sep='{::}'
+    local cols sep 
+    cols=$(( COLUMNS / 3 ))
+    sep='{::}'
 
 
   #whenever you need to find what is the proper history file use this piece of code from ...Support/Google/
   #taken from https://stackoverflow.com/questions/4561895/how-to-recursively-find-the-latest-modified-file-in-a-directory
   #find . -type f -print0 | xargs -0 stat -f "%m %N" | sort -rn | head -1 | cut -f2- -d" "
-  historyfile=~/Library/Application\ Support/Google/Chrome/Profile\ 1/History
+  historyfile=$__HIST__ 
+  echo first "$historyfile"
   if [[ ! -f $historyfile ]]; then
       historyfile=~/Library/Application\ Support/Google/Chrome/Default/History
+  fi
+  if [[ ! -f $historyfile ]]; then
+      historyfile=~/Library/Application\ Support/Google/Chrome/Profile\ 1/History
       if [[ ! -f $historyfile ]]; then
           echo 'cannot find history file'
           return
       fi
   fi
+  # echo $historyfile
   # /Default/History
   cp -f $historyfile /tmp/h
 
   sqlite3 -separator $sep /tmp/h \
-    "select substr(title, 1, $cols), url
-     from urls order by last_visit_time desc" |
-  awk -F $sep '{printf "%-'$cols's  \x1b[36m%s\x1b[m\n", $1, $2}' |
-  fzf --ansi --multi \
-      --preview 'echo {..-2}; echo $(tput setaf 12){-1} | sed -E '\''s#([&?])#'$(tput setaf 8)'\1\
-'$(tput setaf 10)'#g'\' \
-        --preview-window 'up:35%:wrap' \
-        --header 'CTRL-o - open without abort :: CTRL-s - toggle sort :: CTRL-g - toggle preview window' \
-        --prompt 'Chrome History>' \
-        --bind 'ctrl-g:toggle-preview,ctrl-s:toggle-sort,ctrl-o:execute:open {-1}' | perl -pe 's|.*?(https*://.*?)|\1|' | xargs open
-}
+      "select substr(title, 1, $cols), url
+        from urls order by last_visit_time desc" |
+            awk -F $sep '{printf "%-'$cols's  \x1b[36m%s\x1b[m\n", $1, $2}' |
+            fzf --ansi --multi \
+            --preview 'echo {..-2}; echo $(tput setaf 12){-1} | sed -E '\''s#([&?])#'$(tput setaf 8)'\1\
+            '$(tput setaf 10)'#g'\' \
+            --preview-window 'up:35%:wrap' \
+            --header 'CTRL-o - open without abort :: CTRL-s - toggle sort :: CTRL-g - toggle preview window' \
+            --prompt 'Chrome History>' \
+            --bind 'ctrl-g:toggle-preview,ctrl-s:toggle-sort,ctrl-o:execute:open {-1}' | perl -pe 's|.*?(https*://.*?)|\1|' | xargs open
+        }
 
 alias -g F=' | fzf --ansi --preview '\''$DOTFILES/bin/preview.rb {}'\'' --preview-window '\''top:50%'\'' --bind '\''ctrl-s:toggle-sort,ctrl-g:toggle-preview,ctrl-o:execute:($DOTFILES/fzf/fhelp.sh {})'\'
 alias fch='chromehistory'  
