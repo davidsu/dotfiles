@@ -47,6 +47,7 @@ function installBrewWithDependencies() {
 		yarn \
 		fasd \
 		neovim \
+		jq \
 		python3 
 
 	if ! command -v fzf &> /dev/null; then
