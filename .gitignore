@@ -3,6 +3,9 @@ config/glab-cli/
 config/.jira/
 config/iterm2/
 config/mdless/
+config/nvim/plugin/
+config/Code/
+config/pudb/
 hyper/
 vim/view/*
 yarn-error.log
