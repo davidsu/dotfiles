@@ -87,6 +87,28 @@ function dirtyprojs(){
     wait
     skipnvm=0
 }
+
+function pullprojs() {
+  function pull_or_print {
+	if [[ $(git diff --shortstat 2> /dev/null | tail -n1) != "" ]]; then
+	  echo '\033[38;5;160m'PROJECT IS DIRTY'\033[0m' $(pwd);
+	else
+	  echo '\033[38;5;2m'PULL'\033[0m' $(pwd)
+	  git pull
+	fi
+  }
+
+  curdir=$(pwd)
+  for i in $(find . -type d -maxdepth 5 -iname .git); do
+	dir=$(dirname $i)
+	cd $dir &> /dev/null
+	# echo $(pwd)
+	pull_or_print $dir 2> /dev/null
+	cd $curdir &> /dev/null  
+  done
+  wait
+}
+
 function notonmaster(){
 	skipnvm=1
 	function _printdirty {
