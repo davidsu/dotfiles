@@ -98,6 +98,7 @@ nmap <silent><space>ws :OpenInWebstorm()<cr>
 nmap <silent><space>ow :OpenInWebstorm<cr>
 nmap <silent><space>oa :call utils#open_in_atom()<cr>
 nmap <silent><space>ov :call utils#open_in_visual_studio_code()<cr>
+nmap <silent><space>op :call utils#open_in_pycharm()<cr>
 " nmap <silent><space>gb :Git blame<cr>nmap <silent>,gd :Gdiff<cr>
 " nmap <silent><space>gb :Git blame<cr>
 nmap <silent>gb :Git blame<cr>
@@ -172,6 +173,14 @@ xmap <space>s <Plug>VSurround
 "surroung visual into it's own line
 xmap gS  <Plug>VgSurround
 
+function! ToggleFoldMethod(...) abort
+  " echom &foldmethod
+  let cmd = &foldmethod == 'indent' ? 'set foldmethod=expr' : 'set foldmethod=indent'
+  exe cmd
+  echom cmd
+endfunction
+
+nnoremap cof :call ToggleFoldMethod()<cr>
 "using map from <Plug>(easymotion...) is cool, the plugin worries to do the right thing with my mappings
 " let g:EasyMotion_keys='abcdefghijklmnopqrstuvwxyz'
 " map ss <Plug>(easymotion-s)
