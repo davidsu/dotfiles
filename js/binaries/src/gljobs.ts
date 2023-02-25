@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
 import chalk from 'chalk'
-import { spawn, exec, execSync } from 'child_process'
+import { spawn, execSync } from 'child_process'
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 const gitProj = execSync('git rev-parse --show-toplevel', { encoding: 'utf8' }).trim()
 const CACHE_DIR = `${gitProj}/.git/davidsu`
@@ -9,6 +9,16 @@ const JOBS = 'jobs.json'
 const TABLE = 'table.txt'
 const GIT_REMOTE = execSync('git config --get remote.origin.url', { encoding: 'utf8' }).trim()
 const NUM_PAGES_TO_FETCH = 80
+
+const gitlabToken = process.env.GITLAB_TOKEN
+
+const apiGet = url =>
+  fetch(`https://gitlab.com/api/v4/${url}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${gitlabToken}`,
+    },
+  }).then(response => response.json())
 
 if (!existsSync(CACHE_DIR)) {
   mkdirSync(CACHE_DIR)
@@ -28,35 +38,19 @@ function runWithCache(file, cmd) {
 }
 
 function getProjectId() {
-  return runWithCache(
-    PROJID,
-    () =>
-      new Promise(resolve => {
-        exec(`glab api 'projects?membership=true&search=${gitProj.replace(/.*\/(.+)/, '$1')}'`, (error, stdout) => {
-          if (error) {
-            throw error
-          }
-          const resultArr = JSON.parse(stdout)
-          const result = resultArr.find(({ ssh_url_to_repo }) => ssh_url_to_repo === GIT_REMOTE)
-          const id = String(result.id)
-          resolve(id)
-        })
-      })
+  return runWithCache(PROJID, () =>
+    apiGet(`projects?membership=true&search=${gitProj.replace(/.*\/(.+)/, '$1')}`).then(resultArr => {
+      const result = resultArr.find(({ ssh_url_to_repo }) => ssh_url_to_repo === GIT_REMOTE)
+      const id = String(result.id)
+      debugger
+      return id
+    })
   )
 }
 
 function getJob(projectId, pageNumber) {
-  return runWithCache(
-    `${JOBS}_${pageNumber}`,
-    () =>
-      new Promise(resolve => {
-        exec(`glab api "projects/${projectId}/jobs?per_page=100&page=${pageNumber}"`, (error, stdout) => {
-          if (error) {
-            resolve('[]')
-          }
-          resolve(stdout)
-        })
-      })
+  return runWithCache(`${JOBS}_${pageNumber}`, () =>
+    apiGet(`projects/${projectId}/jobs?per_page=100&page=${pageNumber}`).then(res => JSON.stringify(res))
   )
 }
 function getJobs(projectId) {
