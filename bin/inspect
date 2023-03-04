@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const port = Number(process.argv[2])
-const query = port ? `#localhost\\\\\\\\:${port} .actions .action` : 'node-frontend'
+const query = port ? `#localhost\\\\\\\\:${port} .actions .action` : '#node-frontend'
 function openDevtool(query, count = 0) {
     if(count < 5) {
         const openDevtoolButton = document.querySelector(`${query}`)

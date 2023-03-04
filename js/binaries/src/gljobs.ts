@@ -97,18 +97,32 @@ async function formatForFzf(jobs) {
 
 async function runFzf() {
   try {
-    const result = execSync(`cat ${CACHE_DIR}/${TABLE} | fzf --ansi > /tmp/selected`, {
+    const result = execSync(`cat ${CACHE_DIR}/${TABLE} | fzf --bind 'ctrl-l:select-all' --ansi > /tmp/selected`, {
       stdio: [0, 1, 2],
       encoding: 'utf8',
     })
-    const id = readFileSync('/tmp/selected', { encoding: 'utf8' })
-      .trim()
-      .replace(/.*\s(\d+)/, '$1')
+    debugger
+    const ids = readFileSync('/tmp/selected', { encoding: 'utf8' })
+      .split('\n')
+      .filter(s => !!s)
+      .map(s => s.trim().replace(/.*\s(\d+)/, '$1'))
     const jobs = await getJobs(await getProjectId())
-    const { web_url } = jobs.find(job => job.id == id)
-    execSync(`open '${web_url}'`)
-    console.log({ result, id })
-  } catch (e) {}
+    if(ids.length === 1) {
+      const { web_url } = jobs.find(job => job.id == id)
+      execSync(`open '${web_url}'`)
+      console.log({ result, id })
+    } else {
+      const lookingFor = new Set(ids)
+      for (job of jobs) {
+        if(lookingFor.has(job.id)) {
+          console.log(job.web_url, job.started_at, job.status)
+        }
+      }
+    }
+
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 const promise = getProjectId().then(getJobs).then(formatForFzf)
