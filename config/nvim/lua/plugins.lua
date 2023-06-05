@@ -46,7 +46,7 @@ return require('packer').startup(function()
   end
 
   use {'glacambre/firenvim', run = ':call firenvim#install(0)' }
-  use 'davidsu/walkme-vim-gbrowse'
+  use 'shumphrey/fugitive-gitlab.vim'
   use 'suy/vim-context-commentstring'
   -- use 'davidsu/comfortable-motion.vim'                               
   use 'psliwka/vim-smoothie'
@@ -105,6 +105,7 @@ return require('packer').startup(function()
   use {'junegunn/vim-easy-align', ft = 'markdown'}                   -- markdown
   -- use {'theHamsta/nvim_rocks', run = 'pip3 install --user hererocks && python3 -mhererocks . -j2.1.0-beta3 -r3.0.0 && cp nvim_rocks.lua lua'}
   use_rocks 'penlight'
+  use {'chrisbra/csv.vim', ft='csv'}
 
   -- use_rocks 'penlight'
   if isFirstSetup then

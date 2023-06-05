@@ -116,6 +116,15 @@ fshow() {
 FZF-EOF"
 }
 
+factivate() {
+    fzfretval=$(find $HOME/projects -type d -iname .venv -maxdepth 10 | fzf)
+    if [[ -n $fzfretval ]]; then
+        cmd="source $fzfretval/bin/activate"
+        echo $cmd
+        eval $cmd
+    fi
+}
+
 alias fab=chromebookmarks
 alias fcab=chromebookmarks
 alias bookmarks=chromebookmarks

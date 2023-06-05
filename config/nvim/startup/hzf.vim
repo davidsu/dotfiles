@@ -164,6 +164,7 @@ augroup myfzfgroup
     autocmd!
     " autocmd FileType javascript,typescript,typescript.tsx nnoremap <buffer>gd :normal! m`<cr>:call GoToDeclaration()<cr>
     autocmd FileType javascript,typescript,typescript.tsx,typescriptreact nnoremap <buffer>gd :normal! m`<cr>:JSGoToDeclaration<cr>
+    autocmd FileType python nnoremap <buffer>gd :call CocActionAsync('jumpDefinition')<cr>
     autocmd FileType gitcommit nnoremap <buffer>,<Tab> :call FugitiveMappings()<cr>
     autocmd FileType gitcommit nnoremap <buffer>\<Tab> :call FugitiveMappings()<cr>
 augroup END

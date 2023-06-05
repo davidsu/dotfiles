@@ -23,6 +23,7 @@ let g:ack_use_dispatch = 1
 " don't hide quotes in json files
 let g:vim_json_syntax_conceal = 0
 let g:sleuth_automatic = 1
+let g:csv_no_conceal = 1
 "-----------------------------------------------------------------------------}}}
 "FUNCTIONS                                                                      {{{ 
 "--------------------------------------------------------------------------------
@@ -143,6 +144,15 @@ endif
 " switch syntax highlighting on
 syntax on
 
+function! DisableFileTypeIfTooBig()
+    " Don't strip on these filetypes
+    if &ft =~ 'csv\|dat'
+        return
+    endif
+    if line('$') > 15000 
+	set filetype=none 
+    endif
+endfunction
 "-----------------------------------------------------------------------------}}}
 "AUTOCOMMANDS                                                                 {{{ 
 "--------------------------------------------------------------------------------
@@ -156,8 +166,9 @@ augroup configgroup
     au VimEnter * call histdel(':', '^qa\?$')
     au VimEnter * set tabstop=4
     au BufNewFile,BufRead Jenkinsfile setf groovy
+    au BufRead,BufNewFile *.csv set filetype=csv
     "this is my way of disabling syntax highlight for very large files... A little clumsy but good enough for now
-    autocmd BufEnter * if line('$') > 15000 | set filetype=none | endif
+    autocmd BufEnter * call DisableFileTypeIfTooBig()
     autocmd BufNewFile,BufRead *.rt set filetype=html
     autocmd BufNewFile,BufRead *.svg set filetype=xml
     autocmd BufNewFile,BufRead .babelrc set filetype=json
@@ -232,6 +243,7 @@ command! ToStoreKey :%s#\C\(\<\u[a-z0-9]\+\|[a-z0-9]\+\)\(\u\)#\l\1_\l\2#gc
 
 " quick open snippets file for current filetype
 command! OpenInWebstorm call utils#open_in_webstorm()
+command! OpenInPyCharm call utils#open_in_pycharm()
 command! ListDotFiles call ListDotFiles('$DOTFILES/',  'git ls-files')
 command! DotFiles call ListDotFiles('$DOTFILES',  'git ls-files')
 command! DotVim call ListDotFiles('$DOTFILES/config/nvim/',  'git ls-files')

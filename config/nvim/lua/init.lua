@@ -34,6 +34,10 @@ if isModuleAvailable('nvim-treesitter.configs') then
           node_decremental = "_",
         },
       },
+      pyfold = {
+        enable = true,
+        custom_foldtext = true -- Sets provided foldtext on window where module is active
+      },
     }
     local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
     parser_config.dockerfile = {

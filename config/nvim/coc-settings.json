@@ -1,12 +1,13 @@
 {
    "diagnostic.enable": true,
+   // "tsserver.log": "verbose",
    // "tsserver.implicitProjectConfig.checkJs": true,
    // "tsserver.trace.server": "verbose",
-   "diagnostic.virtualText": true,
+   // "diagnostic.virtualText": true,
    "suggest.enablePreview":false,
-   "diagnostic.level": "error",
-   "diagnostic.messageTarget": "echo",
-   "diagnostic.enableMessage": "never",
+   // "diagnostic.level": "error",
+   // "diagnostic.messageTarget": "echo",
+   // "diagnostic.enableMessage": "never",
    "tsserver.disableAutomaticTypeAcquisition": false,
    "typescript.suggest.includeCompletionsForImportStatements": true,
    // "javascript.validate.enable": false,
@@ -14,6 +15,7 @@
    "tsserver.npm": "/Users/david.susskind/.fnm/node-versions/v14.15.3/installation/bin/npm",
    "javascript.suggestionActions.enabled": true,
    "diagnostic.errorSign": "✖",
+   "coc.preferences.formatOnSaveFiletypes": ["typescript"],
    "eslint.autoFixOnSave": true,
    // "eslint.trace.server": "verbose",
    // "eslint.packageManager": "yarn",
@@ -44,5 +46,10 @@
    "coc.preferences.extensionUpdateCheck": "never",
    "yaml.schemas": {
       "kubernetes": "/*.yaml"
-   }
+  },
+  "snippets.ultisnips.pythonPrompt": false,
+  "python.analysis.typeCheckingMode": "off",
+  "python.formatting.provider": "black",
+  "python.linting.mypyEnabled": true,
+  "python.formatting.blackPath": "/opt/homebrew/bin/black"
 }

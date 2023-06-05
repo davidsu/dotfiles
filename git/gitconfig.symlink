@@ -1,6 +1,6 @@
 [user]
 	name = David Susskind
-	email = david.susskind@walkme.com
+	email = david.s@noogata.com
 [core]
 	excludesfile = ~/.gitignore_global
 	autocrlf = input

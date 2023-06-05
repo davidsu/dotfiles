@@ -1,5 +1,13 @@
+function! RunPrettier()
+  write
+  let file = expand('%:p')
+  let root = utils#get_project_root(file)
+  call utils#run_shell_command('cd '.root.'; yarn run prettier -w '.expand('%:p'), 0)
+  edit
+endfunction
 command! Rename call CocActionAsync('rename')
 command! FixLint CocCommand eslint.executeAutofix
+command! -nargs=0 Prettier :CocCommand prettier.forceFormatDocument
 command! -nargs=* -range CocAction :call coc#rpc#notify('codeActionRange', [<line1>, <line2>, <f-args>])
 command! -nargs=* -range CocFix    :call coc#rpc#notify('codeActionRange', [<line1>, <line2>, 'quickfix'])
 
