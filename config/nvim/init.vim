@@ -10,6 +10,8 @@ if filereadable($HOME.'/Library/Caches/fnm_multishells/72876_1652339420691/bin/n
     let g:coc_node_path = $HOME.'/Library/Caches/fnm_multishells/72876_1652339420691/bin/node'
 endif
 
+" jump html tags with %
+runtime macros/matchit.vim
 function! SourceMyScripts()
     let file_list = split(globpath("$DOTFILES/config/nvim/startup/", "*.vim"), '\n')
 
