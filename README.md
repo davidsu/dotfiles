@@ -9,9 +9,11 @@ A modern, performance-focused dotfiles configuration optimized exclusively for m
 
 ## Installation
 
-To set up your environment, clone this repository and run the installation script:
+To set up your environment, clone this repository into `~/.dotfiles` and run the installation script:
 
 ```bash
+git clone https://github.com/yourusername/dotfiles.git ~/.dotfiles
+cd ~/.dotfiles
 ./installation/install.sh
 ```
 

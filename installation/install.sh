@@ -12,6 +12,7 @@ INST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${INST_DIR}/logging.sh"
 source "${INST_DIR}/system.sh"
 source "${INST_DIR}/dependencies.sh"
+source "${INST_DIR}/links.sh"
 source "${INST_DIR}/verify.sh"
 
 main() {
@@ -31,7 +32,10 @@ main() {
     # 2. Dependency Resolution
     resolve_dependencies
 
-    # 3. Verification
+    # 3. Symlinking
+    setup_symlinks
+
+    # 4. Verification
     verify_all_tools
 
     log_success "Installation and verification completed successfully."

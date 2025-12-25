@@ -15,8 +15,8 @@
 
 ## Phase 2: Tool Reconciliation (Decide & Finalize)
 - [ ] **Discuss & decide on each tool from dotfilesold**:
-  - [ ] **fzf**: Keep. Purpose, usage, and shell integration.
-  - [ ] **starship**: Keep. Prompt choice and customization.
+  - [x] **fzf**: Keep. Purpose, usage, and shell integration.
+  - [x] **starship**: Keep. Prompt choice and customization.
   - [ ] **iterm2**: Keep. App management and profile syncing.
   - [ ] **karabiner-elements**: Keep. Key mapping strategy.
   - [ ] **zoxide**: (Replacing `fasd`) Purpose and shell hooks.
@@ -60,7 +60,7 @@
   - [ ] Install: Neovim via brew, lazy.nvim setup
   - [ ] Configure: basic Lua structure, Cursor/Terminal detection
   - [ ] **README: Update Neovim section** (installation, basic usage, modes)
-- [ ] **Setup .zshrc foundation**
+- [x] **Setup .zshrc foundation** (Add `eval "$(starship init zsh)"` to `.zshrc`)
 - [ ] **Integrate mise into shell prompt** (Add `eval "$(mise activate zsh)"` to `.zshrc`)
 - [ ] **Restart terminal or source config** (Required for mise to fully integrate)
 
@@ -69,7 +69,7 @@
 - [ ] **Shell configuration** (create ~/.dotfiles/config/zsh/ files, symlink logic)
 - [ ] **Neovim configuration** (create ~/.dotfiles/config/nvim/ Lua files, symlink logic)
 - [ ] **iTerm2 profiles** (create profile files, symlink to ~/Library/Preferences/)
-- [ ] **Test all symlinks** (verify symlinks work, configs load correctly)
+- [x] **Test all symlinks** (verify symlinks work, configs load correctly)
 - [ ] **README: Configuration section** (symlinking explanation, config locations)
 
 ## Phase 6: Tool Integration & Customization

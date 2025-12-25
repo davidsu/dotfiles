@@ -44,6 +44,14 @@
     "git": {
       "type": "workflow",
       "description": "Version control"
+    },
+    "fzf": {
+      "type": "workflow",
+      "description": "Command-line fuzzy finder"
+    },
+    "starship": {
+      "type": "workflow",
+      "description": "Minimal, blazing-fast, and infinitely customizable prompt for any shell"
     }
   }
 }

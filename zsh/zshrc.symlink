@@ -1,0 +1,17 @@
+# Set up Homebrew PATH for Apple Silicon
+if [[ -f /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+fi
+
+# Initialize Starship prompt
+if command -v starship >/dev/null 2>&1; then
+    eval "$(starship init zsh)"
+fi
+
+# Initialize mise (Node, etc.)
+if command -v mise >/dev/null 2>&1; then
+    eval "$(mise activate zsh)"
+fi
+
+# Basic PATH
+export PATH="$HOME/.dotfiles/bin:$PATH"
