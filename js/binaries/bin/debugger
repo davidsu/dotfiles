@@ -1,3 +1,0 @@
-#!/usr/bin/env node
-const port = Number(process.argv[2] || 9229)
-require('../dist/debugInChrome').openChromeOnDebuggerUrl(port)

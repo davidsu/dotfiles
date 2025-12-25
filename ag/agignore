@@ -1,9 +1,0 @@
-app/external/OrganizeImagesV2/dest/
-bundle.js
-*.bundle.css
-*.css.map
-*.rt.js
-*.min.js
-vendor/
-base16-shell/
-nvim/plugged/

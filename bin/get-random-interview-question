@@ -1,9 +1,0 @@
-#!/usr/bin/env node
-const home = require('os').homedir();
-const src = require('path').resolve(home, 'Developer', 'cracking-the-coding-interview', 'src', 'main', 'java');
-const files = require('child_process').execSync(`find ${src} -type f`, {encoding: 'utf8'}).split('\n').filter(a => a);
-function getRandomInt(max) {
-  return Math.floor(Math.random() * Math.floor(max));
-}
-console.log(files[getRandomInt(files.length)]);
-

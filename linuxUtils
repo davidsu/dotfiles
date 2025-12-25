@@ -1,9 +1,0 @@
-function keymap() {
-  if [[ `uname` == 'Linux' ]]
-  then
-    xhost +SI:localuser:root
-    sudo killall xkeysnail > /dev/null 2>&1
-    sudo -b nohup xkeysnail $HOME/.dotfiles/config/xkeysnail.config.py > /tmp/xkeysnail 2>&1
-  fi
-}
-
