@@ -7,11 +7,11 @@
 - **Living Documentation**: README.md updated after each major implementation
 
 ## Phase 1: Core Infrastructure
-- [ ] **Create install.sh foundation** (reusable functions: log(), install_tool(), create_symlink(), etc.)
-- [ ] **Setup directory structure** (~/.dotfiles with config/, scripts/, etc.)
-- [ ] **Initialize tools.yaml** (handpicked tools with dependencies)
-- [ ] **Create basic logging system** (~/Library/Logs/dotfiles/ with dual output)
-- [ ] **README: Project Overview** (what this dotfiles does, requirements, quick start)
+- [x] **Create installation script foundation** (reusable functions: log(), is_macos(), etc.)
+- [x] **Setup directory structure** (./installation flat folder)
+- [x] **Initialize tools.json** (handpicked tools with dependencies)
+- [x] **Create basic logging system** (~/Library/Logs/dotfiles/ with dual output)
+- [x] **README: Project Overview** (what this dotfiles does, requirements, quick start)
 
 ## Phase 2: Handpicked Tools (Discuss & Implement Each)
 - [ ] **Homebrew**
@@ -54,6 +54,11 @@
   - [ ] Discuss: terminal choice, features over default Terminal
   - [ ] Configure: profile setup, colors, shell integration
   - [ ] **README: Update Terminal section** (iTerm2 setup, profiles, shortcuts)
+
+## Create Zshrc
+- [ ] **Setup .zshrc foundation**
+- [ ] **Integrate mise into shell prompt** (Add `eval "$(mise activate zsh)"` to `.zshrc`)
+- [ ] **Restart terminal or source config** (Required for mise to fully integrate)
 
 ## Phase 3: Configuration Files & Symlinks
 - [ ] **Git configuration** (create ~/.dotfiles/config/git/ files, symlink logic)

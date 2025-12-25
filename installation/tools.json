@@ -1,0 +1,49 @@
+{
+  "tools": {
+    "cmake": {
+      "type": "dependency",
+      "description": "Build system; required for Neovim and high-performance plugins"
+    },
+    "ninja": {
+      "type": "dependency",
+      "description": "High-speed build system; required for compiling high-performance Neovim plugins and native extensions"
+    },
+    "gettext": {
+      "type": "dependency",
+      "description": "Internationalization library"
+    },
+    "ripgrep": {
+      "type": "workflow",
+      "cmd": "rg",
+      "description": "Fast line-oriented search tool"
+    },
+    "fd": {
+      "type": "workflow",
+      "description": "Simple, fast alternative to find"
+    },
+    "neovim": {
+      "type": "workflow",
+      "cmd": "nvim",
+      "dependencies": ["cmake", "ninja", "gettext", "ripgrep", "fd"],
+      "description": "Extensible text editor"
+    },
+    "docker": {
+      "type": "workflow",
+      "homebrew_package": "colima",
+      "cmd": "colima",
+      "description": "Lightweight container runtime (Colima)"
+    },
+    "mise": {
+      "type": "workflow",
+      "description": "Multi-language version manager (successor to rtx)"
+    },
+    "zsh": {
+      "type": "workflow",
+      "description": "Primary shell"
+    },
+    "git": {
+      "type": "workflow",
+      "description": "Version control"
+    }
+  }
+}
