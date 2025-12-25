@@ -45,9 +45,30 @@
   - [ ] **README: Update ripgrep section** (usage examples, Neovim integration)
 - [ ] **fzf**
   - [ ] Discuss: fuzzy finder, integration with other tools
-  - [ ] Install: via install.sh
-  - [ ] Configure: keybindings, shell integration
-  - [ ] **README: Update fzf section** (usage, shortcuts, tool integrations)
+  - [ ] **Phase 1: Core Setup (1-2 hours)** - Get basic fzf working with Ctrl+T/Ctrl+R
+    - [ ] Install fzf via tools.json (already added)
+    - [ ] Source fzf key-bindings.zsh in zshrc (like dotfilesold)
+    - [ ] Test basic functionality (Ctrl+T for files, Ctrl+R for history)
+  - [ ] **Phase 2: Function Analysis (2-3 hours)** - Categorize 15+ fzf functions from dotfilesold
+    - [ ] **Essential (Keep & Modernize)**: fag(), fa(), fbr(), fshow(), fstash()
+    - [ ] **Browser Integration**: chromehistory(), chromebookmarks() (Chrome-specific)
+    - [ ] **Developer Tools**: fman(), factivate(), jfzf()
+    - [ ] **Theme/Utilities**: fzf-chth(), preview helpers
+    - [ ] **Questionable/Complex**: Advanced git integrations
+  - [ ] **Phase 3: Core Functions Migration (2-4 hours)** - Port 5-7 essential functions
+    - [ ] fag() - ripgrep search (main search tool)
+    - [ ] fa() - file finder with preview
+    - [ ] fbr() - git branch switching
+    - [ ] fshow() - git log browser
+    - [ ] fman() - man page search
+    - [ ] Modernize ripgrep calls, update file paths from $DOTFILES to ~/.dotfiles
+  - [ ] **Phase 4: Browser Integration (Optional - 1-2 hours)** - Chrome history/bookmarks
+    - [ ] chromehistory() - browse Chrome history (check modern Chrome format)
+    - [ ] chromebookmarks() - browse Chrome bookmarks (Ruby script)
+  - [ ] **Phase 5: Polish & Documentation (1 hour)**
+    - [ ] Update README.md with fzf usage examples
+    - [ ] Mark tasks complete
+    - [ ] Test all functions work together
 
 ## Phase 4: Shell & Editor Foundation
 - [ ] **Zsh + Antidote**
