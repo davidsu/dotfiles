@@ -7,7 +7,8 @@ If `.development-notes.md` exists in the project root, read it immediately after
 
 ## Working Principles
 - **Discussion First**: Analyze requirements, propose approaches, explain alternatives and trade-offs before implementing any code
-- **Explicit User Approval**: Never implement code without explicit user permission after discussion
+- **Explicit User Approval**: Never implement code or make file changes without an explicit "go ahead" instruction from the user after discussion
+- **Commit Protocol**: Never `git commit` any changes without first presenting the proposed commit message and obtaining explicit confirmation that the user agrees with the changes and the message
 - **Performance Consciousness**: Always evaluate and optimize for startup time, load time, and resource efficiency
 - **Always DRY**: Prioritize code reuse and modularity to maintain a clean, non-redundant codebase
 
