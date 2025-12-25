@@ -46,8 +46,8 @@
 - [ ] **fzf**
   - [ ] Discuss: fuzzy finder, integration with other tools
   - [ ] **Phase 1: Core Setup (1-2 hours)** - Get basic fzf working with Ctrl+T/Ctrl+R
-    - [ ] Install fzf via tools.json (already added)
-    - [ ] Source fzf key-bindings.zsh in zshrc (like dotfilesold)
+    - [x] Install fzf via tools.json (already added)
+    - [x] Source fzf key-bindings.zsh in zshrc (like dotfilesold)
     - [ ] Test basic functionality (Ctrl+T for files, Ctrl+R for history)
   - [ ] **Phase 2: Function Analysis (2-3 hours)** - Categorize 15+ fzf functions from dotfilesold
     - [ ] **Essential (Keep & Modernize)**: fag(), fa(), fbr(), fshow(), fstash()

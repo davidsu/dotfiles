@@ -13,5 +13,11 @@ if command -v mise >/dev/null 2>&1; then
     eval "$(mise activate zsh)"
 fi
 
+# Initialize fzf key bindings and completion
+if command -v fzf >/dev/null 2>&1; then
+    [ -f $(brew --prefix fzf)/shell/key-bindings.zsh ] && source $(brew --prefix fzf)/shell/key-bindings.zsh
+    [ -f $(brew --prefix fzf)/shell/completion.zsh ] && source $(brew --prefix fzf)/shell/completion.zsh
+fi
+
 # Basic PATH
 export PATH="$HOME/.dotfiles/bin:$PATH"
