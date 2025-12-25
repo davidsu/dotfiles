@@ -15,17 +15,17 @@
 
 ## Phase 2: Tool Reconciliation (Decide & Finalize)
 - [ ] **Discuss & decide on each tool from dotfilesold**:
-  - [x] **fzf**: Keep. Purpose, usage, and shell integration.
-  - [x] **starship**: Keep. Prompt choice and customization.
-  - [x] **iterm2**: Keep. App management and profile syncing.
-  - [x] **karabiner-elements**: Keep. Key mapping strategy.
-  - [x] **zoxide**: (Replacing `fasd`) Purpose and shell hooks.
-  - [x] **pnpm**: (Replacing `yarn`) Package management strategy.
-  - [x] **Rectangle**: (Replacing `Spectacle`) Window management.
+  - [ ] **fzf**: Keep. Purpose, usage, and shell integration.
+  - [ ] **starship**: Keep. Prompt choice and customization.
+  - [ ] **iterm2**: Keep. App management and profile syncing.
+  - [ ] **karabiner-elements**: Keep. Key mapping strategy.
+  - [ ] **zoxide**: (Replacing `fasd`) Purpose and shell hooks.
+  - [ ] **pnpm**: (Replacing `yarn`) Package management strategy.
+  - [ ] **Rectangle**: (Replacing `Spectacle`) Window management.
   - [ ] **Clipboard Management**: Decide between Flycut or Maccy.
-  - [x] **Utilities**: `jq`, `coreutils`, `wget`, `entr`. Keep.
-  - [x] **Cloud Tools**: `google-cloud-sdk`. Keep.
-  - [x] **Global Packages**: PM2, Typescript, etc. Keep.
+  - [ ] **Utilities**: `jq`, `coreutils`, `wget`, `entr`. Keep.
+  - [ ] **Cloud Tools**: `google-cloud-sdk`. Keep.
+  - [ ] **Global Packages**: PM2, Typescript, etc. Keep.
 
 ## Phase 3: Handpicked Tools (Discuss & Implement Each)
 - [ ] **Homebrew**
