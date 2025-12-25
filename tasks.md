@@ -1,19 +1,5 @@
 # Dotfiles Implementation Tasks
 
-## Phase 0: Tool Reconciliation (Review dotfilesold)
-- [ ] **Discuss & decide on each tool from dotfilesold**:
-  - [ ] **fzf**: Purpose, usage, and shell integration.
-  - [ ] **starship**: Prompt choice and customization.
-  - [ ] **iterm2**: App management and profile syncing.
-  - [ ] **karabiner-elements**: Key mapping strategy.
-  - [ ] **fasd**: Still needed? (Alternative: `zoxide`).
-  - [ ] **yarn**: Still needed? (Alternative: `pnpm`).
-  - [ ] **Window Management**: Spectacle alternative (e.g., `Rectangle`).
-  - [ ] **Clipboard Management**: Flycut or alternatives.
-  - [ ] **Utilities**: `jq`, `coreutils`, `wget`, `entr`.
-  - [ ] **Cloud Tools**: `google-cloud-sdk`.
-  - [ ] **Global Packages**: PM2, Typescript, Rouge, Python/Ruby neovim providers.
-
 ## Core Approach
 - **Install Script First**: Create reusable install.sh with functions to avoid repetition
 - **Symlinking Strategy**: Config files live in ~/.dotfiles, install.sh creates symlinks
@@ -27,59 +13,58 @@
 - [x] **Create basic logging system** (~/Library/Logs/dotfiles/ with dual output)
 - [x] **README: Project Overview** (what this dotfiles does, requirements, quick start)
 
-## Phase 2: Handpicked Tools (Discuss & Implement Each)
+## Phase 2: Tool Reconciliation (Decide & Finalize)
+- [ ] **Discuss & decide on each tool from dotfilesold**:
+  - [x] **fzf**: Keep. Purpose, usage, and shell integration.
+  - [x] **starship**: Keep. Prompt choice and customization.
+  - [x] **iterm2**: Keep. App management and profile syncing.
+  - [x] **karabiner-elements**: Keep. Key mapping strategy.
+  - [x] **zoxide**: (Replacing `fasd`) Purpose and shell hooks.
+  - [x] **pnpm**: (Replacing `yarn`) Package management strategy.
+  - [x] **Rectangle**: (Replacing `Spectacle`) Window management.
+  - [ ] **Clipboard Management**: Decide between Flycut or Maccy.
+  - [x] **Utilities**: `jq`, `coreutils`, `wget`, `entr`. Keep.
+  - [x] **Cloud Tools**: `google-cloud-sdk`. Keep.
+  - [x] **Global Packages**: PM2, Typescript, etc. Keep.
+
+## Phase 3: Handpicked Tools (Discuss & Implement Each)
 - [ ] **Homebrew**
   - [ ] Discuss: package manager purpose, why brew vs others
   - [ ] Install: via install.sh with PATH setup
   - [ ] Configure: basic brew setup and maintenance
   - [ ] **README: Update Homebrew section** (installation, usage, maintenance)
-
 - [ ] **Git**
   - [ ] Discuss: version control, SSH setup, global config
   - [ ] Install: via install.sh
   - [ ] Configure: SSH keys, global config file, aliases
   - [ ] **README: Update Git section** (setup, SSH keys, common commands)
-
 - [ ] **ripgrep**
   - [ ] Discuss: search tool, why ripgrep vs ag, performance benefits
   - [ ] Install: via install.sh
   - [ ] Configure: basic usage, integration points
   - [ ] **README: Update ripgrep section** (usage examples, Neovim integration)
-
 - [ ] **fzf**
   - [ ] Discuss: fuzzy finder, integration with other tools
   - [ ] Install: via install.sh
   - [ ] Configure: keybindings, shell integration
   - [ ] **README: Update fzf section** (usage, shortcuts, tool integrations)
 
+## Phase 4: Shell & Editor Foundation
 - [ ] **Zsh + Antidote**
   - [ ] Discuss: why Zsh, plugin management approach
   - [ ] Install: Zsh via brew, Antidote setup
   - [ ] Configure: plugin loading, basic aliases, environment
   - [ ] **README: Update Shell section** (Zsh setup, plugins, customization)
-
 - [ ] **Neovim + lazy.nvim**
   - [ ] Discuss: editor choice, Lua migration, conditional loading
   - [ ] Install: Neovim via brew, lazy.nvim setup
   - [ ] Configure: basic Lua structure, Cursor/Terminal detection
   - [ ] **README: Update Neovim section** (installation, basic usage, modes)
-
-- [ ] **iTerm2**
-  - [ ] Discuss: terminal choice, features over default Terminal
-  - [ ] Configure: profile setup, colors, shell integration
-  - [ ] **README: Update Terminal section** (iTerm2 setup, profiles, shortcuts)
-
-- [ ] **Karabiner-Elements**
-  - [ ] Discuss: complex modifications, key mapping strategy
-  - [ ] Install: via tools.json (Homebrew Cask)
-  - [ ] Configure: link karabiner.json from dotfilesold
-
-## Create Zshrc
 - [ ] **Setup .zshrc foundation**
 - [ ] **Integrate mise into shell prompt** (Add `eval "$(mise activate zsh)"` to `.zshrc`)
 - [ ] **Restart terminal or source config** (Required for mise to fully integrate)
 
-## Phase 3: Configuration Files & Symlinks
+## Phase 5: Configuration Files & Symlinks
 - [ ] **Git configuration** (create ~/.dotfiles/config/git/ files, symlink logic)
 - [ ] **Shell configuration** (create ~/.dotfiles/config/zsh/ files, symlink logic)
 - [ ] **Neovim configuration** (create ~/.dotfiles/config/nvim/ Lua files, symlink logic)
@@ -87,27 +72,27 @@
 - [ ] **Test all symlinks** (verify symlinks work, configs load correctly)
 - [ ] **README: Configuration section** (symlinking explanation, config locations)
 
-## Phase 4: Tool Integration & Customization
+## Phase 6: Tool Integration & Customization
 - [ ] **ripgrep + fzf integration** (Neovim Telescope, shell functions)
 - [ ] **Neovim plugins setup** (lazy.nvim config, essential plugins)
 - [ ] **Cursor/Terminal detection** (environment detection, conditional config)
 - [ ] **Shell aliases & functions** (productivity shortcuts, tool integrations)
 - [ ] **README: Integration section** (how tools work together, workflows)
 
-## Phase 5: Testing & Refinement
+## Phase 7: Testing & Refinement
 - [ ] **Test each tool individually** (verify installation, basic functionality)
 - [ ] **Test integrations** (tools working together: fzf+ripgrep+Neovim)
 - [ ] **Performance testing** (startup times, responsiveness)
 - [ ] **Edge case testing** (missing dependencies, network issues)
 - [ ] **README: Testing & Troubleshooting** (common issues, performance tips)
 
-## Phase 6: Finalization
+## Phase 8: Finalization
 - [ ] **Clean up and optimize** (remove unused code, optimize performance)
 - [ ] **Final verification** (clean macOS install test)
 - [ ] **README: Complete documentation** (final polish, maintenance guide)
 
 ## Current Focus
-- **Starting Point**: install.sh foundation with reusable functions
+- **Starting Point**: Phase 2: Tool Reconciliation (Decide & Finalize)
 - **Methodology**: Discuss tool → implement → test → document in README
 - **Documentation**: README updated after each major implementation
 
