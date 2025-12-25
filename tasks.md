@@ -1,5 +1,19 @@
 # Dotfiles Implementation Tasks
 
+## Phase 0: Tool Reconciliation (Review dotfilesold)
+- [ ] **Discuss & decide on each tool from dotfilesold**:
+  - [ ] **fzf**: Purpose, usage, and shell integration.
+  - [ ] **starship**: Prompt choice and customization.
+  - [ ] **iterm2**: App management and profile syncing.
+  - [ ] **karabiner-elements**: Key mapping strategy.
+  - [ ] **fasd**: Still needed? (Alternative: `zoxide`).
+  - [ ] **yarn**: Still needed? (Alternative: `pnpm`).
+  - [ ] **Window Management**: Spectacle alternative (e.g., `Rectangle`).
+  - [ ] **Clipboard Management**: Flycut or alternatives.
+  - [ ] **Utilities**: `jq`, `coreutils`, `wget`, `entr`.
+  - [ ] **Cloud Tools**: `google-cloud-sdk`.
+  - [ ] **Global Packages**: PM2, Typescript, Rouge, Python/Ruby neovim providers.
+
 ## Core Approach
 - **Install Script First**: Create reusable install.sh with functions to avoid repetition
 - **Symlinking Strategy**: Config files live in ~/.dotfiles, install.sh creates symlinks
@@ -54,6 +68,11 @@
   - [ ] Discuss: terminal choice, features over default Terminal
   - [ ] Configure: profile setup, colors, shell integration
   - [ ] **README: Update Terminal section** (iTerm2 setup, profiles, shortcuts)
+
+- [ ] **Karabiner-Elements**
+  - [ ] Discuss: complex modifications, key mapping strategy
+  - [ ] Install: via tools.json (Homebrew Cask)
+  - [ ] Configure: link karabiner.json from dotfilesold
 
 ## Create Zshrc
 - [ ] **Setup .zshrc foundation**
