@@ -9,6 +9,7 @@ If `.development-notes.md` exists in the project root, read it immediately after
 - **Discussion First**: Analyze requirements, propose approaches, explain alternatives and trade-offs before implementing any code
 - **Explicit User Approval**: Never implement code without explicit user permission after discussion
 - **Performance Consciousness**: Always evaluate and optimize for startup time, load time, and resource efficiency
+- **Always DRY**: Prioritize code reuse and modularity to maintain a clean, non-redundant codebase
 
 ## Communication Standards
 - **Practical Focus**: Emphasize actionable implementation steps and real-world usage patterns
