@@ -89,7 +89,12 @@
 - [ ] **Git configuration** (create ~/.dotfiles/config/git/ files, symlink logic)
 - [ ] **Shell configuration** (create ~/.dotfiles/config/zsh/ files, symlink logic)
 - [ ] **Neovim configuration** (create ~/.dotfiles/config/nvim/ Lua files, symlink logic)
-- [ ] **iTerm2 profiles** (create profile files, symlink to ~/Library/Preferences/)
+- [ ] **iTerm2 configuration**
+  - [ ] **DISCUSS FIRST**: What iTerm configuration do we need? Base16 colors integration, profiles, shell integration, key bindings?
+  - [ ] Create ~/.dotfiles/config/iterm2/ directory structure
+  - [ ] Base16 color schemes (matching Neovim themes for consistency)
+  - [ ] iTerm2 profiles configuration and symlinking
+  - [ ] Shell integration setup (optional - discuss if needed)
 - [x] **Test all symlinks** (verify symlinks work, configs load correctly)
 - [ ] **README: Configuration section** (symlinking explanation, config locations)
 
