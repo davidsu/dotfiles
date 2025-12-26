@@ -21,11 +21,16 @@
   - [x] **karabiner-elements**: Keep. Key mapping strategy.
   - [x] **rectangle**: Keep (replacing Spectacle). Window management.
   - [x] **maccy**: Keep (chosen over Flycut). Clipboard management.
-  - [ ] **zoxide**: (Replacing `fasd`) Purpose and shell hooks.
-  - [ ] **pnpm**: (Replacing `yarn`) Package management strategy.
-  - [ ] **Utilities**: `jq`, `coreutils`, `wget`, `entr`. Keep.
-  - [ ] **Cloud Tools**: `google-cloud-sdk`. Keep.
-  - [ ] **Global Packages**: PM2, Typescript, etc. Keep.
+  - [x] **zoxide**: Not adding at this stage.
+    - **Decision**: Will add zoxide as needed when implementing shell functionality from dotfilesold
+    - **Rationale**: Keep initial setup minimal, add when specific navigation features are migrated
+  - [x] **pnpm**: Not using. npm will suffice.
+  - [x] **Utilities**: Not adding at this stage.
+    - **Decision**: Will add jq, coreutils, wget, entr as needed when implementing shell functionality from dotfilesold
+    - **Rationale**: Keep initial setup minimal, add utilities when specific use cases arise
+  - [x] **Global Packages**: Not adding at this stage.
+    - **Decision**: Will add Typescript and other global packages as needed when implementing workflows from dotfilesold
+    - **Rationale**: Keep initial setup minimal, add when specific development workflows require them
 
 ## Phase 3: Handpicked Tools (Discuss & Implement Each)
 - [ ] **Homebrew**
