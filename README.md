@@ -30,6 +30,30 @@ The script will:
 - **`planning.md`**: Detailed technical specification and project goals.
 - **`tasks.md`**: Current development progress and roadmap.
 
+## Core Tools
+
+This dotfiles setup includes carefully selected tools for an efficient development workflow:
+
+### Development Environment
+- **Neovim**: Primary text editor with Lua-based configuration for fast startup and modern plugin ecosystem
+- **mise**: Multi-language version manager for Node.js and other runtimes (successor to rtx)
+- **ripgrep**: Fast, line-oriented search tool (replaces ag) with extensive integration throughout the setup
+
+### Shell & Terminal
+- **Zsh**: Modern shell with plugin management via Antidote
+- **Starship**: Minimal, blazing-fast, and infinitely customizable shell prompt
+- **iTerm2**: Feature-rich terminal emulator with profile management and shell integration
+
+### Productivity Tools
+- **fzf**: Command-line fuzzy finder for efficient file and content searching
+- **Karabiner-Elements**: Powerful keyboard customization with Vim-style navigation and smart modifier keys
+- **Rectangle**: Window management with keyboard shortcuts for moving and resizing windows
+- **Maccy**: Lightweight clipboard manager for macOS
+
+### Container & Version Control
+- **Docker (Colima)**: Lightweight container runtime for development environments
+- **Git**: Version control with enhanced configuration and productivity shortcuts
+
 ## Keyboard Customization (Karabiner-Elements)
 
 This dotfiles includes comprehensive keyboard remappings via Karabiner-Elements:
