@@ -50,28 +50,54 @@ bootstrap_js_runtime() {
 
 # Function to install tools from tools.json
 install_tools() {
-    local tools_json
-    tools_json="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/tools.json"
+    local tools_json="${PWD}/installation/tools.json"
     
     log_info "Parsing tools from tools.json using Node.js..."
-    
-    # Use Node.js to extract the list of brew packages
-    local packages
-    packages=$(node -e "
-        const fs = require('fs');
-        const { tools } = JSON.parse(fs.readFileSync('$tools_json', 'utf8'));
-        const packages = Object.keys(tools).map(name => tools[name].homebrew_package || name);
-        console.log(packages.join(' '));
-    ")
+    log_info "Tools JSON path: ${tools_json}"
 
-    log_info "Installing packages: $packages"
-    
-    for pkg in $packages; do
-        if brew list "$pkg" >/dev/null 2>&1; then
-            log_success "$pkg is already installed."
+    # Use shared tools parser to extract package list for installation
+    local packages
+    packages=$(node "$(dirname "${tools_json}")/tools-parser.js" "${tools_json}" packages)
+
+    log_info "Installing packages from tools.json"
+
+    # Install packages one by one (read line by line)
+    echo "$packages" | while IFS= read -r line; do
+        if [[ -z "$line" ]]; then continue; fi
+
+        # Parse package name and brew type from "package:type" format
+        IFS=':' read -r pkg brew_type <<< "$line"
+        log_info "Processing package: '$pkg' (type: $brew_type)"
+
+        # Check if package is already installed based on brew type
+        local is_installed=false
+        if [[ "$brew_type" == "cask" ]]; then
+            if brew list --cask "$pkg" >/dev/null 2>&1; then
+                is_installed=true
+            fi
         else
-            log_info "Installing $pkg..."
-            brew install "$pkg"
+            if brew list "$pkg" >/dev/null 2>&1; then
+                is_installed=true
+            fi
+        fi
+
+        if [[ "$is_installed" == true ]]; then
+            log_success "$pkg ($brew_type) is already installed."
+        else
+            log_info "Installing $pkg ($brew_type)..."
+            if [[ "$brew_type" == "cask" ]]; then
+                if brew install --cask "$pkg"; then
+                    log_success "Successfully installed $pkg ($brew_type)"
+                else
+                    log_error "Failed to install $pkg ($brew_type)"
+                fi
+            else
+                if brew install "$pkg"; then
+                    log_success "Successfully installed $pkg ($brew_type)"
+                else
+                    log_error "Failed to install $pkg ($brew_type)"
+                fi
+            fi
         fi
     done
 }

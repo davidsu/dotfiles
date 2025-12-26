@@ -20,27 +20,30 @@ verify_all_tools() {
     
     local failed=0
     
-    # Use Node.js to extract tool name and its command name
-    # Format: tool_name:cmd_name
+    # Use shared tools parser to extract verification data
     local tools_to_check
-    tools_to_check=$(node -e "
-        const fs = require('fs');
-        const { tools } = JSON.parse(fs.readFileSync('$tools_json', 'utf8'));
-        Object.keys(tools).forEach(name => {
-            const cmd = tools[name].cmd || name;
-            console.log(\`\${name}:\${cmd}\`);
-        });
-    ")
+    tools_to_check=$(node "$(dirname "${tools_json}")/tools-parser.js" "${tools_json}" verification)
 
     for entry in $tools_to_check; do
-        local tool_name="${entry%%:*}"
-        local cmd_name="${entry#*:}"
-        
-        if has_command "$cmd_name"; then
-            log_success "Verified: $tool_name (as $cmd_name)"
+        # Parse tool_name:brew_type:cmd_name
+        IFS=':' read -r tool_name brew_type cmd_name <<< "$entry"
+
+        if [[ "$brew_type" == "cask" ]]; then
+            # For casks, check if installed via Homebrew cask
+            if brew list --cask "$tool_name" >/dev/null 2>&1; then
+                log_success "Verified: $tool_name (cask installed)"
+            else
+                log_error "Missing: $tool_name (cask not installed via Homebrew)"
+                failed=$((failed + 1))
+            fi
         else
-            log_error "Missing: $tool_name (expected command '$cmd_name' not in PATH)"
-            failed=$((failed + 1))
+            # For formulae, check if command is in PATH
+            if has_command "$cmd_name"; then
+                log_success "Verified: $tool_name (as $cmd_name)"
+            else
+                log_error "Missing: $tool_name (expected command '$cmd_name' not in PATH)"
+                failed=$((failed + 1))
+            fi
         fi
     done
     

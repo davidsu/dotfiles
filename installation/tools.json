@@ -2,56 +2,88 @@
   "tools": {
     "cmake": {
       "type": "dependency",
+      "brew_type": "formula",
       "description": "Build system; required for Neovim and high-performance plugins"
     },
     "ninja": {
       "type": "dependency",
+      "brew_type": "formula",
       "description": "High-speed build system; required for compiling high-performance Neovim plugins and native extensions"
     },
     "gettext": {
       "type": "dependency",
+      "brew_type": "formula",
       "description": "Internationalization library"
     },
     "ripgrep": {
       "type": "workflow",
+      "brew_type": "formula",
       "cmd": "rg",
       "description": "Fast line-oriented search tool"
     },
     "fd": {
       "type": "workflow",
+      "brew_type": "formula",
       "description": "Simple, fast alternative to find"
     },
     "neovim": {
       "type": "workflow",
+      "brew_type": "formula",
       "cmd": "nvim",
       "dependencies": ["cmake", "ninja", "gettext", "ripgrep", "fd"],
       "description": "Extensible text editor"
     },
     "docker": {
       "type": "workflow",
+      "brew_type": "formula",
       "homebrew_package": "colima",
       "cmd": "colima",
       "description": "Lightweight container runtime (Colima)"
     },
     "mise": {
       "type": "workflow",
+      "brew_type": "formula",
       "description": "Multi-language version manager (successor to rtx)"
     },
     "zsh": {
       "type": "workflow",
+      "brew_type": "formula",
       "description": "Primary shell"
     },
     "git": {
       "type": "workflow",
+      "brew_type": "formula",
       "description": "Version control"
     },
     "fzf": {
       "type": "workflow",
+      "brew_type": "formula",
       "description": "Command-line fuzzy finder"
     },
     "starship": {
       "type": "workflow",
+      "brew_type": "formula",
       "description": "Minimal, blazing-fast, and infinitely customizable prompt for any shell"
+    },
+    "iterm2": {
+      "type": "workflow",
+      "brew_type": "cask",
+      "description": "Terminal emulator for macOS"
+    },
+    "karabiner-elements": {
+      "type": "workflow",
+      "brew_type": "cask",
+      "description": "Powerful and stable keyboard customizer for macOS"
+    },
+    "rectangle": {
+      "type": "workflow",
+      "brew_type": "cask",
+      "description": "Move and resize windows on macOS with keyboard shortcuts"
+    },
+    "maccy": {
+      "type": "workflow",
+      "brew_type": "cask",
+      "description": "Lightweight clipboard manager for macOS"
     }
   }
 }
