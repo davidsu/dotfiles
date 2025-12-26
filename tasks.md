@@ -33,8 +33,9 @@
     - **Rationale**: Keep initial setup minimal, add when specific development workflows require them
 
 ## Phase 3: Configure Shell
-- [ ] **Setup Zsh environment**
-  - [ ] Create ~/.dotfiles/config/zsh/ directory structure
+- [x] **Setup Zsh environment**
+  - [x] Create ~/.dotfiles/zsh/ directory structure (reproduced from dotfilesold)
+  - [x] Reproduce legacy Zsh files: `zlogin.symlink`, `zshenv.symlink`, `zshprofile.symlink`
   - [ ] Configure Antidote plugin manager
   - [ ] **Port Core Customizations (from dotfilesold)**:
     - [ ] `auto_cd`, `autopushd`, and `HIST_VERIFY` options

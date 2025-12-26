@@ -50,7 +50,7 @@ bootstrap_js_runtime() {
 
 # Function to install tools from tools.json
 install_tools() {
-    local tools_json="${PWD}/installation/tools.json"
+    local tools_json="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/tools.json"
     
     log_info "Parsing tools from tools.json using Node.js..."
     log_info "Tools JSON path: ${tools_json}"

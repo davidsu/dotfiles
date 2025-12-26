@@ -19,5 +19,6 @@ if command -v fzf >/dev/null 2>&1; then
     [ -f $(brew --prefix fzf)/shell/completion.zsh ] && source $(brew --prefix fzf)/shell/completion.zsh
 fi
 
-# Basic PATH
-export PATH="$HOME/.dotfiles/bin:$PATH"
+# Basic PATH and Environment
+export DOTFILES="$HOME/.dotfiles"
+export PATH="$DOTFILES/bin:$PATH"

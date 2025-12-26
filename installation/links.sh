@@ -52,7 +52,8 @@ safe_link() {
 
 # Function to link the config directory to ~/.config
 link_config_dir() {
-    local dotfiles_config="${HOME}/.dotfiles/config"
+    local dotfiles_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    local dotfiles_config="${dotfiles_root}/config"
     local system_config="${HOME}/.config"
 
     log_info "Linking config directory..."
@@ -61,7 +62,7 @@ link_config_dir() {
 
 # Function to find and link all .symlink files in the repo
 link_symlink_files() {
-    local dotfiles_root="${HOME}/.dotfiles"
+    local dotfiles_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     local failed=0
     log_info "Finding .symlink files in $dotfiles_root..."
 
