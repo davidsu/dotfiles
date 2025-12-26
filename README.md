@@ -19,7 +19,7 @@ cd ~/.dotfiles
 
 The script will:
 1. Perform pre-flight system checks.
-2. Bootstrap `mise` and `node` as the primary runtime managers.
+2. Bootstrap `mise` (a multi-language version manager) for Node.js version management.
 3. Install and verify all tools defined in `installation/tools.json`.
 
 ## Architecture
