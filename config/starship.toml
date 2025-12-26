@@ -1,7 +1,7 @@
 add_newline = false
 
 # Explicitly define the prompt layout: Arrow -> Path -> Git -> %
-format = "$character$directory$git_branch$git_status$custom[ % ](bold blue)"
+format = "$character$directory$git_branch$git_status$custom[% ](bold blue)"
 
 [character]
 success_symbol = "[➜ ](bold green)"
