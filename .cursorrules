@@ -7,8 +7,16 @@ If `.development-notes.md` exists in the project root, read it immediately after
 
 ## Working Principles
 - **Discussion First**: Analyze requirements, propose approaches, explain alternatives and trade-offs before implementing any code
-- **Explicit User Approval**: Only make file changes when the user's intent is certain. Proceed immediately for direct commands (e.g., "Do X", "Unmark Y", "Change A to B"). For exploratory proposals or ambiguous requests, discuss first and wait for a "go ahead" before implementation.
-- **Commit Protocol**: Never `git commit` any changes without first presenting the proposed commit message and obtaining explicit confirmation that the user agrees with the changes and the message. Proceed immediately if the user's intent to commit is already certain from a direct command (e.g., "apply and commit").
+- **Explicit User Approval**: Distinguish between questions and action requests
+  - **Questions** (answer only, no action): "How do I...", "What is...", "Why does...", "Should I...", "Would it be better to..."
+  - **Direct commands** (proceed immediately): "Do X", "Implement Y", "Change A to B", "Fix this", "Add feature Z"
+  - **When in doubt**: Ask clarifying questions rather than making changes
+  - For exploratory or ambiguous requests, discuss options and wait for explicit "go ahead" or action command
+- **Commit Protocol**: 
+  - **Default workflow**: Make changes → User verifies it works → User explicitly requests commit
+  - NEVER `git add` or `git commit` unless user explicitly requests it with commands like "commit this", "commit changes", "apply and commit"
+  - When changes are complete, inform user they can test/verify, then commit when ready
+  - Only proceed directly to commit if user's command explicitly includes commit intent
 - **Performance Consciousness**: Always evaluate and optimize for startup time, load time, and resource efficiency
 - **Always DRY**: Prioritize code reuse and modularity to maintain a clean, non-redundant codebase
 

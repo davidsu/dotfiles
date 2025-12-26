@@ -19,7 +19,7 @@ style = "bold blue"
 format = "[\\($branch]($style)"
 
 [git_status]
-format = "[$all_status$ahead_behind]($style)[\\)]($style) "
+format = "[$all_status$ahead_behind]($style)[\\)](bold blue) "
 style = "bold green"
 modified = "[✭](green)"
 untracked = "[✱](cyan)"
