@@ -32,7 +32,20 @@
     - **Decision**: Will add Typescript and other global packages as needed when implementing workflows from dotfilesold
     - **Rationale**: Keep initial setup minimal, add when specific development workflows require them
 
-## Phase 3: Handpicked Tools (Discuss & Implement Each)
+## Phase 3: Configure Shell
+- [ ] **Setup Zsh environment**
+  - [ ] Create ~/.dotfiles/config/zsh/ directory structure
+  - [ ] Configure Antidote plugin manager
+  - [ ] **Port Core Customizations (from dotfilesold)**:
+    - [ ] `auto_cd`, `autopushd`, and `HIST_VERIFY` options
+    - [ ] Case-insensitive tab completion (`matcher-list`)
+    - [ ] Setup `jd` (~/.dotfiles) and `jp` (~/projects) navigation aliases
+    - [ ] Implementation of Global Aliases (`G`, `E`, `V`)
+    - [ ] Prefix-based history search (Up/Down arrow)
+    - [ ] Keybindings: `Ctrl+G` (push-line) and `Ctrl+H` (run-help)
+  - [ ] Setup basic aliases and environment variables
+- [ ] **README: Update Shell Configuration section** (Zsh setup, plugins, prompt)
+## Phase 4: Handpicked Tools (Discuss & Implement Each)
 - [ ] **Homebrew**
   - [ ] Discuss: package manager purpose, why brew vs others
   - [ ] Install: via install.sh with PATH setup
@@ -75,7 +88,7 @@
     - [ ] Mark tasks complete
     - [ ] Test all functions work together
 
-## Phase 4: Shell & Editor Foundation
+## Phase 5: Shell & Editor Foundation
 - [ ] **Zsh + Antidote**
   - [ ] Discuss: why Zsh, plugin management approach
   - [ ] Install: Zsh via brew, Antidote setup
@@ -90,7 +103,7 @@
 - [ ] **Integrate mise into shell prompt** (Add `eval "$(mise activate zsh)"` to `.zshrc`)
 - [ ] **Restart terminal or source config** (Required for mise to fully integrate)
 
-## Phase 5: Configuration Files & Symlinks
+## Phase 6: Configuration Files & Symlinks
 - [ ] **Git configuration** (create ~/.dotfiles/config/git/ files, symlink logic)
 - [ ] **Shell configuration** (create ~/.dotfiles/config/zsh/ files, symlink logic)
 - [ ] **Neovim configuration** (create ~/.dotfiles/config/nvim/ Lua files, symlink logic)
@@ -103,27 +116,27 @@
 - [x] **Test all symlinks** (verify symlinks work, configs load correctly)
 - [ ] **README: Configuration section** (symlinking explanation, config locations)
 
-## Phase 6: Tool Integration & Customization
+## Phase 7: Tool Integration & Customization
 - [ ] **ripgrep + fzf integration** (Neovim Telescope, shell functions)
 - [ ] **Neovim plugins setup** (lazy.nvim config, essential plugins)
 - [ ] **Cursor/Terminal detection** (environment detection, conditional config)
 - [ ] **Shell aliases & functions** (productivity shortcuts, tool integrations)
 - [ ] **README: Integration section** (how tools work together, workflows)
 
-## Phase 7: Testing & Refinement
+## Phase 8: Testing & Refinement
 - [ ] **Test each tool individually** (verify installation, basic functionality)
 - [ ] **Test integrations** (tools working together: fzf+ripgrep+Neovim)
 - [ ] **Performance testing** (startup times, responsiveness)
 - [ ] **Edge case testing** (missing dependencies, network issues)
 - [ ] **README: Testing & Troubleshooting** (common issues, performance tips)
 
-## Phase 8: Finalization
+## Phase 9: Finalization
 - [ ] **Clean up and optimize** (remove unused code, optimize performance)
 - [ ] **Final verification** (clean macOS install test)
 - [ ] **README: Complete documentation** (final polish, maintenance guide)
 
 ## Current Focus
-- **Starting Point**: Phase 2: Tool Reconciliation (Decide & Finalize)
+- **Starting Point**: Phase 3: Configure Shell
 - **Methodology**: Discuss tool → implement → test → document in README
 - **Documentation**: README updated after each major implementation
 
