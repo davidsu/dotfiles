@@ -25,8 +25,8 @@ The script will:
 ## Architecture
 
 - **`installation/`**: Contains the bootstrap and dependency management scripts.
-- **`zsh/`**: Modular Zsh configuration files (`env.zsh`, `aliases.zsh`, `completion.zsh`, etc.) sourced by `zshrc`.
-- **`config/`**: Configuration files symlinked to system locations (`.config`, `Library/Preferences`, etc.).
+- **`zsh/`**: Modular Zsh configuration files (`env.zsh`, `aliases.zsh`, `completion.zsh`, etc.). Files ending in `.home.zsh` are symlinked to `$HOME` (e.g., `zshrc.home.zsh` -> `~/.zshrc`).
+- **`config.home.symlink/`**: Configuration directory symlinked to `~/.config`.
 - **`tools.json`**: The single source of truth for all tools and dependencies.
 - **`planning.md`**: Detailed technical specification and project goals.
 - **`tasks.md`**: Current development progress and roadmap.

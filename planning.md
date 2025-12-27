@@ -17,7 +17,7 @@ This document outlines the comprehensive planning strategy for rebuilding the do
 ├── README.md                    # Comprehensive setup & usage guide (ALWAYS KEEP UPDATED)
 ├── install.sh                   # Smart installation script
 ├── tools.yaml                   # Tool & dependency configuration
-├── config/
+├── config.home.symlink/         # Configuration directory (links to ~/.config)
 │   ├── zsh/                     # Zsh configuration (Antidote)
 │   ├── nvim/
 │   │   ├── init.lua             # Main entry point
@@ -30,6 +30,10 @@ This document outlines the comprehensive planning strategy for rebuilding the do
 │   ├── iterm2/                 # iTerm2 profiles & settings
 │   ├── git/                    # Git configuration
 │   └── karabiner/              # Keyboard customization
+├── zsh/                         # Modular Zsh configuration
+│   ├── zshrc.home.zsh           # Links to ~/.zshrc
+│   ├── zshprofile.home.zsh      # Links to ~/.zshprofile
+│   └── ...                      # Other .home.zsh files
 ├── scripts/
 │   ├── install/                # Installation helpers
 │   │   ├── dependencies.sh     # Dependency management

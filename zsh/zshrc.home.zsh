@@ -3,9 +3,11 @@ export DOTFILES="$HOME/.dotfiles"
 
 # reload zsh configuration
 function reload() {
-    # Source all .zsh files in the zsh directory
+    # Source all .zsh files in the zsh directory, excluding entry point files (*.home.zsh)
     for f in "$DOTFILES"/zsh/*.zsh; do
-        source "$f"
+        if [[ "$f" != *.home.zsh ]]; then
+            source "$f"
+        fi
     done
 }
 

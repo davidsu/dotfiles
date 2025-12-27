@@ -38,7 +38,22 @@ main() {
     # 4. Verification
     verify_all_tools
 
+    # 5. Post-installation steps
+    post_install
+
     log_success "Installation and verification completed successfully."
+}
+
+# Post-installation configurations (tool-specific)
+post_install() {
+    log_info "Running post-installation configurations..."
+
+    # Trust mise config if it exists
+    local mise_config="${HOME}/.dotfiles/config.home.symlink/mise/config.toml"
+    if [[ -f "$mise_config" ]] && command -v mise >/dev/null 2>&1; then
+        log_info "Trusting mise configuration..."
+        mise trust "$mise_config"
+    fi
 }
 
 # Run main function

@@ -50,32 +50,31 @@ safe_link() {
     fi
 }
 
-# Function to link the config directory to ~/.config
-link_config_dir() {
-    local dotfiles_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-    local dotfiles_config="${dotfiles_root}/config"
-    local system_config="${HOME}/.config"
-
-    log_info "Linking config directory..."
-    safe_link "$dotfiles_config" "$system_config"
-}
-
-# Function to find and link all .symlink files in the repo
-link_symlink_files() {
+# Function to find and link all .home.symlink and .home.zsh files in the repo
+link_home_files() {
     local dotfiles_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     local failed=0
-    log_info "Finding .symlink files in $dotfiles_root..."
+    log_info "Finding .home.symlink and .home.zsh files in $dotfiles_root..."
 
-    # We use a temporary file to store the list of links to avoid subshell issues with 'while'
+    # Use a temporary file to store the list of links to avoid subshell issues with 'while'
     local symlink_list
     symlink_list=$(mktemp)
-    find "$dotfiles_root" -name "*.symlink" -not -path "*/.git/*" > "$symlink_list"
+    
+    # Find both .home.symlink and .home.zsh files
+    find "$dotfiles_root" \( -name "*.home.symlink" -o -name "*.home.zsh" \) -not -path "*/.git/*" > "$symlink_list"
 
     while read -r src; do
+        [[ -z "$src" ]] && continue
         local filename
         filename=$(basename "$src")
-        # Remove .symlink extension
-        local target_name=".${filename%.symlink}"
+        local target_name
+        
+        if [[ "$filename" == *.home.symlink ]]; then
+            target_name=".${filename%.home.symlink}"
+        elif [[ "$filename" == *.home.zsh ]]; then
+            target_name=".${filename%.home.zsh}"
+        fi
+        
         local dest="${HOME}/${target_name}"
 
         if ! safe_link "$src" "$dest"; then
@@ -90,20 +89,9 @@ link_symlink_files() {
 # Main symlinking entry point
 setup_symlinks() {
     log_info "Starting symlinking process..."
-    local errors=0
     
-    if ! link_config_dir; then
-        errors=$((errors + 1))
-    fi
-
-    if ! link_symlink_files; then
-        # Note: link_symlink_files returns the number of failures
-        # However, for simplicity in shell logic, we'll just check if it's non-zero
-        errors=$((errors + 1))
-    fi
-    
-    if [[ $errors -gt 0 ]]; then
-        log_error "Symlinking process completed with $errors error category(s)."
+    if ! link_home_files; then
+        log_error "Symlinking process completed with errors."
         return 1
     else
         log_success "Symlinking process completed successfully."

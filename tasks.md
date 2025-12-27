@@ -35,7 +35,7 @@
 ## Phase 3: Configure Shell
 - [x] **Setup Zsh environment**
   - [x] Create ~/.dotfiles/zsh/ directory structure (reproduced from dotfilesold)
-  - [x] Reproduce legacy Zsh files: `zlogin.symlink`, `zshenv.symlink`, `zshprofile.symlink`
+  - [x] Reproduce legacy Zsh files: `zlogin.home.zsh`, `zshenv.home.zsh`, `zshprofile.home.zsh`
   - [ ] Configure Antidote plugin manager
   - [ ] **Port Core Customizations (from dotfilesold)**:
     - [x] `auto_cd`, `autopushd`, and `HIST_VERIFY` options
@@ -110,17 +110,18 @@
     - [ ] Test all functions work together
 
 ## Phase 6: Configuration Files & Symlinks
-- [ ] **Git configuration** (create ~/.dotfiles/config/git/ files, symlink logic)
-- [ ] **Shell configuration** (create ~/.dotfiles/config/zsh/ files, symlink logic)
-- [ ] **Neovim configuration** (create ~/.dotfiles/config/nvim/ Lua files, symlink logic)
+- [ ] **Git configuration** (create ~/.dotfiles/config.home.symlink/git/ files, symlink logic)
+- [ ] **Shell configuration** (create ~/.dotfiles/config.home.symlink/zsh/ files, symlink logic)
+- [ ] **Neovim configuration** (create ~/.dotfiles/config.home.symlink/nvim/ Lua files, symlink logic)
 - [ ] **iTerm2 configuration**
   - [ ] **DISCUSS FIRST**: What iTerm configuration do we need? Base16 colors integration, profiles, shell integration, key bindings?
-  - [ ] Create ~/.dotfiles/config/iterm2/ directory structure
+  - [ ] Create ~/.dotfiles/config.home.symlink/iterm2/ directory structure
   - [ ] Base16 color schemes (matching Neovim themes for consistency)
   - [ ] iTerm2 profiles configuration and symlinking
   - [ ] Shell integration setup (optional - discuss if needed)
 - [x] **Test all symlinks** (verify symlinks work, configs load correctly)
-- [ ] **README: Configuration section** (symlinking explanation, config locations)
+- [x] **README: Configuration section** (symlinking explanation, config locations)
+- [x] **Remove broken symlinks and self-heal** (verified naming convention and installation script)
 
 ## Phase 7: Tool Integration & Customization
 - [ ] **ripgrep + fzf integration** (Neovim Telescope, shell functions)
