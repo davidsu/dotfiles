@@ -1,6 +1,7 @@
 -- Core Neovim Options
 -- Loaded for all environments (VSCode/Cursor and terminal)
 
+local env = require('core.env')
 local opt = vim.opt
 
 -- General
@@ -15,15 +16,15 @@ opt.backspace = { 'indent', 'eol', 'start' }
 opt.clipboard = 'unnamedplus'    -- use system clipboard
 
 -- Display
-opt.number = true                -- show line numbers
+opt.number = not env.is_vscode   -- show line numbers (VSCode has its own)
 opt.relativenumber = false
 opt.wrap = false                 -- no line wrapping
 opt.linebreak = true             -- soft wrap at word boundaries
 opt.showbreak = '↪'
 opt.scrolloff = 3                -- lines of context around cursor
-opt.showcmd = true               -- show incomplete commands
+opt.showcmd = not env.is_vscode  -- show incomplete commands (VSCode has its own)
 opt.showmode = false             -- don't show mode (for statusline)
-opt.laststatus = 2               -- always show statusline
+opt.laststatus = env.is_vscode and 0 or 2  -- hide statusline in VSCode
 opt.title = true                 -- set terminal title
 opt.visualbell = true
 opt.errorbells = false
