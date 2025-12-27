@@ -12,3 +12,6 @@ export PATH="$DOTFILES/bin:$PATH"
 # Set locale to UTF-8 to ensure proper character handling in terminal and tools
 export LC_ALL=en_US.UTF-8
 
+# BSD ls color palette (macOS)
+export LSCOLORS=GxFxCxDxBxegedabagaced
+
