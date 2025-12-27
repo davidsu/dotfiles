@@ -1,8 +1,8 @@
 ---
 description: Requirements for maintaining installation scripts and project documentation.
-globs: "{install.sh,README.md,installation/**/*,scripts/**/*,tools.json}"
+globs: "{install.sh,README.md,tools.json}"
+alwaysApply: true
 ---
-
 # Maintenance Rules
 
 ## Maintenance Requirements
