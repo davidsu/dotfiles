@@ -4,37 +4,37 @@ overview: Modular Pure Lua Neovim config with environment detection and essentia
 todos:
   - id: env-detection
     content: Create environment detection module (core/env.lua)
-    status: pending
+    status: completed
   - id: core-options
     content: Port core options to Lua (core/options.lua)
-    status: pending
+    status: completed
   - id: lazy-bootstrap
     content: Setup lazy.nvim bootstrap (core/lazy.lua)
-    status: pending
+    status: completed
   - id: init-orchestration
     content: Create main init.lua with conditional loading
-    status: pending
+    status: completed
   - id: plugin-editing
     content: Setup text editing plugins (surround, commentary, repeat)
-    status: pending
+    status: completed
   - id: plugin-git
     content: Setup git plugins (fugitive, rhubarb, gitsigns) - terminal only
-    status: pending
+    status: completed
   - id: plugin-fzf
     content: Setup fzf.vim with ripgrep integration - terminal only
-    status: pending
+    status: completed
   - id: plugin-tree
     content: Setup nvim-tree file explorer - terminal only
-    status: pending
+    status: completed
   - id: plugin-statusline
     content: Setup lualine statusline - terminal only
-    status: pending
+    status: completed
   - id: plugin-ui
     content: Setup UI plugins (smoothie, diminactive) - terminal only
-    status: pending
+    status: completed
   - id: core-keymaps
     content: Port essential keymaps (universal + terminal-specific)
-    status: pending
+    status: completed
   - id: treesitter
     content: Setup treesitter for syntax highlighting - terminal only
     status: pending
@@ -48,8 +48,8 @@ todos:
     content: Setup colorscheme - terminal only
     status: pending
   - id: custom-utils
-    content: Port custom utility functions from old config
-    status: pending
+    content: Port custom utility functions from old config (window.lua done)
+    status: in_progress
 ---
 
 # Neovim Setup - Modular Migration Plan
