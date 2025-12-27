@@ -1,0 +1,14 @@
+---
+description: Technical constraints and stack preferences for the dotfiles project.
+globs: **/*.{lua,js,sh,json,yaml,md,zsh}
+---
+
+# Tech Stack Rules
+
+## Project Constraints
+- **macOS Exclusivity**: All solutions must be macOS-native and compatible
+- **Lua Purity**: Neovim configuration must use Lua exclusively, no Vimscript
+- **Preferred Language**: JavaScript/Node.js is the preferred programming language for all logic, scripts, and automation beyond basic shell scripts
+- **Conditional Architecture**: Editor behavior must adapt between Cursor IDE and terminal environments
+- **Dependency Clarity**: Tool relationships and requirements must be explicitly documented
+- **Documentation Continuity**: `README.md` must remain current and accurate for user guidance

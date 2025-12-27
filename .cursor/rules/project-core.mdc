@@ -1,9 +1,14 @@
-# Dotfiles Project - Core Rules for AI Assistants
+---
+description: Core principles, working methods, and sanity rules for the dotfiles project.
+globs: **/*
+---
+
+# Project Core Rules
 
 ## Foundational Reading
-ALWAYS begin by thoroughly reading planning.md - it contains the complete technical specification, architecture decisions, and project requirements that govern all implementation work.
+ALWAYS begin by thoroughly reading `planning.md` - it contains the complete technical specification, architecture decisions, and project requirements that govern all implementation work.
 
-If `.development-notes.md` exists in the project root, read it immediately after planning.md to understand current development context and priorities.
+If `.development-notes.md` exists in the project root, read it immediately after `planning.md` to understand current development context and priorities.
 
 ## Working Principles
 - **Discussion First**: Analyze requirements, propose approaches, explain alternatives and trade-offs before implementing any code
@@ -32,80 +37,29 @@ If `.development-notes.md` exists in the project root, read it immediately after
 - **Performance Level**: Startup time, responsiveness, and resource usage benchmarking
 - **End-to-End Level**: Complete workflow execution and user experience validation
 
-## Maintenance Requirements
-Both `install.sh` and `README.md` must be kept current as the project evolves:
-
-### Installation Script Maintenance
-- **Reproducibility**: install.sh must enable "one-command setup" for new machines
-- **Dependency Updates**: Update tool versions and dependencies as they change
-- **Error Handling**: Maintain robust error handling and logging capabilities
-- **Testing**: Verify install.sh works on clean macOS environments
-
-### Documentation Maintenance
-README.md serves as the comprehensive project reference and must be updated **as needed** when:
-- New user-facing functionality is added
-- Installation or setup procedures change
-- Significant workflow modifications occur
-- New tools or integrations are added that users need to understand
-
-## Project Constraints
-- **macOS Exclusivity**: All solutions must be macOS-native and compatible
-- **Lua Purity**: Neovim configuration must use Lua exclusively, no Vimscript
-- **Preferred Language**: JavaScript/Node.js is the preferred programming language for all logic, scripts, and automation beyond basic shell scripts
-- **Conditional Architecture**: Editor behavior must adapt between Cursor IDE and terminal environments
-- **Dependency Clarity**: Tool relationships and requirements must be explicitly documented
-- **Documentation Continuity**: README.md must remain current and accurate for user guidance
-
-
-## additional sanity rules
+## Additional Sanity Rules
 1. **Verify Information**: Always verify information before presenting it. Do not make assumptions or speculate without clear evidence.
-
 2. **File-by-File Changes**: Make changes file by file and give me a chance to spot mistakes.
-
 3. **No Apologies**: Never use apologies.
-
 4. **No Understanding Feedback**: Avoid giving feedback about understanding in comments or documentation.
-
 5. **No Whitespace Suggestions**: Don't suggest whitespace changes.
-
 6. **No Summaries**: Don't summarize changes made.
-
 7. **No Inventions**: Don't invent changes other than what's explicitly requested.
-
 8. **No Unnecessary Confirmations**: Don't ask for confirmation of information already provided in the context.
-
 9. **Preserve Existing Code**: Don't remove unrelated code or functionalities. Pay attention to preserving existing structures.
-
 10. **Single Chunk Edits**: Provide all edits in a single chunk instead of multiple-step instructions or explanations for the same file.
-
 11. **No Implementation Checks**: Don't ask the user to verify implementations that are visible in the provided context.
-
 12. **No Unnecessary Updates**: Don't suggest updates or changes to files when there are no actual modifications needed.
-
 13. **Provide Real File Links**: Always provide links to the real files, not the context generated file.
-
 14. **No Current Implementation**: Don't show or discuss the current implementation unless specifically requested.
-
 15. **Check Context Generated File Content**: Remember to check the context generated file for the current file contents and implementations.
-
 16. **Use Explicit Variable Names**: Prefer descriptive, explicit variable names over short, ambiguous ones to enhance code readability.
-
 17. **Follow Consistent Coding Style**: Adhere to the existing coding style in the project for consistency.
-
 18. **Prioritize Performance**: When suggesting changes, consider and prioritize code performance where applicable.
-
 19. **Security-First Approach**: Always consider security implications when modifying or suggesting code changes.
-
 20. **No guessing**: always ask for clarifying questions if unclear how to proceed/implement something
-
 21. **Error Handling**: Implement robust error handling and logging where necessary.
-
 22. **Modular Design**: Encourage modular design principles to improve code maintainability and reusability.
-
 23. **Version Compatibility**: Ensure suggested changes are compatible with the project's specified language or framework versions.
-
 24. **Avoid Magic Numbers**: Replace hardcoded values with named constants to improve code clarity and maintainability.
-
 25. **Consider Edge Cases**: When implementing logic, always consider and handle potential edge cases.
-
-
