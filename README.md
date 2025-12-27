@@ -25,6 +25,7 @@ The script will:
 ## Architecture
 
 - **`installation/`**: Contains the bootstrap and dependency management scripts.
+- **`zsh/`**: Modular Zsh configuration files (`env.zsh`, `aliases.zsh`, `completion.zsh`, etc.) sourced by `zshrc`.
 - **`config/`**: Configuration files symlinked to system locations (`.config`, `Library/Preferences`, etc.).
 - **`tools.json`**: The single source of truth for all tools and dependencies.
 - **`planning.md`**: Detailed technical specification and project goals.
@@ -43,6 +44,26 @@ This dotfiles setup includes carefully selected tools for an efficient developme
 - **Zsh**: Modern shell with plugin management via Antidote
 - **Starship**: Minimal, blazing-fast, and infinitely customizable shell prompt
 - **iTerm2**: Feature-rich terminal emulator with profile management and shell integration
+
+### Shell Customizations
+This setup includes several core Zsh optimizations and productivity helpers, organized in a modular structure within the `zsh/` directory:
+
+- **Modularity & Maintenance**:
+  - **Modular Files**: Config is split into `env.zsh`, `aliases.zsh`, `completion.zsh`, `keybindings.zsh`, `options.zsh`, and `tools.zsh`.
+  - **Easy Reloading**: Use the `reload` function or the `a` alias to instantly refresh your entire Zsh configuration.
+- **Navigation**:
+  - `auto_cd`: Change directory by simply typing its name
+  - `jd`: Shortcut for `cd ~/.dotfiles`
+  - `jp`: Shortcut for `cd ~/projects`
+- **Productivity**:
+  - **Global Aliases**: Use `G` (grep), `L` (less), `T` (tail), `H` (head), and `W` (wc -l) anywhere in a command
+  - **Fuzzy Search**: `fzf` integration for history and file finding
+  - **Smart Completion**: Case-insensitive and verbose tab completion initialized via `compinit`
+- **Keybindings**:
+  - **History Search**: `Ctrl+P`/`Ctrl+N` and Up/Down arrows for prefix-based history search (via `up-line-or-beginning-search`)
+  - `Ctrl+G`: Push current line to the buffer (clear line to run another command, then restore)
+  - `Ctrl+H`: Run help for the current command
+- **Safety**: `HIST_VERIFY` prevents immediate execution of history expansions
 
 ### Productivity Tools
 - **fzf**: Command-line fuzzy finder for efficient file and content searching

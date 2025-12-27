@@ -38,15 +38,35 @@
   - [x] Reproduce legacy Zsh files: `zlogin.symlink`, `zshenv.symlink`, `zshprofile.symlink`
   - [ ] Configure Antidote plugin manager
   - [ ] **Port Core Customizations (from dotfilesold)**:
-    - [ ] `auto_cd`, `autopushd`, and `HIST_VERIFY` options
-    - [ ] Case-insensitive tab completion (`matcher-list`)
-    - [ ] Setup `jd` (~/.dotfiles) and `jp` (~/projects) navigation aliases
-    - [ ] Implementation of Global Aliases (`G`, `E`, `V`)
-    - [ ] Prefix-based history search (Up/Down arrow)
-    - [ ] Keybindings: `Ctrl+G` (push-line) and `Ctrl+H` (run-help)
+    - [x] `auto_cd`, `autopushd`, and `HIST_VERIFY` options
+    - [x] Case-insensitive tab completion (`matcher-list`)
+    - [x] Setup `jd` (~/.dotfiles) and `jp` (~/projects) navigation aliases
+    - [x] Implementation of Global Aliases (`G`, `E`, `V`)
+    - [x] Prefix-based history search (Up/Down arrow)
+    - [x] Keybindings: `Ctrl+G` (push-line) and `Ctrl+H` (run-help)
+  - [ ] **Analyze & Migrate Shell Aliases**:
+    - [ ] Full analysis of all aliases in `dotfilesold/aliases`
+    - [ ] Clean up and categorize (essential vs legacy)
+    - [ ] Port to `zsh/aliases.zsh`
   - [ ] Setup basic aliases and environment variables
 - [ ] **README: Update Shell Configuration section** (Zsh setup, plugins, prompt)
-## Phase 4: Handpicked Tools (Discuss & Implement Each)
+
+## Phase 4: Neovim Migration (Porting from dotfilesold)
+- [ ] **Core Editor Foundation**
+  - [ ] Install Neovim via brew and setup lazy.nvim
+  - [ ] Implement Cursor/Terminal detection for conditional loading
+- [ ] **Essential Feature Porting**
+  - [ ] **Fuzzy Finder**: Setup Telescope (modern replacement for hzf/fzf in vim)
+  - [ ] **File Explorer**: Setup neo-tree or nvim-tree
+  - [ ] **Git Integration**: Setup gitsigns and lazygit/fugitive
+  - [ ] **Syntax Highlighting**: Setup Treesitter
+- [ ] **Customization Analysis**
+  - [ ] Full analysis of `dotfilesold/config/nvim/` (init.vim, startup/, etc.)
+  - [ ] Identify and port "must-have" legacy keybindings
+  - [ ] Identify and port essential abbreviations and utility functions
+- [ ] **README: Update Neovim section** (installation, basic usage, modes)
+
+## Phase 5: Handpicked Tools (Discuss & Implement Each)
 - [ ] **Homebrew**
   - [ ] Discuss: package manager purpose, why brew vs others
   - [ ] Install: via install.sh with PATH setup
@@ -88,21 +108,6 @@
     - [ ] Update README.md with fzf usage examples
     - [ ] Mark tasks complete
     - [ ] Test all functions work together
-
-## Phase 5: Shell & Editor Foundation
-- [ ] **Zsh + Antidote**
-  - [ ] Discuss: why Zsh, plugin management approach
-  - [ ] Install: Zsh via brew, Antidote setup
-  - [ ] Configure: plugin loading, basic aliases, environment
-  - [ ] **README: Update Shell section** (Zsh setup, plugins, customization)
-- [ ] **Neovim + lazy.nvim**
-  - [ ] Discuss: editor choice, Lua migration, conditional loading
-  - [ ] Install: Neovim via brew, lazy.nvim setup
-  - [ ] Configure: basic Lua structure, Cursor/Terminal detection
-  - [ ] **README: Update Neovim section** (installation, basic usage, modes)
-- [x] **Setup .zshrc foundation** (Add `eval "$(starship init zsh)"` to `.zshrc`)
-- [ ] **Integrate mise into shell prompt** (Add `eval "$(mise activate zsh)"` to `.zshrc`)
-- [ ] **Restart terminal or source config** (Required for mise to fully integrate)
 
 ## Phase 6: Configuration Files & Symlinks
 - [ ] **Git configuration** (create ~/.dotfiles/config/git/ files, symlink logic)
