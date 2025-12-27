@@ -9,10 +9,18 @@ A modern, performance-focused dotfiles configuration optimized exclusively for m
 
 ## Installation
 
-To set up your environment, clone this repository into `~/.dotfiles` and run the installation script:
+For a brand-new macOS machine, you can bootstrap everything with a single copy/paste command:
 
 ```bash
-git clone https://github.com/yourusername/dotfiles.git ~/.dotfiles
+curl -fsSL https://raw.githubusercontent.com/davidsu/dotfiles/master/installation/bootstrap.sh | bash
+```
+
+### Manual install (fallback)
+
+Clone this repository into `~/.dotfiles` and run the installation script:
+
+```bash
+git clone git@github.com:davidsu/dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
 ./installation/install.sh
 ```
