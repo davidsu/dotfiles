@@ -6,3 +6,4 @@ alias jp='cd ~/projects'
 
 # Global Aliases
 alias -g G='| grep'
+alias la='ls -lAh'

@@ -44,11 +44,28 @@
     - [x] Implementation of Global Aliases (`G`, `E`, `V`)
     - [x] Prefix-based history search (Up/Down arrow)
     - [x] Keybindings: `Ctrl+G` (push-line) and `Ctrl+H` (run-help)
-  - [ ] **Analyze & Migrate Shell Aliases**:
-    - [ ] Full analysis of all aliases in `dotfilesold/aliases`
-    - [ ] Clean up and categorize (essential vs legacy)
-    - [ ] Port to `zsh/aliases.zsh`
-  - [ ] Setup basic aliases and environment variables
+  - [ ] **Analyze & Migrate Legacy Configuration (from dotfilesold)**:
+    - [x] `@/Users/thistooshallpass/Developer/dotfilesold/ag-helper-functions.sh`: Legacy search helpers (ported to ripgrep version in aliases.zsh)
+    - [x] `@/Users/thistooshallpass/Developer/dotfilesold/aliases`: Core command shortcuts
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/bindkey`: Custom Zsh keybindings
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/fzf.zsh`: FZF-specific shell integrations
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/history`: History behavior and management
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/lessconfig`: Pager configuration
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/linuxUtils`: (Skip? macOS focus)
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/loadall`: Bootstrap logic
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/misc`: Miscellaneous shell settings
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/mru`: Most Recently Used file tracking
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/prompt`: Prompt configuration (Starship is current, check for custom logic)
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/theme`: Visual settings
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/tmp`: Temporary file management
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/variables`: Environment variables
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/wixstuff`: Work-specific or specialized tools
+    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/zshhooks`: Shell lifecycle hooks
+  - [x] **Analyze & Migrate Shell Aliases**:
+    - [x] Full analysis of all aliases in `dotfilesold/aliases`
+    - [x] Clean up and categorize (essential vs legacy)
+    - [x] Port to `zsh/aliases.zsh`
+  - [x] Setup basic aliases and environment variables
 - [ ] **README: Update Shell Configuration section** (Zsh setup, plugins, prompt)
 
 ## Phase 4: Neovim Migration (Porting from dotfilesold)
@@ -143,8 +160,8 @@
 - [ ] **README: Complete documentation** (final polish, maintenance guide)
 
 ## Current Focus
-- **Starting Point**: Phase 3: Configure Shell
-- **Methodology**: Discuss tool → implement → test → document in README
+- **Starting Point**: Phase 3: Configure Shell (Migrating legacy behavior from `dotfilesold`)
+- **Methodology**: Analyze legacy file → Discuss tool/logic → implement modern version → test → document
 - **Documentation**: README updated after each major implementation
 
 ## README Update Workflow
