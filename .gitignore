@@ -37,3 +37,5 @@ config/karabiner/assets/
 config/karabiner/automatic_backups/
 config/coc/
 config/gcloud/
+config.home.symlink/iterm2/AppSupport
+config.home.symlink/iterm2/sockets/
