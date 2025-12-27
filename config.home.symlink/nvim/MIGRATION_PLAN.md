@@ -52,6 +52,10 @@ todos:
     status: in_progress
 ---
 
+> **📝 For AI Agents**: This file tracks Neovim migration progress. When you complete any todos, 
+> update their `status` in the YAML frontmatter above (pending → in_progress → completed).
+> Commit progress updates separately so future agents can pick up where you left off.
+
 # Neovim Setup - Modular Migration Plan
 
 ## Context

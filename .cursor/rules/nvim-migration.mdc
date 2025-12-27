@@ -29,3 +29,19 @@ When working with Neovim configuration files, always reference the comprehensive
 ## Current Implementation Status
 
 Check the todos in MIGRATION_PLAN.md for current progress and next steps.
+
+## Progress Tracking Protocol
+
+**CRITICAL**: When implementing items from MIGRATION_PLAN.md:
+
+1. **Update todos frontmatter** in MIGRATION_PLAN.md as you complete tasks:
+   - Change `status: pending` → `status: in_progress` when starting
+   - Change `status: in_progress` → `status: completed` when done
+   
+2. **Commit progress updates** separately from implementation:
+   - Implementation commit: `feat(nvim): <what was implemented>`
+   - Progress commit: `docs(nvim): update MIGRATION_PLAN progress tracking`
+
+3. **Before ending session**: Always update MIGRATION_PLAN.md todos so next agent knows what's done
+
+The todos in the YAML frontmatter are the single source of truth for tracking progress across agent sessions.
