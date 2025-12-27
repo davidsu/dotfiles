@@ -6,14 +6,14 @@
 - **Handpicked Tools**: Discuss each tool, its purpose, install + customize with dedicated files
 - **Living Documentation**: README.md updated after each major implementation
 
-## Phase 1: Core Infrastructure
+## Core Infrastructure
 - [x] **Create installation script foundation** (reusable functions: log(), is_macos(), etc.)
 - [x] **Setup directory structure** (./installation flat folder)
 - [x] **Initialize tools.json** (handpicked tools with dependencies)
 - [x] **Create basic logging system** (~/Library/Logs/dotfiles/ with dual output)
 - [x] **README: Project Overview** (what this dotfiles does, requirements, quick start)
 
-## Phase 2: Tool Reconciliation (Decide & Finalize)
+## Tool Reconciliation (Decide & Finalize)
 - [ ] **Discuss & decide on each tool from dotfilesold**:
   - [x] **fzf**: Keep. Purpose, usage, and shell integration.
   - [x] **starship**: Keep. Prompt choice and customization.
@@ -32,7 +32,22 @@
     - **Decision**: Will add Typescript and other global packages as needed when implementing workflows from dotfilesold
     - **Rationale**: Keep initial setup minimal, add when specific development workflows require them
 
-## Phase 3: Configure Shell
+## Neovim Migration (Porting from dotfilesold)
+- [ ] **Core Editor Foundation**
+  - [ ] Install Neovim via brew and setup lazy.nvim
+  - [ ] Implement Cursor/Terminal detection for conditional loading
+- [ ] **Essential Feature Porting**
+  - [ ] **Fuzzy Finder**: Setup Telescope (modern replacement for hzf/fzf in vim)
+  - [ ] **File Explorer**: Setup neo-tree or nvim-tree
+  - [ ] **Git Integration**: Setup gitsigns and lazygit/fugitive
+  - [ ] **Syntax Highlighting**: Setup Treesitter
+- [ ] **Customization Analysis**
+  - [ ] Full analysis of `dotfilesold/config/nvim/` (init.vim, startup/, etc.)
+  - [ ] Identify and port "must-have" legacy keybindings
+  - [ ] Identify and port essential abbreviations and utility functions
+- [ ] **README: Update Neovim section** (installation, basic usage, modes)
+
+## Configure Shell
 - [x] **Setup Zsh environment**
   - [x] Create ~/.dotfiles/zsh/ directory structure (reproduced from dotfilesold)
   - [x] Reproduce legacy Zsh files: `zlogin.home.zsh`, `zshenv.home.zsh`, `zshprofile.home.zsh`
@@ -68,22 +83,7 @@
   - [x] Setup basic aliases and environment variables
 - [ ] **README: Update Shell Configuration section** (Zsh setup, plugins, prompt)
 
-## Phase 4: Neovim Migration (Porting from dotfilesold)
-- [ ] **Core Editor Foundation**
-  - [ ] Install Neovim via brew and setup lazy.nvim
-  - [ ] Implement Cursor/Terminal detection for conditional loading
-- [ ] **Essential Feature Porting**
-  - [ ] **Fuzzy Finder**: Setup Telescope (modern replacement for hzf/fzf in vim)
-  - [ ] **File Explorer**: Setup neo-tree or nvim-tree
-  - [ ] **Git Integration**: Setup gitsigns and lazygit/fugitive
-  - [ ] **Syntax Highlighting**: Setup Treesitter
-- [ ] **Customization Analysis**
-  - [ ] Full analysis of `dotfilesold/config/nvim/` (init.vim, startup/, etc.)
-  - [ ] Identify and port "must-have" legacy keybindings
-  - [ ] Identify and port essential abbreviations and utility functions
-- [ ] **README: Update Neovim section** (installation, basic usage, modes)
-
-## Phase 5: Handpicked Tools (Discuss & Implement Each)
+## Handpicked Tools (Discuss & Implement Each)
 - [ ] **Homebrew**
   - [ ] Discuss: package manager purpose, why brew vs others
   - [ ] Install: via install.sh with PATH setup
@@ -101,32 +101,32 @@
   - [ ] **README: Update ripgrep section** (usage examples, Neovim integration)
 - [ ] **fzf**
   - [ ] Discuss: fuzzy finder, integration with other tools
-  - [ ] **Phase 1: Core Setup (1-2 hours)** - Get basic fzf working with Ctrl+T/Ctrl+R
+  - [ ] **Core Setup (1-2 hours)** - Get basic fzf working with Ctrl+T/Ctrl+R
     - [x] Install fzf via tools.json (already added)
     - [x] Source fzf key-bindings.zsh in zshrc (like dotfilesold)
     - [ ] Test basic functionality (Ctrl+T for files, Ctrl+R for history)
-  - [ ] **Phase 2: Function Analysis (2-3 hours)** - Categorize 15+ fzf functions from dotfilesold
+  - [ ] **Function Analysis (2-3 hours)** - Categorize 15+ fzf functions from dotfilesold
     - [ ] **Essential (Keep & Modernize)**: fag(), fa(), fbr(), fshow(), fstash()
     - [ ] **Browser Integration**: chromehistory(), chromebookmarks() (Chrome-specific)
     - [ ] **Developer Tools**: fman(), factivate(), jfzf()
     - [ ] **Theme/Utilities**: fzf-chth(), preview helpers
     - [ ] **Questionable/Complex**: Advanced git integrations
-  - [ ] **Phase 3: Core Functions Migration (2-4 hours)** - Port 5-7 essential functions
+  - [ ] **Core Functions Migration (2-4 hours)** - Port 5-7 essential functions
     - [ ] fag() - ripgrep search (main search tool)
     - [ ] fa() - file finder with preview
     - [ ] fbr() - git branch switching
     - [ ] fshow() - git log browser
     - [ ] fman() - man page search
     - [ ] Modernize ripgrep calls, update file paths from $DOTFILES to ~/.dotfiles
-  - [ ] **Phase 4: Browser Integration (Optional - 1-2 hours)** - Chrome history/bookmarks
+  - [ ] **Browser Integration (Optional - 1-2 hours)** - Chrome history/bookmarks
     - [ ] chromehistory() - browse Chrome history (check modern Chrome format)
     - [ ] chromebookmarks() - browse Chrome bookmarks (Ruby script)
-  - [ ] **Phase 5: Polish & Documentation (1 hour)**
+  - [ ] **Polish & Documentation (1 hour)**
     - [ ] Update README.md with fzf usage examples
     - [ ] Mark tasks complete
     - [ ] Test all functions work together
 
-## Phase 6: Configuration Files & Symlinks
+## Configuration Files & Symlinks
 - [ ] **Git configuration** (create ~/.dotfiles/config.home.symlink/git/ files, symlink logic)
 - [ ] **Shell configuration** (create ~/.dotfiles/config.home.symlink/zsh/ files, symlink logic)
 - [ ] **Neovim configuration** (create ~/.dotfiles/config.home.symlink/nvim/ Lua files, symlink logic)
@@ -140,27 +140,27 @@
 - [x] **README: Configuration section** (symlinking explanation, config locations)
 - [x] **Remove broken symlinks and self-heal** (verified naming convention and installation script)
 
-## Phase 7: Tool Integration & Customization
+## Tool Integration & Customization
 - [ ] **ripgrep + fzf integration** (Neovim Telescope, shell functions)
 - [ ] **Neovim plugins setup** (lazy.nvim config, essential plugins)
 - [ ] **Cursor/Terminal detection** (environment detection, conditional config)
 - [ ] **Shell aliases & functions** (productivity shortcuts, tool integrations)
 - [ ] **README: Integration section** (how tools work together, workflows)
 
-## Phase 8: Testing & Refinement
+## Testing & Refinement
 - [ ] **Test each tool individually** (verify installation, basic functionality)
 - [ ] **Test integrations** (tools working together: fzf+ripgrep+Neovim)
 - [ ] **Performance testing** (startup times, responsiveness)
 - [ ] **Edge case testing** (missing dependencies, network issues)
 - [ ] **README: Testing & Troubleshooting** (common issues, performance tips)
 
-## Phase 9: Finalization
+## Finalization
 - [ ] **Clean up and optimize** (remove unused code, optimize performance)
 - [ ] **Final verification** (clean macOS install test)
 - [ ] **README: Complete documentation** (final polish, maintenance guide)
 
 ## Current Focus
-- **Starting Point**: Phase 3: Configure Shell (Migrating legacy behavior from `dotfilesold`)
+- **Starting Point**: Neovim Migration (Porting from `dotfilesold`)
 - **Methodology**: Analyze legacy file → Discuss tool/logic → implement modern version → test → document
 - **Documentation**: README updated after each major implementation
 
