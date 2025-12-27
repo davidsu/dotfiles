@@ -1,0 +1,31 @@
+---
+description: Neovim migration plan and architecture - auto-attached when working with nvim config
+globs:
+  - "config.home.symlink/nvim/**/*"
+  - "**/nvim/**/*.lua"
+alwaysApply: false
+---
+
+# Neovim Configuration Guide
+
+When working with Neovim configuration files, always reference the comprehensive migration plan located at:
+
+@config.home.symlink/nvim/MIGRATION_PLAN.md
+
+## Key Architecture Principles
+
+- **Environment Detection**: Detect Cursor IDE vs Terminal for conditional loading
+- **Modular Structure**: 
+  - `core/` - Universal (all environments): env, options, keymaps, lazy bootstrap
+  - `plugins/` - Plugin specs with conditional loading
+  - `config/` - Advanced config (LSP, autocmds) - terminal only
+  - `utils/` - Custom utility functions
+- **Conditional Plugin Loading**: 
+  - GUI (Cursor/VSCode): Minimal - only text editing plugins
+  - Terminal: Full-featured - all plugins
+- **Pure Lua**: No Vimscript, use Lua exclusively
+- **Implementation Order**: Foundation → Essential Plugins → Intelligence → Polish → Advanced
+
+## Current Implementation Status
+
+Check the todos in MIGRATION_PLAN.md for current progress and next steps.
