@@ -16,15 +16,15 @@ opt.backspace = { 'indent', 'eol', 'start' }
 opt.clipboard = 'unnamedplus'    -- use system clipboard
 
 -- Display
-opt.number = not env.is_vscode   -- show line numbers (VSCode has its own)
+opt.number = false               -- no line numbers by default (VSCode has its own)
 opt.relativenumber = false
 opt.wrap = false                 -- no line wrapping
 opt.linebreak = true             -- soft wrap at word boundaries
 opt.showbreak = '↪'
 opt.scrolloff = 3                -- lines of context around cursor
-opt.showcmd = not env.is_vscode  -- show incomplete commands (VSCode has its own)
+opt.showcmd = false              -- no show commands by default (VSCode has its own)
 opt.showmode = false             -- don't show mode (for statusline)
-opt.laststatus = env.is_vscode and 0 or 2  -- hide statusline in VSCode
+opt.laststatus = 0               -- no statusline by default (VSCode has its own)
 opt.title = true                 -- set terminal title
 opt.visualbell = true
 opt.errorbells = false
@@ -99,6 +99,11 @@ if vim.fn.executable('rg') == 1 then
 elseif vim.fn.executable('ag') == 1 then
   opt.grepprg = 'ag --vimgrep $*'
   opt.grepformat = '%f:%l:%c:%m'
+end
+
+-- Load terminal-only options
+if not env.is_vscode then
+  require('core.options.terminal')
 end
 
 

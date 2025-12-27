@@ -12,17 +12,58 @@ When working with Neovim configuration files, always reference the comprehensive
 
 @config.home.symlink/nvim/MIGRATION_PLAN.md
 
+## ⚠️ CRITICAL: VSCode/Cursor Compatibility Rules
+
+**Never load terminal-only features in VSCode/Cursor.**
+
+### File Splitting Strategy
+
+Use `.terminal.lua` files for terminal-only features:
+
+**Core files** (`core/*.lua`):
+- Base file: Universal settings (works in both environments)
+- `.terminal.lua`: Terminal-specific additions
+- Base file requires `.terminal.lua` only when `not env.is_vscode`
+
+Example:
+```lua
+-- options.lua (universal base)
+opt.number = false  -- VSCode has its own
+
+-- Load terminal-only options
+if not env.is_vscode then
+  require('core.options.terminal')
+end
+```
+
+```lua
+-- options.terminal.lua
+opt.number = true  -- Enable in terminal
+```
+
+**Plugin files** (`plugins/*.lua`):
+- Terminal-only plugins: Early return at top with `if env.is_vscode then return {} end`
+- Universal plugins: No env check, load everywhere
+
+### What to Split
+
+**Terminal-only (use `.terminal.lua` or early return)**:
+- Keymaps that don't work in VSCode (FZF, window resizing, custom navigation)
+- UI options (statusline, line numbers, showcmd)
+- UI plugins (statusline, file tree, colors, scrolling)
+- Git plugins (VSCode has built-in)
+- Fuzzy finders (VSCode has Cmd+P)
+- LSP/completion (VSCode has its own)
+
+**Universal (keep in main files)**:
+- Basic vim motions and options
+- Text editing plugins (surround, commentary, repeat)
+- Clipboard and file settings
+
 ## Key Architecture Principles
 
 - **Environment Detection**: Detect Cursor IDE vs Terminal for conditional loading
-- **Modular Structure**: 
-  - `core/` - Universal (all environments): env, options, keymaps, lazy bootstrap
-  - `plugins/` - Plugin specs with conditional loading
-  - `config/` - Advanced config (LSP, autocmds) - terminal only
-  - `utils/` - Custom utility functions
-- **Conditional Plugin Loading**: 
-  - GUI (Cursor/VSCode): Minimal - only text editing plugins
-  - Terminal: Full-featured - all plugins
+- **File Split Pattern**: Base file + `.terminal.lua` for core, early return for plugins
 - **Pure Lua**: No Vimscript, use Lua exclusively
 - **Implementation Order**: Foundation → Essential Plugins → Intelligence → Polish → Advanced
 

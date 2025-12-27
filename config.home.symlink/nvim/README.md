@@ -33,6 +33,7 @@ nvim/
 - Automatically detects VSCode/Cursor vs Terminal Neovim
 - Loads minimal config in VSCode/Cursor (just keymaps and text editing)
 - Loads full plugin suite in terminal
+- **See**: `FILE_SPLIT_PATTERN.md` for configuration split strategy
 
 ### Core Options (All Environments)
 - System clipboard integration
