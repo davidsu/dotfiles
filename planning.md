@@ -15,31 +15,25 @@ This document outlines the comprehensive planning strategy for rebuilding the do
 ```
 ~/.dotfiles/
 ├── README.md                    # Comprehensive setup & usage guide (ALWAYS KEEP UPDATED)
-├── install.sh                   # Smart installation script
-├── tools.yaml                   # Tool & dependency configuration
+├── installation/                # Bootstrap and dependency management
+│   ├── install.sh               # Smart installation script
+│   ├── tools.json               # Tool & dependency configuration
+│   ├── dependencies.sh          # Dependency management
+│   ├── links.sh                 # Symlinking logic
+│   ├── logging.sh               # Logging helpers
+│   ├── system.sh                # System checks
+│   ├── tools-parser.js          # Tools configuration parser
+│   └── verify.sh                # Post-install verification
 ├── config.home.symlink/         # Configuration directory (links to ~/.config)
-│   ├── zsh/                     # Zsh configuration (Antidote)
-│   ├── nvim/
-│   │   ├── init.lua             # Main entry point
-│   │   ├── lua/
-│   │   │   ├── core/           # Core functionality
-│   │   │   ├── plugins/        # Plugin configurations
-│   │   │   ├── ui/             # UI/UX settings
-│   │   │   └── utils/          # Utility functions
-│   │   └── ftplugin/           # Filetype-specific settings
-│   ├── iterm2/                 # iTerm2 profiles & settings
-│   ├── git/                    # Git configuration
-│   └── karabiner/              # Keyboard customization
+│   ├── zsh/                     # Zsh configuration
+│   ├── nvim/                    # Neovim configuration (Pure Lua)
+│   ├── iterm2/                  # iTerm2 profiles & settings
+│   ├── git/                     # Git configuration
+│   └── karabiner/               # Keyboard customization
 ├── zsh/                         # Modular Zsh configuration
 │   ├── zshrc.home.zsh           # Links to ~/.zshrc
 │   ├── zshprofile.home.zsh      # Links to ~/.zshprofile
 │   └── ...                      # Other .home.zsh files
-├── scripts/
-│   ├── install/                # Installation helpers
-│   │   ├── dependencies.sh     # Dependency management
-│   │   ├── tools.sh            # Workflow tools
-│   │   └── verify.sh           # Post-install verification
-│   └── utils/                  # Runtime utilities
 └── Brewfile                    # Homebrew dependencies
 ```
 
@@ -90,19 +84,23 @@ The `README.md` must **ALWAYS remain up-to-date** and serve as the comprehensive
 
 ### Tool & Dependency Configuration
 
-Tools and dependencies are defined in `tools.yaml` for explicit relationship tracking:
+Tools and dependencies are defined in `tools.json` for explicit relationship tracking:
 
-```yaml
-tools:
-  neovim:
-    type: workflow
-    dependencies: [cmake, ninja, gettext, libtool, automake, pkg-config]
-    description: "Primary editor"
-
-  cmake:
-    type: dependency
-    required_by: [neovim]
-    description: "Build system required by Neovim"
+```json
+{
+  "tools": {
+    "neovim": {
+      "type": "workflow",
+      "dependencies": ["cmake", "ninja", "gettext", "libtool", "automake", "pkg-config"],
+      "description": "Primary editor"
+    },
+    "cmake": {
+      "type": "dependency",
+      "required_by": ["neovim"],
+      "description": "Build system required by Neovim"
+    }
+  }
+}
 ```
 
 **Benefits:**
@@ -119,7 +117,7 @@ tools:
 
 ### Installation Flow
 1. **Pre-flight Checks**: Verify macOS version, existing tools (logged to ~/Library/Logs/dotfiles/install.log)
-2. **Parse Configuration**: Load `tools.yaml` and build dependency tree
+2. **Parse Configuration**: Load `tools.json` and build dependency tree
 3. **Dependency Resolution**: Install dependencies first (shows which tool requires each)
 4. **Workflow Tools**: Install user-facing development tools
 5. **Configuration**: Symlink dotfiles, apply settings
