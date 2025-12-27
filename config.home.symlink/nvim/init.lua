@@ -11,10 +11,8 @@ local env = require('core.env')
 -- 2. Core settings (all environments)
 require('core.options')
 
--- 3. Bootstrap lazy.nvim (only if not in VSCode/Cursor)
-if not env.is_vscode then
-  require('core.lazy')
-end
+-- 3. Bootstrap lazy.nvim (all environments)
+require('core.lazy')
 
 -- 4. Core keymaps (all environments)
 require('core.keymaps')
