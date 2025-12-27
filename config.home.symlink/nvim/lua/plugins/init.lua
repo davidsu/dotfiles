@@ -9,6 +9,7 @@ return {
   { import = 'plugins.tree' },
   { import = 'plugins.statusline' },
   { import = 'plugins.ui' },
+  { import = 'plugins.unimpaired' },
 }
 
 

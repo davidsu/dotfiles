@@ -20,7 +20,8 @@ nvim/
 │   │   ├── fzf.lua            # Fuzzy finder
 │   │   ├── tree.lua           # File explorer (nvim-tree)
 │   │   ├── statusline.lua     # Lualine statusline
-│   │   └── ui.lua             # UI enhancements
+│   │   ├── ui.lua             # UI enhancements
+│   │   └── unimpaired.lua     # Bracket mappings and toggles
 │   └── utils/                 # Custom utility functions
 │       └── window.lua         # Smart window navigation
 └── MIGRATION_PLAN.md          # Full migration plan and architecture
@@ -62,6 +63,12 @@ nvim/
 - vim-surround - Change/delete surroundings
 - vim-commentary - Comment toggling
 - vim-repeat - Repeat plugin actions
+- vim-unimpaired - Bracket mappings and toggles
+  - `cow` - Toggle wrap
+  - `con` - Toggle line numbers
+  - `cos` - Toggle spell check
+  - `]q`/`[q` - Next/prev quickfix
+  - `]b`/`[b` - Next/prev buffer
 
 #### Git Integration
 - vim-fugitive - Git wrapper
