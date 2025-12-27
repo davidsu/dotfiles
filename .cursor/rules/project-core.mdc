@@ -10,6 +10,21 @@ ALWAYS begin by thoroughly reading `planning.md` - it contains the complete tech
 
 If `.development-notes.md` exists in the project root, read it immediately after `planning.md` to understand current development context and priorities.
 
+## ⚠️ CRITICAL: Never Auto-Commit
+
+**NEVER `git add` or `git commit` unless user explicitly requests it.**
+
+Default workflow:
+1. Make changes
+2. Inform user implementation is complete
+3. Wait for user to review/test
+4. User explicitly says "commit", "commit this", "commit changes", or "apply and commit"
+5. ONLY THEN run git commands
+
+The user needs the opportunity to verify changes before they're committed.
+
+Exception: Only proceed directly to commit if user's original command explicitly includes commit intent.
+
 ## Working Principles
 - **Discussion First**: Analyze requirements, propose approaches, explain alternatives and trade-offs before implementing any code
 - **Explicit User Approval**: Distinguish between questions and action requests
@@ -17,11 +32,6 @@ If `.development-notes.md` exists in the project root, read it immediately after
   - **Direct commands** (proceed immediately): "Do X", "Implement Y", "Change A to B", "Fix this", "Add feature Z"
   - **When in doubt**: Ask clarifying questions rather than making changes
   - For exploratory or ambiguous requests, discuss options and wait for explicit "go ahead" or action command
-- **Commit Protocol**: 
-  - **Default workflow**: Make changes → User verifies it works → User explicitly requests commit
-  - NEVER `git add` or `git commit` unless user explicitly requests it with commands like "commit this", "commit changes", "apply and commit"
-  - When changes are complete, inform user they can test/verify, then commit when ready
-  - Only proceed directly to commit if user's command explicitly includes commit intent
 - **Performance Consciousness**: Always evaluate and optimize for startup time, load time, and resource efficiency
 - **Always DRY**: Prioritize code reuse and modularity to maintain a clean, non-redundant codebase
 
