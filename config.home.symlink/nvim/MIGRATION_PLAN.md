@@ -70,21 +70,16 @@ Get the bare minimum working first.
 **File**: [`config.home.symlink/nvim/lua/core/env.lua`](config.home.symlink/nvim/lua/core/env.lua)
 
 Detect execution environment early:
-- **Cursor IDE**: Check for `vim.g.vscode` or Cursor-specific env vars
-- **VSCode**: Check for `vim.g.vscode`
-- **Terminal**: Everything else
+- Check for `vim.g.vscode` (set by both VSCode and Cursor)
+- If set → GUI environment (minimal config)
+- If not set → Terminal environment (full config)
 
-Export environment flags:
+Export environment flag:
 ```lua
 return {
-  is_cursor = ...,
-  is_vscode = ...,
-  is_terminal = ...,
-  is_gui = ...  -- any GUI environment
+  is_vscode = vim.g.vscode ~= nil,
 }
 ```
-
-**Discussion point**: Cursor might appear as VSCode. Test: Does Cursor set `vim.g.vscode`?
 
 ---
 
@@ -127,7 +122,7 @@ require('core.options')
 require('core.lazy')
 
 -- 4. Load plugins (environment-aware)
-if env.is_gui then
+if env.is_vscode then
   require('plugins.minimal')  -- Just keymaps & text objects
 else
   require('plugins')  -- Full plugin suite
@@ -137,7 +132,7 @@ end
 require('core.keymaps')
 
 -- 6. Terminal-only config
-if env.is_terminal then
+if not env.is_vscode then
   require('config.lsp')
   require('config.autocmds')
 end
@@ -159,7 +154,7 @@ Core text editing plugins:
   - Alternative: `Comment.nvim` (Pure Lua)
 - **`vim-repeat`** - repeat plugin actions with `.`
 
-**Load in**: Cursor AND Terminal (these enhance core editing)
+**Load in**: All environments (these enhance core editing)
 
 ---
 
@@ -172,7 +167,7 @@ Essential git workflow:
 - **`gitsigns.nvim`** - Git signs in gutter, hunk navigation
   - Keymaps: `]g`/`[g` (next/prev hunk), `<space>hs` (stage), `<space>hu` (undo)
 
-**Load in**: Terminal only (Cursor has built-in git)
+**Load in**: Terminal only (VSCode/Cursor has built-in git)
 
 ---
 
@@ -195,7 +190,7 @@ Port mappings from [`dotfilesold/config/nvim/startup/leader_mappings.vim`](dotfi
 - `<space>fw` → `:Rg` (ripgrep)
 - `\b` / `1b` → `:Buffers`
 
-**Load in**: Terminal only (Cursor has Cmd+P)
+**Load in**: Terminal only (VSCode/Cursor has Cmd+P)
 
 ---
 
@@ -207,7 +202,7 @@ Using nvim-tree (simpler, faster):
 - Keymaps: `1n` (toggle), `<space>nf` (find current file)
 - Show hidden files option
 
-**Load in**: Terminal only (Cursor has built-in explorer)
+**Load in**: Terminal only (VSCode/Cursor has built-in explorer)
 
 ---
 
@@ -220,7 +215,7 @@ Using lualine (simple, fast):
 - File format, encoding
 - Minimal config, fast startup
 
-**Load in**: Terminal only (Cursor has its own statusline)
+**Load in**: Terminal only (VSCode/Cursor has its own statusline)
 
 ---
 
@@ -232,7 +227,7 @@ UI improvements:
 - **`vim-diminactive`** - dim inactive windows
   - Alternative: `shade.nvim` (Pure Lua)
 
-**Load in**: Terminal only (not needed in Cursor)
+**Load in**: Terminal only (not needed in VSCode/Cursor)
 
 ---
 
@@ -276,7 +271,7 @@ Port from [`dotfilesold/config/nvim/lua/init.lua`](dotfilesold/config/nvim/lua/i
 - Enable highlighting, incremental selection
 - Fold configuration (foldmethod=expr, foldexpr=nvim_treesitter#foldexpr)
 
-**Discussion**: Treesitter might work in Cursor, test it. If too slow, terminal-only.
+**Load in**: Terminal only
 
 ---
 
@@ -293,7 +288,7 @@ Replace COC with native LSP:
 - `lua/config/lsp/servers/` - per-server configs (typescript.lua, lua.lua, etc.)
 - `lua/config/lsp/keymaps.lua` - LSP keybindings
 
-**Load in**: Terminal only (Cursor has its own LSP)
+**Load in**: Terminal only (VSCode/Cursor has its own LSP)
 
 ---
 
@@ -320,7 +315,7 @@ Legacy used `darktooth` from `nvcode-color-schemes.vim`:
 - **Option 1**: Port darktooth
 - **Option 2**: Modern alternative (tokyonight, catppuccin, gruvbox.nvim)
 
-**Load in**: Terminal only (Cursor has its own theme)
+**Load in**: Terminal only (VSCode/Cursor has its own theme)
 
 ---
 
@@ -451,15 +446,13 @@ Start here and work down:
 
 After each phase:
 - Test in terminal Neovim
-- Test in Cursor (verify minimal config loads)
-- Verify startup time: < 100ms (Cursor), < 200ms (Terminal)
+- Test in VSCode/Cursor (verify minimal config loads)
+- Verify startup time: < 100ms (VSCode/Cursor), < 200ms (Terminal)
 - Check that plugins only load in intended environments
 
 ---
 
 ## Discussion Points
 
-1. **Cursor detection**: Does Cursor set `vim.g.vscode` or need custom detection?
-2. **Treesitter in Cursor**: Worth testing or skip entirely?
-3. **Commentary**: Use `vim-commentary` or switch to `Comment.nvim` (Pure Lua)?
-4. **Diminactive**: Keep `vim-diminactive` or use `shade.nvim` (Pure Lua)?
+1. **Commentary**: Use `vim-commentary` or switch to `Comment.nvim` (Pure Lua)?
+2. **Diminactive**: Keep `vim-diminactive` or use `shade.nvim` (Pure Lua)?
