@@ -1,7 +1,7 @@
 # Dotfiles Planning Strategy
 
 ## Overview
-This document outlines the comprehensive planning strategy for rebuilding the dotfiles configuration from scratch, based on the existing `dotfilesold` setup while modernizing and simplifying the development environment.
+This document outlines the comprehensive planning strategy for rebuilding the dotfiles configuration from scratch, based on the existing @${HOME}/Developer/dotfilesold setup while modernizing and simplifying the development environment.
 
 ## Core Principles
 - **macOS Only**: Optimized exclusively for macOS, no Linux support
@@ -30,11 +30,10 @@ This document outlines the comprehensive planning strategy for rebuilding the do
 │   ├── iterm2/                  # iTerm2 profiles & settings
 │   ├── git/                     # Git configuration
 │   └── karabiner/               # Keyboard customization
-├── zsh/                         # Modular Zsh configuration
-│   ├── zshrc.home.zsh           # Links to ~/.zshrc
-│   ├── zshprofile.home.zsh      # Links to ~/.zshprofile
-│   └── ...                      # Other .home.zsh files
-└── Brewfile                    # Homebrew dependencies
+└── zsh/                         # Modular Zsh configuration
+    ├── zshrc.home.zsh           # Links to ~/.zshrc
+    ├── zshprofile.home.zsh      # Links to ~/.zshprofile
+    └── ...                      # Other .home.zsh files
 ```
 
 ## README.md Requirements
@@ -62,8 +61,6 @@ The `README.md` must **ALWAYS remain up-to-date** and serve as the comprehensive
 
 ### 2. Terminal & Editor Integration
 - **iTerm2**: Keep current setup with modern configuration
-- **Cursor Detection**: Environment variable or process detection
-- **Feature Branching**: Different plugin sets based on context
 
 ### 3. Search & Navigation
 - **Primary Tool**: ripgrep (rg) - replace all ag usage
