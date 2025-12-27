@@ -48,6 +48,10 @@ nvim/
   - `<C-h/j/k/l>` - Simple window navigation (move between existing windows)
   - `gh`/`gj`/`gk`/`gl` - Smart navigation (auto-creates splits at edges)
   - `<C-p>` - Previous window
+- **Window Resizing:**
+  - `+` / `_` - Increase/decrease window size (auto-detects split orientation)
+  - `≠` / `–` - Alt+= / Alt+- alternatives
+  - `<space>v` / `\x` - Toggle horizontal/vertical resize mode
 - `\w` - Close window
 - `<space>qq` - Close all helper windows
 - `\s` - Substitute with very magic

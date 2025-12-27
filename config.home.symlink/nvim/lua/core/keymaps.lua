@@ -76,4 +76,16 @@ map('n', '\\c', '<cmd>Commands<cr>', { desc = 'Commands' })
 -- Execute current line
 map('n', '<space>gx', 'm`0y$:@"<cr><c-o>', { desc = 'Execute current line' })
 
+-- Window resizing (smart auto-detection of split orientation)
+map('n', '+', function() win_utils.win_size('+') end, { desc = 'Increase window size', silent = true })
+map('n', '_', function() win_utils.win_size('-') end, { desc = 'Decrease window size', silent = true })
+map('n', '≠', function() win_utils.win_size('+') end, { desc = 'Increase window size (Alt+=)', silent = true })
+map('n', '–', function() win_utils.win_size('-') end, { desc = 'Decrease window size (Alt+-)', silent = true })
+
+-- Toggle resize mode (horizontal vs vertical)
+map('n', '<space>v', win_utils.toggle_force_horizontal_resize, { desc = 'Toggle resize mode', silent = true })
+map('n', '<space>is', win_utils.toggle_force_horizontal_resize, { desc = 'Invert split resizing', silent = true })
+map('n', '\\x', win_utils.toggle_force_horizontal_resize, { desc = 'Toggle resize mode', silent = true })
+map('n', 'º', win_utils.toggle_force_horizontal_resize, { desc = 'Toggle resize mode (Alt+0)', silent = true })
+
 
