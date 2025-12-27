@@ -64,9 +64,9 @@ nvim/
 - vim-commentary - Comment toggling
 - vim-repeat - Repeat plugin actions
 - vim-unimpaired - Bracket mappings and toggles
-  - `cow` - Toggle wrap
-  - `con` - Toggle line numbers
-  - `cos` - Toggle spell check
+  - `yow` - Toggle wrap
+  - `yon` - Toggle line numbers
+  - `yos` - Toggle spell check
   - `]q`/`[q` - Next/prev quickfix
   - `]b`/`[b` - Next/prev buffer
 
