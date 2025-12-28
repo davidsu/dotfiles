@@ -57,6 +57,10 @@ nvim/
 - `\w` - Close window
 - `<space>qq` - Close all helper windows
 - `\s` - Substitute with very magic
+- `m,` / `sa` - Switch to alternate file (last buffer)
+- `'` - Jump to mark (exact position instead of line start)
+- `q` - Close help/quickfix/fugitive windows (auto-mapped in those buffers)
+- `:h` - Opens help in new tab (abbreviated from `:tab help`)
 
 ### Terminal-Only Features
 
@@ -78,8 +82,11 @@ nvim/
   - `]g`/`[g` - Next/prev hunk
   - `<space>hs` - Stage hunk
   - `<space>hr` - Reset hunk
+  - `<space>hu` - Undo stage hunk
+  - `<space>hp` - Preview hunk
   - `<space>gs` - Git status
   - `<space>gd` - Git diff
+  - `gb` - Git blame
 
 #### Fuzzy Finder (FZF)
 - `<c-t>` - Find git files
@@ -87,6 +94,7 @@ nvim/
 - `<space>fw` - Grep word (ripgrep)
 - `<space>fb` / `\b` / `1b` - Find buffers
 - `<space>fh` - Command history
+- `\a` - Ripgrep search (fullscreen with syntax-highlighted preview via bat)
 
 #### File Explorer
 - `1n` - Toggle file tree
@@ -104,6 +112,7 @@ The configuration will auto-install lazy.nvim on first run in terminal Neovim.
 Required external tools:
 - ripgrep (for fast grep)
 - fzf (for fuzzy finding)
+- bat (for syntax-highlighted previews in fzf)
 - git (for git integration)
 
 ## Usage
@@ -115,13 +124,15 @@ Full configuration with all plugins loads automatically.
 Minimal configuration loads (core options + keymaps + text editing plugins).
 VSCode/Cursor's built-in features are used for git, file finding, LSP, etc.
 
+## Colorscheme
+
+Using **gruvbox** colorscheme (medium contrast, dark mode) - a warm retro theme matching the darktooth variant from dotfilesold.
+
 ## Next Steps
 
 See `MIGRATION_PLAN.md` for:
-- Treesitter setup
 - LSP configuration
 - Completion setup
-- Colorscheme
 - Advanced features
 
 

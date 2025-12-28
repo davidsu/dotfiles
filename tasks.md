@@ -37,13 +37,19 @@
   - [x] Install Neovim via brew and setup lazy.nvim
   - [x] Implement Cursor/Terminal detection for conditional loading
 - [x] **Essential Feature Porting**
-  - [ ] **Fuzzy Finder**: Setup Telescope (modern replacement for hzf/fzf in vim)
+  - [x] **Fuzzy Finder**: Setup fzf.vim with ripgrep integration and bat-powered previews
   - [x] **File Explorer**: Setup neo-tree or nvim-tree (nvim-tree already configured)
   - [x] **Git Integration**: Setup gitsigns and lazygit/fugitive (gitsigns, fugitive, rhubarb configured)
   - [x] **Syntax Highlighting**: Setup Treesitter (installed with gruvbox colorscheme)
+  - [x] **Colorscheme**: Setup gruvbox (matching dotfilesold's darktooth variant)
 - [ ] **Customization Analysis**
   - [ ] Full analysis of `dotfilesold/config/nvim/` (init.vim, startup/, etc.)
-  - [ ] Identify and port "must-have" legacy keybindings
+  - [x] **Identify and port "must-have" legacy keybindings**:
+    - [x] `q` to close help/quickfix/fugitive buffers
+    - [x] `:h` abbreviation to open help in new tab
+    - [x] `m,` and `sa` for alternate file switching
+    - [x] `gb` for git blame
+    - [x] `\a` for ripgrep search with fzf preview
   - [ ] Identify and port essential abbreviations and utility functions
 - [ ] **README: Update Neovim section** (installation, basic usage, modes)
 
@@ -94,11 +100,14 @@
   - [ ] Install: via install.sh
   - [ ] Configure: SSH keys, global config file, aliases
   - [ ] **README: Update Git section** (setup, SSH keys, common commands)
-- [ ] **ripgrep**
-  - [ ] Discuss: search tool, why ripgrep vs ag, performance benefits
-  - [ ] Install: via install.sh
-  - [ ] Configure: basic usage, integration points
+- [x] **ripgrep**
+  - [x] Install: via tools.json
+  - [x] Configure: integrated with fzf.vim for search in Neovim
   - [ ] **README: Update ripgrep section** (usage examples, Neovim integration)
+- [x] **bat**
+  - [x] Install: via tools.json (dependency of neovim)
+  - [x] Configure: automatic syntax highlighting in fzf previews
+  - [ ] **README: Update bat section** (usage with fzf, preview examples)
 - [ ] **fzf**
   - [ ] Discuss: fuzzy finder, integration with other tools
   - [ ] **Core Setup (1-2 hours)** - Get basic fzf working with Ctrl+T/Ctrl+R
