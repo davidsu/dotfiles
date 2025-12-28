@@ -15,7 +15,7 @@ return {
     keys = {
       { '<space>gs', '<cmd>Git<cr>', desc = 'Git status' },
       { '<space>gd', '<cmd>Gdiffsplit<cr>', desc = 'Git diff' },
-      { '<space>gb', '<cmd>Git blame<cr>', desc = 'Git blame' },
+      { 'gb', '<cmd>Git blame<cr>', desc = 'Git blame' },
     },
   },
 

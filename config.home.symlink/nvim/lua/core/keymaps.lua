@@ -31,6 +31,21 @@ map('n', "'", '`', { desc = 'Jump to mark exact position' })
 -- Execute current line
 map('n', '<space>gx', 'm`0y$:@"<cr><c-o>', { desc = 'Execute current line' })
 
+-- Alternate file (switch to last buffer)
+map('n', 'm,', '<c-^>', { desc = 'Switch to alternate file' })
+map('n', 'sa', '<c-^>', { desc = 'Switch to alternate file' })
+
+-- Help in new tab (command abbreviation)
+vim.cmd([[cnoreabbrev <expr> h getcmdtype() == ":" && getcmdline() == 'h' ? 'tab help' : 'h']])
+
+-- Close help/quickfix/fugitive with q
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'help', 'qf', 'fugitiveblame' },
+  callback = function()
+    vim.keymap.set('n', 'q', '<cmd>bd<cr>', { buffer = true, silent = true })
+  end,
+})
+
 -- Load terminal-only keymaps
 if not env.is_vscode then
   require('core.keymaps_terminal')
