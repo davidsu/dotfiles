@@ -37,11 +37,11 @@ return {
         },
         filters = {
           dotfiles = false,
-          custom = { '.git', 'node_modules', '.cache' },
+          custom = {},  -- Show ALL files, no filtering
         },
         git = {
           enable = true,
-          ignore = false,
+          ignore = false,  -- Don't hide gitignored files
         },
         actions = {
           open_file = {
