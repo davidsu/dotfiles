@@ -26,11 +26,16 @@
       "brew_type": "formula",
       "description": "Simple, fast alternative to find"
     },
+    "bat": {
+      "type": "workflow",
+      "brew_type": "formula",
+      "description": "Cat clone with syntax highlighting; used by fzf for previews"
+    },
     "neovim": {
       "type": "workflow",
       "brew_type": "formula",
       "cmd": "nvim",
-      "dependencies": ["cmake", "ninja", "gettext", "ripgrep", "fd"],
+      "dependencies": ["cmake", "ninja", "gettext", "ripgrep", "fd", "bat"],
       "description": "Extensible text editor"
     },
     "docker": {
