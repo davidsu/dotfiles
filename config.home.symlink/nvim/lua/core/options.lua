@@ -91,6 +91,7 @@ opt.listchars = {
   precedes = '❮',
 }
 opt.list = false                 -- disabled by default
+opt.spell = false                -- spell check disabled (from dotfilesold)
 
 -- Grep
 if vim.fn.executable('rg') == 1 then
@@ -105,5 +106,3 @@ end
 if not env.is_vscode then
   require('core.options_terminal')
 end
-
-

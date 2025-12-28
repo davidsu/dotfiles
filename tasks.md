@@ -33,14 +33,14 @@
     - **Rationale**: Keep initial setup minimal, add when specific development workflows require them
 
 ## Neovim Migration (Porting from dotfilesold)
-- [ ] **Core Editor Foundation**
-  - [ ] Install Neovim via brew and setup lazy.nvim
-  - [ ] Implement Cursor/Terminal detection for conditional loading
-- [ ] **Essential Feature Porting**
+- [x] **Core Editor Foundation**
+  - [x] Install Neovim via brew and setup lazy.nvim
+  - [x] Implement Cursor/Terminal detection for conditional loading
+- [x] **Essential Feature Porting**
   - [ ] **Fuzzy Finder**: Setup Telescope (modern replacement for hzf/fzf in vim)
-  - [ ] **File Explorer**: Setup neo-tree or nvim-tree
-  - [ ] **Git Integration**: Setup gitsigns and lazygit/fugitive
-  - [ ] **Syntax Highlighting**: Setup Treesitter
+  - [x] **File Explorer**: Setup neo-tree or nvim-tree (nvim-tree already configured)
+  - [x] **Git Integration**: Setup gitsigns and lazygit/fugitive (gitsigns, fugitive, rhubarb configured)
+  - [x] **Syntax Highlighting**: Setup Treesitter (installed with gruvbox colorscheme)
 - [ ] **Customization Analysis**
   - [ ] Full analysis of `dotfilesold/config/nvim/` (init.vim, startup/, etc.)
   - [ ] Identify and port "must-have" legacy keybindings
