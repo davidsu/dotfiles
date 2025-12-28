@@ -65,6 +65,11 @@
       "brew_type": "formula",
       "description": "Command-line fuzzy finder"
     },
+    "zoxide": {
+      "type": "workflow",
+      "brew_type": "formula",
+      "description": "Smarter cd command - tracks frequently used directories"
+    },
     "starship": {
       "type": "workflow",
       "brew_type": "formula",

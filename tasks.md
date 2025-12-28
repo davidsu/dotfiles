@@ -21,9 +21,9 @@
   - [x] **karabiner-elements**: Keep. Key mapping strategy.
   - [x] **rectangle**: Keep (replacing Spectacle). Window management.
   - [x] **maccy**: Keep (chosen over Flycut). Clipboard management.
-  - [x] **zoxide**: Not adding at this stage.
-    - **Decision**: Will add zoxide as needed when implementing shell functionality from dotfilesold
-    - **Rationale**: Keep initial setup minimal, add when specific navigation features are migrated
+  - [x] **zoxide**: Added (modern replacement for fasd)
+    - **Decision**: Using zoxide for smart directory navigation with fzf integration
+    - **Implementation**: Installed via tools.json, initialized in zsh/zoxide.zsh
   - [x] **pnpm**: Not using. npm will suffice.
   - [x] **Utilities**: Not adding at this stage.
     - **Decision**: Will add jq, coreutils, wget, entr as needed when implementing shell functionality from dotfilesold
@@ -115,7 +115,14 @@
     - [x] Source fzf key-bindings.zsh in zshrc (like dotfilesold)
     - [ ] Test basic functionality (Ctrl+T for files, Ctrl+R for history)
   - [ ] **Function Analysis (2-3 hours)** - Categorize 15+ fzf functions from dotfilesold
-    - [ ] **Essential (Keep & Modernize)**: fag(), fa(), fbr(), fshow(), fstash()
+    - [x] **Essential (Keep & Modernize)**:
+      - [x] fag() - Search with ripgrep + fzf, open in nvim
+      - [x] jfzf() - Directory jumping with zoxide + fzf (alias: zi)
+      - [x] chromehistory() - Browse Chrome history with fzf
+      - [ ] fa() - File finder with preview
+      - [ ] fbr() - Git branch switching
+      - [ ] fshow() - Git commit browser
+      - [ ] fstash() - Git stash browser
     - [ ] **Browser Integration**: chromehistory(), chromebookmarks() (Chrome-specific)
     - [ ] **Developer Tools**: fman(), factivate(), jfzf()
     - [ ] **Theme/Utilities**: fzf-chth(), preview helpers
