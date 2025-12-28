@@ -26,13 +26,25 @@ return {
       { '\\b', '<cmd>Buffers<cr>', desc = 'Find buffers' },
       { '1b', '<cmd>Buffers<cr>', desc = 'Find buffers' },
       { '<space>fh', '<cmd>History:<cr>', desc = 'Command history' },
+      { '\\a', ':Rg ', desc = 'Ripgrep search (from dotfilesold)' },
     },
     config = function()
       -- Use ripgrep for :Rg command
       vim.g.fzf_command_prefix = 'Fzf'
-      
-      -- Custom window layout
-      vim.g.fzf_layout = { window = { width = 0.9, height = 0.8 } }
+
+      -- Fullscreen layout (not floating window)
+      vim.g.fzf_layout = { down = '100%' }
+
+      -- Rg command with preview (matching dotfilesold behavior)
+      -- Preview on top with syntax highlighting via bat
+      vim.cmd([[
+        command! -bang -nargs=* Rg
+          \ call fzf#vim#grep(
+          \   'rg --column --line-number --no-heading --color=always --smart-case -- '.shellescape(<q-args>),
+          \   1,
+          \   fzf#vim#with_preview('up:50%', 'ctrl-/'),
+          \   <bang>0)
+      ]])
       
       -- Customize colors to match Neovim theme
       vim.g.fzf_colors = {
