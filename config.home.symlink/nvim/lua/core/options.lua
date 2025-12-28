@@ -103,7 +103,7 @@ end
 
 -- Load terminal-only options
 if not env.is_vscode then
-  require('core.options.terminal')
+  require('core.options_terminal')
 end
 
 

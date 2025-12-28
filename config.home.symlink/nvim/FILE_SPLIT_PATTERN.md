@@ -2,7 +2,7 @@
 
 ## Strategy
 
-Split configuration into base (universal) and `.terminal.lua` (terminal-only) files.
+Split configuration into base (universal) and `_terminal.lua` (terminal-only) files.
 
 ## Pattern
 
@@ -11,12 +11,13 @@ Split configuration into base (universal) and `.terminal.lua` (terminal-only) fi
 **Base file** (`file.lua`):
 - Contains universal settings that work in both VSCode and terminal
 - Defaults optimized for VSCode (since it has more built-in features)
-- Conditionally requires `.terminal.lua` at the end
+- Conditionally requires `_terminal.lua` at the end
 
-**Terminal file** (`file.terminal.lua`):
+**Terminal file** (`file_terminal.lua`):
 - Contains terminal-specific overrides and additions
 - Only loaded in terminal Neovim
 - No early return needed (loaded conditionally by base file)
+- **Note**: Use underscore, not dot (Lua require treats dots as directory separators)
 
 ### Plugin Files
 
@@ -30,7 +31,7 @@ Split configuration into base (universal) and `.terminal.lua` (terminal-only) fi
 
 ## Examples
 
-### Core: options.lua + options.terminal.lua
+### Core: options.lua + options_terminal.lua
 
 ```lua
 -- options.lua (base)
@@ -38,29 +39,29 @@ opt.number = false        -- VSCode has its own line numbers
 opt.laststatus = 0        -- VSCode has its own statusbar
 
 if not env.is_vscode then
-  require('core.options.terminal')
+  require('core.options_terminal')  -- Note: underscore, not dot
 end
 ```
 
 ```lua
--- options.terminal.lua
+-- options_terminal.lua
 opt.number = true         -- Show line numbers in terminal
 opt.laststatus = 2        -- Show statusbar in terminal
 ```
 
-### Core: keymaps.lua + keymaps.terminal.lua
+### Core: keymaps.lua + keymaps_terminal.lua
 
 ```lua
 -- keymaps.lua (base)
 map('n', '<C-h>', '<cmd>wincmd h<cr>')  -- Works in both
 
 if not env.is_vscode then
-  require('core.keymaps.terminal')
+  require('core.keymaps_terminal')  -- Note: underscore, not dot
 end
 ```
 
 ```lua
--- keymaps.terminal.lua
+-- keymaps_terminal.lua
 map('n', 'gh', function() win_utils.win_move('h') end)  -- Terminal-only
 map('n', '+', function() win_utils.win_size('+') end)   -- Terminal-only
 ```
@@ -92,8 +93,8 @@ return {
 ## Current Implementation
 
 ### Core Files
-- ✅ `options.lua` + `options.terminal.lua`
-- ✅ `keymaps.lua` + `keymaps.terminal.lua`
+- ✅ `options.lua` + `options_terminal.lua`
+- ✅ `keymaps.lua` + `keymaps_terminal.lua`
 - `env.lua` - No split needed (just detection)
 - `lazy.lua` - No split needed (plugin manager bootstrap)
 
@@ -120,7 +121,7 @@ return {
 - **Split** if feature doesn't work or conflicts in VSCode
 - **Don't split** if feature works identically in both
 
-### What Requires .terminal.lua
+### What Requires _terminal.lua
 - Custom keymaps (FZF, window resizing, custom navigation)
 - UI options (statusline, line numbers, showcmd)
 - Terminal-specific utilities

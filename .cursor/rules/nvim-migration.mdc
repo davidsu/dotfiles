@@ -18,12 +18,12 @@ When working with Neovim configuration files, always reference the comprehensive
 
 ### File Splitting Strategy
 
-Use `.terminal.lua` files for terminal-only features:
+Use `_terminal.lua` files for terminal-only features:
 
 **Core files** (`core/*.lua`):
 - Base file: Universal settings (works in both environments)
-- `.terminal.lua`: Terminal-specific additions
-- Base file requires `.terminal.lua` only when `not env.is_vscode`
+- `_terminal.lua`: Terminal-specific additions (underscore, not dot)
+- Base file requires `_terminal` only when `not env.is_vscode`
 
 Example:
 ```lua
@@ -32,12 +32,12 @@ opt.number = false  -- VSCode has its own
 
 -- Load terminal-only options
 if not env.is_vscode then
-  require('core.options.terminal')
+  require('core.options_terminal')  -- Note: underscore
 end
 ```
 
 ```lua
--- options.terminal.lua
+-- options_terminal.lua
 opt.number = true  -- Enable in terminal
 ```
 
@@ -47,7 +47,7 @@ opt.number = true  -- Enable in terminal
 
 ### What to Split
 
-**Terminal-only (use `.terminal.lua` or early return)**:
+**Terminal-only (use `_terminal.lua` or early return)**:
 - Keymaps that don't work in VSCode (FZF, window resizing, custom navigation)
 - UI options (statusline, line numbers, showcmd)
 - UI plugins (statusline, file tree, colors, scrolling)
@@ -63,7 +63,7 @@ opt.number = true  -- Enable in terminal
 ## Key Architecture Principles
 
 - **Environment Detection**: Detect Cursor IDE vs Terminal for conditional loading
-- **File Split Pattern**: Base file + `.terminal.lua` for core, early return for plugins
+- **File Split Pattern**: Base file + `_terminal.lua` for core, early return for plugins
 - **Pure Lua**: No Vimscript, use Lua exclusively
 - **Implementation Order**: Foundation → Essential Plugins → Intelligence → Polish → Advanced
 

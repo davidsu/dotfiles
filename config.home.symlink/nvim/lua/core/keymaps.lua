@@ -33,7 +33,7 @@ map('n', '<space>gx', 'm`0y$:@"<cr><c-o>', { desc = 'Execute current line' })
 
 -- Load terminal-only keymaps
 if not env.is_vscode then
-  require('core.keymaps.terminal')
+  require('core.keymaps_terminal')
 end
 
 
