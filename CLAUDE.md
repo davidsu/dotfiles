@@ -3,8 +3,8 @@
 ## Project Overview
 
 Migrating and modernizing dotfiles from old implementation:
-- **Source**: @https://github.com/davidsu/dotfiles/tree/dotfilesold (Vimscript, vim-plug, ag, fnm)
-- **Target**: `~/.dotfiles/` (Pure Lua, lazy.nvim, ripgrep, mise)
+- **Source**: `dotfilesold` branch (Vimscript, vim-plug, ag, fnm)
+- **Target**: `master` branch at `~/.dotfiles/` (Pure Lua, lazy.nvim, ripgrep, mise)
 - **Platform**: macOS only (remove all Linux compatibility code)
 - **Goal**: Keep functionality, modernize implementation, clean up cruft
 
@@ -17,9 +17,9 @@ When user asks a question, **answer the question** - don't implement anything un
 **Good**: User asks "what colorscheme did I use?" → You check dotfilesold and tell them
 
 ### 2. Check Dotfilesold First
-Before implementing ANY feature, check how it was done in the old dotfiles at @https://github.com/davidsu/dotfiles/tree/dotfilesold
+Before implementing ANY feature, check how it was done in the `dotfilesold` branch.
 
-Don't assume or guess - look at the actual old code.
+Don't assume or guess - look at the actual old code. You can reference files on the dotfilesold branch directly.
 
 ### 3. Ask User to Help Debug
 When encountering visual/UI issues you can't diagnose from code alone, ask user to run diagnostic commands:
@@ -35,9 +35,32 @@ Before suggesting GitHub repos, npm packages, or external resources:
 - Check they're still maintained
 - Find the actual canonical source
 
-### 5. Keep Documentation Updated
-All `.md` files must remain up to date:
+### 5. Keep Documentation and Installation Script Updated
+**CRITICAL**: Always update both documentation AND installation files when adding tools or features.
+
+**Documentation** - All `.md` files must remain up to date:
 - **Project root**: `~/.dotfiles/*.md` (README.md, tasks.md, planning.md, etc.)
 - **Neovim docs**: `~/.dotfiles/config.home.symlink/nvim/*.md`
 
-When implementing features, update relevant documentation immediately.
+**Installation** - Keep installation script in sync:
+- When adding a tool via Homebrew: Add to `installation/tools.json`
+- When creating files that need symlinking to home directory: Use `*.symlink` naming convention (handled automatically by installation script)
+- When adding dependencies between tools: Update tool dependencies in `tools.json`
+
+**Why this matters**:
+- Installation script enables easy setup on new computers
+- Documentation prevents losing track of what's been implemented
+- Both are essential for the dotfiles to be usable and maintainable
+
+Update documentation and installation files IMMEDIATELY after implementing features, not later.
+
+### 6. NEVER Commit Without User Approval
+**CRITICAL**: Do NOT create commits unless explicitly told to by the user.
+
+- After making changes, STOP and let the user review
+- Only run `git commit` when user says "commit" or similar
+- User wants the opportunity to test and verify changes first
+- If user asks "can you commit?", that means ask for permission, NOT commit immediately
+
+**Bad**: Making changes → Immediately running `git commit`
+**Good**: Making changes → Telling user "Changes are ready, let me know when you want to commit"
