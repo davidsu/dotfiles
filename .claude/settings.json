@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(.cursor/**)",
+      "Read(.cursor)"
+    ]
+  }
+}
