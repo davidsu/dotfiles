@@ -68,9 +68,14 @@
   - [ ] **Analyze & Migrate Legacy Configuration (from dotfilesold)**:
     - [x] `@/Users/thistooshallpass/Developer/dotfilesold/ag-helper-functions.sh`: Legacy search helpers (ported to ripgrep version in aliases.zsh)
     - [x] `@/Users/thistooshallpass/Developer/dotfilesold/aliases`: Core command shortcuts
-    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/bindkey`: Custom Zsh keybindings
+    - [x] `@/Users/thistooshallpass/Developer/dotfilesold/bindkey`: Custom Zsh keybindings
+      - **Decision**: Core keybindings already work (Ctrl+P/N, Ctrl+G, Ctrl+H) from keybindings.zsh
+      - **Skipped**: Ctrl+U/A/E (work by default), vi-mode bindings (not using vi-mode), Up/Down arrows (Ctrl+P/N sufficient)
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/fzf.zsh`: FZF-specific shell integrations
-    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/history`: History behavior and management
+    - [x] `@/Users/thistooshallpass/Developer/dotfilesold/history`: History behavior and management
+      - **Implementation**: Added zsh/history.zsh with SHARE_HISTORY and comprehensive duplicate handling
+      - **Location**: `zsh/history.zsh`
+      - **Features**: Global history across all terminal sessions, 10k command history, smart duplicate removal
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/lessconfig`: Pager configuration
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/linuxUtils`: (Skip? macOS focus)
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/loadall`: Bootstrap logic
@@ -83,7 +88,8 @@
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/prompt`: Prompt configuration (Starship is current, check for custom logic)
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/theme`: Visual settings
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/tmp`: Temporary file management
-    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/variables`: Environment variables
+    - [x] `@/Users/thistooshallpass/Developer/dotfilesold/variables`: Environment variables
+      - **Decision**: Not needed - only contained VIMTMP and Base16 theme notes (not using Base16 anymore)
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/wixstuff`: Work-specific or specialized tools
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/zshhooks`: Shell lifecycle hooks
   - [x] **Analyze & Migrate Shell Aliases**:
