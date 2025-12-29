@@ -90,7 +90,7 @@
     - [ ] `dotfilesold:tmp`: Temporary file management
     - [x] `dotfilesold:variables`: Environment variables
       - **Decision**: Not needed - only contained VIMTMP and Base16 theme notes (not using Base16 anymore)
-    - [ ] `dotfilesold:wixstuff`: Work-specific or specialized tools
+    - [x] `dotfilesold:wixstuff`: Work-specific configuration (skipped - no longer relevant)
     - [ ] `dotfilesold:zshhooks`: Shell lifecycle hooks
   - [x] **Analyze & Migrate Shell Aliases**:
     - [x] Full analysis of all aliases in `dotfilesold/aliases`
