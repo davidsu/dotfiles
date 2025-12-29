@@ -2,6 +2,9 @@
 
 # Dependency Management for Dotfiles
 # Handles Homebrew and tool installation driven by tools.json
+#
+# NOTE: This script is designed for macOS with Apple Silicon (M1/M2/M3/M4)
+# Intel Mac support has been removed for simplicity
 
 # Source logging if not already available
 if [[ -z "$(declare -F log_info)" ]]; then
@@ -13,12 +16,9 @@ install_homebrew() {
     if ! command -v brew >/dev/null 2>&1; then
         log_info "Installing Homebrew..."
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-        
-        if [[ $(uname -m) == "arm64" ]]; then
-            eval "$(/opt/homebrew/bin/brew shellenv)"
-        else
-            eval "$(/usr/local/bin/brew shellenv)"
-        fi
+
+        # Apple Silicon Homebrew path
+        eval "$(/opt/homebrew/bin/brew shellenv)"
     else
         log_success "Homebrew is already installed."
     fi
@@ -33,18 +33,17 @@ bootstrap_js_runtime() {
         brew install mise
     fi
 
-    # Activate mise in the current shell
-    if [[ $(uname -m) == "arm64" ]]; then
-        eval "$(/opt/homebrew/bin/mise activate bash)"
-    else
-        eval "$(/usr/local/bin/mise activate bash)"
-    fi
+    # Activate mise in the current shell (Apple Silicon path)
+    eval "$(/opt/homebrew/bin/mise activate bash)"
 
     if ! command -v node >/dev/null 2>&1; then
         log_info "Installing Node.js via mise..."
         mise use --global node@lts
+
+        # Reactivate mise to make node available in current shell
+        eval "$(/opt/homebrew/bin/mise activate bash)"
     fi
-    
+
     log_success "JS runtime (Node.js) is ready."
 }
 

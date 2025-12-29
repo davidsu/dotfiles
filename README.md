@@ -24,7 +24,7 @@ This enables proper display of icons in nvim-tree and other terminal application
 
 ## Prerequisites
 
-- **macOS**: This configuration is macOS-only.
+- **macOS with Apple Silicon**: This configuration is designed for macOS on Apple Silicon (M1/M2/M3/M4 chips). Intel Mac support has been removed for simplicity.
 - **Homebrew**: The installation script will attempt to install Homebrew if it's missing.
 
 ## Manual Installation
