@@ -64,3 +64,25 @@ Update documentation and installation files IMMEDIATELY after implementing featu
 
 **Bad**: Making changes → Immediately running `git commit`
 **Good**: Making changes → Telling user "Changes are ready, let me know when you want to commit"
+
+### 7. Consider Error Handling and Edge Cases
+When implementing file-based features or persistent state, proactively think about failure modes:
+
+**Common edge cases to consider:**
+- File corruption (malformed data, binary garbage)
+- Race conditions (multiple instances writing simultaneously)
+- Write failures (disk full, permissions)
+- Missing files or directories
+
+**Approach:**
+1. First implement the happy path
+2. Then ask user: "What about edge cases like corruption/race conditions?"
+3. Add error handling with `pcall()` or similar
+4. Fail gracefully (silent failures for non-critical features, user warnings for critical ones)
+
+**Example**: MRU file tracking
+- File corruption → `pcall()` around `io.lines()`, start fresh on error
+- Write failure → Silent fail, user just misses one entry
+- Race conditions → Acceptable for personal dotfiles (document "last writer wins")
+
+Don't over-engineer, but DO ask about failure modes before considering a feature "done".
