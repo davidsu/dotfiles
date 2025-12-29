@@ -18,6 +18,15 @@ return {
 
       -- Disable overly strict markdown error highlighting
       vim.cmd([[highlight link markdownError NONE]])
+
+      -- Fix diff highlighting to be more transparent and preserve syntax
+      -- Use background colors with blend instead of inverse foreground colors
+      vim.cmd([[
+        highlight DiffAdd    guifg=NONE guibg=#2d3d45 gui=NONE
+        highlight DiffChange guifg=NONE guibg=#3d4220 gui=NONE
+        highlight DiffDelete guifg=#cc241d guibg=#442e2d gui=NONE
+        highlight DiffText   guifg=NONE guibg=#4d4020 gui=bold
+      ]])
     end,
   },
 }
