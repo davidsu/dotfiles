@@ -75,7 +75,11 @@
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/linuxUtils`: (Skip? macOS focus)
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/loadall`: Bootstrap logic
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/misc`: Miscellaneous shell settings
-    - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/mru`: Most Recently Used file tracking
+    - [x] `@/Users/thistooshallpass/Developer/dotfilesold/mru`: Most Recently Used file tracking
+      - **Implementation**: Replaced PM2/Node.js server with simple file-based tracking in Lua
+      - **Location**: `config.home.symlink/nvim/lua/config/mru.lua` + `zsh/fzf-functions.zsh`
+      - **Features**: Tracks file + cursor position, works in both terminal (`1m`) and Neovim (`1m`)
+      - **Note**: No longer requires PM2 or Node.js server from dotfilesold
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/prompt`: Prompt configuration (Starship is current, check for custom logic)
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/theme`: Visual settings
     - [ ] `@/Users/thistooshallpass/Developer/dotfilesold/tmp`: Temporary file management

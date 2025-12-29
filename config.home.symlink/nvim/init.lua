@@ -16,3 +16,8 @@ require('core.lazy')
 
 -- 4. Core keymaps (all environments)
 require('core.keymaps')
+
+-- 5. MRU tracking (terminal only)
+if env.is_terminal then
+  require('config.mru').setup()
+end

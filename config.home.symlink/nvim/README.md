@@ -13,11 +13,15 @@ nvim/
 │   │   ├── options.lua        # Core Vim options
 │   │   ├── keymaps.lua        # Universal keymaps
 │   │   └── lazy.lua           # Plugin manager bootstrap
+│   ├── config/                # Feature modules
+│   │   └── mru.lua            # MRU (Most Recently Used) file tracking
 │   ├── plugins/               # Plugin specifications
 │   │   ├── init.lua           # Plugin loader
 │   │   ├── editing.lua        # Text editing (surround, commentary, repeat)
 │   │   ├── git.lua            # Git integration (fugitive, gitsigns)
-│   │   ├── fzf.lua            # Fuzzy finder
+│   │   ├── fzf.lua            # Fuzzy finder (fzf.vim)
+│   │   ├── fzf-lua.lua        # Fuzzy finder (fzf-lua for MRU)
+│   │   ├── mru.lua            # MRU plugin spec
 │   │   ├── tree.lua           # File explorer (nvim-tree)
 │   │   ├── statusline.lua     # Lualine statusline
 │   │   ├── ui.lua             # UI enhancements
@@ -95,6 +99,16 @@ nvim/
 - `<space>fb` / `\b` / `1b` - Find buffers
 - `<space>fh` - Command history
 - `\a` - Ripgrep search (fullscreen with syntax-highlighted preview via bat)
+- `1m` - MRU (Most Recently Used) files (fullscreen, preview on top)
+
+#### MRU (Most Recently Used Files)
+- Automatically tracks every file you open with exact cursor position
+- `1m` in Neovim opens fullscreen fzf-lua with preview
+- Restores cursor to exact line and column where you left off
+- File-based tracking at `~/.local/share/nvim_mru.txt` (max 100 entries)
+- Filters out temporary files, git buffers, help, fugitive, etc.
+- Works in both terminal (via shell function) and Neovim
+- **Note**: Replaces dotfilesold's PM2/Node.js server with simple Lua implementation
 
 #### File Explorer
 - `1n` - Toggle file tree

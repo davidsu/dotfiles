@@ -66,6 +66,52 @@ function jfzf() {
 # Alias for zoxide interactive (standard command)
 alias zi='jfzf'
 
+# mru - Most Recently Used files with fzf
+# Usage: mru or 1m
+export MRU_FILE="$HOME/.local/share/nvim_mru.txt"
+
+function mru() {
+    if [[ ! -f "$MRU_FILE" ]]; then
+        echo "No MRU history found"
+        return 1
+    fi
+
+    local fzfresult
+    fzfresult=$(cat "$MRU_FILE" | \
+        fzf --no-sort \
+            --exact \
+            --delimiter ':' \
+            --preview 'bash -c "
+                file=\$(echo {} | cut -d: -f1)
+                line=\$(echo {} | cut -d: -f2)
+                bat --style=numbers --color=always --highlight-line \$line \$file
+            "' \
+            --preview-window 'top:50%:wrap:+{2}-/2' \
+            --bind 'ctrl-s:toggle-sort' \
+            --bind 'ctrl-/:toggle-preview' \
+            --header 'CTRL-s: toggle sort | CTRL-/: toggle preview' \
+            --prompt 'MRU> ')
+
+    if [[ -n "$fzfresult" ]]; then
+        local filepath linenum column
+        IFS=: read -r filepath linenum column <<< "$fzfresult"
+
+        if [[ -f "$filepath" ]]; then
+            # Change to git root if in a git repo
+            local filedir=$(dirname "$filepath")
+            cd "$filedir"
+            if git rev-parse --show-toplevel > /dev/null 2>&1; then
+                cd $(git rev-parse --show-toplevel)
+            fi
+
+            # Open file at saved position
+            nvim "+call cursor($linenum, $column)" "$filepath"
+        fi
+    fi
+}
+
+alias 1m='mru'
+
 # chromehistory - Browse Chrome history with fzf
 # Usage: chromehistory
 function chromehistory() {
