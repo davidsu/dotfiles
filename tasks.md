@@ -151,11 +151,10 @@
 - [ ] **Shell configuration** (create ~/.dotfiles/config.home.symlink/zsh/ files, symlink logic)
 - [ ] **Neovim configuration** (create ~/.dotfiles/config.home.symlink/nvim/ Lua files, symlink logic)
 - [ ] **iTerm2 configuration**
-  - [ ] **DISCUSS FIRST**: What iTerm configuration do we need? Base16 colors integration, profiles, shell integration, key bindings?
-  - [ ] Create ~/.dotfiles/config.home.symlink/iterm2/ directory structure
-  - [ ] Base16 color schemes (matching Neovim themes for consistency)
-  - [ ] iTerm2 profiles configuration and symlinking
-  - [ ] Shell integration setup (optional - discuss if needed)
+  - [x] **Decision**: Not adding custom iTerm2 configuration files
+    - **Rationale**: Default colors work well with gruvbox Neovim theme
+    - **Font**: JetBrainsMono Nerd Font configured manually (documented in README)
+    - **Note**: No need for Base16 color schemes or profile syncing at this time
 - [x] **Test all symlinks** (verify symlinks work, configs load correctly)
 - [x] **README: Configuration section** (symlinking explanation, config locations)
 - [x] **Remove broken symlinks and self-heal** (verified naming convention and installation script)
