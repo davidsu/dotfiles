@@ -94,6 +94,12 @@
       "type": "workflow",
       "brew_type": "cask",
       "description": "Lightweight clipboard manager for macOS"
+    },
+    "font-jetbrains-mono-nerd-font": {
+      "type": "workflow",
+      "brew_type": "cask",
+      "homebrew_package": "font-jetbrains-mono-nerd-font",
+      "description": "Nerd Font patched version of JetBrains Mono - required for nvim-tree icons"
     }
   }
 }

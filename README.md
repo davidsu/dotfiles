@@ -2,12 +2,7 @@
 
 A modern, performance-focused dotfiles configuration optimized exclusively for macOS.
 
-## Prerequisites
-
-- **macOS**: This configuration is macOS-only.
-- **Homebrew**: The installation script will attempt to install Homebrew if it's missing.
-
-## Installation
+## Quick Start
 
 For a brand-new macOS machine, you can bootstrap everything with a single copy/paste command:
 
@@ -15,7 +10,24 @@ For a brand-new macOS machine, you can bootstrap everything with a single copy/p
 curl -fsSL https://raw.githubusercontent.com/davidsu/dotfiles/master/installation/bootstrap.sh | bash
 ```
 
-### Manual install (fallback)
+### Post-Installation: iTerm2 Font Configuration
+
+After installation, you need to manually configure iTerm2 to use the installed Nerd Font for proper icon display:
+
+1. Open **iTerm2 Preferences** (Cmd+,)
+2. Go to **Profiles → Text**
+3. Enable **"Use a different font for non-ASCII text"** checkbox
+4. For the **Non-ASCII Font**, select **"JetBrainsMono Nerd Font Mono"** (Regular, 12pt)
+5. Restart iTerm2 completely (Cmd+Q, then reopen)
+
+This enables proper display of icons in nvim-tree and other terminal applications that use Nerd Font glyphs.
+
+## Prerequisites
+
+- **macOS**: This configuration is macOS-only.
+- **Homebrew**: The installation script will attempt to install Homebrew if it's missing.
+
+## Manual Installation
 
 Clone this repository into `~/.dotfiles` and run the installation script:
 
