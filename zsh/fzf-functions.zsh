@@ -77,7 +77,8 @@ function mru() {
     fi
 
     local fzfresult
-    fzfresult=$(cat "$MRU_FILE" | \
+    # Filter out fugitive:// URIs and other non-file entries
+    fzfresult=$(grep -v '^fugitive://' "$MRU_FILE" | \
         fzf --no-sort \
             --exact \
             --delimiter ':' \

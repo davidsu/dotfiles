@@ -17,6 +17,10 @@ map('n', 'k', 'gk', { silent = true })
 map('v', '/', '/\\v', { desc = 'Search very magic' })
 map('v', '?', '?\\v', { desc = 'Search backward very magic' })
 
+-- Visual star search (search for selected text)
+map('v', '*', 'y/\\V<C-R>=escape(@","/\\")<CR><CR>', { desc = 'Search forward for selection' })
+map('v', '#', 'y?\\V<C-R>=escape(@","?\\")<CR><CR>', { desc = 'Search backward for selection' })
+
 -- Substitute
 map('n', '\\s', ':%s/\\v', { desc = 'Substitute' })
 map('v', '\\s', ':s/\\v', { desc = 'Substitute selection' })

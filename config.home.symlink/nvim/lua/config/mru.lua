@@ -26,7 +26,8 @@ local function should_ignore(filepath)
   end
 
   -- Ignore temp files and special paths
-  if filepath:match('/private/var/folders/') or
+  if filepath:match('^fugitive://') or
+     filepath:match('/private/var/folders/') or
      filepath:match('nvim%.runtime') or
      filepath:match('fugitiveblame') or
      filepath:match('/var/folders/.*nvim') or
