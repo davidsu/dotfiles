@@ -51,11 +51,8 @@ function jfzf() {
     # Use zoxide to get directory list, pipe to fzf
     dir=$(zoxide query -l | \
         fzf --no-sort \
-            --tac \
             --bind 'ctrl-s:toggle-sort' \
-            --header 'CTRL-s: toggle sort' \
-            --preview 'ls -la --color=always {}' \
-            --preview-window 'right:50%')
+            --header 'CTRL-s: toggle sort')
 
     # Change to selected directory
     if [[ -n "$dir" && -d "$dir" ]]; then
