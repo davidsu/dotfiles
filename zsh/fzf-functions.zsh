@@ -48,15 +48,21 @@ function jfzf() {
     fi
 
     local dir
-    # Use zoxide to get directory list, pipe to fzf
-    dir=$(zoxide query -l | \
+    # Use zoxide to get directory list with scores, pipe to fzf
+    # Format: "score /path/to/dir"
+    # Note: zoxide outputs lowest scores first, so we don't reverse
+    dir=$(zoxide query -l --score | \
         fzf --no-sort \
             --bind 'ctrl-s:toggle-sort' \
             --header 'CTRL-s: toggle sort')
 
-    # Change to selected directory
-    if [[ -n "$dir" && -d "$dir" ]]; then
-        cd "$dir"
+    # Change to selected directory (extract path from "score /path" format)
+    if [[ -n "$dir" ]]; then
+        # Remove leading whitespace and score, keep only the path
+        dir=$(echo "$dir" | awk '{print $2}')
+        if [[ -d "$dir" ]]; then
+            cd "$dir"
+        fi
     fi
 }
 
