@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_SSH="git@github.com:davidsu/dotfiles.git"
+REPO_HTTPS="https://github.com/davidsu/dotfiles.git"
 DOTFILES_DIR="${HOME}/.dotfiles"
 
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
@@ -27,20 +27,35 @@ if [[ -e "$DOTFILES_DIR" ]]; then
   fail "$DOTFILES_DIR already exists."
 fi
 
-ssh_out="$(ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=5 -T git@github.com 2>&1 || true)"
-if printf '%s' "$ssh_out" | grep -qi 'permission denied (publickey)'; then
-  cat >&2 <<'EOF'
-ERROR: GitHub SSH not configured.
-
-Create a key, add it to GitHub, then re-run:
-  ssh-keygen -t ed25519 -C "you@example.com"
-  ssh-add --apple-use-keychain ~/.ssh/id_ed25519
-  pbcopy < ~/.ssh/id_ed25519.pub
-EOF
-  exit 1
-fi
-
-git clone "$REPO_SSH" "$DOTFILES_DIR" || fail "git clone failed."
+git clone "$REPO_HTTPS" "$DOTFILES_DIR" || fail "git clone failed."
 bash "$DOTFILES_DIR/installation/install.sh" || fail "install.sh failed."
+
+# Switch to SSH remote for future git operations
+cd "$DOTFILES_DIR"
+git remote set-url origin git@github.com:davidsu/dotfiles.git
+
+echo ""
+echo "==================================================================="
+echo "Installation complete!"
+echo ""
+echo "Your dotfiles repo is now configured to use SSH."
+echo "To push/pull changes, you need to set up an SSH key:"
+echo ""
+echo "  1. Generate an SSH key (if you don't have one):"
+echo "     ssh-keygen -t ed25519 -C \"thistooshallpass@only.constant.is.change.com\""
+echo ""
+echo "  2. Add the key to your SSH agent:"
+echo "     ssh-add --apple-use-keychain ~/.ssh/id_ed25519"
+echo ""
+echo "  3. Copy your public key and add it to GitHub:"
+echo "     pbcopy < ~/.ssh/id_ed25519.pub"
+echo "     # Then go to: https://github.com/settings/keys"
+echo ""
+echo "  Or run steps 1-3 in a single command:"
+echo "     ssh-keygen -t ed25519 -C \"thistooshallpass@only.constant.is.change.com\" -f ~/.ssh/id_ed25519 -N \"\" && ssh-add --apple-use-keychain ~/.ssh/id_ed25519 && pbcopy < ~/.ssh/id_ed25519.pub"
+echo ""
+echo "  4. Test the connection:"
+echo "     ssh -T git@github.com"
+echo "==================================================================="
 
 
