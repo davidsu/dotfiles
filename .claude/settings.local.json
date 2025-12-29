@@ -3,7 +3,11 @@
     "allow": [
       "Bash(grep:*)",
       "Bash(cat:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git grep:*)",
+      "Bash(zoxide query:*)",
+      "Bash(tac:*)"
     ]
   }
 }
