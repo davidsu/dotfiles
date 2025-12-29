@@ -147,8 +147,8 @@ function chromehistory() {
         awk -F "$sep" '{printf "%-'$cols's  \x1b[36m%s\x1b[m\n", $1, $2}' | \
         fzf --ansi \
             --multi \
-            --preview 'echo {..-2}' \
-            --preview-window 'up:3:wrap' \
+            --preview 'echo {..-2}; echo $(tput setaf 12){-1} | sed -E '\''s#([&?])#'$(tput setaf 8)'\1'$(tput setaf 10)'#g'\' \
+            --preview-window 'up:35%:wrap' \
             --header 'CTRL-o: open in browser | CTRL-s: toggle sort | CTRL-/: toggle preview' \
             --prompt 'Chrome History> ' \
             --bind 'ctrl-/:toggle-preview' \
@@ -159,4 +159,97 @@ function chromehistory() {
 
     # Cleanup
     rm -f /tmp/chrome_history_tmp
+}
+
+# chromebookmarks - Browse Chrome bookmarks with fzf
+# Usage: chromebookmarks
+function chromebookmarks() {
+    local bookmarks_file cols
+
+    # Find Chrome bookmarks file
+    if [[ -f ~/Library/Application\ Support/Google/Chrome/Profile\ 1/Bookmarks ]]; then
+        bookmarks_file=~/Library/Application\ Support/Google/Chrome/Profile\ 1/Bookmarks
+    elif [[ -f ~/Library/Application\ Support/Google/Chrome/Default/Bookmarks ]]; then
+        bookmarks_file=~/Library/Application\ Support/Google/Chrome/Default/Bookmarks
+    else
+        echo 'Cannot find Chrome bookmarks file'
+        return 1
+    fi
+
+    # Check if ruby is available
+    if ! command -v ruby >/dev/null 2>&1; then
+        echo "ruby is not installed"
+        return 1
+    fi
+
+    cols=$(( COLUMNS / 2 ))
+
+    # Parse bookmarks JSON with Ruby and display with fzf
+    ruby -rjson -e "
+        file = File.expand_path('$bookmarks_file')
+        json = JSON.parse(File.read(file))
+
+        def build(parent, node)
+            name = [parent, node['name']].compact.join('/')
+            if node['type'] == 'folder'
+                node['children']&.map { |child| build(name, child) } || []
+            else
+                { name: name, url: node['url'] }
+            end
+        end
+
+        def trim(str, width)
+            len = 0
+            str.each_char.with_index do |char, idx|
+                len += char =~ /\p{Han}|\p{Katakana}|\p{Hiragana}|\p{Hangul}/ ? 2 : 1
+                return str[0, idx] if len > width
+            end
+            str
+        end
+
+        items = json['roots']
+                .values_at('bookmark_bar', 'synced', 'other')
+                .compact
+                .flat_map { |e| build(nil, e) }
+                .flatten
+                .compact
+
+        items.each do |item|
+            name = trim(item[:name], $cols)
+            puts \"#{name.ljust($cols)}\t\e[36m#{item[:url]}\e[0m\"
+        end
+    " | fzf --ansi \
+          --multi \
+          --no-hscroll \
+          --tiebreak=begin \
+          --delimiter=$'\t' \
+          --preview 'echo {2}' \
+          --preview-window 'up:3:wrap' \
+          --header 'CTRL-o: open in browser | CTRL-s: toggle sort' \
+          --bind 'ctrl-s:toggle-sort' \
+          --bind 'ctrl-o:execute:open {2}' | \
+        awk -F'\t' '{print $2}' | \
+        xargs open
+}
+
+# Aliases for chromebookmarks
+alias cb='chromebookmarks'
+alias bookmarks='chromebookmarks'
+
+# fa - File finder with preview
+# Usage: fa
+function fa() {
+    local filename
+
+    filename=$(find . -type f 2>/dev/null | \
+        fzf --exact \
+            --preview 'bat --style=numbers --color=always {}' \
+            --preview-window 'top:50%' \
+            --header 'Enter: open in nvim | CTRL-s: toggle sort | CTRL-/: toggle preview' \
+            --bind 'ctrl-s:toggle-sort' \
+            --bind 'ctrl-/:toggle-preview')
+
+    if [[ -f "$filename" ]]; then
+        nvim "$filename"
+    fi
 }

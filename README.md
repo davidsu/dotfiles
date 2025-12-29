@@ -87,6 +87,12 @@ This setup includes several core Zsh optimizations and productivity helpers, org
 
 ### Productivity Tools
 - **fzf**: Command-line fuzzy finder for efficient file and content searching
+  - `fag <pattern>` - Search files with ripgrep and open in nvim
+  - `fa` - File finder with bat-powered preview
+  - `mru` or `1m` - Most recently used files (shell and nvim)
+  - `zi` or `jfzf` - Jump to frequently used directories with zoxide
+  - `chromehistory` - Browse Chrome history
+  - `chromebookmarks` or `cb` - Browse Chrome bookmarks
 - **Karabiner-Elements**: Powerful keyboard customization with Vim-style navigation and smart modifier keys
 - **Rectangle**: Window management with keyboard shortcuts for moving and resizing windows
 - **Maccy**: Lightweight clipboard manager for macOS
@@ -94,6 +100,7 @@ This setup includes several core Zsh optimizations and productivity helpers, org
 ### Container & Version Control
 - **Docker (Colima)**: Lightweight container runtime for development environments
 - **Git**: Version control with enhanced configuration and productivity shortcuts
+- **git-open**: Opens the GitHub/GitLab page for a repository in your browser
 
 ## Keyboard Customization (Karabiner-Elements)
 
