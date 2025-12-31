@@ -160,10 +160,11 @@
 - [ ] **Git configuration** (create ~/.dotfiles/config.home.symlink/git/ files, symlink logic)
 - [ ] **Shell configuration** (create ~/.dotfiles/config.home.symlink/zsh/ files, symlink logic)
 - [ ] **Neovim configuration** (create ~/.dotfiles/config.home.symlink/nvim/ Lua files, symlink logic)
-- [ ] **Ghostty terminal configuration**
-  - [ ] Create config file in dotfiles (with font-size=16, image-protocol=kitty)
+- [x] **Ghostty terminal configuration**
+  - [x] Create config file in dotfiles (with font-size=16, image-protocol=kitty, macos-option-as-alt=true)
   - [ ] Add symlink mechanism for `~/Library/Application Support/com.mitchellh.ghostty/config` → dotfiles
   - **Note**: macOS uses `Library/Application Support` not `.config` for Ghostty
+  - **Manual setup required**: `ln -s ~/.dotfiles/config.home.symlink/ghostty/config ~/Library/Application\ Support/com.mitchellh.ghostty/config`
 - [ ] **iTerm2 configuration**
   - [x] **Decision**: Not adding custom iTerm2 configuration files
     - **Rationale**: Default colors work well with gruvbox Neovim theme

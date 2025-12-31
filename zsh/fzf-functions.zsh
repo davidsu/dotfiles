@@ -16,8 +16,11 @@ function fag() {
                 # Extract filename and line number from the selected line
                 file=\$(echo {} | cut -d: -f1)
                 line=\$(echo {} | cut -d: -f2)
-                # Show file with bat, highlighting the matched line
-                bat --style=numbers --color=always --highlight-line \$line \$file
+                # Show file with bat, highlighting the matched line with improved styling
+                bat --style=numbers,grid --color=always \
+                    --highlight-line \$line \
+                    --terminal-width \$FZF_PREVIEW_COLUMNS \
+                    \$file
             "' \
             --preview-window 'top:50%:wrap:+{2}-/2' \
             --bind 'ctrl-/:toggle-preview' \
@@ -88,7 +91,11 @@ function mru() {
             --preview 'bash -c "
                 file=\$(echo {} | cut -d: -f1)
                 line=\$(echo {} | cut -d: -f2)
-                bat --style=numbers --color=always --highlight-line \$line \$file
+                # Use bat with improved styling for better line highlight visibility
+                bat --style=numbers,grid --color=always \
+                    --highlight-line \$line \
+                    --terminal-width \$FZF_PREVIEW_COLUMNS \
+                    \$file
             "' \
             --preview-window 'top:50%:wrap:+{2}-/2' \
             --bind 'ctrl-s:toggle-sort' \

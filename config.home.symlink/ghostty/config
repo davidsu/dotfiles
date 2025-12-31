@@ -1,0 +1,12 @@
+# Ghostty Terminal Configuration
+
+# Font
+font-size = 16
+
+# Image protocol support (for tools like viu, timg)
+image-protocol = kitty
+
+# Make Option/Alt key work as Meta key for shell shortcuts (enables Alt+C for FZF)
+# Without this, Alt+C produces ç instead of triggering FZF directory search
+macos-option-as-alt = true
+

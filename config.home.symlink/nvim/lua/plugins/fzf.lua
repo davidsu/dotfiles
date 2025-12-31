@@ -39,6 +39,13 @@ return {
     config = function()
       -- Fullscreen layout (not floating window)
       vim.g.fzf_layout = { down = '100%' }
+      
+      -- Consistent layout: prompt on top, results top-to-bottom
+      vim.env.FZF_DEFAULT_OPTS = (vim.env.FZF_DEFAULT_OPTS or '') .. ' --layout=reverse'
+      
+      -- Default preview window position: on top with 50% height
+      -- 'ctrl-/' to toggle preview, syntax highlighting via bat
+      vim.g.fzf_preview_window = { 'up:50%', 'ctrl-/' }
 
       -- Rg command with preview (matching dotfilesold behavior)
       -- Preview on top with syntax highlighting via bat
