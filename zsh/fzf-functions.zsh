@@ -123,6 +123,42 @@ function mru() {
 
 alias 1m='mru'
 
+# mru-clean - Remove invalid/deleted file entries from MRU
+# Usage: mru-clean
+function mru-clean() {
+    if [[ ! -f "$MRU_FILE" ]]; then
+        echo "No MRU history found at $MRU_FILE"
+        return 1
+    fi
+
+    local temp_file=$(mktemp)
+    local removed_count=0
+    local kept_count=0
+
+    echo "Cleaning MRU file: $MRU_FILE"
+    
+    # Read each entry and check if file exists
+    while IFS=: read -r filepath line col; do
+        if [[ -f "$filepath" ]]; then
+            echo "$filepath:$line:$col" >> "$temp_file"
+            ((kept_count++))
+        else
+            echo "  Removing: $filepath (file not found)"
+            ((removed_count++))
+        fi
+    done < "$MRU_FILE"
+
+    # Replace original file with cleaned version
+    mv "$temp_file" "$MRU_FILE"
+
+    echo ""
+    echo "MRU cleanup complete:"
+    echo "  Kept: $kept_count entries"
+    echo "  Removed: $removed_count entries"
+}
+
+alias removeMruInvalidEntries='mru-clean'
+
 # chromehistory - Browse Chrome history with fzf
 # Usage: chromehistory
 function chromehistory() {
