@@ -24,6 +24,7 @@ nvim/
 │   │   ├── fzf.lua            # Fuzzy finder (fzf.vim)
 │   │   ├── fzf-lua.lua        # Fuzzy finder (fzf-lua for MRU)
 │   │   ├── lsp.lua            # LSP configuration (TypeScript, ESLint)
+│   │   ├── markdown.lua       # Markdown preview (browser-based)
 │   │   ├── mason.lua          # LSP server/formatter auto-installer
 │   │   ├── mru.lua            # MRU plugin spec
 │   │   ├── tree.lua           # File explorer (nvim-tree)
@@ -168,6 +169,18 @@ nvim/
 - **Manual trigger:**
   - `<C-Space>` - Manually trigger completion
 - Sources: LSP (highest priority), file paths, buffer words
+
+#### Markdown Preview
+- Powered by live-preview.nvim (pure Lua, no external dependencies)
+- **Live updates** - Real-time preview as you type
+- **Zero dependencies** - No Node.js, Python, Deno, or yarn required
+- **KaTeX math** - Supports LaTeX math equations
+- **Mermaid diagrams** - Renders flowcharts, sequence diagrams, etc.
+- **Keybindings** (in markdown files):
+  - `<leader>mp` - Start live preview
+  - `<leader>ms` - Stop preview
+- Opens in your default browser on port 5500
+- Auto-closes server when Neovim exits
 
 #### File Explorer
 - `1n` - Toggle file tree

@@ -53,7 +53,7 @@
   - [ ] Identify and port essential abbreviations and utility functions
 - [ ] **Plugin Consolidation & Additions**
   - [ ] **Unify fzf plugins**: Currently using both fzf.vim AND fzf-lua (only for MRU) - consolidate into single solution
-  - [ ] **Add markdown preview**: Need in-editor markdown rendering (consider glow for terminal or markdown-preview.nvim for browser)
+  - [x] **Add markdown preview**: Implemented markdown-preview.nvim with browser-based live preview (GitHub-flavored, KaTeX math, Mermaid diagrams)
   - [ ] **Consider Telescope**: Evaluate hybrid approach (keep fzf for file/grep, add Telescope for LSP pickers like symbols, references, keymaps)
 - [ ] **README: Update Neovim section** (installation, basic usage, modes)
 
