@@ -31,6 +31,7 @@ nvim/
 │   │   ├── ui.lua             # UI enhancements
 │   │   └── unimpaired.lua     # Bracket mappings and toggles
 │   └── utils/                 # Custom utility functions
+│       ├── diagnostics.lua    # Diagnostic display in command line
 │       └── window.lua         # Smart window navigation
 └── MIGRATION_PLAN.md          # Full migration plan and architecture
 ```
