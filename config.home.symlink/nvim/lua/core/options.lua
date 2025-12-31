@@ -59,6 +59,7 @@ opt.swapfile = false
 opt.completeopt = { 'menu', 'menuone', 'noselect', 'longest' }
 opt.wildmenu = true              -- enhanced command line completion
 opt.wildmode = 'full'
+opt.wildignorecase = true        -- case-insensitive command-line completion and history
 
 -- Folding (will be configured per-plugin later)
 opt.foldmethod = 'manual'

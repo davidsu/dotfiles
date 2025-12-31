@@ -71,6 +71,7 @@ nvim/
 - `'` - Jump to mark (exact position instead of line start)
 - `q` - Close help/quickfix/fugitive windows (auto-mapped in those buffers)
 - `:h` - Opens help in new tab (abbreviated from `:tab help`)
+- **Command-line history**: `<C-p>` / `<C-n>` - Navigate command history (filtered by what you've typed, case-insensitive)
 
 ### Terminal-Only Features
 
@@ -103,8 +104,11 @@ nvim/
 - `<space>fa` - Find all files
 - `<space>fw` - Grep word (ripgrep)
 - `<space>fb` / `\b` / `1b` - Find buffers
-- `<space>fh` - Command history
+- `<space>fh` / `1:` / `1;` - Command history
+- `1/` - Search history
 - `\a` - Ripgrep search (fullscreen with syntax-highlighted preview via bat)
+- `\c` - Browse all available Vim commands
+- `\<tab>` - Search all keybindings/keyboard shortcuts
 - `1m` - MRU (Most Recently Used) files (fullscreen, preview on top)
 
 #### MRU (Most Recently Used Files)

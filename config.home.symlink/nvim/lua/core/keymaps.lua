@@ -39,6 +39,11 @@ map('n', '<space>gx', 'm`0y$:@"<cr><c-o>', { desc = 'Execute current line' })
 map('n', 'm,', '<c-^>', { desc = 'Switch to alternate file' })
 map('n', 'sa', '<c-^>', { desc = 'Switch to alternate file' })
 
+-- Command-line history navigation (filtered by what you've typed)
+-- Ctrl+P/Ctrl+N work like terminal history search
+map('c', '<C-p>', '<Up>', { noremap = true })
+map('c', '<C-n>', '<Down>', { noremap = true })
+
 -- Help in new tab (command abbreviation)
 vim.cmd([[cnoreabbrev <expr> h getcmdtype() == ":" && getcmdline() == 'h' ? 'tab help' : 'h']])
 

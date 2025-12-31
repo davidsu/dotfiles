@@ -18,6 +18,7 @@ return {
   {
     'junegunn/fzf.vim',
     dependencies = { 'junegunn/fzf' },
+    cmd = { 'Files', 'GFiles', 'Buffers', 'Rg', 'History', 'Commands', 'Maps' },  -- Load on these commands
     keys = {
       { '<c-t>', '<cmd>GFiles<cr>', desc = 'Find git files' },
       { '<space>fa', '<cmd>Files<cr>', desc = 'Find all files' },
@@ -26,12 +27,16 @@ return {
       { '\\b', '<cmd>Buffers<cr>', desc = 'Find buffers' },
       { '1b', '<cmd>Buffers<cr>', desc = 'Find buffers' },
       { '<space>fh', '<cmd>History:<cr>', desc = 'Command history' },
+      { '1:', '<cmd>History:<cr>', desc = 'Command history' },
+      { '1;', '<cmd>History:<cr>', desc = 'Command history' },
+      { '1/', '<cmd>History/<cr>', desc = 'Search history' },
+      { '\\c', '<cmd>Commands<cr>', desc = 'Commands' },
       { '\\a', ':Rg ', desc = 'Ripgrep search (from dotfilesold)' },
+      { '\\<tab>', '<cmd>Maps<cr>', mode = 'n', desc = 'Search keybindings' },
+      { '\\<tab>', '<cmd>Maps<cr>', mode = 'x', desc = 'Search keybindings' },
+      { '\\<tab>', '<cmd>Maps<cr>', mode = 'o', desc = 'Search keybindings' },
     },
     config = function()
-      -- Use ripgrep for :Rg command
-      vim.g.fzf_command_prefix = 'Fzf'
-
       -- Fullscreen layout (not floating window)
       vim.g.fzf_layout = { down = '100%' }
 

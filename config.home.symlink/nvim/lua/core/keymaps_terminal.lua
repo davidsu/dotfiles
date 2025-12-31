@@ -47,14 +47,6 @@ map('n', '<space>is', win_utils.toggle_force_horizontal_resize, { desc = 'Invert
 map('n', '\\x', win_utils.toggle_force_horizontal_resize, { desc = 'Toggle resize mode', silent = true })
 map('n', 'º', win_utils.toggle_force_horizontal_resize, { desc = 'Toggle resize mode (Alt+0)', silent = true })
 
--- History navigation (FZF commands)
-map('n', '1:', '<cmd>History:<cr>', { desc = 'Command history' })
-map('n', '1;', '<cmd>History:<cr>', { desc = 'Command history' })
-map('n', '1/', '<cmd>History/<cr>', { desc = 'Search history' })
-
--- Quick command access (FZF)
-map('n', '\\c', '<cmd>Commands<cr>', { desc = 'Commands' })
-
 -- Filetype detection
 map('n', '<space>fd', '<cmd>filetype detect<cr>', { desc = 'Detect filetype' })
 
