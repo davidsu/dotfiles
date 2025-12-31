@@ -5,35 +5,10 @@ return {
   {
     'neovim/nvim-lspconfig',
     event = { 'BufReadPre', 'BufNewFile' },
-    dependencies = {
-      -- Optional: Show LSP progress notifications
-      {
-        'j-hui/fidget.nvim',
-        opts = {
-          progress = {
-            suppress_on_insert = true,  -- Don't show progress in insert mode
-            ignore = {
-              'null-ls',  -- Ignore null-ls progress
-            },
-            display = {
-              render_limit = 5,  -- Limit number of messages shown
-              done_ttl = 1,      -- Clear "done" messages after 1 second
-            },
-          },
-          notification = {
-            window = {
-              avoid = { 'NvimTree' }, -- Don't show notifications over nvim-tree
-            },
-          },
-        },
-      },
-    },
     config = function()
       -- Setup diagnostic display
       vim.diagnostic.config({
-        virtual_text = {
-          prefix = '●',
-        },
+        virtual_text = false,  -- Don't show inline - only in command line
         signs = {
           text = {
             [vim.diagnostic.severity.ERROR] = '✖',
@@ -45,6 +20,11 @@ return {
         underline = true,
         update_in_insert = false,
         severity_sort = true,
+      })
+
+      -- Show diagnostic message in command line when cursor stops on diagnostic
+      vim.api.nvim_create_autocmd('CursorHold', {
+        callback = require('utils.diagnostics').show_diagnostic_at_cursor,
       })
 
       -- LSP keybindings (activated when LSP attaches to buffer)
