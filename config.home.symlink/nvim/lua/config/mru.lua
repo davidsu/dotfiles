@@ -21,12 +21,16 @@ local function should_ignore(filepath)
      ft == 'fugitive' or
      ft == 'help' or
      ft == 'qf' or
-     ft == 'fzf' then
+     ft == 'fzf' or
+     ft == 'health' or
+     ft == 'NvimTree' then
     return true
   end
 
   -- Ignore temp files and special paths
   if filepath:match('^fugitive://') or
+     filepath:match('^health://') or
+     filepath:match('NvimTree_') or
      filepath:match('/private/var/folders/') or
      filepath:match('nvim%.runtime') or
      filepath:match('fugitiveblame') or

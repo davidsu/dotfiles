@@ -7,7 +7,14 @@
       "Bash(git ls-tree:*)",
       "Bash(git grep:*)",
       "Bash(zoxide query:*)",
-      "Bash(tac:*)"
+      "Bash(tac:*)",
+      "Bash(typescript-language-server:*)",
+      "WebSearch",
+      "WebFetch(domain:xnacly.me)",
+      "Bash(nvim:*)",
+      "WebFetch(domain:neovim.io)",
+      "WebFetch(domain:junegunn.github.io)",
+      "WebFetch(domain:github.com)"
     ]
   }
 }

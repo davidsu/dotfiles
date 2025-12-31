@@ -36,7 +36,8 @@
       "brew_type": "formula",
       "cmd": "nvim",
       "dependencies": ["cmake", "ninja", "gettext", "ripgrep", "fd", "bat"],
-      "description": "Extensible text editor"
+      "description": "Extensible text editor",
+      "notes": "LSP servers (TypeScript, ESLint) and formatters (Prettier) are automatically installed by Mason when Neovim first opens. Per-project installations (via package.json) take precedence over Mason-installed versions."
     },
     "docker": {
       "type": "workflow",

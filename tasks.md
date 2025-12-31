@@ -51,6 +51,10 @@
     - [x] `gb` for git blame
     - [x] `\a` for ripgrep search with fzf preview
   - [ ] Identify and port essential abbreviations and utility functions
+- [ ] **Plugin Consolidation & Additions**
+  - [ ] **Unify fzf plugins**: Currently using both fzf.vim AND fzf-lua (only for MRU) - consolidate into single solution
+  - [ ] **Add markdown preview**: Need in-editor markdown rendering (consider glow for terminal or markdown-preview.nvim for browser)
+  - [ ] **Consider Telescope**: Evaluate hybrid approach (keep fzf for file/grep, add Telescope for LSP pickers like symbols, references, keymaps)
 - [ ] **README: Update Neovim section** (installation, basic usage, modes)
 
 ## Configure Shell
@@ -156,6 +160,10 @@
 - [ ] **Git configuration** (create ~/.dotfiles/config.home.symlink/git/ files, symlink logic)
 - [ ] **Shell configuration** (create ~/.dotfiles/config.home.symlink/zsh/ files, symlink logic)
 - [ ] **Neovim configuration** (create ~/.dotfiles/config.home.symlink/nvim/ Lua files, symlink logic)
+- [ ] **Ghostty terminal configuration**
+  - [ ] Create config file in dotfiles (with font-size=16, image-protocol=kitty)
+  - [ ] Add symlink mechanism for `~/Library/Application Support/com.mitchellh.ghostty/config` → dotfiles
+  - **Note**: macOS uses `Library/Application Support` not `.config` for Ghostty
 - [ ] **iTerm2 configuration**
   - [x] **Decision**: Not adding custom iTerm2 configuration files
     - **Rationale**: Default colors work well with gruvbox Neovim theme
@@ -183,6 +191,26 @@
 - [ ] **Clean up and optimize** (remove unused code, optimize performance)
 - [ ] **Final verification** (clean macOS install test)
 - [ ] **README: Complete documentation** (final polish, maintenance guide)
+
+## Future: System Configuration Migration
+- [ ] **Research & evaluate Nix/nix-darwin** for declarative macOS system configuration
+  - **Current state**: Using bash scripts + tools.json for package management
+  - **Goal**: Migrate to Nix/nix-darwin for more robust, reproducible system configuration
+  - **Why consider Nix**:
+    - Fully declarative system configuration (like infrastructure-as-code for your Mac)
+    - Atomic updates/rollbacks (can undo system changes)
+    - Per-project development environments (nix-shell)
+    - True reproducibility across machines
+  - **Learning path**:
+    - [ ] Understand Nix package manager basics
+    - [ ] Learn nix-darwin for macOS-specific configuration
+    - [ ] Explore home-manager for dotfiles/user configuration
+    - [ ] Evaluate migration strategy (parallel or full replacement)
+  - **Alternative**: Brewfile (simpler, less powerful)
+    - Declarative Homebrew package management
+    - Easier learning curve
+    - Consider as intermediate step before Nix
+  - **Decision point**: Evaluate complexity vs benefits for personal use case
 
 ## Current Focus
 - **Starting Point**: Neovim Migration (Porting from `dotfilesold`)

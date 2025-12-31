@@ -17,10 +17,14 @@ nvim/
 │   │   └── mru.lua            # MRU (Most Recently Used) file tracking
 │   ├── plugins/               # Plugin specifications
 │   │   ├── init.lua           # Plugin loader
+│   │   ├── completion.lua     # Autocompletion (nvim-cmp)
 │   │   ├── editing.lua        # Text editing (surround, commentary, repeat)
+│   │   ├── formatting.lua     # Code formatting (conform.nvim with Prettier)
 │   │   ├── git.lua            # Git integration (fugitive, gitsigns)
 │   │   ├── fzf.lua            # Fuzzy finder (fzf.vim)
 │   │   ├── fzf-lua.lua        # Fuzzy finder (fzf-lua for MRU)
+│   │   ├── lsp.lua            # LSP configuration (TypeScript, ESLint)
+│   │   ├── mason.lua          # LSP server/formatter auto-installer
 │   │   ├── mru.lua            # MRU plugin spec
 │   │   ├── tree.lua           # File explorer (nvim-tree)
 │   │   ├── statusline.lua     # Lualine statusline
@@ -110,6 +114,60 @@ nvim/
 - Works in both terminal (via shell function) and Neovim
 - **Note**: Replaces dotfilesold's PM2/Node.js server with simple Lua implementation
 
+#### LSP (Language Server Protocol)
+- Native Neovim LSP with **TypeScript** and **ESLint** support
+- **Navigation:**
+  - `<space>cd` / `gd` - Go to definition
+  - `gD` - Go to declaration
+  - `gi` - Go to implementation
+  - `gr` - Find references
+  - `K` - Hover documentation
+- **Actions:**
+  - `<space>rn` - Rename symbol
+  - `<space>ca` / `<space>cf` - Code actions
+  - `<space>f` - Format document (uses Prettier via conform.nvim)
+- **Diagnostics:**
+  - Shows both TypeScript errors AND ESLint rule violations
+  - Diagnostics appear only in normal mode (not while typing in insert mode)
+  - `<space>lo` - Open diagnostics list
+  - `]d` / `[d` - Next/prev diagnostic
+  - `<Esc>` / `<C-c>` - Close floating windows (hover, diagnostics, etc.)
+
+#### Formatting
+- Powered by **conform.nvim** with **Prettier**
+- Automatically finds and uses project's Prettier config (`.prettierrc`, `prettier.config.js`)
+- Uses project's `node_modules/.bin/prettier` if available, falls back to Mason-installed version
+- **Auto-format on save** for TypeScript, JavaScript, JSON, CSS, HTML, Markdown, YAML
+- **Manual format**: `<space>f` or `:Format`
+- Works even when opening files outside current working directory (auto-detects project root)
+- **Project root detection**: Walks up directory tree to find `package.json`, `.git`, etc.
+
+#### Mason (LSP Server Management)
+- **Automatic installation** of LSP servers and formatters on first Neovim startup
+- **Auto-installed tools**:
+  - `ts_ls` - TypeScript/JavaScript language server
+  - `eslint` - ESLint language server for linting diagnostics
+  - `prettier` - Code formatter
+- **UI**: Run `:Mason` to see installed tools, update them, or install additional ones
+- **Zero manual setup** - works out of the box on new machines
+- **Per-project versions respected**: If project has tools in `node_modules`, those are used instead
+
+#### Completion (IntelliSense)
+- Powered by nvim-cmp with LSP integration
+- **Popup opens automatically** as you type
+- **Navigation:**
+  - `<C-n>` / `<C-p>` - Next/previous completion item
+  - `<C-d>` / `<C-f>` - Scroll documentation up/down
+- **Accept completion:**
+  - `<Tab>` - Accept highlighted item (or first item if none selected)
+  - `<CR>` (Enter) - Accept only if explicitly selected
+- **Close popup:**
+  - `<C-e>` - Close completion menu (stays in insert mode)
+  - `<Esc>` - Close and exit insert mode
+- **Manual trigger:**
+  - `<C-Space>` - Manually trigger completion
+- Sources: LSP (highest priority), file paths, buffer words
+
 #### File Explorer
 - `1n` - Toggle file tree
 - `<space>nf` - Find file in tree
@@ -123,11 +181,17 @@ nvim/
 
 The configuration will auto-install lazy.nvim on first run in terminal Neovim.
 
-Required external tools:
+**Automatic installations** (no manual steps needed):
+- LSP servers (TypeScript, ESLint) - installed by Mason on first startup
+- Prettier formatter - installed by Mason on first startup
+- Neovim plugins - installed by lazy.nvim on first startup
+
+**Required external tools** (install via Homebrew or system package manager):
 - ripgrep (for fast grep)
 - fzf (for fuzzy finding)
 - bat (for syntax-highlighted previews in fzf)
 - git (for git integration)
+- Node.js (required for TypeScript/JavaScript LSP servers to run)
 
 ## Usage
 
@@ -141,12 +205,5 @@ VSCode/Cursor's built-in features are used for git, file finding, LSP, etc.
 ## Colorscheme
 
 Using **gruvbox** colorscheme (medium contrast, dark mode) - a warm retro theme matching the darktooth variant from dotfilesold.
-
-## Next Steps
-
-See `MIGRATION_PLAN.md` for:
-- LSP configuration
-- Completion setup
-- Advanced features
 
 
