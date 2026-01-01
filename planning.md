@@ -31,9 +31,15 @@ This document outlines the comprehensive planning strategy for rebuilding the do
 │   ├── git/                     # Git configuration
 │   └── karabiner/               # Keyboard customization
 └── zsh/                         # Modular Zsh configuration
-    ├── zshrc.home.zsh           # Links to ~/.zshrc
-    ├── zshprofile.home.zsh      # Links to ~/.zshprofile
-    └── ...                      # Other .home.zsh files
+    ├── zshrc.home.symlink       # Links to ~/.zshrc
+    ├── zshenv.home.symlink      # Links to ~/.zshenv
+    ├── zlogin.home.symlink      # Links to ~/.zlogin
+    ├── zshprofile.home.symlink  # Links to ~/.zshprofile
+    └── sources/                 # Modular configuration files
+        ├── env.zsh
+        ├── aliases.zsh
+        ├── completion.zsh
+        └── ...                  # Other sourceable files
 ```
 
 ## README.md Requirements

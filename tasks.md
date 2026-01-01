@@ -214,12 +214,12 @@
   - **Decision point**: Evaluate complexity vs benefits for personal use case
 
 ## 🔴 HIGH PRIORITY (Immediate)
-- [ ] **Refactor .home.zsh to .home.symlink.zsh for Consistency**
-  - **Issue**: `link_home_files` handles `*.home.zsh` and `*.home.symlink` inconsistently
-  - **Goal**: Make it simpler and consistent - use single pattern `*.home.symlink.*`
-  - **Action**: Rename all `*.home.zsh` files to `*.home.symlink.zsh`
-  - **Update**: Modify `installation/links.sh` to handle only `*.home.symlink.*` pattern
-  - **Benefit**: Single generic pattern instead of special-casing `.zsh` files
+- [x] **Refactor .home.zsh to .home.symlink for Consistency**
+  - **Issue**: `link_home_files` handled `*.home.zsh` and `*.home.symlink` inconsistently
+  - **Goal**: Make it simpler and consistent - use single pattern `*.home.symlink` (no extensions)
+  - **Action**: Renamed all `*.home.symlink.zsh` files to `*.home.symlink` and added shebangs
+  - **Update**: Modified `installation/links.sh` to handle simplified `*.home.symlink` pattern
+  - **Benefit**: Single generic pattern, shebangs provide editor recognition, cleaner filenames
 
 - [ ] **Auto-reload Buffers on External Changes**
   - [x] Added `checktime` on `FocusGained` and `BufEnter` events

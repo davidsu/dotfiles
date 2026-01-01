@@ -60,8 +60,8 @@ link_home_files() {
     local symlink_list
     symlink_list=$(mktemp)
 
-    # Find .home.symlink, .home.zsh, and .home.*.symlink files
-    find "$dotfiles_root" \( -name "*.home.symlink" -o -name "*.home.zsh" -o -name "*.home.*.symlink" \) -not -path "*/.git/*" > "$symlink_list"
+    # Find all .home.symlink files (unified pattern)
+    find "$dotfiles_root" -name "*.home.symlink*" -not -path "*/.git/*" > "$symlink_list"
 
     while read -r src; do
         [[ -z "$src" ]] && continue
@@ -69,25 +69,16 @@ link_home_files() {
         filename=$(basename "$src")
         local dest
 
-        # Count dots to determine pattern type
-        local dot_count=$(echo "$filename" | tr -cd '.' | wc -c)
-
-        # Pattern: filename.home.SUBDIR.symlink (3+ dots) -> ~/.SUBDIR/filename
-        if [[ $dot_count -ge 3 && "$filename" == *.home.*.symlink ]]; then
-            # Extract: everything before .home. is the base name
+        # Pattern: filename.home.SUBDIR.symlink -> ~/.SUBDIR/filename
+        if [[ "$filename" == *.home.*.symlink ]]; then
             local base_name="${filename%.home.*}"
-            # Extract: everything after .home. and before .symlink is the subdir
             local temp="${filename#*.home.}"
             local subdir="${temp%.symlink}"
             dest="${HOME}/.${subdir}/${base_name}"
-        # Pattern: filename.home.symlink (2 dots) -> ~/.filename
+        # Pattern: filename.home.symlink -> ~/.filename
         elif [[ "$filename" == *.home.symlink ]]; then
-            local target_name=".${filename%.home.symlink}"
-            dest="${HOME}/${target_name}"
-        # Pattern: filename.home.zsh (2 dots) -> ~/.filename
-        elif [[ "$filename" == *.home.zsh ]]; then
-            local target_name=".${filename%.home.zsh}"
-            dest="${HOME}/${target_name}"
+            local base_name="${filename%.home.symlink}"
+            dest="${HOME}/.${base_name}"
         fi
 
         if [[ -n "$dest" ]]; then

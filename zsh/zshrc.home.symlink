@@ -1,0 +1,18 @@
+#!/bin/zsh
+
+# Shortcut to dotfiles directory
+export DOTFILES="$HOME/.dotfiles"
+
+# reload zsh configuration
+function reload() {
+    # Source all .zsh files in the sources directory
+    for f in "$DOTFILES"/zsh/sources/*.zsh; do
+        source "$f"
+    done
+}
+
+# Initial load
+reload
+
+# Alias for manual reload
+alias a='reload'

@@ -45,7 +45,7 @@ The script will:
 ## Architecture
 
 - **`installation/`**: Contains the bootstrap and dependency management scripts.
-- **`zsh/`**: Modular Zsh configuration files (`env.zsh`, `aliases.zsh`, `completion.zsh`, etc.). Files ending in `.home.zsh` are symlinked to `$HOME` (e.g., `zshrc.home.zsh` -> `~/.zshrc`).
+- **`zsh/`**: Zsh configuration with entry point files (`*.home.symlink`) symlinked to `$HOME` (e.g., `zshrc.home.symlink` -> `~/.zshrc`). Modular configuration files are organized in `zsh/sources/` (e.g., `env.zsh`, `aliases.zsh`, `completion.zsh`, etc.).
 - **`config.home.symlink/`**: Configuration directory symlinked to `~/.config`.
 - **`tools.json`**: The single source of truth for all tools and dependencies.
 - **`planning.md`**: Detailed technical specification and project goals.
@@ -69,8 +69,8 @@ This dotfiles setup includes carefully selected tools for an efficient developme
 This setup includes several core Zsh optimizations and productivity helpers, organized in a modular structure within the `zsh/` directory:
 
 - **Modularity & Maintenance**:
-  - **Modular Files**: Config is split into `env.zsh`, `aliases.zsh`, `completion.zsh`, `keybindings.zsh`, `options.zsh`, and `tools.zsh`.
-  - **Easy Reloading**: Use the `reload` function or the `a` alias to instantly refresh your entire Zsh configuration.
+  - **Modular Files**: Config is split into `zsh/sources/env.zsh`, `zsh/sources/aliases.zsh`, `zsh/sources/completion.zsh`, `zsh/sources/keybindings.zsh`, `zsh/sources/options.zsh`, and `zsh/sources/tools.zsh`.
+  - **Easy Reloading**: Use the `reload` function or the `a` alias to instantly refresh your entire Zsh configuration by sourcing all files in `zsh/sources/`.
 - **Navigation**:
   - `auto_cd`: Change directory by simply typing its name
   - `jd`: Shortcut for `cd ~/.dotfiles`
