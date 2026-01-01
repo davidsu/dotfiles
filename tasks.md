@@ -226,11 +226,11 @@
   - **Status**: Implemented in `lua/core/options.lua`
   - **Purpose**: Prevent stale buffer views when files are modified externally (like git switching)
 
-- [ ] **Add `:Diagnostics` Command**
-  - **Implementation**: Create user command in `lua/core/keymaps.lua`
-  - **Command**: `:Diagnostics` → runs `:lua vim.diagnostic.setqflist()`
+- [x] **Add `:Diagnostics` Command**
+  - **Implementation**: Created user command in `lua/core/keymaps.lua`
+  - **Command**: `:Diagnostics` → runs `vim.diagnostic.setqflist()`
   - **Purpose**: Quick access to all file diagnostics in quickfix list (`:copen` to view)
-  - **Related**: Complements existing `<space>lo` keymap (buffer-specific diagnostics)
+  - **Related**: Complements existing `<space>lo` keymap (buffer-specific diagnostics via location list)
 
 - [ ] **Clean Coding Style: Refactor Long Functions in Neovim Config**
   - **Scope**: Review all Lua files in `~/.dotfiles/config.home.symlink/nvim/`

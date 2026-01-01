@@ -65,19 +65,6 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
--- Comment folding command
-local comment_folds_visible = true
-vim.api.nvim_create_user_command('FoldCommentsToggle', function()
-  local folding = require('utils.folding')
-  if comment_folds_visible then
-    folding.fold_comments_only()
-    comment_folds_visible = false
-  else
-    folding.unfold_comments_only()
-    comment_folds_visible = true
-  end
-end, { desc = 'Toggle fold state of comment blocks' })
-
 -- Load terminal-only keymaps
 if not env.is_vscode then
   require('core.keymaps_terminal')
