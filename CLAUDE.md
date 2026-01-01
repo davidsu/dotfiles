@@ -95,6 +95,12 @@ Update documentation and installation files IMMEDIATELY after implementing featu
 **Bad**: Making changes → Immediately running `git commit`
 **Good**: Making changes → Telling user "Changes are ready, let me know when you want to commit"
 
+**Commit messages** should be clean and focused on the work:
+- Write concise, descriptive commit messages
+- DO NOT include trailing footers like "Generated with Claude Code" or "Co-Authored-By" trailers
+- These footers add unnecessary noise to git history
+- Keep commit messages focused on the "what" and "why" of the change
+
 ### 8. Consider Error Handling and Edge Cases
 When implementing file-based features or persistent state, proactively think about failure modes:
 
