@@ -53,6 +53,7 @@ nvim/
 - Persistent undo
 - No swap/backup files
 - Ripgrep/ag integration
+- **Auto-save**: Files automatically save when focus is lost or switching windows (FocusLost, WinLeave)
 
 ### Universal Keymaps (All Environments)
 - `<space><space>` - Save file

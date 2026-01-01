@@ -94,6 +94,16 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
+-- Auto-save: write all modified buffers when focus is lost or switching windows
+-- This allows continuous saving without explicit :w commands
+-- Useful for pairing with git to track changes automatically
+vim.api.nvim_create_autocmd({ 'FocusLost', 'WinLeave' }, {
+  pattern = '*',
+  callback = function()
+    vim.cmd('silent! wa')
+  end,
+})
+
 -- Performance
 opt.updatetime = 300
 opt.timeoutlen = 500
