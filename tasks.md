@@ -213,6 +213,36 @@
     - Consider as intermediate step before Nix
   - **Decision point**: Evaluate complexity vs benefits for personal use case
 
+## 🔴 HIGH PRIORITY (Immediate)
+- [ ] **Auto-reload Buffers on External Changes**
+  - [x] Added `checktime` on `FocusGained` and `BufEnter` events
+  - **Status**: Implemented in `lua/core/options.lua`
+  - **Purpose**: Prevent stale buffer views when files are modified externally (like git switching)
+
+- [ ] **Add `:Diagnostics` Command**
+  - **Implementation**: Create user command in `lua/core/keymaps.lua`
+  - **Command**: `:Diagnostics` → runs `:lua vim.diagnostic.setqflist()`
+  - **Purpose**: Quick access to all file diagnostics in quickfix list (`:copen` to view)
+  - **Related**: Complements existing `<space>lo` keymap (buffer-specific diagnostics)
+
+- [ ] **Clean Coding Style: Refactor Long Functions in Neovim Config**
+  - **Scope**: Review all Lua files in `~/.dotfiles/config.home.symlink/nvim/`
+  - **Goal**: Identify functions exceeding ~20 lines and break them into smaller, composable functions
+  - **Rationale**: Improve readability and maintainability for others (and future you)
+  - **Files to review**: All in `lua/core/` and `lua/plugins/` directories
+  - **Success criteria**: Each function has a clear, single responsibility; code is self-documenting
+
+- [ ] **Refactor Keymaps: Move Autocmds Out**
+  - **Issue**: `lua/core/keymaps.lua` contains autocmds (FileType handlers) - should be separate
+  - **Action**: Create `lua/core/autocmds.lua` for all autocmds
+  - **Migrate**: FileType help/qf/fugitiveblame handler and any other autocmds
+  - **Reason**: Keymaps should only contain keymap definitions, not autocmds
+
+- [ ] **FoldComments Command Improvements**
+  - [x] Rename `FoldComments` → `FoldCommentsToggle`
+  - [x] Remove separate `UnfoldComments` command (merged into toggle)
+  - **Status**: Changes ready for review and commit
+
 ## Current Focus
 - **Starting Point**: Neovim Migration (Porting from `dotfilesold`)
 - **Methodology**: Analyze legacy file → Discuss tool/logic → implement modern version → test → document
