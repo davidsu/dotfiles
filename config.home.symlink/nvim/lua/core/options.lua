@@ -69,17 +69,12 @@ opt.foldlevelstart = 99  -- Start with all folds open
 
 -- Configure folding for specific filetypes
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact', 'tsx', 'jsx' },
+  pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact', 'tsx', 'jsx', 'lua' },
   callback = function()
-    -- Try TreeSitter folding first, fall back to syntax
-    local ok = pcall(function()
-      vim.opt_local.foldmethod = 'expr'
-      vim.opt_local.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
-    end)
-    if not ok then
-      -- Fall back to syntax-based folding
-      vim.opt_local.foldmethod = 'syntax'
-    end
+    -- Use custom fold expression that includes comments
+    local folding = require('utils.folding')
+    vim.opt_local.foldmethod = 'expr'
+    vim.opt_local.foldexpr = 'v:lua.require("utils.folding").foldexpr_with_comments()'
     vim.opt_local.foldenable = true
     vim.opt_local.foldlevelstart = 99
   end,
