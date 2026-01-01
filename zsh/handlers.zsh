@@ -1,24 +1,28 @@
 #!/bin/zsh
 
-# ZSH Command Not Found Handler
-# Documentation: man zsh (search for "command_not_found_handler")
-# This handler is called by ZSH when a command is not found (exit code 127)
-# Allows customization of the "command not found" behavior
-#
-# See also: man zshmisc for hook documentation
-# The handler should return 0 if it handles the error, or 127 if it doesn't
+# ZSH Preexec Hook: Open Files in Neovim
+# Documentation: man zshmisc (search for "add-zsh-hook")
+# This hook is called BEFORE any command is executed
+# Allows typing a filename directly to edit it (even with paths like config.home.symlink/ghostty/config)
 
-_command_not_found_handler() {
-  local cmd="$1"
+autoload -Uz add-zsh-hook
 
-  # If the argument is a file and NOT executable, open it in Neovim
-  # This allows typing a filename directly to edit it
-  if [[ -f "$cmd" && ! -x "$cmd" ]]; then
-    nvim "$cmd"
-    return $?
+_preexec_open_in_nvim() {
+  local cmd="$(echo -e "$1" | tr -d '[:space:]')"
+
+  # If command exists in PATH, let it execute normally (skip file checks)
+  if command -v "$cmd" > /dev/null 2>&1; then
+    return 1
   fi
 
-  # Not a file or is executable: show standard "command not found" error
-  echo "zsh: command not found: $cmd" >&2
-  return 127
+  # Command doesn't exist in PATH - check if it's a local file
+  if [[ -f "$cmd" && ! -x "$cmd" ]]; then
+    nvim "$cmd"
+    return 0
+  fi
+
+  # Not a file or is executable: allow normal command execution
+  return 1
 }
+
+add-zsh-hook preexec _preexec_open_in_nvim
