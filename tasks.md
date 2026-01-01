@@ -20,7 +20,7 @@
   - [x] **iterm2**: Keep. App management and profile syncing.
   - [x] **karabiner-elements**: Keep. Key mapping strategy.
   - [x] **rectangle**: Keep (replacing Spectacle). Window management.
-  - [x] **maccy**: Keep (chosen over Flycut). Clipboard management.
+  - [x] **maccy**: Removed. Using macOS Spotlight clipboard history instead (⌘+Space → ⌘+4).
   - [x] **zoxide**: Added (modern replacement for fasd)
     - **Decision**: Using zoxide for smart directory navigation with fzf integration
     - **Implementation**: Installed via tools.json, initialized in zsh/zoxide.zsh

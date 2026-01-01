@@ -95,7 +95,7 @@ This setup includes several core Zsh optimizations and productivity helpers, org
   - `chromebookmarks` or `cb` - Browse Chrome bookmarks
 - **Karabiner-Elements**: Powerful keyboard customization with Vim-style navigation and smart modifier keys
 - **Rectangle**: Window management with keyboard shortcuts for moving and resizing windows
-- **Maccy**: Lightweight clipboard manager for macOS
+- **macOS Spotlight**: Built-in clipboard history (⌘+Space → ⌘+4) with configurable retention (30 min, 8 hours, or 7 days)
 
 ### Container & Version Control
 - **Docker (Colima)**: Lightweight container runtime for development environments
