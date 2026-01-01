@@ -214,6 +214,13 @@
   - **Decision point**: Evaluate complexity vs benefits for personal use case
 
 ## 🔴 HIGH PRIORITY (Immediate)
+- [ ] **Refactor .home.zsh to .home.symlink.zsh for Consistency**
+  - **Issue**: `link_home_files` handles `*.home.zsh` and `*.home.symlink` inconsistently
+  - **Goal**: Make it simpler and consistent - use single pattern `*.home.symlink.*`
+  - **Action**: Rename all `*.home.zsh` files to `*.home.symlink.zsh`
+  - **Update**: Modify `installation/links.sh` to handle only `*.home.symlink.*` pattern
+  - **Benefit**: Single generic pattern instead of special-casing `.zsh` files
+
 - [ ] **Auto-reload Buffers on External Changes**
   - [x] Added `checktime` on `FocusGained` and `BufEnter` events
   - **Status**: Implemented in `lua/core/options.lua`

@@ -50,35 +50,50 @@ safe_link() {
     fi
 }
 
-# Function to find and link all .home.symlink and .home.zsh files in the repo
+# Function to find and link all .home.* files in the repo
 link_home_files() {
     local dotfiles_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
     local failed=0
-    log_info "Finding .home.symlink and .home.zsh files in $dotfiles_root..."
+    log_info "Finding .home.* files in $dotfiles_root..."
 
     # Use a temporary file to store the list of links to avoid subshell issues with 'while'
     local symlink_list
     symlink_list=$(mktemp)
-    
-    # Find both .home.symlink and .home.zsh files
-    find "$dotfiles_root" \( -name "*.home.symlink" -o -name "*.home.zsh" \) -not -path "*/.git/*" > "$symlink_list"
+
+    # Find .home.symlink, .home.zsh, and .home.*.symlink files
+    find "$dotfiles_root" \( -name "*.home.symlink" -o -name "*.home.zsh" -o -name "*.home.*.symlink" \) -not -path "*/.git/*" > "$symlink_list"
 
     while read -r src; do
         [[ -z "$src" ]] && continue
         local filename
         filename=$(basename "$src")
-        local target_name
-        
-        if [[ "$filename" == *.home.symlink ]]; then
-            target_name=".${filename%.home.symlink}"
-        elif [[ "$filename" == *.home.zsh ]]; then
-            target_name=".${filename%.home.zsh}"
-        fi
-        
-        local dest="${HOME}/${target_name}"
+        local dest
 
-        if ! safe_link "$src" "$dest"; then
-            failed=$((failed + 1))
+        # Count dots to determine pattern type
+        local dot_count=$(echo "$filename" | tr -cd '.' | wc -c)
+
+        # Pattern: filename.home.SUBDIR.symlink (3+ dots) -> ~/.SUBDIR/filename
+        if [[ $dot_count -ge 3 && "$filename" == *.home.*.symlink ]]; then
+            # Extract: everything before .home. is the base name
+            local base_name="${filename%.home.*}"
+            # Extract: everything after .home. and before .symlink is the subdir
+            local temp="${filename#*.home.}"
+            local subdir="${temp%.symlink}"
+            dest="${HOME}/.${subdir}/${base_name}"
+        # Pattern: filename.home.symlink (2 dots) -> ~/.filename
+        elif [[ "$filename" == *.home.symlink ]]; then
+            local target_name=".${filename%.home.symlink}"
+            dest="${HOME}/${target_name}"
+        # Pattern: filename.home.zsh (2 dots) -> ~/.filename
+        elif [[ "$filename" == *.home.zsh ]]; then
+            local target_name=".${filename%.home.zsh}"
+            dest="${HOME}/${target_name}"
+        fi
+
+        if [[ -n "$dest" ]]; then
+            if ! safe_link "$src" "$dest"; then
+                failed=$((failed + 1))
+            fi
         fi
     done < "$symlink_list"
     rm "$symlink_list"
