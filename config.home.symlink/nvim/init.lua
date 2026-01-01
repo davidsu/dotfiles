@@ -14,13 +14,16 @@ require('core.options')
 -- 3. Bootstrap lazy.nvim (all environments)
 require('core.lazy')
 
--- 4. Core keymaps (all environments)
+-- 4. Core autocmds (all environments)
+require('core.autocmds')
+
+-- 5. Core keymaps (all environments)
 require('core.keymaps')
 
--- 5. Core commands (all environments)
+-- 6. Core commands (all environments)
 require('core.commands')
 
--- 6. MRU tracking (terminal only)
+-- 7. MRU tracking (terminal only)
 if env.is_terminal then
   require('config.mru').setup()
 end

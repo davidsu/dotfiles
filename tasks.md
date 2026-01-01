@@ -239,11 +239,12 @@
   - **Files to review**: All in `lua/core/` and `lua/plugins/` directories
   - **Success criteria**: Each function has a clear, single responsibility; code is self-documenting
 
-- [ ] **Refactor Keymaps: Move Autocmds Out**
-  - **Issue**: `lua/core/keymaps.lua` contains autocmds (FileType handlers) - should be separate
-  - **Action**: Create `lua/core/autocmds.lua` for all autocmds
-  - **Migrate**: FileType help/qf/fugitiveblame handler and any other autocmds
+- [x] **Refactor Keymaps: Move Autocmds Out**
+  - **Issue**: `lua/core/keymaps.lua` contained autocmds (FileType handlers) - should be separate
+  - **Action**: Created `lua/core/autocmds.lua` for all autocmds
+  - **Migrated**: FileType help/qf/fugitiveblame handler moved to autocmds.lua
   - **Reason**: Keymaps should only contain keymap definitions, not autocmds
+  - **Update**: Added `require('core.autocmds')` to init.lua before keymaps
 
 - [ ] **FoldComments Command Improvements**
   - [x] Rename `FoldComments` → `FoldCommentsToggle`
