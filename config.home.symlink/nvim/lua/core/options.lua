@@ -61,11 +61,38 @@ opt.wildmenu = true              -- enhanced command line completion
 opt.wildmode = 'full'
 opt.wildignorecase = true        -- case-insensitive command-line completion and history
 
--- Folding (will be configured per-plugin later)
-opt.foldmethod = 'manual'
+-- Folding
+opt.foldmethod = 'manual'  -- Default to manual folding
 opt.foldnestmax = 10
-opt.foldenable = false
-opt.foldlevelstart = 99
+opt.foldenable = true
+opt.foldlevelstart = 99  -- Start with all folds open
+
+-- Configure folding for specific filetypes
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact', 'tsx', 'jsx' },
+  callback = function()
+    -- Try TreeSitter folding first, fall back to syntax
+    local ok = pcall(function()
+      vim.opt_local.foldmethod = 'expr'
+      vim.opt_local.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+    end)
+    if not ok then
+      -- Fall back to syntax-based folding
+      vim.opt_local.foldmethod = 'syntax'
+    end
+    vim.opt_local.foldenable = true
+    vim.opt_local.foldlevelstart = 99
+  end,
+})
+
+-- Markdown uses manual folding (for preview compatibility)
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'markdown' },
+  callback = function()
+    vim.opt_local.foldmethod = 'manual'
+    vim.opt_local.foldenable = false
+  end,
+})
 
 -- Performance
 opt.updatetime = 300

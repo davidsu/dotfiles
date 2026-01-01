@@ -28,6 +28,7 @@ nvim/
 │   │   ├── mason.lua          # LSP server/formatter auto-installer
 │   │   ├── mru.lua            # MRU plugin spec
 │   │   ├── tree.lua           # File explorer (nvim-tree)
+│   │   ├── treesitter.lua     # Syntax highlighting (TreeSitter)
 │   │   ├── statusline.lua     # Lualine statusline
 │   │   ├── ui.lua             # UI enhancements
 │   │   └── unimpaired.lua     # Bracket mappings and toggles
@@ -74,6 +75,14 @@ nvim/
 - **Command-line history**: `<C-p>` / `<C-n>` - Navigate command history (filtered by what you've typed, case-insensitive)
 
 ### Terminal-Only Features
+
+#### Syntax Highlighting (Treesitter)
+- **nvim-treesitter** - Advanced syntax highlighting and code understanding
+  - Provides accurate syntax highlighting (better than regex-based)
+  - Enables smart indentation based on code structure
+  - **Automatic installation**: Parsers for TypeScript, JavaScript, Lua, Markdown, JSON, HTML, CSS auto-install on first startup
+  - **Updating parsers**: Run `:TSUpdate` after upgrading nvim-treesitter
+- **Matchparen** (built-in) - Highlights matching bracket/parenthesis when cursor is over it
 
 #### Text Editing
 - vim-surround - Change/delete surroundings

@@ -21,9 +21,19 @@ map('v', '?', '?\\v', { desc = 'Search backward very magic' })
 map('v', '*', 'y/\\V<C-R>=escape(@","/\\")<CR><CR>', { desc = 'Search forward for selection' })
 map('v', '#', 'y?\\V<C-R>=escape(@","?\\")<CR><CR>', { desc = 'Search backward for selection' })
 
+-- Clear search highlights
+map('n', '<leader>hc', '<cmd>nohlsearch<cr>', { desc = 'Clear highlights', silent = true })
+map('n', '<Esc><Esc>', '<cmd>nohlsearch<cr>', { desc = 'Clear highlights', silent = true })
+
+-- Source/reload config
+map('n', '<leader>sc', '<cmd>source ~/.config/nvim/init.lua<cr>', { desc = 'Source config', silent = true })
+
 -- Substitute
 map('n', '\\s', ':%s/\\v', { desc = 'Substitute' })
 map('v', '\\s', ':s/\\v', { desc = 'Substitute selection' })
+
+-- Ripgrep search via FZF
+map('n', '\\r', ':Rg ', { desc = 'FZF Ripgrep search' })
 
 -- Blackhole register shortcuts
 map('n', '\\\\', '"_', { desc = 'Blackhole register' })

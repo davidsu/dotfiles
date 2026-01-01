@@ -31,11 +31,16 @@
       "brew_type": "formula",
       "description": "Cat clone with syntax highlighting; used by fzf for previews"
     },
+    "tree-sitter-cli": {
+      "type": "dependency",
+      "brew_type": "formula",
+      "description": "Tree-sitter CLI tool; required for nvim-treesitter to compile parser grammars"
+    },
     "neovim": {
       "type": "workflow",
       "brew_type": "formula",
       "cmd": "nvim",
-      "dependencies": ["cmake", "ninja", "gettext", "ripgrep", "fd", "bat"],
+      "dependencies": ["cmake", "ninja", "gettext", "ripgrep", "fd", "bat", "tree-sitter-cli"],
       "description": "Extensible text editor",
       "notes": "LSP servers (TypeScript, ESLint) and formatters (Prettier) are automatically installed by Mason when Neovim first opens. Per-project installations (via package.json) take precedence over Mason-installed versions."
     },
