@@ -28,6 +28,7 @@ return {
         ensure_installed = {
           'ts_ls',    -- TypeScript/JavaScript
           'eslint',   -- ESLint
+          'lua_ls',   -- Lua
         },
         -- Automatically install any server configured via lspconfig
         automatic_installation = true,

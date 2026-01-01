@@ -122,6 +122,39 @@ return {
       -- Enable ESLint language server
       vim.lsp.enable('eslint')
 
+      -- Configure Lua language server
+      vim.lsp.config('lua_ls', {
+        cmd = { 'lua-language-server' },
+        filetypes = { 'lua' },
+        root_markers = { '.luarc.json', '.luarc.jsonc', '.git' },
+        capabilities = capabilities,
+        settings = {
+          Lua = {
+            runtime = {
+              version = 'LuaJIT',
+            },
+            diagnostics = {
+              -- Suppress warnings for Neovim globals
+              globals = { 'vim', 'hs' },
+            },
+            workspace = {
+              -- Make language server aware of Neovim Lua API
+              library = {
+                vim.fn.expand('$VIMRUNTIME/lua'),
+                vim.fn.stdpath('config') .. '/lua',
+              },
+              checkThirdParty = false,
+            },
+            telemetry = {
+              enable = false,
+            },
+          },
+        },
+      })
+
+      -- Enable Lua language server
+      vim.lsp.enable('lua_ls')
+
       -- Note: Formatting on save is now handled by conform.nvim (see plugins/formatting.lua)
       -- ESLint provides diagnostics only, not formatting
     end,
