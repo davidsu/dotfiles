@@ -55,6 +55,14 @@ opt.backup = false
 opt.writebackup = false
 opt.swapfile = false
 
+-- Auto-reload buffer if file changed externally
+vim.api.nvim_create_autocmd({ 'FocusGained', 'BufEnter' }, {
+  pattern = '*',
+  callback = function()
+    vim.cmd('checktime')
+  end,
+})
+
 -- Completion
 opt.completeopt = { 'menu', 'menuone', 'noselect', 'longest' }
 opt.wildmenu = true              -- enhanced command line completion
