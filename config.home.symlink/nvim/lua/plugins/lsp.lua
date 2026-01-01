@@ -49,10 +49,10 @@ local function setup_lsp_keybindings()
       -- Diagnostics
       vim.keymap.set('n', '<space>lo', vim.diagnostic.setloclist, opts)
       vim.keymap.set('n', '[d', function()
-        vim.diagnostic.goto_prev({ wrap = false })
+        vim.diagnostic.jump({ count = -1, float = { border = 'rounded' } })
       end, opts)
       vim.keymap.set('n', ']d', function()
-        vim.diagnostic.goto_next({ wrap = false })
+        vim.diagnostic.jump({ count = 1, float = { border = 'rounded' } })
       end, opts)
 
       -- Formatting

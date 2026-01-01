@@ -3,7 +3,6 @@
 
 local env = require('core.env')
 local map = vim.keymap.set
-local opts = { silent = true, noremap = true }
 
 -- Save file
 map('n', '<space><space>', '<cmd>update<cr>', { desc = 'Save file', silent = true })

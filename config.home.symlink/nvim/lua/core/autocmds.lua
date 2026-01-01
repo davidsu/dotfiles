@@ -14,7 +14,6 @@ vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact', 'tsx', 'jsx', 'lua' },
   callback = function()
     -- Use custom fold expression that includes comments
-    local folding = require('utils.folding')
     vim.opt_local.foldmethod = 'expr'
     vim.opt_local.foldexpr = 'v:lua.require("utils.folding").foldexpr_with_comments()'
     vim.opt_local.foldenable = true
