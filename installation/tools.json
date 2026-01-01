@@ -34,6 +34,7 @@
     "tree-sitter-cli": {
       "type": "dependency",
       "brew_type": "formula",
+      "cmd": "tree-sitter",
       "description": "Tree-sitter CLI tool; required for nvim-treesitter to compile parser grammars"
     },
     "neovim": {
