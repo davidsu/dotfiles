@@ -35,7 +35,37 @@ Before suggesting GitHub repos, npm packages, or external resources:
 - Check they're still maintained
 - Find the actual canonical source
 
-### 5. Keep Documentation and Installation Script Updated
+### 5. MANDATORY: Read Local Documentation Before Neovim Implementation
+**CRITICAL BLOCKING REQUIREMENT**: Before implementing ANY Neovim feature or plugin configuration, you MUST read the relevant local documentation first.
+
+**For Neovim Plugins:**
+1. **BEFORE** implementing or configuring ANY plugin feature, read the plugin's local help files
+2. **Location**: `~/.local/share/nvim/lazy/<plugin-name>/`
+   - Help files: `doc/*.txt`
+   - README: `README.md`
+   - Source code: `lua/` (for defaults and examples)
+3. Use the Read tool to verify options, configuration format, and correct parameter names
+4. **Only after** reading local docs should you proceed with implementation
+
+**For Neovim Native Features:**
+1. **BEFORE** implementing ANY native Neovim feature (options, keymaps, autocommands, etc.), read Neovim's local documentation
+2. **Location**: Neovim runtime documentation
+   - Help files: Use `:help <topic>` or read from Neovim's help system
+   - Runtime docs: `/usr/local/share/nvim/runtime/doc/` (or similar)
+3. Verify correct API usage, option names, and function signatures from local docs
+
+**Why this is mandatory:**
+- Prevents using deprecated/wrong options (like `jump_to_single_result` vs `jump1`)
+- Ensures version compatibility with installed plugins
+- Faster and more accurate than web searches
+- Works offline
+
+**Only use web searches after reading local docs if:**
+- Local docs don't exist or are incomplete
+- You need clarification beyond what local docs provide
+- You're researching whether to add a NEW plugin (not yet installed)
+
+### 6. Keep Documentation and Installation Script Updated
 **CRITICAL**: Always update both documentation AND installation files when adding tools or features.
 
 **Documentation** - All `.md` files must remain up to date:
@@ -54,7 +84,7 @@ Before suggesting GitHub repos, npm packages, or external resources:
 
 Update documentation and installation files IMMEDIATELY after implementing features, not later.
 
-### 6. NEVER Commit Without User Approval
+### 7. NEVER Commit Without User Approval
 **CRITICAL**: Do NOT create commits unless explicitly told to by the user.
 
 - After making changes, STOP and let the user review
@@ -65,7 +95,7 @@ Update documentation and installation files IMMEDIATELY after implementing featu
 **Bad**: Making changes → Immediately running `git commit`
 **Good**: Making changes → Telling user "Changes are ready, let me know when you want to commit"
 
-### 7. Consider Error Handling and Edge Cases
+### 8. Consider Error Handling and Edge Cases
 When implementing file-based features or persistent state, proactively think about failure modes:
 
 **Common edge cases to consider:**

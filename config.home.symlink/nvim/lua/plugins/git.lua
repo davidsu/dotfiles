@@ -14,6 +14,7 @@ return {
     cmd = { 'Git', 'Gread', 'Gwrite', 'Gdiffsplit', 'Gvdiffsplit' },
     keys = {
       { '<space>gs', '<cmd>Git<cr>', desc = 'Git status' },
+      { 'gs', '<cmd>Git<cr>', desc = 'Git status' },
       { '<space>gd', '<cmd>Gdiffsplit<cr>', desc = 'Git diff' },
       { 'gb', '<cmd>Git blame<cr>', desc = 'Git blame' },
     },

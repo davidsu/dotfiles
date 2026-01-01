@@ -104,7 +104,7 @@ nvim/
   - `<space>hr` - Reset hunk
   - `<space>hu` - Undo stage hunk
   - `<space>hp` - Preview hunk
-  - `<space>gs` - Git status
+  - `<space>gs` / `gs` - Git status
   - `<space>gd` - Git diff
   - `gb` - Git blame
 
@@ -116,9 +116,12 @@ nvim/
 - `<space>fh` / `1:` / `1;` - Command history
 - `1/` - Search history
 - `\a` - Ripgrep search (fullscreen with syntax-highlighted preview via bat)
+- `\r` - FZF Ripgrep search (interactive)
 - `\c` - Browse all available Vim commands
 - `\<tab>` - Search all keybindings/keyboard shortcuts
 - `1m` - MRU (Most Recently Used) files (fullscreen, preview on top)
+- `<space>fu` - Find usages (LSP references with preview, powered by fzf-lua)
+- `<space>fq` - Browse quickfix list with preview
 
 #### MRU (Most Recently Used Files)
 - Automatically tracks every file you open with exact cursor position
@@ -135,7 +138,8 @@ nvim/
   - `<space>cd` / `gd` - Go to definition
   - `gD` - Go to declaration
   - `gi` - Go to implementation
-  - `gr` - Find references
+  - `gr` - Find references (populates quickfix)
+  - `<space>fu` - Find usages (LSP references with FZF preview)
   - `K` - Hover documentation
 - **Actions:**
   - `<space>rn` - Rename symbol
