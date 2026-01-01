@@ -137,7 +137,7 @@ nvim/
 - Native Neovim LSP with **TypeScript** and **ESLint** support
 - **Navigation:**
   - `<space>cd` / `gd` - Go to definition
-  - `gD` - Go to declaration
+  - `gD` - Go to type definition
   - `gi` - Go to implementation
   - `gr` - Find references (populates quickfix)
   - `<space>fu` - Find usages (LSP references with FZF preview)
