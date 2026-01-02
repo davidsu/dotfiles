@@ -5,7 +5,7 @@ alias jd='cd $DOTFILES'
 alias jp='cd ~/projects'
 
 # Global Aliases
-alias -g G='| grep'
+alias -g G='| grep -i'
 alias -g V=' > /tmp/t && nvim /tmp/t -c '\''nmap q :q!<cr>'\'''
 
 # ls (BSD/macOS): colorized output + classify + one entry per line
