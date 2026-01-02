@@ -24,6 +24,13 @@
   - Only expose what's necessary
   - Internal helpers should be separate from public functions
 
+- **Structure and Organization**
+  - Define functions and configuration logic before return/export statements
+  - Keep return/export blocks clean by referencing named functions rather than inline definitions
+  - Separate declaration (function definitions) from usage (return/export statements)
+  - Extract inline configuration functions into named functions defined above the return/export
+  - This improves readability and makes the module's public interface immediately clear
+
 - **Minimize Boilerplate**
   - Reduce unnecessary ceremony
   - Use idiomatic language features (return early, compact conditionals, etc.)
