@@ -1,61 +1,65 @@
 -- Treesitter Configuration
 -- Provides advanced syntax highlighting and code understanding
+local function config()
+  require('nvim-treesitter.configs').setup({
+    -- Ensure installed parsers for commonly used languages
+    ensure_installed = {
+      'tsx',
+      'typescript',
+      'javascript',
+      'lua',
+      'markdown',
+      'markdown_inline',
+      'json',
+      'html',
+      'css',
+    },
 
+    -- Enable highlighting
+    highlight = {
+      enable = true,
+    },
+
+    -- Enable indentation
+    indent = {
+      enable = true,
+    },
+
+    -- Configure textobjects
+    textobjects = {
+      select = {
+        enable = true,
+        lookahead = true,     -- Automatically jump forward to textobj
+        keymaps = {
+          -- Functions
+          ['af'] = '@function.outer',
+          ['if'] = '@function.inner',
+          -- Classes
+          ['ac'] = '@class.outer',
+          ['ic'] = '@class.inner',
+          -- Conditionals
+          ['ai'] = '@conditional.outer',
+          ['ii'] = '@conditional.inner',
+          -- Loops
+          ['al'] = '@loop.outer',
+          ['il'] = '@loop.inner',
+          -- Parameters/arguments
+          ['aa'] = '@parameter.outer',
+          ['ia'] = '@parameter.inner',
+        },
+      },
+    },
+  })
+end
 return {
   {
     'nvim-treesitter/nvim-treesitter',
+    branch = 'master', -- Use stable master branch for compatibility with textobjects
     build = ':TSUpdate',
-    lazy = false,  -- This plugin does not support lazy-loading
-    config = function()
-      -- Automatically install parsers for commonly used languages
-      require('nvim-treesitter').install {
-        'tsx',
-        'typescript',
-        'javascript',
-        'lua',
-        'markdown',
-        'markdown_inline',
-        'json',
-        'html',
-        'css',
-      }
-
-      -- Enable treesitter highlighting for supported filetypes (if parser is available)
-      vim.api.nvim_create_autocmd('FileType', {
-        pattern = {
-          'typescript',
-          'typescriptreact',
-          'javascript',
-          'javascriptreact',
-          'lua',
-          'markdown',
-          'json',
-          'html',
-          'css',
-        },
-        callback = function()
-          -- Only start treesitter if parser is available
-          local ok = pcall(vim.treesitter.start)
-          if not ok then
-            -- Parser not installed, silently fall back to default syntax
-            return
-          end
-        end,
-      })
-
-      -- Enable treesitter-based indentation (experimental)
-      vim.api.nvim_create_autocmd('FileType', {
-        pattern = {
-          'typescript',
-          'typescriptreact',
-          'javascript',
-          'javascriptreact',
-          'lua',
-        },
-        callback = function()
-          vim.bo.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
-        end,
-      })
-    end,
+    lazy = false,      -- This plugin does not support lazy-loading
+    dependencies = {
+      'nvim-treesitter/nvim-treesitter-textobjects',
+    },
+    config = config,
   },
 }
