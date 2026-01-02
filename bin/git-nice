@@ -1,0 +1,11 @@
+args=$@
+if [[ $@ == *'-- '* ]]; then
+  args=$(sed 's/-- .*//' <<< $@)
+  paths=' -- '$(sed 's/.*-- //' <<< $@)
+fi
+args=$(perl -pe "s#(--author=)(.*?\$)#\1\'\2\'#" <<< $args)
+# echo args: $args
+# echo paths: $paths
+command="git log --color=always $args --pretty='%C(auto,yellow)%h%d %Creset %s %C(auto,blue) %cd %C(auto,green) (%an)' --date=short $paths"
+# echo $command
+eval $command
