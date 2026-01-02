@@ -29,6 +29,7 @@ return {
           'ts_ls',    -- TypeScript/JavaScript
           'eslint',   -- ESLint
           'lua_ls',   -- Lua
+          'bashls',   -- Bash/Zsh
         },
         -- Automatically install any server configured via lspconfig
         automatic_installation = true,

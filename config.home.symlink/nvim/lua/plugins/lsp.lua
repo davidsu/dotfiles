@@ -74,6 +74,14 @@ local function setup_lsp_keybindings()
 
       vim.keymap.set('n', '<C-c>', close_floats, opts)
       vim.keymap.set('n', '<Esc>', close_floats, opts)
+
+      -- Enable LSP folding if the client supports it
+      if client:supports_method('textDocument/foldingRange') then
+        vim.opt_local.foldmethod = 'expr'
+        vim.opt_local.foldexpr = 'v:lua.vim.lsp.foldexpr()'
+        vim.opt_local.foldenable = true
+        vim.opt_local.foldlevelstart = 99
+      end
     end,
   })
 end
@@ -156,6 +164,16 @@ local function setup_lua_lsp(capabilities)
   vim.lsp.enable('lua_ls')
 end
 
+local function setup_bash_lsp(capabilities)
+  vim.lsp.config('bashls', {
+    cmd = { 'bash-language-server', 'start' },
+    filetypes = { 'sh', 'bash', 'zsh' },
+    root_markers = { '.git' },
+    capabilities = capabilities,
+  })
+  vim.lsp.enable('bashls')
+end
+
 return {
   {
     'neovim/nvim-lspconfig',
@@ -169,6 +187,7 @@ return {
       setup_typescript_lsp(capabilities)
       setup_eslint_lsp(capabilities)
       setup_lua_lsp(capabilities)
+      setup_bash_lsp(capabilities)
     end,
   },
 }

@@ -9,18 +9,6 @@ vim.api.nvim_create_autocmd({ 'FocusGained', 'BufEnter' }, {
   end,
 })
 
--- Configure folding for specific filetypes
-vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact', 'tsx', 'jsx', 'lua' },
-  callback = function()
-    -- Use custom fold expression that includes comments
-    vim.opt_local.foldmethod = 'expr'
-    vim.opt_local.foldexpr = 'v:lua.require("utils.folding").foldexpr_with_comments()'
-    vim.opt_local.foldenable = true
-    vim.opt_local.foldlevelstart = 99
-  end,
-})
-
 -- Markdown uses manual folding (for preview compatibility)
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'markdown' },
