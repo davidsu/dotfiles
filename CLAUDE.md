@@ -18,6 +18,30 @@ When user asks a question, **answer the question** - don't implement anything un
 **Bad**: User asks "what colorscheme did I use?" → You immediately add a colorscheme plugin
 **Good**: User asks "what colorscheme did I use?" → You check dotfilesold and tell them
 
+### 2. Lua Module Pattern: Avoid the `M` Pattern
+
+**CRITICAL**: Do NOT use the `local M = {}` pattern for Lua modules in this codebase.
+
+**Bad** - Using M pattern:
+```lua
+local M = {}
+function M.foo() end
+function M.bar() end
+return M
+```
+
+**Good** - Direct module return:
+```lua
+local function foo() end
+local function bar() end
+return { foo = foo, bar = bar }
+```
+
+**Why:**
+- More explicit and readable
+- Follows the coding style guideline of separating declaration from export
+- Makes the public API immediately clear at the bottom of the file
+
 ### 3. Ask User to Help Debug
 
 When encountering visual/UI issues you can't diagnose from code alone, ask user to run diagnostic commands:
