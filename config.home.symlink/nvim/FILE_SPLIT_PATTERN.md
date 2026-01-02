@@ -49,19 +49,20 @@ opt.number = true         -- Show line numbers in terminal
 opt.laststatus = 2        -- Show statusbar in terminal
 ```
 
-### Core: keymaps.lua + keymaps_terminal.lua
+### Core: keymaps.lua (unified with early return)
 
 ```lua
--- keymaps.lua (base)
-map('n', '<C-h>', '<cmd>wincmd h<cr>')  -- Works in both
+-- keymaps.lua
+-- VSCode-compatible keymaps (hoisted to top)
+map('n', '<space><space>', '<cmd>update<cr>', { desc = 'Save file' })
+map('n', 'j', 'gj', { silent = true })
 
-if not env.is_vscode then
-  require('core.keymaps_terminal')  -- Note: underscore, not dot
+-- Terminal-only keymaps (skip in VSCode)
+if env.is_vscode then
+  return
 end
-```
 
-```lua
--- keymaps_terminal.lua
+map('n', '<C-h>', '<cmd>wincmd h<cr>', { desc = 'Move to left window' })
 map('n', 'gh', function() win_utils.win_move('h') end)  -- Terminal-only
 map('n', '+', function() win_utils.win_size('+') end)   -- Terminal-only
 ```
@@ -94,7 +95,7 @@ return {
 
 ### Core Files
 - ✅ `options.lua` + `options_terminal.lua`
-- ✅ `keymaps.lua` + `keymaps_terminal.lua`
+- ✅ `keymaps.lua` (unified with early return)
 - `env.lua` - No split needed (just detection)
 - `lazy.lua` - No split needed (plugin manager bootstrap)
 
