@@ -97,9 +97,6 @@ end
 
 local function setup_typescript_lsp(capabilities)
   vim.lsp.config('ts_ls', {
-    cmd = { 'typescript-language-server', '--stdio' },
-    filetypes = { 'javascript', 'javascriptreact', 'typescript', 'typescriptreact' },
-    root_markers = { 'tsconfig.json', 'package.json', 'jsconfig.json', '.git' },
     capabilities = capabilities,
     settings = {
       typescript = {
@@ -122,9 +119,6 @@ end
 
 local function setup_eslint_lsp(capabilities)
   vim.lsp.config('eslint', {
-    cmd = { 'vscode-eslint-language-server', '--stdio' },
-    filetypes = { 'javascript', 'javascriptreact', 'typescript', 'typescriptreact' },
-    root_markers = { '.eslintrc.js', '.eslintrc.cjs', '.eslintrc.json', 'eslint.config.js', 'package.json', '.git' },
     capabilities = capabilities,
     settings = {
       format = false,
@@ -136,9 +130,6 @@ end
 
 local function setup_lua_lsp(capabilities)
   vim.lsp.config('lua_ls', {
-    cmd = { 'lua-language-server' },
-    filetypes = { 'lua' },
-    root_markers = { '.luarc.json', '.luarc.jsonc', '.git' },
     capabilities = capabilities,
     settings = {
       Lua = {
@@ -166,9 +157,6 @@ end
 
 local function setup_bash_lsp(capabilities)
   vim.lsp.config('bashls', {
-    cmd = { 'bash-language-server', 'start' },
-    filetypes = { 'sh', 'bash', 'zsh' },
-    root_markers = { '.git' },
     capabilities = capabilities,
   })
   vim.lsp.enable('bashls')
