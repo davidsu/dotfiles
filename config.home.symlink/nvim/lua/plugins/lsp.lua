@@ -1,182 +1,161 @@
 -- LSP Configuration
 -- Native Neovim Language Server Protocol support
 
-local function setup_diagnostics()
-  vim.diagnostic.config({
-    virtual_text = false,
-    signs = {
-      text = {
-        [vim.diagnostic.severity.ERROR] = '✖',
-        [vim.diagnostic.severity.WARN] = '⚠',
-        [vim.diagnostic.severity.HINT] = '💡',
-        [vim.diagnostic.severity.INFO] = 'ℹ',
-      },
+local diagnostic_config = {
+  virtual_text = false,
+  signs = {
+    text = {
+      [vim.diagnostic.severity.ERROR] = '✖',
+      [vim.diagnostic.severity.WARN] = '⚠',
+      [vim.diagnostic.severity.HINT] = '💡',
+      [vim.diagnostic.severity.INFO] = 'ℹ',
     },
-    underline = true,
-    update_in_insert = false,
-    severity_sort = true,
-  })
+  },
+  underline = true,
+  update_in_insert = false,
+  severity_sort = true,
+}
 
+local function setup_diagnostics()
+  vim.diagnostic.config(diagnostic_config)
   vim.api.nvim_create_autocmd('CursorHold', {
     callback = require('utils.diagnostics').show_diagnostic_at_cursor,
   })
 end
 
+local function close_floating_windows()
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local config = vim.api.nvim_win_get_config(win)
+    if config.relative ~= '' then
+      vim.api.nvim_win_close(win, false)
+    end
+  end
+end
+
+local function jump_to_prev_diagnostic()
+  vim.diagnostic.jump({ count = -1, float = { border = 'rounded' } })
+end
+
+local function jump_to_next_diagnostic()
+  vim.diagnostic.jump({ count = 1, float = { border = 'rounded' } })
+end
+
+local function setup_lsp_folding(client)
+  if client:supports_method('textDocument/foldingRange') then
+    vim.opt_local.foldmethod = 'expr'
+    vim.opt_local.foldexpr = 'v:lua.vim.lsp.foldexpr()'
+    vim.opt_local.foldenable = true
+    vim.opt_local.foldlevelstart = 99
+  end
+end
+
+local function on_lsp_attach(args)
+  local client = vim.lsp.get_client_by_id(args.data.client_id)
+  if not client then
+    return
+  end
+
+  local bufnr = args.buf
+  local opts = { buffer = bufnr, silent = true }
+
+  vim.keymap.set('n', '<space>cd', vim.lsp.buf.definition, opts)
+  vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+  vim.keymap.set('n', 'gD', vim.lsp.buf.type_definition, opts)
+  vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
+  vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
+  vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+  vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, opts)
+  vim.keymap.set({ 'n', 'x' }, '<space>ca', vim.lsp.buf.code_action, opts)
+  vim.keymap.set('n', '<space>cf', vim.lsp.buf.code_action, opts)
+  vim.keymap.set('n', '<space>lo', vim.diagnostic.setloclist, opts)
+  vim.keymap.set('n', '[d', jump_to_prev_diagnostic, opts)
+  vim.keymap.set('n', ']d', jump_to_next_diagnostic, opts)
+
+  if client:supports_method('textDocument/formatting') then
+    vim.keymap.set('n', '<space>f', function()
+      vim.lsp.buf.format({ async = true })
+    end, opts)
+  end
+
+  vim.keymap.set('n', '<C-c>', close_floating_windows, opts)
+  vim.keymap.set('n', '<Esc>', close_floating_windows, opts)
+
+  setup_lsp_folding(client)
+end
+
 local function setup_lsp_keybindings()
   vim.api.nvim_create_autocmd('LspAttach', {
-    callback = function(args)
-      local client = vim.lsp.get_client_by_id(args.data.client_id)
-      if not client then
-        return
-      end
-
-      local bufnr = args.buf
-      local opts = { buffer = bufnr, silent = true }
-
-      -- Navigation
-      vim.keymap.set('n', '<space>cd', vim.lsp.buf.definition, opts)
-      vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
-      vim.keymap.set('n', 'gD', vim.lsp.buf.type_definition, opts)
-      vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
-      vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
-      vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
-
-      -- Actions
-      vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, opts)
-      vim.keymap.set({ 'n', 'x' }, '<space>ca', vim.lsp.buf.code_action, opts)
-      vim.keymap.set('n', '<space>cf', vim.lsp.buf.code_action, opts)
-
-      -- Diagnostics
-      vim.keymap.set('n', '<space>lo', vim.diagnostic.setloclist, opts)
-      vim.keymap.set('n', '[d', function()
-        vim.diagnostic.jump({ count = -1, float = { border = 'rounded' } })
-      end, opts)
-      vim.keymap.set('n', ']d', function()
-        vim.diagnostic.jump({ count = 1, float = { border = 'rounded' } })
-      end, opts)
-
-      -- Formatting
-      if client:supports_method('textDocument/formatting') then
-        vim.keymap.set('n', '<space>f', function()
-          vim.lsp.buf.format({ async = true })
-        end, opts)
-      end
-
-      -- Close floating windows
-      local close_floats = function()
-        for _, win in ipairs(vim.api.nvim_list_wins()) do
-          local config = vim.api.nvim_win_get_config(win)
-          if config.relative ~= '' then
-            vim.api.nvim_win_close(win, false)
-          end
-        end
-      end
-
-      vim.keymap.set('n', '<C-c>', close_floats, opts)
-      vim.keymap.set('n', '<Esc>', close_floats, opts)
-
-      -- Enable LSP folding if the client supports it
-      if client:supports_method('textDocument/foldingRange') then
-        vim.opt_local.foldmethod = 'expr'
-        vim.opt_local.foldexpr = 'v:lua.vim.lsp.foldexpr()'
-        vim.opt_local.foldenable = true
-        vim.opt_local.foldlevelstart = 99
-      end
-    end,
+    callback = on_lsp_attach,
   })
 end
 
-local function get_capabilities()
-  local capabilities = vim.lsp.protocol.make_client_capabilities()
-  local has_cmp, cmp_nvim_lsp = pcall(require, 'cmp_nvim_lsp')
-  if has_cmp then
-    capabilities = cmp_nvim_lsp.default_capabilities(capabilities)
-  end
-  return capabilities
-end
-
-local function setup_typescript_lsp(capabilities)
-  vim.lsp.config('ts_ls', {
-    capabilities = capabilities,
-    settings = {
-      typescript = {
-        suggest = {
-          includeCompletionsForImportStatements = true,
-        },
-        preferences = {
-          importModuleSpecifier = 'relative',
-        },
-      },
-      javascript = {
-        suggestionActions = {
-          enabled = true,
-        },
-      },
+local typescript_settings = {
+  typescript = {
+    suggest = {
+      includeCompletionsForImportStatements = true,
     },
-  })
-  vim.lsp.enable('ts_ls')
-end
-
-local function setup_eslint_lsp(capabilities)
-  vim.lsp.config('eslint', {
-    capabilities = capabilities,
-    settings = {
-      format = false,
-      run = 'onType',
+    preferences = {
+      importModuleSpecifier = 'relative',
     },
-  })
-  vim.lsp.enable('eslint')
-end
+  },
+  javascript = {
+    suggestionActions = {
+      enabled = true,
+    },
+  },
+}
 
-local function setup_lua_lsp(capabilities)
-  vim.lsp.config('lua_ls', {
-    capabilities = capabilities,
-    settings = {
-      Lua = {
-        runtime = {
-          version = 'LuaJIT',
-        },
-        diagnostics = {
-          globals = { 'vim', 'hs' },
-        },
-        workspace = {
-          library = {
-            vim.fn.expand('$VIMRUNTIME/lua'),
-            vim.fn.stdpath('config') .. '/lua',
-          },
-          checkThirdParty = false,
-        },
-        telemetry = {
-          enable = false,
-        },
+local eslint_settings = {
+  format = false,
+  run = 'onType',
+}
+
+local lua_settings = {
+  Lua = {
+    runtime = {
+      version = 'LuaJIT',
+    },
+    diagnostics = {
+      globals = { 'vim', 'hs' },
+    },
+    workspace = {
+      library = {
+        vim.fn.expand('$VIMRUNTIME/lua'),
+        vim.fn.stdpath('config') .. '/lua',
       },
+      checkThirdParty = false,
     },
-  })
-  vim.lsp.enable('lua_ls')
+    telemetry = {
+      enable = false,
+    },
+  },
+}
+
+local bashls_filetypes = { 'sh', 'bash', 'zsh' }
+
+local function setup_lsp(server_name, config)
+  vim.lsp.config(server_name, config)
+  vim.lsp.enable(server_name)
 end
 
-local function setup_bash_lsp(capabilities)
-  vim.lsp.config('bashls', {
-    capabilities = capabilities,
-    filetypes = { 'sh', 'bash', 'zsh' },
-  })
-  vim.lsp.enable('bashls')
+local function config()
+  setup_diagnostics()
+  setup_lsp_keybindings()
+
+  local capabilities = require('cmp_nvim_lsp').default_capabilities()
+
+  setup_lsp('ts_ls', { capabilities = capabilities, settings = typescript_settings })
+  setup_lsp('eslint', { capabilities = capabilities, settings = eslint_settings })
+  setup_lsp('lua_ls', { capabilities = capabilities, settings = lua_settings })
+  setup_lsp('bashls', { capabilities = capabilities, filetypes = bashls_filetypes })
 end
+
+local lspconfig = {
+  'neovim/nvim-lspconfig',
+  event = { 'BufReadPre', 'BufNewFile' },
+  config = config,
+}
 
 return {
-  {
-    'neovim/nvim-lspconfig',
-    event = { 'BufReadPre', 'BufNewFile' },
-    config = function()
-      setup_diagnostics()
-      setup_lsp_keybindings()
-
-      local capabilities = get_capabilities()
-
-      setup_typescript_lsp(capabilities)
-      setup_eslint_lsp(capabilities)
-      setup_lua_lsp(capabilities)
-      setup_bash_lsp(capabilities)
-    end,
-  },
+  lspconfig,
 }

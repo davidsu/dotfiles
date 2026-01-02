@@ -35,3 +35,9 @@
   - Reduce unnecessary ceremony
   - Use idiomatic language features (return early, compact conditionals, etc.)
   - Don't add comments to obviously simple code
+
+- **Prefer Directness**
+  - Add parameters instead of creating higher-order functions or closures
+  - Explicit parameters over captured variables
+  - Avoid over-nesting functions, objects, or data structures
+  - Clear data flow (inputs → function → outputs)
