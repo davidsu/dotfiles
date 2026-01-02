@@ -6,35 +6,22 @@
 function fag() {
     local fzfretval filename linenum
 
-    # Use ripgrep to search, pipe to fzf with preview
-    # Preview command extracts filename and line number, then uses bat to show with highlight
-    fzfretval=$(rg --column --line-number --no-heading --color=always --smart-case "$@" | \
-        fzf --ansi \
-            --multi \
+    fzfretval=$(rg --line-number --column --color=always --smart-case "$@" | \
+        fzf --multi \
+            --ansi \
             --delimiter ':' \
-            --preview 'bash -c "
-                # Extract filename and line number from the selected line
-                file=\$(echo {} | cut -d: -f1)
-                line=\$(echo {} | cut -d: -f2)
-                # Show file with bat, highlighting the matched line with improved styling
-                bat --style=numbers,grid --color=always \
-                    --highlight-line \$line \
-                    --terminal-width \$FZF_PREVIEW_COLUMNS \
-                    \$file
-            "' \
-            --preview-window 'top:50%:wrap:+{2}-/2' \
-            --bind 'ctrl-/:toggle-preview' \
+            --preview '$HOME/.dotfiles/bin/preview.sh {}' \
+            --preview-window 'top:50%:+{2}-/2' \
             --bind 'ctrl-a:select-all' \
             --bind 'ctrl-s:toggle-sort' \
+            --bind 'ctrl-/:toggle-preview' \
             --header 'CTRL-a: select-all | CTRL-s: toggle sort | CTRL-/: toggle preview')
 
-    # Parse filename and line number from fzf output
     if [[ -n "$fzfretval" ]]; then
-        # Extract first result (filename:linenum:content)
+        # Extract filename:linenum from first result (format: file:line:col:content)
         IFS=: read -r filename linenum _ <<< "$fzfretval"
 
         if [[ -f "$filename" ]]; then
-            # Open in nvim at the specific line
             nvim "+${linenum}" "$filename"
         fi
     fi
@@ -82,29 +69,21 @@ function mru() {
         return 1
     fi
 
-    local fzfresult
+    local fzfresult filepath linenum column
+
     # Filter out fugitive:// URIs and other non-file entries
     fzfresult=$(grep -v '^fugitive://' "$MRU_FILE" | \
         fzf --no-sort \
             --exact \
             --delimiter ':' \
-            --preview 'bash -c "
-                file=\$(echo {} | cut -d: -f1)
-                line=\$(echo {} | cut -d: -f2)
-                # Use bat with improved styling for better line highlight visibility
-                bat --style=numbers,grid --color=always \
-                    --highlight-line \$line \
-                    --terminal-width \$FZF_PREVIEW_COLUMNS \
-                    \$file
-            "' \
-            --preview-window 'top:50%:wrap:+{2}-/2' \
+            --preview '$HOME/.dotfiles/bin/preview.sh {}' \
+            --preview-window 'top:50%:+{2}-/2' \
             --bind 'ctrl-s:toggle-sort' \
             --bind 'ctrl-/:toggle-preview' \
             --header 'CTRL-s: toggle sort | CTRL-/: toggle preview' \
             --prompt 'MRU> ')
 
     if [[ -n "$fzfresult" ]]; then
-        local filepath linenum column
         IFS=: read -r filepath linenum column <<< "$fzfresult"
 
         if [[ -f "$filepath" ]]; then
@@ -289,7 +268,7 @@ function fa() {
 
     filename=$(find . -type f 2>/dev/null | \
         fzf --exact \
-            --preview 'bat --style=numbers --color=always {}' \
+            --preview '$HOME/.dotfiles/bin/preview.sh {}' \
             --preview-window 'top:50%' \
             --header 'Enter: open in nvim | CTRL-s: toggle sort | CTRL-/: toggle preview' \
             --bind 'ctrl-s:toggle-sort' \
