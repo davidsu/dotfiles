@@ -56,7 +56,6 @@ local function write_mru_entries(entries)
   pcall(function()
     local file = io.open(mru_file, 'w')
     if file then
-      -- Limit to 100 entries
       for i = 1, math.min(#entries, 100) do
         file:write(entries[i] .. '\n')
       end
@@ -106,6 +105,16 @@ local function parse_mru_entry(entry)
   return nil, nil, nil
 end
 
+local function open_mru_file(selected)
+  if not selected or #selected == 0 then return end
+  local filepath, line, col = parse_mru_entry(selected[1])
+  if filepath then
+    vim.cmd('edit ' .. filepath)
+    vim.api.nvim_win_set_cursor(0, {line, col - 1})
+    vim.cmd('normal! zz')
+  end
+end
+
 local function show_mru_with_fzf_lua()
   local fzf_lua_ok, fzf_lua = pcall(require, 'fzf-lua')
   if not fzf_lua_ok then return false end
@@ -115,15 +124,7 @@ local function show_mru_with_fzf_lua()
     winopts = { fullscreen = true, preview = { layout = 'vertical', vertical = 'up:50%' } },
     previewer = 'builtin',
     actions = {
-      ['default'] = function(selected)
-        if not selected or #selected == 0 then return end
-        local filepath, line, col = parse_mru_entry(selected[1])
-        if filepath then
-          vim.cmd('edit ' .. filepath)
-          vim.api.nvim_win_set_cursor(0, {line, col - 1})
-          vim.cmd('normal! zz')
-        end
-      end
+      ['default'] = open_mru_file
     }
   })
   return true
@@ -139,24 +140,26 @@ local function show_mru()
   end
 end
 
+local function on_buffer_open(args)
+  save_mru(args.buf, false)
+end
+
+local function on_buffer_update(args)
+  save_mru(args.buf, true)
+end
+
 local function setup()
   vim.fn.mkdir(vim.fn.fnamemodify(mru_file, ':h'), 'p')
   local group = vim.api.nvim_create_augroup('MRU', { clear = true })
 
-  -- On open: move to top, reuse existing position
   vim.api.nvim_create_autocmd({'BufReadPost', 'BufWinEnter'}, {
     group = group,
-    callback = function(args)
-      save_mru(args.buf, false)
-    end
+    callback = on_buffer_open
   })
 
-  -- On leave/save: update position and move to top
   vim.api.nvim_create_autocmd({'BufWritePost', 'BufHidden', 'BufLeave', 'VimLeavePre'}, {
     group = group,
-    callback = function(args)
-      save_mru(args.buf, true)
-    end
+    callback = on_buffer_update
   })
 
   vim.keymap.set('n', '1m', show_mru, { desc = 'MRU files', noremap = true, silent = true })
