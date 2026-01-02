@@ -33,9 +33,6 @@ map('n', '<leader>sc', '<cmd>source ~/.config/nvim/init.lua<cr>', { desc = 'Sour
 map('n', '\\s', ':%s/\\v', { desc = 'Substitute' })
 map('v', '\\s', ':s/\\v', { desc = 'Substitute selection' })
 
--- Ripgrep search via FZF
-map('n', '\\r', ':Rg ', { desc = 'FZF Ripgrep search' })
-
 -- Blackhole register shortcuts
 map('n', '\\\\', '"_', { desc = 'Blackhole register' })
 map('v', '\\\\', '"_', { desc = 'Blackhole register' })
