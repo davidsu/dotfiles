@@ -40,3 +40,4 @@ config/gcloud/
 config.home.symlink/iterm2/AppSupport
 config.home.symlink/iterm2/sockets/
 .claude/settings.local.json
+.aider*

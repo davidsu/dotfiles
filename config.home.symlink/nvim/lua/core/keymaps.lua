@@ -84,6 +84,9 @@ map('n', '\\q', '<cmd>q<cr>', { desc = 'Quit' })
 -- Quick window management
 map('n', '1o', '<cmd>only<cr>', { desc = 'Only this window' })
 
+-- End diff - go to lower-right window and close all others
+map('n', '<space>ed', '<cmd>wincmd b | only<cr>', { desc = 'End diff (lower-right only)', silent = true })
+
 -- Close various windows (quickfix, location, preview, help)
 map('n', '<space>qq', '<cmd>helpclose<cr><cmd>pclose<cr><cmd>cclose<cr><cmd>lclose<cr>', { desc = 'Close all helper windows' })
 map('n', '<space>ql', '<cmd>lclose<cr>', { desc = 'Close location list' })
