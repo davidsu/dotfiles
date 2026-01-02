@@ -69,6 +69,7 @@ return {
 
       -- Search
       { '<space>fw', grep_word_under_cursor,            desc = 'Grep word under cursor' },
+      { '<space>bl', '<cmd>FzfLua blines<cr>',          desc = 'Search lines in buffer' },
       { '\\a',       '<cmd>FzfLua grep_project<cr>',    desc = 'Ripgrep search' },
 
       -- History
