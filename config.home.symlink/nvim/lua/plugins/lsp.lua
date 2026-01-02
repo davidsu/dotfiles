@@ -158,6 +158,7 @@ end
 local function setup_bash_lsp(capabilities)
   vim.lsp.config('bashls', {
     capabilities = capabilities,
+    filetypes = { 'sh', 'bash', 'zsh' },
   })
   vim.lsp.enable('bashls')
 end
