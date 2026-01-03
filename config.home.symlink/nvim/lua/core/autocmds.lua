@@ -1,6 +1,11 @@
 -- Core Autocmds
 -- Autocmd definitions (separated from keymaps and options for clarity)
 
+-- Helper: Map 'q' to close buffer in special windows
+local function map_q_to_close_buffer()
+  vim.keymap.set('n', 'q', '<cmd>bdelete<cr>', { buffer = true, silent = true })
+end
+
 -- Auto-reload buffer if file changed externally
 vim.api.nvim_create_autocmd({ 'FocusGained', 'BufEnter' }, {
   pattern = '*',
@@ -41,11 +46,18 @@ vim.api.nvim_create_autocmd('FocusGained', {
   end,
 })
 
--- Close help/quickfix/fugitive buffers with q
+-- Close help/quickfix/location list/fugitive buffers with q
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'help', 'qf', 'fugitiveblame' },
+  callback = map_q_to_close_buffer,
+})
+
+-- Close preview windows with q
+vim.api.nvim_create_autocmd('WinEnter', {
   callback = function()
-    vim.keymap.set('n', 'q', '<cmd>bd<cr>', { buffer = true, silent = true })
+    if vim.wo.previewwindow then
+      map_q_to_close_buffer()
+    end
   end,
 })
 
