@@ -1,2 +1,7 @@
 #!/bin/zsh
 
+# Load API keys from macOS Keychain
+# Add keys with: security add-generic-password -a "$USER" -s "TAVILY_API_KEY" -w "your-key" -T /usr/bin/security
+if command -v security &> /dev/null; then
+  export TAVILY_API_KEY=$(security find-generic-password -a "$USER" -s "TAVILY_API_KEY" -w 2>/dev/null)
+fi

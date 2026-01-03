@@ -134,3 +134,29 @@ This dotfiles includes comprehensive keyboard remappings via Karabiner-Elements:
 Installation logs are captured in `~/Library/Logs/dotfiles/install.log`.
 Error logs are captured in `~/Library/Logs/dotfiles/install_errors.log`.
 
+## Claude Code Setup
+
+This dotfiles includes MCP server configuration for Claude Code.
+
+### API Key Setup (One-time)
+
+Store your Tavily API key in macOS Keychain (the `-T` flag prevents password prompts):
+
+```bash
+security add-generic-password -a "$USER" -s "TAVILY_API_KEY" -w "your-tavily-api-key" -T /usr/bin/security
+```
+
+Get a Tavily API key at: https://tavily.com
+
+### How It Works
+
+- `zshenv` loads API keys from Keychain into environment variables on shell startup
+- `.mcp.json` defines MCP servers for this project (no secrets, auto-loaded)
+- `claude/example.claude.json` provides reference configs for `~/.claude.json`
+
+### Verify Setup
+
+```bash
+echo $TAVILY_API_KEY  # Should show your key after new shell
+```
+
