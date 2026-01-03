@@ -8,7 +8,8 @@ if env.is_vscode then
 end
 
 local function find_file_in_tree()
-  require('utils.git').cd_to_buffer_root()
+  local root = vim.fn.FugitiveWorkTree()
+  if root ~= '' then vim.fn.chdir(root) end
   vim.cmd('NvimTreeFindFile')
 end
 

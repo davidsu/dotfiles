@@ -28,6 +28,7 @@ map('n', '<Esc><Esc>', '<cmd>nohlsearch<cr>', { desc = 'Clear highlights', silen
 
 -- Source/reload config
 map('n', '<leader>sc', '<cmd>source ~/.config/nvim/init.lua<cr>', { desc = 'Source config', silent = true })
+map('n', '<leader>ev', '<cmd>source ~/.config/nvim/init.lua<cr>', { desc = 'Source config (legacy)', silent = true })
 
 -- Substitute
 map('n', '\\s', ':%s/\\v', { desc = 'Substitute' })
@@ -105,9 +106,6 @@ map('n', '–', function() win_utils.win_size('-') end, { desc = 'Decrease windo
 
 -- Toggle resize mode (horizontal vs vertical)
 map('n', '<space>v', win_utils.toggle_force_horizontal_resize, { desc = 'Toggle resize mode', silent = true })
-map('n', '<space>is', win_utils.toggle_force_horizontal_resize, { desc = 'Invert split resizing', silent = true })
-map('n', '\\x', win_utils.toggle_force_horizontal_resize, { desc = 'Toggle resize mode', silent = true })
-map('n', 'º', win_utils.toggle_force_horizontal_resize, { desc = 'Toggle resize mode (Alt+0)', silent = true })
 
 -- Filetype detection
 map('n', '<space>fd', '<cmd>filetype detect<cr>', { desc = 'Detect filetype' })

@@ -1,9 +1,14 @@
 -- Diagnostic Display Utilities
 -- Functions for showing diagnostic messages in command line
 
-local M = {}
-
 local showing_diagnostic = false
+
+local severity_highlights = {
+  [vim.diagnostic.severity.ERROR] = 'DiagnosticError',
+  [vim.diagnostic.severity.WARN] = 'DiagnosticWarn',
+  [vim.diagnostic.severity.INFO] = 'DiagnosticInfo',
+  [vim.diagnostic.severity.HINT] = 'DiagnosticHint',
+}
 
 local function validate_buffer()
   local bufnr = vim.api.nvim_get_current_buf()
@@ -51,13 +56,7 @@ local function display_diagnostic_message(diag)
     return
   end
 
-  local severity_hl = {
-    [vim.diagnostic.severity.ERROR] = 'DiagnosticError',
-    [vim.diagnostic.severity.WARN] = 'DiagnosticWarn',
-    [vim.diagnostic.severity.INFO] = 'DiagnosticInfo',
-    [vim.diagnostic.severity.HINT] = 'DiagnosticHint',
-  }
-  local hl = severity_hl[diag.severity] or 'DiagnosticWarn'
+  local hl = severity_highlights[diag.severity] or 'DiagnosticWarn'
   local source = diag.source or ''
   local diag_message = tostring(diag.message):gsub('%%', '%%%%')
   local message = source ~= '' and (source .. ': ' .. diag_message) or diag_message
@@ -73,8 +72,8 @@ local function clear_diagnostic_message()
   end
 end
 
-function M.show_diagnostic_at_cursor()
-  local ok, err = pcall(function()
+local function show_diagnostic_at_cursor()
+  pcall(function()
     local bufnr = validate_buffer()
     if not bufnr then
       clear_diagnostic_message()
@@ -88,10 +87,8 @@ function M.show_diagnostic_at_cursor()
       clear_diagnostic_message()
     end
   end)
-
-  if not ok then
-    -- Silently ignore errors
-  end
 end
 
-return M
+return {
+  show_diagnostic_at_cursor = show_diagnostic_at_cursor,
+}
