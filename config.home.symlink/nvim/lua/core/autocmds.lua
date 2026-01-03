@@ -26,6 +26,21 @@ vim.api.nvim_create_autocmd({ 'FocusLost', 'WinLeave' }, {
   end,
 })
 
+-- Sync command-line history across instances
+vim.api.nvim_create_autocmd('FocusLost', {
+  callback = function()
+    vim.cmd('wshada')
+  end,
+})
+
+vim.api.nvim_create_autocmd('FocusGained', {
+  callback = function()
+    vim.defer_fn(function()
+      vim.cmd('rshada!')
+    end, 100)  -- 100ms delay to let other instance finish wshada
+  end,
+})
+
 -- Close help/quickfix/fugitive buffers with q
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'help', 'qf', 'fugitiveblame' },

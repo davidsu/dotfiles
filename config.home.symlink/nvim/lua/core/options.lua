@@ -12,6 +12,9 @@ opt.hidden = true                -- allow buffers to be hidden
 opt.history = 2000
 opt.backspace = { 'indent', 'eol', 'start' }
 
+-- ShaDa (Shared Data) - persistent state across sessions
+opt.shada = "!,'100,<50,s10,h,:100"  -- :100 = save 100 command-line history items
+
 -- Clipboard
 opt.clipboard = 'unnamedplus'    -- use system clipboard
 
