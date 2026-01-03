@@ -1,14 +1,11 @@
 -- Environment Detection Module
 -- Detects whether we're running in VSCode/Cursor or terminal Neovim
 
-local M = {}
+local is_vscode = vim.g.vscode ~= nil
 
--- VSCode/Cursor both set vim.g.vscode
-M.is_vscode = vim.g.vscode ~= nil
-
--- Terminal is any environment that's not VSCode/Cursor
-M.is_terminal = not M.is_vscode
-
-return M
+return {
+  is_vscode = is_vscode,
+  is_terminal = not is_vscode,
+}
 
 
