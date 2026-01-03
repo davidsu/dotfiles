@@ -23,6 +23,7 @@ When user asks a question, **answer the question** - don't implement anything un
 **CRITICAL**: Do NOT use the `local M = {}` pattern for Lua modules in this codebase.
 
 **Bad** - Using M pattern:
+
 ```lua
 local M = {}
 function M.foo() end
@@ -31,6 +32,7 @@ return M
 ```
 
 **Good** - Direct module return:
+
 ```lua
 local function foo() end
 local function bar() end
@@ -38,6 +40,7 @@ return { foo = foo, bar = bar }
 ```
 
 **Why:**
+
 - More explicit and readable
 - Follows the coding style guideline of separating declaration from export
 - Makes the public API immediately clear at the bottom of the file
@@ -79,7 +82,7 @@ Before suggesting GitHub repos, npm packages, or external resources:
 1. **BEFORE** implementing ANY native Neovim feature (options, keymaps, autocommands, etc.), read Neovim's local documentation
 2. **Location**: Neovim runtime documentation
    - Help files: Use `:help <topic>` or read from Neovim's help system
-   - Runtime docs: `/usr/local/share/nvim/runtime/doc/` (or similar)
+   - Runtime docs: `/opt/homebrew/Cellar/neovim/0.11.5_1/share/nvim/runtime/doc/`
 3. Verify correct API usage, option names, and function signatures from local docs
 
 **Why this is mandatory:**
