@@ -60,6 +60,7 @@ if env.is_vscode then
 end
 
 local win_utils = require('utils.window')
+local term_utils = require('utils.terminal')
 
 -- Window navigation (Ctrl + hjkl)
 map('n', '<C-h>', '<cmd>wincmd h<cr>', { desc = 'Move to left window', silent = true })
@@ -85,7 +86,8 @@ map('n', '1o', '<cmd>only<cr>', { desc = 'Only this window' })
 map('n', '<space>ed', '<cmd>wincmd b | only<cr>', { desc = 'End diff (lower-right only)', silent = true })
 
 -- Close various windows (quickfix, location, preview, help)
-map('n', '<space>qq', '<cmd>helpclose<cr><cmd>pclose<cr><cmd>cclose<cr><cmd>lclose<cr>', { desc = 'Close all helper windows' })
+map('n', '<space>qq', '<cmd>helpclose<cr><cmd>pclose<cr><cmd>cclose<cr><cmd>lclose<cr>',
+  { desc = 'Close all helper windows' })
 map('n', '<space>ql', '<cmd>lclose<cr>', { desc = 'Close location list' })
 map('n', '<space>qc', '<cmd>cclose<cr>', { desc = 'Close quickfix' })
 map('n', '<space>qp', '<cmd>pclose<cr>', { desc = 'Close preview' })
@@ -113,4 +115,37 @@ map('n', '<space>fd', '<cmd>filetype detect<cr>', { desc = 'Detect filetype' })
 -- Redraw screen
 map('n', '\\d', '<cmd>redraw!<cr>', { desc = 'Redraw screen' })
 
+map('t', '<C-o>', '<C-\\><C-n>', { desc = 'get to normal mode in terminal buffer' })
 
+-- Terminal Mappings from old vimscript
+
+-- Function to clear terminal scrollback
+vim.cmd([[
+function! ClearTermScrollback()
+    set scrollback=0
+    sleep 100m
+    redraw
+    set scrollback=1000
+endfunction
+]])
+
+-- Close terminal window
+map('t', '<C-q>', '<C-\\><C-n>:wincmd q<cr>', { desc = 'Close terminal window' })
+
+-- Window navigation from terminal
+map('t', '<C-h>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("h")<cr>', { desc = 'Move/split left from terminal' })
+map('t', '<C-j>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("j")<cr>', { desc = 'Move/split down from terminal' })
+map('t', '<C-k>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("k")<cr>', { desc = 'Move/split up from terminal' })
+map('t', '<C-l>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("l")<cr>', { desc = 'Move/split right from terminal' })
+
+-- Switch to alternate file from terminal
+map('t', 'm,', '<C-\\><C-n><c-^>', { desc = 'Switch to alternate file from terminal' })
+
+-- Clear scrollback
+map('t', '<C-l>', '<C-l><C-\\><C-n>:call ClearTermScrollback()<cr>i', { desc = 'Clear terminal scrollback', silent = true })
+
+-- Rerun last command
+map('t', '<C-x>', '<C-c><C-l><C-\\><C-n>:call ClearTermScrollback()<cr>i<C-p><cr>', { desc = 'Rerun last command' })
+
+-- Open in terminal
+map('n', '<space>te', function() term_utils.to_terminal() end, { desc = 'Open in terminal' })
