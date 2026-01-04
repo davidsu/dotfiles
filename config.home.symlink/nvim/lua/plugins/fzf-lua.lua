@@ -34,6 +34,9 @@ local function config()
   require('fzf-lua').setup({
     winopts = get_winopts(),
     lsp = get_lsp_opts(),
+    keymaps = {
+      previewer = false, -- Disable preview for keymaps (source path often incorrect)
+    },
   })
 
   -- Create command aliases matching old fzf.vim commands
