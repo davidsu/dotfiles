@@ -42,7 +42,15 @@ vim.api.nvim_create_autocmd('FocusGained', {
   callback = function()
     vim.defer_fn(function()
       vim.cmd('rshada!')
-    end, 100)  -- 100ms delay to let other instance finish wshada
+    end, 100) -- 100ms delay to let other instance finish wshada
+  end,
+})
+
+-- This tells Neovim to use the built-in filetype indent instead of Treesitter's
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "typescript", "typescriptreact" },
+  callback = function()
+    vim.opt_local.indentexpr = "GetTypescriptIndent()"
   end,
 })
 
@@ -60,4 +68,3 @@ vim.api.nvim_create_autocmd('WinEnter', {
     end
   end,
 })
-
