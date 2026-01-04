@@ -19,6 +19,7 @@ local function config()
         highlight DiffChange guifg=NONE guibg=#3d4220 gui=NONE
         highlight DiffDelete guifg=#cc241d guibg=#442e2d gui=NONE
         highlight DiffText   guifg=NONE guibg=#4d4020 gui=bold
+        highlight Visual     guifg=NONE guibg=#4a4a4a gui=NONE
       ]])
 end
 return {
