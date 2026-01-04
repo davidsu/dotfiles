@@ -38,27 +38,37 @@ local function config()
       previewer = false, -- Disable preview for keymaps (source path often incorrect)
     },
   })
-
-  -- Create command aliases matching old fzf.vim commands
-  vim.api.nvim_create_user_command('Files', function() require('fzf-lua').files() end, {})
-  vim.api.nvim_create_user_command('GFiles', function() require('fzf-lua').git_files() end, {})
-  vim.api.nvim_create_user_command('Buffers', function() require('fzf-lua').buffers() end, {})
-  vim.api.nvim_create_user_command('Rg', function(opts)
-    if opts.args == '' then
-      require('fzf-lua').grep_project()
-    else
-      require('fzf-lua').grep({ search = opts.args })
-    end
-  end, { nargs = '*' })
-  vim.api.nvim_create_user_command('History', function() require('fzf-lua').oldfiles() end, {})
-  vim.api.nvim_create_user_command('Commands', function() require('fzf-lua').commands() end, {})
-  vim.api.nvim_create_user_command('Maps', function() require('fzf-lua').keymaps() end, {})
 end
 
 return {
   {
     'ibhagwan/fzf-lua',
-    cmd = 'FzfLua',
+    cmd = {
+      'FzfLua',
+      'Files',
+      'GFiles',
+      'Buffers',
+      'Rg',
+      'History',
+      'Commands',
+      'Maps',
+    },
+    init = function()
+      -- Create command aliases that will trigger lazy-load
+      vim.api.nvim_create_user_command('Files', function() require('fzf-lua').files() end, {})
+      vim.api.nvim_create_user_command('GFiles', function() require('fzf-lua').git_files() end, {})
+      vim.api.nvim_create_user_command('Buffers', function() require('fzf-lua').buffers() end, {})
+      vim.api.nvim_create_user_command('Rg', function(opts)
+        if opts.args == '' then
+          require('fzf-lua').grep_project()
+        else
+          require('fzf-lua').grep({ search = opts.args })
+        end
+      end, { nargs = '*' })
+      vim.api.nvim_create_user_command('History', function() require('fzf-lua').oldfiles() end, {})
+      vim.api.nvim_create_user_command('Commands', function() require('fzf-lua').commands() end, {})
+      vim.api.nvim_create_user_command('Maps', function() require('fzf-lua').keymaps() end, {})
+    end,
     dependencies = {
       'nvim-tree/nvim-web-devicons',
     },
