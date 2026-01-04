@@ -14,6 +14,7 @@ local function ufo_config()
   vim.o.foldenable = true
 
   require('ufo').setup({
+    open_fold_hl_timeout = 0, -- disable highlight flash when opening folds
     provider_selector = function()
       return { 'treesitter', 'indent' }
     end,
