@@ -63,6 +63,9 @@ local function jump_to_next_diagnostic()
 end
 
 local function setup_lsp_folding(client)
+  if vim.wo.diff then
+    return -- Don't override foldmethod in diff mode
+  end
   if client:supports_method('textDocument/foldingRange') then
     vim.opt_local.foldmethod = 'expr'
     vim.opt_local.foldexpr = 'v:lua.vim.lsp.foldexpr()'
