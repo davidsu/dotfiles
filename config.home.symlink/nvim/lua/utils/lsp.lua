@@ -1,5 +1,7 @@
 -- LSP Utility Functions
 
+local position = require('utils.position')
+
 -- Helper functions
 
 local function get_lsp_client()
@@ -41,20 +43,6 @@ local function is_js_ts_filetype()
   return ft == 'javascript' or ft == 'typescript' or ft == 'javascriptreact' or ft == 'typescriptreact'
 end
 
-local function find_signature_position()
-  local line = vim.api.nvim_get_current_line()
-  local col = vim.api.nvim_win_get_cursor(0)[2]
-
-  -- Search forward for opening paren on same line
-  local paren_col = line:find('%(', col + 1)
-  if paren_col then
-    -- Return position inside the parens (after opening paren)
-    return { line = vim.fn.line('.') - 1, character = paren_col }
-  end
-
-  return nil
-end
-
 local function hover_preview()
   local client = get_lsp_client()
   if not client then return end
@@ -64,7 +52,7 @@ local function hover_preview()
 
   -- For JS/TS, try to find signature position if we're on a function name
   if is_js_ts_filetype() then
-    local sig_pos = find_signature_position()
+    local sig_pos = position.find_signature_position()
     if sig_pos then
       sig_params = vim.lsp.util.make_position_params(0, client.offset_encoding)
       sig_params.position = sig_pos
