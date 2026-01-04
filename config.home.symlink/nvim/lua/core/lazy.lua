@@ -20,8 +20,11 @@ vim.opt.rtp:prepend(lazypath)
 
 -- Configure lazy.nvim
 require('lazy').setup('plugins', {
+  change_detection = {
+    notify = false,
+  },
   defaults = {
-    lazy = false,  -- by default, load plugins on startup (not lazily)
+    lazy = false, -- by default, load plugins on startup (not lazily)
   },
   performance = {
     rtp = {
@@ -40,5 +43,3 @@ require('lazy').setup('plugins', {
     border = 'rounded',
   },
 })
-
-

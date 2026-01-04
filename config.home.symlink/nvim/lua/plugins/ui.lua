@@ -8,7 +8,7 @@ if env.is_vscode then
 end
 
 local function ufo_config()
-  vim.o.foldcolumn = '1'
+  vim.o.foldcolumn = '0'
   vim.o.foldlevel = 99
   vim.o.foldlevelstart = 99
   vim.o.foldenable = true
@@ -52,5 +52,3 @@ return {
     config = ufo_config,
   },
 }
-
-
