@@ -62,26 +62,10 @@ local function jump_to_next_diagnostic()
   vim.diagnostic.jump({ count = 1, float = { border = 'rounded' } })
 end
 
-local function setup_lsp_folding(client)
-  if vim.wo.diff then
-    return -- Don't override foldmethod in diff mode
-  end
-  if client:supports_method('textDocument/foldingRange') then
-    vim.opt_local.foldmethod = 'expr'
-    vim.opt_local.foldexpr = 'v:lua.vim.lsp.foldexpr()'
-    vim.opt_local.foldenable = true
-    vim.opt_local.foldlevelstart = 99
-  end
-end
-
 local function setup_lsp_commands()
   vim.api.nvim_create_user_command('Diagnostics', function()
     vim.diagnostic.setqflist()
   end, { desc = 'Show all diagnostics in quickfix list' })
-
-  vim.api.nvim_create_user_command('Diagnostic', function()
-    vim.diagnostic.open_float({ border = 'rounded' })
-  end, { desc = 'Show diagnostic at cursor' })
 end
 
 local function setup_lsp_mappings(client, args)
@@ -97,12 +81,7 @@ local function setup_lsp_mappings(client, args)
   vim.keymap.set('n', 'gD', vim.lsp.buf.type_definition, opts)
   vim.keymap.set('n', 'gi', vim.lsp.buf.implementation, opts)
   vim.keymap.set('n', 'gr', vim.lsp.buf.references, opts)
-  vim.keymap.set('n', 'K', function()
-    local winid = require('ufo').peekFoldedLinesUnderCursor()
-    if not winid then
-      vim.lsp.buf.hover()
-    end
-  end, opts)
+  vim.keymap.set('n', 'K', require('utils.k_cycle').k_cycle, opts)
   vim.keymap.set('n', '<space>k', require('utils.lsp').hover_preview, opts)
   vim.keymap.set('n', '<space>rn', vim.lsp.buf.rename, opts)
   vim.keymap.set({ 'n', 'x' }, '<space>ca', vim.lsp.buf.code_action, opts)
@@ -110,15 +89,11 @@ local function setup_lsp_mappings(client, args)
   vim.keymap.set('n', '<space>lo', vim.diagnostic.setloclist, opts)
   vim.keymap.set('n', '[d', jump_to_prev_diagnostic, opts)
   vim.keymap.set('n', ']d', jump_to_next_diagnostic, opts)
-  vim.keymap.set('n', '<space>d', function()
-    vim.diagnostic.open_float({ border = 'rounded' })
-  end, opts)
 
   vim.keymap.set('n', '<space>f', function()
     vim.lsp.buf.format({ async = true })
   end, opts)
 
-  vim.keymap.set('n', '<C-c>', floating_window.close_floating_windows, opts)
   vim.keymap.set('n', '<Esc>', floating_window.close_floating_windows, opts)
 end
 
@@ -126,7 +101,6 @@ local function on_lsp_attach(args)
   local client = vim.lsp.get_client_by_id(args.data.client_id)
 
   setup_lsp_mappings(client, args)
-  setup_lsp_folding(client)
   setup_lsp_commands()
 end
 
@@ -143,6 +117,13 @@ end
 
 local function config()
   local capabilities = require('cmp_nvim_lsp').default_capabilities()
+
+  -- Add folding range capabilities for nvim-ufo -> fold comments
+  capabilities.textDocument.foldingRange = {
+    dynamicRegistration = false,
+    lineFoldingOnly = true,
+  }
+
   vim.diagnostic.config(diagnostic_config)
 
   setup_lsp_autocmds()
