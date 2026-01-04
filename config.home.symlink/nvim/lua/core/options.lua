@@ -66,10 +66,9 @@ opt.wildmode = 'full'
 opt.wildignorecase = true -- case-insensitive command-line completion and history
 
 -- Folding
-opt.foldmethod = 'manual' -- Default to manual folding
+-- Note: Fold provider and display managed by nvim-ufo plugin (see plugins/ui.lua)
+opt.foldmethod = 'manual' -- Default to manual folding (nvim-ufo overrides with treesitter)
 opt.foldnestmax = 10
-opt.foldenable = true
-opt.foldlevelstart = 99 -- Start with all folds open
 
 -- Performance
 opt.updatetime = 300
