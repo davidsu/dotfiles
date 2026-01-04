@@ -6,69 +6,70 @@ local opt = vim.opt
 
 -- General
 opt.compatible = false
-opt.autoread = true              -- detect when a file is changed
-opt.autowriteall = true          -- auto-write on various commands
-opt.hidden = true                -- allow buffers to be hidden
+opt.autoread = true     -- detect when a file is changed
+opt.autowriteall = true -- auto-write on various commands
+opt.hidden = true       -- allow buffers to be hidden
 opt.history = 2000
 opt.backspace = { 'indent', 'eol', 'start' }
 
 -- ShaDa (Shared Data) - persistent state across sessions
-opt.shada = "!,'100,<50,s10,h,:100"  -- :100 = save 100 command-line history items
+opt.shada = "!,'100,<50,s10,h,:100" -- :100 = save 100 command-line history items
 
 -- Clipboard
-opt.clipboard = 'unnamedplus'    -- use system clipboard
+opt.clipboard = 'unnamedplus' -- use system clipboard
 
 -- Display
-opt.number = false               -- no line numbers by default (VSCode has its own)
+opt.number = false   -- no line numbers by default (VSCode has its own)
 opt.relativenumber = false
-opt.wrap = false                 -- no line wrapping
-opt.linebreak = true             -- soft wrap at word boundaries
+opt.wrap = false     -- no line wrapping
+opt.linebreak = true -- soft wrap at word boundaries
 opt.showbreak = '↪'
-opt.scrolloff = 3                -- lines of context around cursor
-opt.showcmd = false              -- no show commands by default (VSCode has its own)
-opt.showmode = false             -- don't show mode (for statusline)
-opt.laststatus = 0               -- no statusline by default (VSCode has its own)
-opt.title = true                 -- set terminal title
+opt.scrolloff = 3    -- lines of context around cursor
+opt.showcmd = false  -- no show commands by default (VSCode has its own)
+opt.showmode = false -- don't show mode (for statusline)
+opt.laststatus = 0   -- no statusline by default (VSCode has its own)
+opt.title = true     -- set terminal title
 opt.visualbell = true
 opt.errorbells = false
-opt.lazyredraw = true            -- don't redraw during macros
+opt.lazyredraw = true -- don't redraw during macros
+opt.signcolumn = "no"
 
 -- Colors
 opt.termguicolors = true
 opt.background = 'dark'
 
 -- Indentation
-opt.expandtab = true             -- use spaces instead of tabs
+opt.expandtab = true  -- use spaces instead of tabs
 opt.smarttab = true
-opt.tabstop = 4                  -- visual width of tabs
+opt.tabstop = 4       -- visual width of tabs
 opt.softtabstop = 4
-opt.shiftwidth = 2               -- number of spaces for indent
-opt.shiftround = true            -- round indent to multiple of shiftwidth
+opt.shiftwidth = 2    -- number of spaces for indent
+opt.shiftround = true -- round indent to multiple of shiftwidth
 opt.autoindent = true
 opt.smartindent = true
 
 -- Search
-opt.ignorecase = true            -- case insensitive search
-opt.smartcase = true             -- case-sensitive if pattern contains uppercase
-opt.magic = true                 -- special chars in search patterns
+opt.ignorecase = true -- case insensitive search
+opt.smartcase = true  -- case-sensitive if pattern contains uppercase
+opt.magic = true      -- special chars in search patterns
 
 -- Files & Backups
-opt.undofile = true              -- persistent undo
+opt.undofile = true -- persistent undo
 opt.backup = false
 opt.writebackup = false
 opt.swapfile = false
 
 -- Completion
 opt.completeopt = { 'menu', 'menuone', 'noselect', 'longest' }
-opt.wildmenu = true              -- enhanced command line completion
+opt.wildmenu = true       -- enhanced command line completion
 opt.wildmode = 'full'
-opt.wildignorecase = true        -- case-insensitive command-line completion and history
+opt.wildignorecase = true -- case-insensitive command-line completion and history
 
 -- Folding
-opt.foldmethod = 'manual'  -- Default to manual folding
+opt.foldmethod = 'manual' -- Default to manual folding
 opt.foldnestmax = 10
 opt.foldenable = true
-opt.foldlevelstart = 99  -- Start with all folds open
+opt.foldlevelstart = 99 -- Start with all folds open
 
 -- Performance
 opt.updatetime = 300
@@ -94,8 +95,8 @@ opt.listchars = {
   extends = '❯',
   precedes = '❮',
 }
-opt.list = false                 -- disabled by default
-opt.spell = false                -- spell check disabled (from dotfilesold)
+opt.list = false  -- disabled by default
+opt.spell = false -- spell check disabled (from dotfilesold)
 
 -- Grep
 if vim.fn.executable('rg') == 1 then

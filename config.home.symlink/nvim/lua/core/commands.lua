@@ -1,9 +1,6 @@
 -- Core User Commands
 -- User-defined commands (not keymaps)
 
-vim.api.nvim_create_user_command('Diagnostics', function()
-  vim.diagnostic.setqflist()
-end, { desc = 'Show all diagnostics in quickfix list' })
 
 -- Copy to system clipboard helper
 local function to_clipboard(value)
@@ -26,4 +23,22 @@ end, { desc = 'Copy file name without extension to clipboard' })
 vim.api.nvim_create_user_command('CopyRelativeFilePath', function()
   to_clipboard(vim.fn.expand('%:.'))
 end, { desc = 'Copy relative file path to clipboard' })
+
+-- Toggle signs (sign column, gitsigns, diagnostics)
+local signs_enabled = false
+vim.api.nvim_create_user_command('Signs', function()
+  signs_enabled = not signs_enabled
+  vim.opt.signcolumn = signs_enabled and 'yes' or 'no'
+
+  -- Toggle gitsigns if available
+  local gs_ok, gitsigns = pcall(require, 'gitsigns')
+  if gs_ok then
+    gitsigns.toggle_signs(signs_enabled)
+  end
+
+  -- Toggle diagnostic signs
+  vim.diagnostic.config({ signs = signs_enabled })
+
+  vim.notify('Signs ' .. (signs_enabled and 'enabled' or 'disabled'))
+end, { desc = 'Toggle sign column and all signs' })
 

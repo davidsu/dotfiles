@@ -49,6 +49,8 @@ end
 local function gitsigns_config()
   require('gitsigns').setup({
     signs = get_signs(),
+    signs_staged = get_signs(),
+    signcolumn = false, -- disable gitsigns in sign column
     on_attach = on_attach,
   })
 end
