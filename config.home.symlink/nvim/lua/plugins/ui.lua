@@ -16,14 +16,7 @@ local function ufo_config()
   require('ufo').setup({
     open_fold_hl_timeout = 0, -- disable highlight flash when opening folds
     provider_selector = function(bufnr, filetype, buftype)
-      -- Disable folding for certain filetypes
-      local ignore_filetypes = { 'fzf', 'TelescopePrompt', 'nofile' }
-      for _, ft in ipairs(ignore_filetypes) do
-        if filetype == ft or buftype == ft then
-          return ''
-        end
-      end
-      return { 'lsp', 'treesitter' }
+      return { 'lsp', 'indent' }
     end,
   })
 
