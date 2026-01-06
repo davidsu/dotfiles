@@ -18,6 +18,11 @@ local typescript_settings = {
     preferences = {
       importModuleSpecifier = 'relative',
     },
+    tsserver_file_config = {
+      externalFiles = {
+        exclude = { "**/node_modules/**" }
+      }
+    }
   },
   javascript = {
     suggestionActions = {
