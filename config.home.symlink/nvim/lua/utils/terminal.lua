@@ -35,7 +35,7 @@ local function open_terminal()
   end
 
   if term_buf then
-    vim.api.nvim_buf_set_option(term_buf, 'buflisted', true)
+    vim.bo[term_buf].buflisted = true
     vim.cmd('buffer ' .. term_buf)
   else
     vim.cmd('terminal')
