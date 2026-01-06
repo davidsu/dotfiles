@@ -43,16 +43,7 @@ end
 return {
   {
     'ibhagwan/fzf-lua',
-    cmd = {
-      'FzfLua',
-      'Files',
-      'GFiles',
-      'Buffers',
-      'Rg',
-      'History',
-      'Commands',
-      'Maps',
-    },
+    cmd = 'FzfLua',
     init = function()
       -- Create command aliases that will trigger lazy-load
       vim.api.nvim_create_user_command('Files', function() require('fzf-lua').files() end, {})
@@ -84,6 +75,7 @@ return {
       { '<space>fw', grep_word_under_cursor,            desc = 'Grep word under cursor' },
       { '<space>bl', '<cmd>FzfLua blines<cr>',          desc = 'Search lines in buffer' },
       { '\\a',       '<cmd>FzfLua grep_project<cr>',    desc = 'Ripgrep search' },
+      { '\\r',       ':Rg ',                             desc = 'Ripgrep with query' },
 
       -- History
       { '<space>fh', '<cmd>FzfLua command_history<cr>', desc = 'Command history' },
