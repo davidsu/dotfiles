@@ -74,7 +74,6 @@ function mru() {
     # Filter out fugitive:// URIs and other non-file entries
     fzfresult=$(grep -v '^fugitive://' "$MRU_FILE" | \
         fzf --no-sort \
-            --exact \
             --delimiter ':' \
             --preview '$HOME/.dotfiles/bin/preview.sh {}' \
             --preview-window 'top:50%:+{2}-/2' \
