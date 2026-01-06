@@ -47,6 +47,8 @@ map('n', '<space>gx', 'm`0y$:@"<cr><c-o>', { desc = 'Execute current line' })
 -- Alternate file (switch to last buffer)
 map('n', 'm,', '<c-^>', { desc = 'Switch to alternate file' })
 map('n', 'sa', '<c-^>', { desc = 'Switch to alternate file' })
+-- Delete current buffer (switch to MRU buffer first)
+map('n', '<space>bd', function() require('utils.buffers').delete_current_buffer() end, { desc = 'Delete buffer' })
 
 -- Command-line history navigation (filtered by what you've typed)
 map('c', '<C-p>', '<Up>', { noremap = true })
