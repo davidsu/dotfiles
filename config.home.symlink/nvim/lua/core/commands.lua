@@ -8,6 +8,16 @@ local function to_clipboard(value)
   vim.notify('Copied: ' .. value)
 end
 
+vim.api.nvim_create_user_command('P', function()
+  to_clipboard(vim.fn.expand('%:p'))
+end, { desc = 'Copy full file path to clipboard' })
+
+vim.api.nvim_create_user_command('PP', function()
+  local path = vim.fn.expand('%:p')
+  local line = vim.fn.line('.')
+  to_clipboard(path .. ':' .. line)
+end, { desc = 'Copy full file path with line number to clipboard' })
+
 vim.api.nvim_create_user_command('CP', function()
   to_clipboard(vim.fn.expand('%:p'))
 end, { desc = 'Copy full file path to clipboard' })
