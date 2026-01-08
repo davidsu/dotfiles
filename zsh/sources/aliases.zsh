@@ -7,6 +7,8 @@ alias jp='cd ~/projects'
 # Global Aliases
 alias -g G='| grep -i'
 alias -g V=' > /tmp/t && nvim /tmp/t -c '\''nmap q :q!<cr>'\'''
+alias -g PJ='package.json'
+alias -g IB='--inspect-brk'
 
 # ls (BSD/macOS): colorized output + classify + one entry per line
 alias ls='ls -GF1'
@@ -17,6 +19,9 @@ alias vim='nvim'
 # Git Aliases
 alias gst='git status'
 alias glv='git log --max-count=500 --name-only V'
+
+# Process
+alias killbg='kill $(sed -E '\''s/\[([[:digit:]]+)\].*/%\1/g'\'' <<< $(jobs))'
 
 # Git Status in Vim (interactive git status using vim-fugitive)
 function gsv() {
