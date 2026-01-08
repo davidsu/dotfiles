@@ -1,0 +1,60 @@
+{
+  "version": 3,
+  "lines": [
+    [
+      {
+        "id": "d994d970-3485-4a35-a932-f60f1fb09932",
+        "type": "model",
+        "rawValue": true
+      },
+      {
+        "id": "88edac9b-d55c-4e0b-a475-43cb54c9eef1",
+        "type": "separator"
+      },
+      {
+        "id": "85a77238-2d81-47a8-9915-b8487af80fa8",
+        "type": "context-percentage",
+        "color": "brightBlue",
+        "rawValue": true
+      },
+      {
+        "id": "a7de68ca-0aa5-45dc-a760-4bb1bbc07355",
+        "type": "separator"
+      },
+      {
+        "id": "f224a71d-0965-42e3-9fce-620219427a9c",
+        "type": "session-cost",
+        "color": "magenta",
+        "rawValue": true
+      },
+      {
+        "id": "dc77aa5a-e8f8-4247-9133-7d0dfe1a1b72",
+        "type": "separator"
+      },
+      {
+        "id": "51f4f3ba-78a7-406e-836e-6aa53013110a",
+        "type": "current-working-dir",
+        "color": "brightBlack",
+        "metadata": {
+          "segments": "2"
+        },
+        "rawValue": true
+      }
+    ],
+    []
+  ],
+  "flexMode": "full-minus-40",
+  "compactThreshold": 60,
+  "colorLevel": 2,
+  "inheritSeparatorColors": false,
+  "globalBold": false,
+  "powerline": {
+    "enabled": false,
+    "separators": [""],
+    "separatorInvertBackground": [false],
+    "startCaps": [],
+    "endCaps": [],
+    "autoAlign": false
+  }
+}
+
