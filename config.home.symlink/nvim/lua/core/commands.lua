@@ -8,6 +8,10 @@ local function to_clipboard(value)
   vim.notify('Copied: ' .. value)
 end
 
+vim.api.nvim_create_user_command('CP', function()
+  to_clipboard(vim.fn.expand('%:p'))
+end, { desc = 'Copy full file path to clipboard' })
+
 vim.api.nvim_create_user_command('CopyFilePath', function()
   to_clipboard(vim.fn.expand('%:p'))
 end, { desc = 'Copy full file path to clipboard' })
@@ -41,4 +45,3 @@ vim.api.nvim_create_user_command('Signs', function()
 
   vim.notify('Signs ' .. (signs_enabled and 'enabled' or 'disabled'))
 end, { desc = 'Toggle sign column and all signs' })
-
