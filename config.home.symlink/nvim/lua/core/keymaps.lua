@@ -54,6 +54,10 @@ map('n', '<space>bd', function() require('utils.buffers').delete_current_buffer(
 map('c', '<C-p>', '<Up>', { noremap = true })
 map('c', '<C-n>', '<Down>', { noremap = true })
 
+-- Insert mode readline keybindings
+map('i', '<C-a>', '<Home>', { desc = 'Beginning of line', silent = true })
+map('i', '<C-e>', '<End>', { desc = 'End of line', silent = true })
+
 -- Help in new tab (command abbreviation)
 vim.cmd([[cnoreabbrev <expr> h getcmdtype() == ":" && getcmdline() == 'h' ? 'tab help' : 'h']])
 
