@@ -3,12 +3,20 @@
     "tavily": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "tavily-mcp@latest"],
+      "args": ["-y", "tavily-mcp@latest"]
     },
     "terminal": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@mkusaka/mcp-shell-server"],
+      "args": ["-y", "@mkusaka/mcp-shell-server"]
+    },
+    "excalidraw": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp_excalidraw/dist/index.js"],
+      "env": {
+        "EXPRESS_SERVER_URL": "http://localhost:3000",
+        "ENABLE_CANVAS_SYNC": "true"
+      }
     }
   }
 }
