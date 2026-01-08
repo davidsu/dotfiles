@@ -2,7 +2,6 @@
 
 # Navigation Aliases
 alias jd='cd $DOTFILES'
-alias jp='cd ~/projects'
 
 # Global Aliases
 alias -g G='| grep -i'
@@ -22,6 +21,9 @@ alias glv='git log --max-count=500 --name-only V'
 
 # Process
 alias killbg='kill $(sed -E '\''s/\[([[:digit:]]+)\].*/%\1/g'\'' <<< $(jobs))'
+
+# Javascript Ninja
+alias showPackage = jq '.scripts' package.json
 
 # Git Status in Vim (interactive git status using vim-fugitive)
 function gsv() {
