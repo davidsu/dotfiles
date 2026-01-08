@@ -26,6 +26,8 @@ function fag() {
         fi
     fi
 }
+alias frg='fag'
+alias '\r'='frg'
 
 # jfzf - Jump to frequently used directories using zoxide + fzf
 # Usage: jfzf
@@ -62,6 +64,17 @@ alias zi='jfzf'
 # mru - Most Recently Used files with fzf
 # Usage: mru or 1m
 export MRU_FILE="$HOME/.local/share/nvim_mru.txt"
+
+function showPackage(){
+   if [[ -z $1 ]]; then 
+       jq '.scripts' package.json | egrep '(".+"\s*:|[{}])'
+       return
+   fi;
+    #${1:-scripts} -> http://stackoverflow.com/questions/9332802/how-to-write-a-bash-script-that-takes-optional-input-arguments
+    #{ -> curly brace has no special meaning for regular sed BRE -> http://stackoverflow.com/questions/9205669/sed-find-and-replace-with-curly-braces
+    sed -En '/".*'${1:-scripts}'.*\{/,/}/p' package.json E '(".*"\s*:)|}'
+    # sed -n '/'${1:-scripts}'.*{/,/}/p' package.json E '(".*"\s*:)|}'
+}
 
 function mru() {
     if [[ ! -f "$MRU_FILE" ]]; then
