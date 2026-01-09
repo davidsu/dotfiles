@@ -23,7 +23,7 @@ map('v', '*', 'y/\\V<C-R>=escape(@","/\\")<CR><CR>', { desc = 'Search forward fo
 map('v', '#', 'y?\\V<C-R>=escape(@","?\\")<CR><CR>', { desc = 'Search backward for selection' })
 
 -- Clear search highlights
-map('n', '<leader>hc', '<cmd>nohlsearch<cr>', { desc = 'Clear highlights', silent = true })
+-- Note: <leader>hc is defined in plugins/editing.lua (interestingwords) to clear both plugin and native highlights
 map('n', '<Esc><Esc>', '<cmd>nohlsearch<cr>', { desc = 'Clear highlights', silent = true })
 
 -- Source/reload config
@@ -88,6 +88,9 @@ map('n', '\\q', '<cmd>q<cr>', { desc = 'Quit' })
 
 -- Quick window management
 map('n', '1o', '<cmd>only<cr>', { desc = 'Only this window' })
+
+-- Buffer/window cleanup - keep only current buffer and tab
+map('n', '<space>bo', '<cmd>BufOnly!<cr><cmd>silent! tabonly<cr>', { desc = 'Only this buffer and tab', silent = true })
 
 -- End diff - go to lower-right window and close all others
 map('n', '<space>ed', '<cmd>wincmd b | only<cr>', { desc = 'End diff (lower-right only)', silent = true })
