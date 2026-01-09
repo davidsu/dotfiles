@@ -23,7 +23,7 @@ alias glv='git log --max-count=500 --name-only V'
 alias killbg='kill $(sed -E '\''s/\[([[:digit:]]+)\].*/%\1/g'\'' <<< $(jobs))'
 
 # Javascript Ninja
-alias showPackage = jq '.scripts' package.json
+alias showPackage="jq '.scripts' package.json"
 
 # Git Status in Vim (interactive git status using vim-fugitive)
 function gsv() {
