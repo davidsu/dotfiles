@@ -6,6 +6,13 @@ local function map_q_to_close_buffer()
   vim.keymap.set('n', 'q', '<cmd>bdelete<cr>', { buffer = true, silent = true })
 end
 
+-- Highlight yanked text briefly for visual feedback
+vim.api.nvim_create_autocmd('TextYankPost', {
+  callback = function()
+    vim.highlight.on_yank({ timeout = 40 })
+  end,
+})
+
 -- Auto-reload buffer if file changed externally
 vim.api.nvim_create_autocmd({ 'FocusGained', 'BufEnter' }, {
   pattern = '*',
