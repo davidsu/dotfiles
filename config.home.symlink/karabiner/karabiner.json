@@ -5,6 +5,134 @@
       "complex_modifications": {
         "rules": [
           {
+            "description": "Left-Ctrl + W Scroll Layer (Right-Ctrl remains unmodified)",
+            "manipulators": [
+              {
+                "from": {
+                  "key_code": "w",
+                  "modifiers": {
+                    "mandatory": ["left_control"],
+                    "optional": ["any"]
+                  }
+                },
+                "parameters": { "basic.to_if_alone_timeout_milliseconds": 150 },
+                "to": [
+                  {
+                    "set_variable": {
+                      "name": "left_ctrl_w_scroll",
+                      "value": 1
+                    }
+                  }
+                ],
+                "to_after_key_up": [
+                  {
+                    "set_variable": {
+                      "name": "left_ctrl_w_scroll",
+                      "value": 0
+                    }
+                  }
+                ],
+                "to_if_alone": [
+                  {
+                    "key_code": "w",
+                    "modifiers": ["left_control"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "left_ctrl_w_scroll",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "k",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "mouse_key": { "vertical_wheel": -32 } }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "left_ctrl_w_scroll",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "j",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "mouse_key": { "vertical_wheel": 32 } }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "left_ctrl_w_scroll",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "u",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "mouse_key": { "vertical_wheel": -150 } }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "left_ctrl_w_scroll",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "d",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "mouse_key": { "vertical_wheel": 150 } }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "left_ctrl_w_scroll",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "h",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "mouse_key": { "horizontal_wheel": 50 } }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "left_ctrl_w_scroll",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "l",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "mouse_key": { "horizontal_wheel": -50 } }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
             "description": "fn + (hjkl) as arrows",
             "manipulators": [
               {
@@ -210,4 +338,3 @@
     }
   ]
 }
-
