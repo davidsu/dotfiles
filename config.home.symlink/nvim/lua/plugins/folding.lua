@@ -32,7 +32,7 @@ local function config()
 
   require('ufo').setup({
     open_fold_hl_timeout = 0, -- disable highlight flash when opening folds
-    provider_selector = function(bufnr, filetype, buftype)
+    provider_selector = function(_bufnr, filetype, _buftype)
       if filetype == 'markdown' then
         return { 'treesitter', 'indent' }
       end
@@ -46,6 +46,33 @@ local function config()
   vim.keymap.set('n', 'zM', require('ufo').closeAllFolds, { desc = 'Close all folds' })
   vim.keymap.set('n', 'zr', require('ufo').openFoldsExceptKinds, { desc = 'Open folds incrementally' })
   vim.keymap.set('n', 'zm', require('ufo').closeFoldsWith, { desc = 'Close folds incrementally' })
+
+  local function workaround_markdown_not_folding()
+    local bufnr = vim.api.nvim_get_current_buf()
+
+    vim.defer_fn(function()
+      if not vim.api.nvim_buf_is_valid(bufnr) then
+        return
+      end
+
+      local fb = require('ufo.fold.manager'):get(bufnr)
+      if fb and fb.status == 'pending' then
+        -- Suppress the "Reloading" notification
+        local original_notify = vim.notify
+        ---@diagnostic disable-next-line: duplicate-set-field
+        vim.notify = function() end
+
+        require('lazy.core.loader').reload('nvim-ufo')
+
+        vim.notify = original_notify
+      end
+    end, 350)
+  end
+
+  vim.api.nvim_create_autocmd('BufEnter', {
+    pattern = '*.md',
+    callback = workaround_markdown_not_folding,
+  })
 end
 
 return {
