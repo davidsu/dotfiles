@@ -43,6 +43,7 @@ local lua_settings = {
     },
     diagnostics = {
       globals = { 'vim', 'hs' },
+      unusedLocalExclude = { '_*' },
     },
     workspace = {
       library = {
