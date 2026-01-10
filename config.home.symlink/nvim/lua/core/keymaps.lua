@@ -90,7 +90,7 @@ map('n', '\\q', '<cmd>q<cr>', { desc = 'Quit' })
 map('n', '1o', '<cmd>only<cr>', { desc = 'Only this window' })
 
 -- Buffer/window cleanup - keep only current buffer and tab
-map('n', '<space>bo', '<cmd>BufOnly!<cr><cmd>silent! tabonly<cr>', { desc = 'Only this buffer and tab', silent = true })
+map('n', '<space>bo', '<cmd>BufOnly<cr><cmd>silent! tabonly<cr>', { desc = 'Only this buffer and tab', silent = true })
 
 -- End diff - go to lower-right window and close all others
 map('n', '<space>ed', '<cmd>wincmd b | only<cr>', { desc = 'End diff (lower-right only)', silent = true })
@@ -140,16 +140,21 @@ endfunction
 map('t', '<C-q>', '<C-\\><C-n>:wincmd q<cr>', { desc = 'Close terminal window' })
 
 -- Window navigation from terminal
-map('t', '<C-h>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("h")<cr>', { desc = 'Move/split left from terminal' })
-map('t', '<C-j>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("j")<cr>', { desc = 'Move/split down from terminal' })
-map('t', '<C-k>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("k")<cr>', { desc = 'Move/split up from terminal' })
-map('t', '<C-l>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("l")<cr>', { desc = 'Move/split right from terminal' })
+map('t', '<C-h>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("h")<cr>',
+  { desc = 'Move/split left from terminal' })
+map('t', '<C-j>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("j")<cr>',
+  { desc = 'Move/split down from terminal' })
+map('t', '<C-k>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("k")<cr>',
+  { desc = 'Move/split up from terminal' })
+map('t', '<C-l>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("l")<cr>',
+  { desc = 'Move/split right from terminal' })
 
 -- Switch to alternate file from terminal
 map('t', 'm,', '<C-\\><C-n><c-^>', { desc = 'Switch to alternate file from terminal' })
 
 -- Clear scrollback
-map('t', '<C-l>', '<C-l><C-\\><C-n>:call ClearTermScrollback()<cr>i', { desc = 'Clear terminal scrollback', silent = true })
+map('t', '<C-l>', '<C-l><C-\\><C-n>:call ClearTermScrollback()<cr>i',
+  { desc = 'Clear terminal scrollback', silent = true })
 
 -- Rerun last command
 map('t', '<C-x>', '<C-c><C-l><C-\\><C-n>:call ClearTermScrollback()<cr>i<C-p><cr>', { desc = 'Rerun last command' })
