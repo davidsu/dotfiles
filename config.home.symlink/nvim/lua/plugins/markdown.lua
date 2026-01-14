@@ -1,29 +1,35 @@
 -- Markdown Preview
--- Browser-based markdown preview with live updates (pure Lua, no dependencies)
+-- Browser-based markdown preview with live updates
 
 return {
+  -- DISABLED: live-preview.nvim has file descriptor leaks
+  -- Causes "Too many open files" error with extensive use
+  -- See: ~/.claude/plans/squishy-percolating-owl.md
+  -- {
+  --   'brianhuster/live-preview.nvim',
+  --   ft = { 'markdown', 'html' },
+  --   config = function()
+  --     require('livepreview').setup({
+  --       port = 5500,
+  --       autokill = true,
+  --     })
+  --
+  --     vim.api.nvim_create_autocmd('FileType', {
+  --       pattern = { 'markdown', 'html' },
+  --       callback = function()
+  --         local opts = { buffer = true, silent = true }
+  --         vim.keymap.set('n', '<leader>mp', '<cmd>LivePreview<cr>', opts)
+  --         vim.keymap.set('n', '<leader>ms', '<cmd>StopPreview<cr>', opts)
+  --       end,
+  --     })
+  --   end,
+  -- },
+
+  -- Markdown preview with Node.js (no file descriptor leaks)
   {
-    'brianhuster/live-preview.nvim',
-    ft = { 'markdown', 'html' },  -- Load for markdown and HTML files
-    config = function()
-      require('livepreview').setup({
-        -- Port for preview server (0 = auto)
-        port = 5500,
-        
-        -- Auto-open browser when starting preview
-        autokill = true,  -- Kill server when Neovim exits
-      })
-      
-      -- Keybindings for markdown/html buffers
-      vim.api.nvim_create_autocmd('FileType', {
-        pattern = { 'markdown', 'html' },
-        callback = function()
-          local opts = { buffer = true, silent = true }
-          vim.keymap.set('n', '<leader>mp', '<cmd>LivePreview<cr>', opts)
-          vim.keymap.set('n', '<leader>ms', '<cmd>StopPreview<cr>', opts)
-        end,
-      })
-    end,
+    'iamcco/markdown-preview.nvim',
+    ft = { 'markdown' },
+    build = 'cd app && npm install',
   },
 }
 
