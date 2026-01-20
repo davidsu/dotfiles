@@ -60,8 +60,9 @@ link_home_files() {
     local symlink_list
     symlink_list=$(mktemp)
 
-    # Find all .home.*symlink* files (matches both old and new formats)
-    find "$dotfiles_root" -name "*.home.*symlink*" -not -path "*/.git/*" > "$symlink_list"
+    # Find all *.symlink* files/directories anywhere in the repo
+    # Filename encodes destination path, so repo organization doesn't matter
+    find "$dotfiles_root" -name "*.symlink*" -not -path "*/.git/*" > "$symlink_list"
 
     # Get the path to the transformer script
     local transformer="$dotfiles_root/installation/symlinkPathTransformer.js"

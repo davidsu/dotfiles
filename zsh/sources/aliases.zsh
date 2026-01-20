@@ -11,7 +11,7 @@ alias -g IB='--inspect-brk'
 
 # ls (BSD/macOS): colorized output + classify + one entry per line
 alias ls='ls -GF1'
-alias la='ls -lAh'
+alias la='ls -Ah'
 
 alias vim='nvim'
 
