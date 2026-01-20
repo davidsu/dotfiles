@@ -87,10 +87,10 @@
       "brew_type": "formula",
       "description": "Minimal, blazing-fast, and infinitely customizable prompt for any shell"
     },
-    "iterm2": {
+    "ghostty": {
       "type": "workflow",
       "brew_type": "cask",
-      "description": "Terminal emulator for macOS"
+      "description": "Fast, native, GPU-accelerated terminal emulator"
     },
     "karabiner-elements": {
       "type": "workflow",
