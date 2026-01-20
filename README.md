@@ -1,33 +1,37 @@
-# Dotfiles
+# 🚀 Dotfiles
 
-A modern, performance-focused dotfiles configuration optimized exclusively for macOS.
+> A modern, performance-focused dotfiles configuration optimized exclusively for macOS
 
-## Quick Start
+<div align="center">
 
-For a brand-new macOS machine, you can bootstrap everything with a single copy/paste command:
+![macOS](https://img.shields.io/badge/macOS-Apple_Silicon-000000?style=flat-square&logo=apple&logoColor=white)
+![Neovim](https://img.shields.io/badge/Neovim-57A143?style=flat-square&logo=neovim&logoColor=white)
+![Zsh](https://img.shields.io/badge/Zsh-F15A24?style=flat-square&logo=gnu-bash&logoColor=white)
+
+</div>
+
+---
+
+## ⚡ Quick Start
+
+For a brand-new macOS machine, bootstrap everything with a single command:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/davidsu/dotfiles/master/installation/bootstrap.sh | bash
 ```
 
-### Post-Installation: iTerm2 Font Configuration
+> 💡 **Note:** Ghostty is pre-configured to use JetBrains Mono Nerd Font via `~/.config/ghostty/config` for proper icon display in nvim-tree and terminal applications.
 
-After installation, you need to manually configure iTerm2 to use the installed Nerd Font for proper icon display:
+---
 
-1. Open **iTerm2 Preferences** (Cmd+,)
-2. Go to **Profiles → Text**
-3. Enable **"Use a different font for non-ASCII text"** checkbox
-4. For the **Non-ASCII Font**, select **"JetBrainsMono Nerd Font Mono"** (Regular, 12pt)
-5. Restart iTerm2 completely (Cmd+Q, then reopen)
+## 📋 Prerequisites
 
-This enables proper display of icons in nvim-tree and other terminal applications that use Nerd Font glyphs.
+- 🍎 **macOS with Apple Silicon** - Designed for M1/M2/M3/M4 chips (Intel support removed)
+- 🍺 **Homebrew** - Installation script will auto-install if missing
 
-## Prerequisites
+---
 
-- **macOS with Apple Silicon**: This configuration is designed for macOS on Apple Silicon (M1/M2/M3/M4 chips). Intel Mac support has been removed for simplicity.
-- **Homebrew**: The installation script will attempt to install Homebrew if it's missing.
-
-## Manual Installation
+## 🔧 Manual Installation
 
 Clone this repository into `~/.dotfiles` and run the installation script:
 
@@ -37,126 +41,210 @@ cd ~/.dotfiles
 ./installation/install.sh
 ```
 
-The script will:
-1. Perform pre-flight system checks.
-2. Bootstrap `mise` (a multi-language version manager) for Node.js version management.
-3. Install and verify all tools defined in `installation/tools.json`.
+**The script will:**
+1. ✅ Perform pre-flight system checks
+2. 📦 Bootstrap `mise` for Node.js version management
+3. 🛠️ Install and verify all tools from `installation/tools.json`
 
-## Architecture
+---
 
-- **`installation/`**: Contains the bootstrap and dependency management scripts.
-- **`zsh/`**: Zsh configuration with entry point files (`*.home.symlink`) symlinked to `$HOME` (e.g., `zshrc.home.symlink` -> `~/.zshrc`). Modular configuration files are organized in `zsh/sources/` (e.g., `env.zsh`, `aliases.zsh`, `completion.zsh`, etc.).
-- **`config.home.symlink/`**: Configuration directory symlinked to `~/.config`.
-- **`tools.json`**: The single source of truth for all tools and dependencies.
-- **`planning.md`**: Detailed technical specification and project goals.
-- **`tasks.md`**: Current development progress and roadmap.
+## 📁 Architecture
 
-## Core Tools
+### 🗂️ Directory Structure
 
-This dotfiles setup includes carefully selected tools for an efficient development workflow:
+| Directory | Purpose |
+|-----------|---------|
+| `installation/` | Bootstrap scripts + `symlinkPathTransformer.js` |
+| `zsh/` | Modular Zsh config (`env.zsh`, `aliases.zsh`, etc.) |
+| `DOTconfig.home.symlink/` | Tool configs → `~/.config` |
+| `tools.json` | Single source of truth for all tools |
 
-### Development Environment
-- **Neovim**: Primary text editor with Lua-based configuration for fast startup and modern plugin ecosystem
-- **mise**: Multi-language version manager for Node.js and other runtimes (successor to rtx)
-- **ripgrep**: Fast, line-oriented search tool (replaces ag) with extensive integration throughout the setup
+### 🔗 Symlink Naming Convention
 
-### Shell & Terminal
-- **Zsh**: Modern shell with plugin management via Antidote
-- **Starship**: Minimal, blazing-fast, and infinitely customizable shell prompt
-- **iTerm2**: Feature-rich terminal emulator with profile management and shell integration
+Files use a **self-documenting** naming pattern: `{name}.home[.{path}].symlink[.{extension}]`
 
-### Shell Customizations
-This setup includes several core Zsh optimizations and productivity helpers, organized in a modular structure within the `zsh/` directory:
-
-- **Modularity & Maintenance**:
-  - **Modular Files**: Config is split into `zsh/sources/env.zsh`, `zsh/sources/aliases.zsh`, `zsh/sources/completion.zsh`, `zsh/sources/keybindings.zsh`, `zsh/sources/options.zsh`, and `zsh/sources/tools.zsh`.
-  - **Easy Reloading**: Use the `reload` function or the `a` alias to instantly refresh your entire Zsh configuration by sourcing all files in `zsh/sources/`.
-- **Navigation**:
-  - `auto_cd`: Change directory by simply typing its name
-  - `jd`: Shortcut for `cd ~/.dotfiles`
-  - `jp`: Shortcut for `cd ~/projects`
-- **Productivity**:
-  - **Global Aliases**: Use `G` (grep), `L` (less), `T` (tail), `H` (head), and `W` (wc -l) anywhere in a command
-  - **Fuzzy Search**: `fzf` integration for history and file finding
-  - **Smart Completion**: Case-insensitive and verbose tab completion initialized via `compinit`
-- **Keybindings**:
-  - **History Search**: `Ctrl+P`/`Ctrl+N` and Up/Down arrows for prefix-based history search (via `up-line-or-beginning-search`)
-  - `Ctrl+G`: Push current line to the buffer (clear line to run another command, then restore)
-  - `Ctrl+H`: Run help for the current command
-- **Safety**: `HIST_VERIFY` prevents immediate execution of history expansions
-
-### Productivity Tools
-- **fzf**: Command-line fuzzy finder for efficient file and content searching
-  - `fag <pattern>` - Search files with ripgrep and open in nvim
-  - `fa` - File finder with bat-powered preview
-  - `mru` or `1m` - Most recently used files (shell and nvim)
-  - `zi` or `jfzf` - Jump to frequently used directories with zoxide
-  - `chromehistory` - Browse Chrome history
-  - `chromebookmarks` or `cb` - Browse Chrome bookmarks
-- **Karabiner-Elements**: Powerful keyboard customization with Vim-style navigation and smart modifier keys
-- **Rectangle**: Window management with keyboard shortcuts for moving and resizing windows
-- **macOS Spotlight**: Built-in clipboard history (⌘+Space → ⌘+4) with configurable retention (30 min, 8 hours, or 7 days)
-
-### Container & Version Control
-- **Docker (Colima)**: Lightweight container runtime for development environments
-- **Git**: Version control with enhanced configuration and productivity shortcuts
-- **git-open**: Opens the GitHub/GitLab page for a repository in your browser
-
-## Keyboard Customization (Karabiner-Elements)
-
-This dotfiles includes comprehensive keyboard remappings via Karabiner-Elements:
-
-### Navigation Layer
-- **Fn + H/J/K/L** → Arrow keys (Vim-style navigation)
-- **Fn + N/M** → Home/End keys
-
-### Volume Controls (FC660C Keyboard)
-- **Fn + 9** → Volume Down
-- **Fn + 0** → Volume Up
-
-### Smart Modifier Keys
-- **Caps Lock**: Tap for Escape, hold for Left Control
-- **Return**: Tap for Return, hold for Right Control
-
-### Function Key Remapping
-- **F1/F2** → Display brightness controls
-- **F3/F4** → Mission Control/Launchpad
-- **F5/F6** → Keyboard illumination
-- **F7/F8/F9** → Media controls (rewind/play/fast-forward)
-- **F10/F11/F12** → Volume controls
-
-### Device-Specific Configuration
-- Optimized for FC660C mechanical keyboard
-- Custom Fn function key mappings
-
-## Logs
-
-Installation logs are captured in `~/Library/Logs/dotfiles/install.log`.
-Error logs are captured in `~/Library/Logs/dotfiles/install_errors.log`.
-
-## Claude Code Setup
-
-This dotfiles includes MCP server configuration for Claude Code.
-
-### API Key Setup (One-time)
-
-Store your Tavily API key in macOS Keychain (the `-T` flag prevents password prompts):
-
-```bash
-security add-generic-password -a "$USER" -s "TAVILY_API_KEY" -w "your-tavily-api-key" -T /usr/bin/security
+**Examples:**
+```
+DOTzshrc.home.symlink           → ~/.zshrc
+CLAUDE.home.DOTclaude.symlink.md → ~/.claude/CLAUDE.md
+DOTconfig.home.symlink/          → ~/.config/
 ```
 
-Get a Tavily API key at: https://tavily.com
+**Pattern Rules:**
+- 📍 `DOT` = literal `.` for hidden files/directories
+- 📂 Dots between path components = `/` slashes
+- 🎯 Repository organization = ignored (only filename matters!)
+- 🤖 `symlinkPathTransformer.js` parses filenames → destinations
 
-### How It Works
+> 💡 This convention lets you organize by topic in the repo while encoding destination paths in filenames.
 
-- `zshenv` loads API keys from Keychain into environment variables on shell startup
-- `.mcp.json` defines MCP servers for this project (no secrets, auto-loaded)
-- `claude/example.claude.json` provides reference configs for `~/.claude.json`
+---
 
-### Verify Setup
+## 🛠️ Core Tools
+
+### 💻 Development Environment
+
+| Tool | Description |
+|------|-------------|
+| **Neovim** | 📝 Lua-based editor with fast startup |
+| **mise** | 🔄 Multi-language version manager |
+| **ripgrep** | 🔍 Fast search tool with deep integration |
+
+### 🐚 Shell & Terminal
+
+| Tool | Description |
+|------|-------------|
+| **Zsh** | 🖥️ Modern shell with modular config |
+| **Starship** | ⭐ Blazing-fast customizable prompt |
+| **Ghostty** | ⚡ GPU-accelerated terminal emulator |
+
+### 🎯 Productivity Tools
+
+**🔎 Fuzzy Finder (fzf)**
+- `fag <pattern>` - Search with ripgrep → open in nvim
+- `fa` - File finder with bat preview
+- `mru` / `1m` - Most recently used files
+- `zi` / `jfzf` - Jump to frequent directories
+- `chromehistory` - Browse Chrome history
+- `cb` - Browse Chrome bookmarks
+
+**⌨️ System Tools**
+- 🎹 **Karabiner-Elements** - Vim-style navigation + smart modifiers
+- 📐 **Rectangle** - Window management shortcuts
+- 📋 **Spotlight** - Clipboard history (⌘+Space → ⌘+4)
+
+### 🐳 Container & Version Control
+
+| Tool | Description |
+|------|-------------|
+| **Docker (Colima)** | 📦 Lightweight container runtime |
+| **Git** | 🌿 Enhanced config + productivity shortcuts |
+| **git-open** | 🔗 Open repo in browser |
+
+---
+
+## ⚙️ Tool Configurations
+
+### 🎨 Prettier (`~/.config/prettierrc.json`)
+
+```json
+{
+  "printWidth": 110,
+  "semi": false,
+  "singleQuote": true,
+  "trailingComma": "none"
+}
+```
+
+### 🔍 Ripgrep (`~/.config/ripgrep/`)
+
+**Config:**
+- 👁️ Search hidden files + follow symlinks
+- 📏 Max 150 column width
+- 📦 Skip files > 10MB
+
+**Ignore patterns (`.rgignore`):**
+- 🔒 Lock files (`package-lock.json`, `yarn.lock`, etc.)
+- 📦 Minified files (`*.min.js`, `*.map`)
+- 📄 Log files (`*.log`)
+- ✅ Respects `.gitignore` by default
+
+---
+
+## ⌨️ Keyboard Customization
+
+> 🎹 Powered by **Karabiner-Elements**
+
+### 🧭 Navigation Layer
+```
+Fn + H/J/K/L → Arrow keys (Vim-style)
+Fn + N/M     → Home/End
+```
+
+### 🔊 Volume Controls (FC660C)
+```
+Fn + 9 → Volume Down
+Fn + 0 → Volume Up
+```
+
+### 🎛️ Smart Modifier Keys
+```
+Caps Lock → Tap: Escape | Hold: Left Control
+Return    → Tap: Return | Hold: Right Control
+```
+
+### 🎹 Function Keys
+```
+F1/F2       → Brightness
+F3/F4       → Mission Control/Launchpad
+F5/F6       → Keyboard illumination
+F7/F8/F9    → Media controls
+F10/F11/F12 → Volume
+```
+
+---
+
+## 🐚 Shell Customizations
+
+### 🧩 Modularity
+- **📂 Organized**: Config split into `zsh/sources/*.zsh` files
+- **🔄 Reload**: `reload` or `a` alias to refresh config
+
+### 🧭 Navigation
+- `auto_cd` - Type directory name to cd
+- `jd` - Jump to `~/.dotfiles`
+- `jp` - Jump to `~/projects`
+
+### ⚡ Productivity
+- **Global Aliases**: `G` (grep) · `L` (less) · `T` (tail) · `H` (head) · `W` (wc -l)
+- **Fuzzy Search**: fzf integration everywhere
+- **Smart Completion**: Case-insensitive tab completion
+
+### 🎹 Keybindings
+- `Ctrl+P`/`Ctrl+N` + `↑`/`↓` - Prefix-based history search
+- `Ctrl+G` - Buffer current line
+- `Ctrl+H` - Help for current command
+
+---
+
+## 📝 Logs
+
+Installation logs:
+```
+~/Library/Logs/dotfiles/install.log
+~/Library/Logs/dotfiles/install_errors.log
+```
+
+---
+
+## 🤖 Claude Code Setup
+
+### 🔑 API Key Setup (One-time)
+
+Store your Tavily API key in macOS Keychain:
+
+```bash
+security add-generic-password -a "$USER" -s "TAVILY_API_KEY" -w "your-api-key" -T /usr/bin/security
+```
+
+Get your key at: **https://tavily.com**
+
+### ⚙️ How It Works
+
+1. `zshenv` loads API keys from Keychain → environment variables
+2. `.mcp.json` defines MCP servers (no secrets, auto-loaded)
+3. `claude/example.claude.json` provides reference configs
+
+### ✅ Verify Setup
 
 ```bash
 echo $TAVILY_API_KEY  # Should show your key after new shell
 ```
 
+---
+
+<div align="center">
+
+**Made with ❤️ for macOS**
+
+</div>
