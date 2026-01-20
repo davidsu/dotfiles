@@ -60,31 +60,27 @@ link_home_files() {
     local symlink_list
     symlink_list=$(mktemp)
 
-    # Find all .home.symlink files (unified pattern)
-    find "$dotfiles_root" -name "*.home.symlink*" -not -path "*/.git/*" > "$symlink_list"
+    # Find all .home.*symlink* files (matches both old and new formats)
+    find "$dotfiles_root" -name "*.home.*symlink*" -not -path "*/.git/*" > "$symlink_list"
+
+    # Get the path to the transformer script
+    local transformer="$dotfiles_root/installation/symlinkPathTransformer.js"
 
     while read -r src; do
         [[ -z "$src" ]] && continue
         local filename
         filename=$(basename "$src")
-        local dest
 
-        # Pattern: filename.home.SUBDIR.symlink -> ~/.SUBDIR/filename
-        if [[ "$filename" == *.home.*.symlink ]]; then
-            local base_name="${filename%.home.*}"
-            local temp="${filename#*.home.}"
-            local subdir="${temp%.symlink}"
-            dest="${HOME}/.${subdir}/${base_name}"
-        # Pattern: filename.home.symlink -> ~/.filename
-        elif [[ "$filename" == *.home.symlink ]]; then
-            local base_name="${filename%.home.symlink}"
-            dest="${HOME}/.${base_name}"
-        fi
+        # Use Node.js script to transform filename to destination path
+        local dest
+        dest=$(node "$transformer" "$filename" 2>/dev/null)
 
         if [[ -n "$dest" ]]; then
             if ! safe_link "$src" "$dest"; then
                 failed=$((failed + 1))
             fi
+        else
+            log_warn "Could not parse filename pattern: $filename"
         fi
     done < "$symlink_list"
     rm "$symlink_list"
