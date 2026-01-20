@@ -1,0 +1,14 @@
+# Search hidden files and directories
+--hidden
+
+# Exclude .git directory
+--glob=!.git/
+
+# Follow symlinks
+--follow
+
+# Limit line length in output
+--max-columns=150
+
+# Skip files larger than 10MB
+--max-filesize=10M

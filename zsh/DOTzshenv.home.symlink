@@ -1,5 +1,8 @@
 #!/bin/zsh
 
+# Ripgrep config
+export RIPGREP_CONFIG_PATH="$HOME/.config/ripgrep/config"
+
 # Load API keys from macOS Keychain
 # Add keys with: security add-generic-password -a "$USER" -s "TAVILY_API_KEY" -w "your-key" -T /usr/bin/security
 if command -v security &> /dev/null; then
