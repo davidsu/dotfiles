@@ -6,57 +6,46 @@
  * Format: {name}.home[.{path}].symlink[.{extension}]
  * - DOT represents a literal dot (for hidden directories/files)
  * - Dots between path components become slashes
- * - Repository organization (which folder files are in) is ignored
  *
  * Examples:
  *   CLAUDE.home.DOTclaude.symlink.md -> ~/.claude/CLAUDE.md
  *   DOTzshrc.home.symlink -> ~/.zshrc
  *   init.lua.home.DOTconfig.symlink -> ~/.config/init.lua
- *   DOTconfig.home.symlink -> ~/.config
  */
-function transformPath(filename, homeDir) {
-  // Only support .home. pattern for now (files going to home directory)
-  if (!filename.includes('.home')) {
-    return null;
-  }
 
-  // Extract extension: everything after "symlink" (.md or empty string)
-  const extension = filename.replace(/.*symlink/, '');
+const extractExtension = (filename) => filename.replace(/.*symlink/, '')
+const removeSymlinkAndExtension = (filename) => filename.replace(/\.symlink.*$/, '')
+const replaceDOTWithDot = (str) => str.replace(/DOT/g, '.')
+const removeLeadingDot = (str) => (str ? str.substring(1) : '')
 
-  // Get base filename by removing .symlink{extension}
-  const base = filename.replace(/\.symlink.*$/, '');
-
-  // Split on .home to get name and path parts
-  const parts = base.split('.home');
-  const name = parts[0].replace(/DOT/g, '.');
-  const pathPart = parts[1] ? parts[1].substring(1) : '';  // Remove leading '.'
-
-  // Build destination path
-  const transformedPath = transformPathComponent(pathPart);
-  return `${homeDir}${transformedPath}/${name}${extension}`;
+const transformPathToDirectory = (pathPart) => {
+  if (!pathPart) return ''
+  return '/' + pathPart.replace(/\./g, '/').replace(/DOT/g, '.')
 }
 
-function transformPathComponent(pathPart) {
-  if (!pathPart) return '';
-  // Replace . with / for path separators, then DOT with . for literal dots, add leading /
-  return '/' + pathPart.replace(/\./g, '/').replace(/DOT/g, '.');
+const transformPath = (filename, homeDir) => {
+  if (!/\.home/.test(filename)) return null
+
+  const extension = extractExtension(filename)
+  const base = removeSymlinkAndExtension(filename)
+  const [namePart, ...rest] = base.split('.home')
+  const name = replaceDOTWithDot(namePart)
+  const pathPart = removeLeadingDot(rest.join('.home'))
+  const directory = transformPathToDirectory(pathPart)
+
+  return `${homeDir}${directory}/${name}${extension}`
 }
 
-// CLI entry point
-(function main() {
-  const filename = process.argv[2];
+const filename = process.argv[2]
 
-  if (!filename) {
-    console.error('Usage: symlinkPathTransformer.js <filename>');
-    process.exit(1);
-  }
+const result = transformPath(filename, process.env.HOME)
 
-  const result = transformPath(filename, process.env.HOME);
-
-  if (result) {
-    console.log(result);
-  } else {
-    console.error(`Could not parse filename: ${filename}`);
-    process.exit(1);
-  }
-})();
+if (result) {
+  console.log(result)
+} else {
+  const errorMsg = filename
+    ? `Could not parse filename: ${filename}`
+    : 'Usage: symlinkPathTransformer.js <filename>'
+  console.error(errorMsg)
+  process.exit(1)
+}
