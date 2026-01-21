@@ -1,6 +1,18 @@
-# Coding Style Guide
+---
+name: coding
+description: Coding style guide and best practices for writing clean, maintainable code
+---
 
-## Core Principles
+# Coding Guidelines
+
+## General Principles
+
+- **Understand before changing** - Read existing code before making modifications
+- **Ask for clarity** - When requirements are ambiguous, ask rather than guess
+- **Minimize scope** - Only change what's directly requested or clearly necessary
+- **Prefer clarity** - Clear code over clever code
+
+## Code Style Principles
 
 - **Keep It Simple (KISS)**
   - Simple code beats clever code
