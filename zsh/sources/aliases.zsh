@@ -8,6 +8,7 @@ alias -g G='| grep -i'
 alias -g V=' > /tmp/t && nvim /tmp/t -c '\''nmap q :q!<cr>'\'''
 alias -g PJ='package.json'
 alias -g IB='--inspect-brk'
+alias -g NO='--name-only'
 
 # ls (BSD/macOS): colorized output + classify + one entry per line
 alias ls='ls -GF1'
@@ -40,3 +41,10 @@ function gsv() {
 }
 
 alias gsva='gsv'
+
+function goto(){
+    #dirname removes the filename from path
+    #realpath gives the path to the file, if symlinked it gives the path to the actual file, not the link
+    cd $(dirname $(realpath $(which $1)))
+}
+
