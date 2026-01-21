@@ -107,6 +107,17 @@
       "brew_type": "cask",
       "homebrew_package": "font-jetbrains-mono-nerd-font",
       "description": "Nerd Font patched version of JetBrains Mono - required for nvim-tree icons"
+    },
+    "claude-code": {
+      "type": "workflow",
+      "brew_type": "cask",
+      "cmd": "claude",
+      "description": "Official CLI for Claude AI - intelligent coding assistant"
+    },
+    "zoom": {
+      "type": "workflow",
+      "brew_type": "cask",
+      "description": "Video conferencing and web conferencing service"
     }
   }
 }
