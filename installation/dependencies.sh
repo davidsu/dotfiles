@@ -85,13 +85,13 @@ install_tools() {
         else
             log_info "Installing $pkg ($brew_type)..."
             if [[ "$brew_type" == "cask" ]]; then
-                if brew install --cask "$pkg"; then
+                if brew install --cask "$pkg" < /dev/null; then
                     log_success "Successfully installed $pkg ($brew_type)"
                 else
                     log_error "Failed to install $pkg ($brew_type)"
                 fi
             else
-                if brew install "$pkg"; then
+                if brew install "$pkg" < /dev/null; then
                     log_success "Successfully installed $pkg ($brew_type)"
                 else
                     log_error "Failed to install $pkg ($brew_type)"
