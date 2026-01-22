@@ -124,7 +124,7 @@ function safeLink(src, dest) {
 }
 
 function findSymlinkFiles(rootDir) {
-  const output = execSync(`rg --files -g '*.symlink*'`, {
+  const output = execSync(`find . -name '*.symlink*' -type f`, {
     cwd: rootDir,
     encoding: 'utf-8'
   });
