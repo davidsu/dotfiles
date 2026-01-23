@@ -117,6 +117,11 @@
       "type": "workflow",
       "brew_type": "cask",
       "description": "Privacy-focused web browser"
+    },
+    "bitwarden": {
+      "type": "workflow",
+      "brew_type": "cask",
+      "description": "Bitwarden desktop password manager"
     }
   }
 }
