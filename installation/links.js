@@ -43,6 +43,19 @@ function transformPath(filename) {
   return `${process.env.HOME}${directory}/${name}${extension}`;
 }
 
+// Handle edge case: mise creates ~/.config before symlinks run
+function handleConfigEdgeCase() {
+  const configPath = path.join(process.env.HOME, '.config');
+
+  if (isSymlink(configPath)) return;
+
+  const contents = fs.readdirSync(configPath).filter(f => !f.startsWith('.'));
+  if (contents.length === 1 && contents[0] === 'mise') {
+    log.info('~/.config only contains mise/, removing to allow symlink...');
+    fs.rmSync(configPath, { recursive: true });
+  }
+}
+
 // File operations
 function isSymlink(filePath) {
   try {
@@ -124,7 +137,7 @@ function safeLink(src, dest) {
 }
 
 function findSymlinkFiles(rootDir) {
-  const output = execSync(`find . -name '*.symlink*' -type f`, {
+  const output = execSync(`find . -name '*.symlink*' \\( -type f -o -type d \\)`, {
     cwd: rootDir,
     encoding: 'utf-8'
   });
@@ -161,6 +174,7 @@ function linkHomeFiles() {
 function setupSymlinks() {
   log.info('Starting symlinking process...');
 
+  handleConfigEdgeCase();
   const failedCount = linkHomeFiles();
 
   if (failedCount > 0) {
