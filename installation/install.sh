@@ -41,6 +41,7 @@ main() {
     post_install
 
     log_success "Installation and verification completed successfully."
+    log_info "IMPORTANT: Manual post-install steps are required. See README.md → 'Post-install manual steps'."
 }
 
 # Post-installation configurations (tool-specific)

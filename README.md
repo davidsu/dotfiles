@@ -48,6 +48,85 @@ cd ~/.dotfiles
 
 ---
 
+## ✅ Post-install manual steps
+
+After running `./installation/install.sh`, complete these manual steps:
+
+### 1. macOS Privacy & Security permissions
+
+#### Zoom
+- Open **System Settings → Privacy & Security**:
+  - **Screen Recording**: enable Zoom (needed for screen sharing).
+  - **Microphone**: enable Zoom (for audio).
+  - **Camera**: enable Zoom (for video).
+  - **Accessibility**: enable Zoom if you want remote control / keyboard shortcuts to work properly.
+- Start a test meeting and confirm you can share screen + use mic/camera.
+
+#### Karabiner-Elements
+- Open **Karabiner-Elements** once so macOS prompts for permissions.
+- Then in **System Settings → Privacy & Security**:
+  - **Input Monitoring**: enable `Karabiner-Elements`.
+  - **Accessibility**: enable `Karabiner-Elements`.
+- In Karabiner:
+  - Enable the `Karabiner Virtual Keyboard` device in the keyboard settings if prompted.
+  - Select your preferred key mappings profile.
+
+#### Rectangle
+- Open **Rectangle** once so it requests **Accessibility** permission.
+- In **System Settings → Privacy & Security → Accessibility**, enable `Rectangle`.
+- Optionally tweak the keyboard shortcuts in Rectangle’s preferences.
+
+### 2. Browser & default apps
+
+#### Brave
+- Sign in / enable Brave Sync (if you use it).
+- Make Brave the **default browser** via Brave settings.
+- Install the **Bitwarden** browser extension in Brave:
+  - Open Brave and visit: `https://chrome.google.com/webstore/detail/bitwarden-password-manager/nngceckbapebfimnlniiiahkandclblb`
+  - Click **Add to Brave** and confirm.
+
+#### Bitwarden desktop
+- Launch the Bitwarden app (installed via Homebrew cask).
+- Sign in or create an account.
+- (Optional) Enable OS-level autofill / hotkeys in Bitwarden settings.
+
+#### Ghostty
+- Open Ghostty and confirm it’s using your config (font, theme, keybindings).
+- Optionally:
+  - Set Ghostty as your default terminal in any tools that support it.
+  - Pin Ghostty to the Dock (the installer clears Dock items).
+
+### 3. Shell / dev environment
+
+- Open a new terminal and verify:
+  - `zsh` is the default shell.
+  - Starship prompt is active.
+  - `fzf`, `zoxide`, `rg`, `fd`, `bat` are on `PATH`.
+
+- Verify **mise**:
+  - Run `mise --version` or `mise doctor`.
+  - Install core runtimes with `mise use -g <tool>@<version>` if needed.
+
+- Verify **Neovim**:
+  - Run `nvim` once to let it install plugins and LSPs.
+  - Open a project and confirm treesitter, LSP, and formatting work.
+
+### 4. Git / GitHub
+
+- Set global Git identity:
+  - `git config --global user.name "Your Name"`
+  - `git config --global user.email "you@example.com"`
+- Generate an SSH key and add it to GitHub if needed:
+  - `ssh-keygen -t ed25519 -C "you@example.com"`
+
+### 5. Dock & workspace
+
+Because the installer clears the Dock:
+- Manually pin apps you care about (Ghostty, Brave, Zoom, Rectangle, etc.).
+- Optionally tweak Mission Control / Hot Corners.
+
+---
+
 ## 📁 Architecture
 
 ### 🗂️ Directory Structure
