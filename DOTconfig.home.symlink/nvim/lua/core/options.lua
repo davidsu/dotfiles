@@ -71,7 +71,6 @@ opt.foldnestmax = 10
 -- Performance
 opt.updatetime = 300
 opt.timeoutlen = 500
-opt.ttyfast = true
 
 -- Diff
 opt.diffopt:append('vertical')

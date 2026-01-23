@@ -28,16 +28,20 @@ alias showPackage="jq '.scripts' package.json"
 
 # Git Status in Vim (interactive git status using vim-fugitive)
 function gsv() {
-    gitstatus=$(git status)
-  if [[ $gitstatus =~ 'both modified' ]]; then
-     echo 'this flow is likely broken :)'
-      nvim \
-         -c 'let g:tmp=search("both modi")' \
-         -c 'call feedkeys("\\<C-n>dv:Gstatus\\<cr>\\<C-w>K".g:tmp."G") ' \
-         $(git rev-parse --show-toplevel)/.git/index
-   else
-      nvim -c 'call feedkeys(":Git\<cr>]mdd\<C-K>") '
-    fi
+  if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
+    echo "gsv: not in a git repo" >&2
+    return 1
+  fi
+
+  if git diff --name-only --diff-filter=U | grep -q .; then
+    echo 'this flow is likely broken :)'
+    nvim \
+      -c 'let g:tmp=search("both modi")' \
+      -c 'call feedkeys("\\<C-n>dv:Gstatus\\<cr>\\<C-w>K".g:tmp."G") ' \
+      "$(git rev-parse --show-toplevel)/.git/index"
+  else
+    nvim -c 'call feedkeys(":Git\<cr>]mdd\<C-K>") '
+  fi
 }
 
 alias gsva='gsv'

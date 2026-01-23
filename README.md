@@ -194,6 +194,10 @@ F10/F11/F12 → Volume
 - `auto_cd` - Type directory name to cd
 - `jd` - Jump to `~/.dotfiles`
 
+### 🧪 Power Aliases
+- `V` (global) - Pipe command output into a temp file and open it in Neovim
+  - Examples: `npm run test V`, `git log --oneline V`
+
 ### ⚡ Productivity
 - **Global Aliases**: `G` (grep) · `L` (less) · `T` (tail) · `H` (head) · `W` (wc -l)
 - **Fuzzy Search**: fzf integration everywhere
