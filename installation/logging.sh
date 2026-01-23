@@ -47,12 +47,30 @@ log_error() {
     local message="$1"
     local timestamp=$(date "+%Y-%m-%d %H:%M:%S")
     local formatted_msg="[${timestamp}] [ERROR] ${message}"
-    
+
     # Write to both logs
     echo "${formatted_msg}" >> "${INSTALL_LOG}"
     echo "${formatted_msg}" >> "${ERROR_LOG}"
-    
+
     # Print to stderr with color
     echo -e "${RED}${formatted_msg}${NC}" >&2
+}
+
+log_banner() {
+    local message="$1"
+    local width=60
+    local border=$(printf '=%.0s' $(seq 1 $width))
+
+    echo ""
+    echo -e "${YELLOW}${border}${NC}"
+    echo -e "${YELLOW}  $message${NC}"
+    echo -e "${YELLOW}${border}${NC}"
+    echo ""
+
+    # Also log to file
+    echo "" >> "${INSTALL_LOG}"
+    echo "$border" >> "${INSTALL_LOG}"
+    echo "  $message" >> "${INSTALL_LOG}"
+    echo "$border" >> "${INSTALL_LOG}"
 }
 
