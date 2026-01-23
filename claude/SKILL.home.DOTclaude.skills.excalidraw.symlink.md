@@ -180,7 +180,7 @@ The label will be positioned at the midpoint of the arrow and will move with it 
 ```
 
 **Arrowhead Types:**
-- `null` - no arrowhead
+- `null` - no arrowhead (one end only)
 - `"arrow"` - standard arrow
 - `"bar"` - flat line
 - `"circle"` - filled circle
@@ -189,6 +189,16 @@ The label will be positioned at the midpoint of the arrow and will move with it 
 - `"triangle_outline"` - hollow triangle
 - `"diamond"` - filled diamond
 - `"diamond_outline"` - hollow diamond
+
+**Bidirectional Arrows (IMPORTANT):** For two-way connections (common in architecture diagrams), set BOTH `startArrowhead` and `endArrowhead`:
+```json
+{
+  "type": "arrow",
+  "startArrowhead": "arrow",
+  "endArrowhead": "arrow"
+}
+```
+This creates `<-->` style arrows. Most service-to-service connections should be bidirectional.
 
 **Points Array:** Coordinates relative to element's `x`, `y` position.
 
@@ -488,13 +498,15 @@ To connect an arrow to shapes, use **bidirectional references**:
 
 6. **Curved Arrows**: Add middle points: `[[0, 0], [100, -50], [200, 0]]` creates an upward curve.
 
-7. **Text in Shapes**: Always set both `containerId` on text AND `boundElements` on the shape.
+7. **Bidirectional vs Unidirectional**: Use `startArrowhead: "arrow"` AND `endArrowhead: "arrow"` for two-way service connections. Use single arrowhead only for one-way flows (events, notifications, client requests).
 
-8. **Arrow Labels**: Bind text to arrows using `containerId` on text and `boundElements` on arrow. The label moves with the arrow.
+8. **Text in Shapes**: Always set both `containerId` on text AND `boundElements` on the shape.
 
-9. **Colors**: Use `#1e1e1e` for dark strokes, `"transparent"` for no fill, or hex colors like `#e63946`.
+9. **Arrow Labels**: Bind text to arrows using `containerId` on text and `boundElements` on arrow. The label moves with the arrow.
 
-10. **Roundness**:
+10. **Colors**: Use `#1e1e1e` for dark strokes, `"transparent"` for no fill, or hex colors like `#e63946`.
+
+11. **Roundness**:
     - `{"type": 3}` - adaptive radius (rectangles)
     - `{"type": 2}` - proportional radius (ellipses, diamonds)
     - `null` - sharp corners
@@ -522,13 +534,30 @@ To connect an arrow to shapes, use **bidirectional references**:
 }
 ```
 
-### Bidirectional Arrow
+### Bidirectional Arrow (Service-to-Service)
+Most connections between services should be bidirectional (`<-->`). Set BOTH arrowheads:
 ```json
 {
+  "id": "service-connection",
+  "type": "arrow",
+  "x": 250,
+  "y": 140,
+  "points": [[0, 0], [150, 0]],
   "startArrowhead": "arrow",
-  "endArrowhead": "arrow"
+  "endArrowhead": "arrow",
+  "startBinding": {
+    "elementId": "service-a",
+    "fixedPoint": [1.0, 0.5],
+    "mode": "orbit"
+  },
+  "endBinding": {
+    "elementId": "service-b",
+    "fixedPoint": [0.0, 0.5],
+    "mode": "orbit"
+  }
 }
 ```
+Use unidirectional arrows (`-->`) only for one-way flows like events, notifications, or client requests.
 
 ### Dashed Connection (Optional/Async)
 ```json
