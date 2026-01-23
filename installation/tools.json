@@ -102,12 +102,6 @@
       "brew_type": "cask",
       "description": "Move and resize windows on macOS with keyboard shortcuts"
     },
-    "font-jetbrains-mono-nerd-font": {
-      "type": "workflow",
-      "brew_type": "cask",
-      "homebrew_package": "font-jetbrains-mono-nerd-font",
-      "description": "Nerd Font patched version of JetBrains Mono - required for nvim-tree icons"
-    },
     "claude-code": {
       "type": "workflow",
       "brew_type": "cask",
@@ -118,6 +112,11 @@
       "type": "workflow",
       "brew_type": "cask",
       "description": "Video conferencing and web conferencing service"
+    },
+    "brave-browser": {
+      "type": "workflow",
+      "brew_type": "cask",
+      "description": "Privacy-focused web browser"
     }
   }
 }
