@@ -44,7 +44,7 @@ cd ~/.dotfiles
 **The script will:**
 1. ✅ Perform pre-flight system checks
 2. 📦 Bootstrap `mise` for Node.js version management
-3. 🛠️ Install and verify all tools from `installation/tools.json`
+3. 🛠️ Install and verify all tools from `installation/Brewfile`
 
 ---
 
@@ -136,7 +136,7 @@ Because the installer clears the Dock:
 | `installation/` | Bootstrap scripts + `links.js` (symlink path transformer) |
 | `zsh/` | Modular Zsh config (`env.zsh`, `aliases.zsh`, etc.) |
 | `DOTconfig.home.symlink/` | Tool configs → `~/.config` |
-| `tools.json` | Single source of truth for all tools |
+| `Brewfile` | Homebrew packages (formulas + casks) |
 
 ### 🔗 Symlink Naming Convention
 
