@@ -9,6 +9,12 @@ Migrating and modernizing dotfiles from old implementation:
 - **Platform**: macOS only (remove all Linux compatibility code)
 - **Goal**: Keep functionality, modernize implementation, clean up cruft
 
+## Auto-Load Skills
+
+**When working on Neovim configuration or Lua code for Neovim**, load the neovim skill first:
+
+- Run: `/neovim` to load Neovim-specific rules (Lua patterns, local docs, debugging)
+
 ## Critical Rules
 
 ### 1. Don't Rush to Implementation
@@ -18,44 +24,7 @@ When user asks a question, **answer the question** - don't implement anything un
 **Bad**: User asks "what colorscheme did I use?" → You immediately add a colorscheme plugin
 **Good**: User asks "what colorscheme did I use?" → You check dotfilesold and tell them
 
-### 2. Lua Module Pattern: Avoid the `M` Pattern
-
-**CRITICAL**: Do NOT use the `local M = {}` pattern for Lua modules in this codebase.
-
-**Bad** - Using M pattern:
-
-```lua
-local M = {}
-function M.foo() end
-function M.bar() end
-return M
-```
-
-**Good** - Direct module return:
-
-```lua
-local function foo() end
-local function bar() end
-return { foo = foo, bar = bar }
-```
-
-**Why:**
-
-- More explicit and readable
-- Follows the coding style guideline of separating declaration from export
-- Makes the public API immediately clear at the bottom of the file
-
-### 3. Ask User to Help Debug
-
-When encountering visual/UI issues you can't diagnose from code alone, ask user to run diagnostic commands:
-
-- Color/highlight issues: Ask user to run `:Inspect` on the affected character
-- Syntax issues: Ask for `:TSHighlightCapturesUnderCursor`
-- Option issues: Ask for `:set option?`
-
-Don't guess - get data first.
-
-### 4. Verify External Resources
+### 2. Verify External Resources
 
 Before suggesting GitHub repos, npm packages, or external resources:
 
@@ -63,49 +32,13 @@ Before suggesting GitHub repos, npm packages, or external resources:
 - Check they're still maintained
 - Find the actual canonical source
 
-### 5. MANDATORY: Read Local Documentation Before Neovim Implementation if needed. DONT GUESS
-
-**CRITICAL BLOCKING REQUIREMENT**: Before implementing ANY Neovim feature or plugin configuration, you MUST read the relevant local documentation first.
-
-**For Neovim Plugins:**
-
-1. **BEFORE** implementing or configuring ANY plugin feature, read the plugin's local help files
-2. **Location**: `~/.local/share/nvim/lazy/<plugin-name>/`
-   - Help files: `doc/*.txt`
-   - README: `README.md`
-   - Source code: `lua/` (for defaults and examples)
-3. Use the Read tool to verify options, configuration format, and correct parameter names
-4. **Only after** reading local docs should you proceed with implementation
-
-**For Neovim Native Features:**
-
-1. **BEFORE** implementing ANY native Neovim feature (options, keymaps, autocommands, etc.), read Neovim's local documentation
-2. **Location**: Neovim runtime documentation
-   - Help files: Use `:help <topic>` or read from Neovim's help system
-   - Runtime docs: `/opt/homebrew/Cellar/neovim/0.11.5_1/share/nvim/runtime/doc/`
-3. Verify correct API usage, option names, and function signatures from local docs
-
-**Why this is mandatory:**
-
-- Prevents using deprecated/wrong options (like `jump_to_single_result` vs `jump1`)
-- Ensures version compatibility with installed plugins
-- Faster and more accurate than web searches
-- Works offline
-
-**Only use web searches after reading local docs if:**
-
-- Local docs don't exist or are incomplete
-- You need clarification beyond what local docs provide
-- You're researching whether to add a NEW plugin (not yet installed)
-
-### 6. Keep Documentation and Installation Script Updated
+### 3. Keep Documentation and Installation Script Updated
 
 **CRITICAL**: Always update both documentation AND installation files when adding tools or features.
 
 **Documentation** - All `.md` files must remain up to date:
 
 - **Project root**: `~/.dotfiles/*.md` (README.md, tasks.md, planning.md, etc.)
-- **Neovim docs**: `~/.dotfiles/config.home.symlink/nvim/*.md`
 
 **Installation** - Keep installation script in sync:
 
@@ -121,7 +54,7 @@ Before suggesting GitHub repos, npm packages, or external resources:
 
 Update documentation and installation files IMMEDIATELY after implementing features, not later.
 
-### 7. NEVER Commit Without User Approval
+### 4. NEVER Commit Without User Approval
 
 **CRITICAL**: Do NOT create commits unless explicitly told to by the user.
 
@@ -140,7 +73,7 @@ Update documentation and installation files IMMEDIATELY after implementing featu
 - These footers add unnecessary noise to git history
 - Keep commit messages focused on the "what" and "why" of the change
 
-### 8. Consider Error Handling and Edge Cases
+### 5. Consider Error Handling and Edge Cases
 
 When implementing file-based features or persistent state, proactively think about failure modes:
 

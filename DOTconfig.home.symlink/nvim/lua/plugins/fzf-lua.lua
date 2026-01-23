@@ -1,11 +1,4 @@
 -- fzf-lua: Fast and fully customizable fzf for neovim
--- Loaded only in terminal (VSCode/Cursor has Cmd+P)
-
-local env = require('core.env')
-
-if env.is_vscode then
-  return {}
-end
 
 local function get_winopts()
   return {

@@ -1,11 +1,4 @@
 -- vim-unimpaired - Handy bracket mappings and toggles
--- Loaded only in terminal (VSCode has native commands)
-
-local env = require('core.env')
-
-if env.is_vscode then
-  return {}
-end
 
 return {
   {

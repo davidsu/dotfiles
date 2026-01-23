@@ -1,11 +1,4 @@
 -- Git Integration Plugins
--- Loaded only in terminal (VSCode/Cursor has built-in git)
-
-local env = require('core.env')
-
-if env.is_vscode then
-  return {}
-end
 
 local function get_signs()
   return {

@@ -1,11 +1,4 @@
 -- Statusline
--- Loaded only in terminal (VSCode/Cursor has its own statusline)
-
-local env = require('core.env')
-
-if env.is_vscode then
-  return {}
-end
 
 return {
   {

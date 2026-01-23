@@ -18,6 +18,9 @@ export LSCOLORS=GxFxCxDxBxegedabagaced
 # Bat (syntax highlighting) - use gruvbox theme to match Neovim
 export BAT_THEME="gruvbox-dark"
 
+# Use Neovim for man pages
+export MANPAGER='nvim +Man!'
+
 # FZF Configuration
 # Consistent layout: prompt on top, results top-to-bottom, preview on top
 export FZF_DEFAULT_OPTS="

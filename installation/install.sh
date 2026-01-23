@@ -53,6 +53,10 @@ post_install() {
         log_info "Trusting mise configuration..."
         mise trust "$mise_config"
     fi
+
+    # Apply macOS defaults
+    log_info "Applying macOS defaults..."
+    bash "${INST_DIR}/macos-defaults.sh"
 }
 
 # Run main function

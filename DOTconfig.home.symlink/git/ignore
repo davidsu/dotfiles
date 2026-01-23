@@ -1,1 +1,7 @@
-**/.claude/settings.local.json
+.DS_Store
+*.swp
+Session.vim
+.netrwhist
+node_modules/
+npm-debug.log
+.idea/

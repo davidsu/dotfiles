@@ -1,0 +1,23 @@
+[user]
+	name = David Susskind
+	email = dev@example.com
+[core]
+	editor = nvim
+[diff]
+	tool = nvimdiff
+[difftool "nvimdiff"]
+	cmd = nvim -d "$LOCAL" "$REMOTE"
+[difftool]
+	prompt = false
+[alias]
+	d = difftool
+[credential]
+	helper = osxkeychain
+[push]
+	default = simple
+[help]
+	autocorrect = 15
+[color]
+	diff = true
+[pager]
+	branch = false

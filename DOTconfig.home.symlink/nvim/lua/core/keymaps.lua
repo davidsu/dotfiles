@@ -1,7 +1,5 @@
 -- Core Keymaps
--- Universal keymaps loaded in all environments
 
-local env = require('core.env')
 local map = vim.keymap.set
 
 -- VSCode-compatible keymaps (hoisted to top)
@@ -60,11 +58,6 @@ map('i', '<C-e>', '<End>', { desc = 'End of line', silent = true })
 
 -- Help in new tab (command abbreviation)
 vim.cmd([[cnoreabbrev <expr> h getcmdtype() == ":" && getcmdline() == 'h' ? 'tab help' : 'h']])
-
--- Terminal-only keymaps (skip in VSCode)
-if env.is_vscode then
-  return
-end
 
 local win_utils = require('utils.window')
 local term_utils = require('utils.terminal')

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git ls-tree:*)"
+    ]
+  },
+  "disabledMcpjsonServers": [
+    "tavily",
+    "terminal"
+  ]
+}

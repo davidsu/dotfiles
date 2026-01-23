@@ -21,14 +21,6 @@ vim.api.nvim_create_autocmd({ 'FocusGained', 'BufEnter' }, {
   end,
 })
 
--- Markdown uses manual folding (for preview compatibility)
-vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'markdown' },
-  callback = function()
-    vim.opt_local.foldmethod = 'manual'
-    vim.opt_local.foldenable = false
-  end,
-})
 
 -- Auto-save: write all modified buffers when focus is lost or switching windows
 vim.api.nvim_create_autocmd({ 'FocusLost', 'WinLeave' }, {
@@ -63,7 +55,7 @@ vim.api.nvim_create_autocmd("FileType", {
 
 -- Close help/quickfix/location list/fugitive buffers with q
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'help', 'qf', 'fugitiveblame' },
+  pattern = { 'help', 'qf', 'fugitiveblame', 'fugitive' },
   callback = map_q_to_close_buffer,
 })
 

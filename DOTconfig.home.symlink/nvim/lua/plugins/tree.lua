@@ -1,11 +1,4 @@
 -- File Explorer
--- Loaded only in terminal (VSCode/Cursor has built-in explorer)
-
-local env = require('core.env')
-
-if env.is_vscode then
-  return {}
-end
 
 local function find_file_in_tree()
   local root = vim.fn.FugitiveWorkTree()
