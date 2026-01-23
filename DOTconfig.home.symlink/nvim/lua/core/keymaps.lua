@@ -117,17 +117,23 @@ map('n', '\\d', '<cmd>redraw!<cr>', { desc = 'Redraw screen' })
 
 map('t', '<C-o>', '<C-\\><C-n>', { desc = 'get to normal mode in terminal buffer' })
 
--- Terminal Mappings from old vimscript
+-- Terminal Mappings (Lua)
 
 -- Function to clear terminal scrollback
-vim.cmd([[
-function! ClearTermScrollback()
-    set scrollback=0
-    sleep 100m
-    redraw
-    set scrollback=1000
-endfunction
-]])
+_G.clear_term_scrollback = function()
+  if vim.bo.buftype ~= 'terminal' then
+    return
+  end
+
+  -- Temporarily drop scrollback to 0, then restore after a short delay
+  local default_scrollback = vim.g.term_scrollback_default or 1000
+  vim.o.scrollback = 0
+  vim.cmd('redraw')
+
+  vim.defer_fn(function()
+    vim.o.scrollback = default_scrollback
+  end, 100)
+end
 
 -- Close terminal window
 map('t', '<C-q>', '<C-\\><C-n>:wincmd q<cr>', { desc = 'Close terminal window' })
@@ -139,18 +145,17 @@ map('t', '<C-j>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("j")<cr>
   { desc = 'Move/split down from terminal' })
 map('t', '<C-k>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("k")<cr>',
   { desc = 'Move/split up from terminal' })
-map('t', '<C-l>', '<C-\\><C-n><cmd>lua require("utils.window").win_move("l")<cr>',
-  { desc = 'Move/split right from terminal' })
 
 -- Switch to alternate file from terminal
 map('t', 'm,', '<C-\\><C-n><c-^>', { desc = 'Switch to alternate file from terminal' })
 
--- Clear scrollback
-map('t', '<C-l>', '<C-l><C-\\><C-n>:call ClearTermScrollback()<cr>i',
+-- Clear scrollback (send <C-l> to terminal, then clear Neovim scrollback)
+map('t', '<C-l>', '<C-l><C-\\><C-n><cmd>lua _G.clear_term_scrollback()<cr>i',
   { desc = 'Clear terminal scrollback', silent = true })
 
 -- Rerun last command
-map('t', '<C-x>', '<C-c><C-l><C-\\><C-n>:call ClearTermScrollback()<cr>i<C-p><cr>', { desc = 'Rerun last command' })
+map('t', '<C-x>', '<C-c><C-l><C-\\><C-n><cmd>lua _G.clear_term_scrollback()<cr>i<C-p><cr>',
+  { desc = 'Rerun last command' })
 
 -- Open in terminal
 map('n', '<space>te', function() term_utils.to_terminal() end, { desc = 'Open in terminal' })

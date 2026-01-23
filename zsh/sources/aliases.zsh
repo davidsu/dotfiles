@@ -29,13 +29,13 @@ alias showPackage="jq '.scripts' package.json"
 # Git Status in Vim (interactive git status using vim-fugitive)
 function gsv() {
     gitstatus=$(git status)
-    if [[ $gitstatus =~ 'both modified' ]]; then
-       echo 'this flow is likely broken :)'
-        nvim -u $HOME/.dotfiles/config/nvim/init_for_gsv.vim \
-           -c 'let g:tmp=search("both modi")' \
-           -c 'call feedkeys("\<C-n>dv:Gstatus\<cr>\<C-w>K".g:tmp."G") ' \
-           $(git rev-parse --show-toplevel)/.git/index
-     else
+  if [[ $gitstatus =~ 'both modified' ]]; then
+     echo 'this flow is likely broken :)'
+      nvim \
+         -c 'let g:tmp=search("both modi")' \
+         -c 'call feedkeys("\\<C-n>dv:Gstatus\\<cr>\\<C-w>K".g:tmp."G") ' \
+         $(git rev-parse --show-toplevel)/.git/index
+   else
       nvim -c 'call feedkeys(":Git\<cr>]mdd\<C-K>") '
     fi
 }

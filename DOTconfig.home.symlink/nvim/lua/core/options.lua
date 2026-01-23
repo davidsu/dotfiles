@@ -39,8 +39,8 @@ opt.background = 'dark'
 -- Indentation
 opt.expandtab = true  -- use spaces instead of tabs
 opt.smarttab = true
-opt.tabstop = 4       -- visual width of tabs
-opt.softtabstop = 4
+opt.tabstop = 2       -- visual width of tabs
+opt.softtabstop = 2
 opt.shiftwidth = 2    -- number of spaces for indent
 opt.shiftround = true -- round indent to multiple of shiftwidth
 opt.autoindent = true

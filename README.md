@@ -54,7 +54,7 @@ cd ~/.dotfiles
 
 | Directory | Purpose |
 |-----------|---------|
-| `installation/` | Bootstrap scripts + `symlinkPathTransformer.js` |
+| `installation/` | Bootstrap scripts + `links.js` (symlink path transformer) |
 | `zsh/` | Modular Zsh config (`env.zsh`, `aliases.zsh`, etc.) |
 | `DOTconfig.home.symlink/` | Tool configs → `~/.config` |
 | `tools.json` | Single source of truth for all tools |
@@ -74,7 +74,7 @@ DOTconfig.home.symlink/          → ~/.config/
 - 📍 `DOT` = literal `.` for hidden files/directories
 - 📂 Dots between path components = `/` slashes
 - 🎯 Repository organization = ignored (only filename matters!)
-- 🤖 `symlinkPathTransformer.js` parses filenames → destinations
+- 🤖 `links.js` parses filenames → destinations (via its internal symlink path transformer)
 
 > 💡 This convention lets you organize by topic in the repo while encoding destination paths in filenames.
 
@@ -193,7 +193,6 @@ F10/F11/F12 → Volume
 ### 🧭 Navigation
 - `auto_cd` - Type directory name to cd
 - `jd` - Jump to `~/.dotfiles`
-- `jp` - Jump to `~/projects`
 
 ### ⚡ Productivity
 - **Global Aliases**: `G` (grep) · `L` (less) · `T` (tail) · `H` (head) · `W` (wc -l)

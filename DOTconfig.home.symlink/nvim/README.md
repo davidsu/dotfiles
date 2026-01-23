@@ -11,10 +11,8 @@ nvim/
 ├── init.lua                    # Main entry point
 ├── lua/
 │   ├── core/                   # Core functionality
-│   │   ├── env.lua            # Environment detection (VSCode/Cursor vs Terminal)
-│   │   ├── options.lua        # Core Vim options
-│   │   ├── options_terminal.lua  # Terminal-specific options
-│   │   ├── keymaps.lua        # Universal keymaps
+│   │   ├── options.lua        # Core Vim options (all environments)
+│   │   ├── keymaps.lua        # Universal keymaps (including VSCode-compatible mappings)
 │   │   ├── autocmds.lua       # Autocommands
 │   │   ├── commands.lua       # User-defined commands
 │   │   └── lazy.lua           # Plugin manager bootstrap
@@ -49,16 +47,13 @@ nvim/
 │       ├── position.lua       # Cursor position helpers
 │       ├── terminal.lua       # Terminal utilities
 │       └── window.lua         # Smart window navigation
-└── MIGRATION_PLAN.md          # Full migration plan and architecture
 ```
 
 ## ✨ Features
 
-### 🔍 Environment Detection
-- Automatically detects VSCode/Cursor vs Terminal Neovim
-- Loads minimal config in VSCode/Cursor (just keymaps and text editing)
-- Loads full plugin suite in terminal
-- **See**: `FILE_SPLIT_PATTERN.md` for configuration split strategy
+### 🔍 Environment & Usage
+- Core options, keymaps, and text-editing behavior are defined in Lua
+- Plugin setup is handled via `lazy.nvim` and is primarily intended for terminal Neovim
 
 ### ⚙️ Core Options (All Environments)
 - 📋 System clipboard integration
@@ -325,12 +320,6 @@ Install via Homebrew or system package manager:
 
 ### 💻 In Terminal Neovim
 Full configuration with all plugins loads automatically.
-
-### 🖥️ In VSCode/Cursor
-Minimal configuration loads (core options + keymaps + text editing plugins).
-
-VSCode/Cursor's built-in features are used for git, file finding, LSP, etc.
-
 ## 🎨 Colorscheme
 
 Using **gruvbox** colorscheme (medium contrast, dark mode) - a warm retro theme matching the darktooth variant from dotfilesold.
