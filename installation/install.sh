@@ -58,6 +58,13 @@ post_install() {
     # Apply macOS defaults
     log_info "Applying macOS defaults..."
     bash "${INST_DIR}/macos-defaults.sh"
+
+    # Install Neovim plugins
+    if command -v nvim >/dev/null 2>&1; then
+        log_info "Installing Neovim plugins (this may take a minute)..."
+        nvim --headless "+Lazy! sync" +qa
+        log_success "Neovim plugins installed"
+    fi
 }
 
 # Run main function
