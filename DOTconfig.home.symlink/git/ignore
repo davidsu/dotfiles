@@ -5,3 +5,5 @@ Session.vim
 node_modules/
 npm-debug.log
 .idea/
+
+**/.claude/settings.local.json
