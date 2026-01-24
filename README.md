@@ -82,7 +82,7 @@ After running `./installation/install.sh`, complete these manual steps:
 - Sign in / enable Brave Sync (if you use it).
 - Make Brave the **default browser** via Brave settings.
 - Install the **Bitwarden** browser extension in Brave:
-  - Open Brave and visit: `https://chrome.google.com/webstore/detail/bitwarden-password-manager/nngceckbapebfimnlniiiahkandclblb`
+  - Open Brave and visit the Chrome Web Store (Brave is Chromium-based): `https://chrome.google.com/webstore/detail/bitwarden-password-manager/nngceckbapebfimnlniiiahkandclblb`
   - Click **Add to Brave** and confirm.
 
 #### Bitwarden desktop
@@ -184,8 +184,8 @@ DOTconfig.home.symlink/          → ~/.config/
 - `fa` - File finder with bat preview
 - `mru` / `1m` - Most recently used files
 - `zi` / `jfzf` - Jump to frequent directories
-- `chromehistory` - Browse Chrome history
-- `cb` - Browse Chrome bookmarks
+- `bravehistory` - Browse Brave history
+- `cb` / `bookmarks` - Browse Brave bookmarks
 
 **⌨️ System Tools**
 - 🎹 **Karabiner-Elements** - Vim-style navigation + smart modifiers
