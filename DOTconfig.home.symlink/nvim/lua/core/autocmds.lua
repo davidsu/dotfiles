@@ -55,7 +55,7 @@ vim.api.nvim_create_autocmd("FileType", {
 
 -- Close help/quickfix/location list/fugitive buffers with q
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'help', 'qf', 'fugitiveblame', 'fugitive' },
+  pattern = { 'help', 'qf', 'fugitiveblame', 'fugitive', 'gitcommit' },
   callback = map_q_to_close_buffer,
 })
 
