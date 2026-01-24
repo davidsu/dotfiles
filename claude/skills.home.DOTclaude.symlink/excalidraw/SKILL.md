@@ -52,7 +52,7 @@ All elements require these properties:
   "isDeleted": false,
   "groupIds": [],
   "frameId": null,
-  "boundElements": null,
+  "boundElements": [],
   "updated": 1706000000000,
   "link": null,
   "locked": false
@@ -103,7 +103,8 @@ Basic shapes - use base properties only.
   "containerId": null,
   "originalText": "Hello World",
   "autoResize": true,
-  "lineHeight": 1.25
+  "lineHeight": 1.25,
+  "roundness": null
 }
 ```
 
@@ -133,9 +134,12 @@ To put text inside a shape:
   "type": "text",
   "containerId": "shape-1",
   "verticalAlign": "middle",
-  "textAlign": "center"
+  "textAlign": "center",
+  "roundness": null
 }
 ```
+
+**Note:** For contained text, Excalidraw auto-calculates `x`, `y`, `width`, and `height` based on the container and font rendering. You can provide approximate values - they'll be normalized when the file is opened.
 
 ### Arrow Labels (Text on Arrows)
 
@@ -158,7 +162,8 @@ To add a label to an arrow (like "getPresignedUrl()" on a connection), use the s
   "text": "getPresignedUrl()",
   "containerId": "arrow-1",
   "textAlign": "center",
-  "verticalAlign": "middle"
+  "verticalAlign": "middle",
+  "roundness": null
 }
 ```
 
@@ -253,12 +258,12 @@ To connect an arrow to shapes, use **bidirectional references**:
   "type": "arrow",
   "startBinding": {
     "elementId": "rect-1",
-    "fixedPoint": [1.0, 0.5],
+    "fixedPoint": [1, 0.5001],
     "mode": "orbit"
   },
   "endBinding": {
     "elementId": "rect-2",
-    "fixedPoint": [0.0, 0.5],
+    "fixedPoint": [0, 0.5001],
     "mode": "orbit"
   }
 }
@@ -279,10 +284,12 @@ To connect an arrow to shapes, use **bidirectional references**:
 `fixedPoint: [x, y]` where x and y are ratios (0.0 to 1.0):
 
 ```
-[0.0, 0.0] = top-left      [0.5, 0.0] = top-center     [1.0, 0.0] = top-right
-[0.0, 0.5] = middle-left   [0.5, 0.5] = center         [1.0, 0.5] = middle-right
-[0.0, 1.0] = bottom-left   [0.5, 1.0] = bottom-center  [1.0, 1.0] = bottom-right
+[0, 0] = top-left      [0.5001, 0] = top-center     [1, 0] = top-right
+[0, 0.5001] = middle-left   [0.5001, 0.5001] = center   [1, 0.5001] = middle-right
+[0, 1] = bottom-left   [0.5001, 1] = bottom-center  [1, 1] = bottom-right
 ```
+
+**Note:** Use `0.5001` instead of exactly `0.5` for center positions. Excalidraw normalizes `0.5` to `0.5001` internally to avoid edge cases.
 
 ### Binding Modes
 
@@ -351,7 +358,7 @@ To connect an arrow to shapes, use **bidirectional references**:
       "isDeleted": false,
       "groupIds": [],
       "frameId": null,
-      "boundElements": null,
+      "boundElements": [],
       "updated": 1706000000000,
       "link": null,
       "locked": false,
@@ -363,7 +370,8 @@ To connect an arrow to shapes, use **bidirectional references**:
       "containerId": "box-a",
       "originalText": "Box A",
       "autoResize": true,
-      "lineHeight": 1.25
+      "lineHeight": 1.25,
+      "roundness": null
     },
     {
       "id": "box-b",
@@ -418,7 +426,7 @@ To connect an arrow to shapes, use **bidirectional references**:
       "isDeleted": false,
       "groupIds": [],
       "frameId": null,
-      "boundElements": null,
+      "boundElements": [],
       "updated": 1706000000000,
       "link": null,
       "locked": false,
@@ -430,7 +438,8 @@ To connect an arrow to shapes, use **bidirectional references**:
       "containerId": "box-b",
       "originalText": "Box B",
       "autoResize": true,
-      "lineHeight": 1.25
+      "lineHeight": 1.25,
+      "roundness": null
     },
     {
       "id": "connector",
@@ -454,19 +463,19 @@ To connect an arrow to shapes, use **bidirectional references**:
       "isDeleted": false,
       "groupIds": [],
       "frameId": null,
-      "boundElements": null,
+      "boundElements": [],
       "updated": 1706000000000,
       "link": null,
       "locked": false,
       "points": [[0, 0], [150, 0]],
       "startBinding": {
         "elementId": "box-a",
-        "fixedPoint": [1.0, 0.5],
+        "fixedPoint": [1, 0.5001],
         "mode": "orbit"
       },
       "endBinding": {
         "elementId": "box-b",
-        "fixedPoint": [0.0, 0.5],
+        "fixedPoint": [0, 0.5001],
         "mode": "orbit"
       },
       "startArrowhead": null,
@@ -502,11 +511,18 @@ To connect an arrow to shapes, use **bidirectional references**:
 
 8. **Text in Shapes**: Always set both `containerId` on text AND `boundElements` on the shape.
 
-9. **Arrow Labels**: Bind text to arrows using `containerId` on text and `boundElements` on arrow. The label moves with the arrow.
+9. **Size Boxes for Text**: Excalidraw auto-calculates text position, but clips text to container bounds on initial load. Size containers to fit:
+   - For `fontSize: 20`, estimate **~12px per character** width
+   - `"API Gateway"` (11 chars) → box width ≥ 150px
+   - `"Load Balancer"` (13 chars) → box width ≥ 180px
+   - For long labels, use explicit `\n` line breaks: `"LB & API\nGateway"`
+   - When in doubt, make boxes wider than you think necessary
 
-10. **Colors**: Use `#1e1e1e` for dark strokes, `"transparent"` for no fill, or hex colors like `#e63946`.
+10. **Arrow Labels**: Bind text to arrows using `containerId` on text and `boundElements` on arrow. The label moves with the arrow.
 
-11. **Roundness**:
+11. **Colors**: Use `#1e1e1e` for dark strokes, `"transparent"` for no fill, or hex colors like `#e63946`.
+
+12. **Roundness**:
     - `{"type": 3}` - adaptive radius (rectangles)
     - `{"type": 2}` - proportional radius (ellipses, diamonds)
     - `null` - sharp corners
@@ -547,12 +563,12 @@ Most connections between services should be bidirectional (`<-->`). Set BOTH arr
   "endArrowhead": "arrow",
   "startBinding": {
     "elementId": "service-a",
-    "fixedPoint": [1.0, 0.5],
+    "fixedPoint": [1, 0.5001],
     "mode": "orbit"
   },
   "endBinding": {
     "elementId": "service-b",
-    "fixedPoint": [0.0, 0.5],
+    "fixedPoint": [0, 0.5001],
     "mode": "orbit"
   }
 }
@@ -574,8 +590,8 @@ Use unidirectional arrows (`-->`) only for one-way flows like events, notificati
   "type": "arrow",
   "points": [[0, 0], [150, 0]],
   "boundElements": [{"id": "api-call-label", "type": "text"}],
-  "startBinding": {"elementId": "service-a", "fixedPoint": [1, 0.5], "mode": "orbit"},
-  "endBinding": {"elementId": "service-b", "fixedPoint": [0, 0.5], "mode": "orbit"},
+  "startBinding": {"elementId": "service-a", "fixedPoint": [1, 0.5001], "mode": "orbit"},
+  "endBinding": {"elementId": "service-b", "fixedPoint": [0, 0.5001], "mode": "orbit"},
   "endArrowhead": "arrow"
 }
 
@@ -588,6 +604,7 @@ Use unidirectional arrows (`-->`) only for one-way flows like events, notificati
   "textAlign": "center",
   "verticalAlign": "middle",
   "fontSize": 14,
-  "fontFamily": 1
+  "fontFamily": 1,
+  "roundness": null
 }
 ```
