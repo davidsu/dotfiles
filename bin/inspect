@@ -13,9 +13,9 @@ function openDevtool(query, count = 0) {
 }
 const osascript = `
             osascript << 'END'
-            tell application "Google Chrome"
+            tell application "Brave Browser"
                 activate
-                open location "chrome://inspect"
+                open location "brave://inspect"
                 delay 1
                 execute front window's active tab javascript "(${openDevtool.toString()})('${query}')"
             end tell
