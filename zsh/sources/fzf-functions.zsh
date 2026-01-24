@@ -139,20 +139,20 @@ function mru-clean() {
 
 alias removeMruInvalidEntries='mru-clean'
 
-# chromehistory - Browse Chrome history with fzf
-# Usage: chromehistory
-function chromehistory() {
+# bravehistory - Browse Brave history with fzf
+# Usage: bravehistory
+function bravehistory() {
     local cols sep historyfile
     cols=$(( COLUMNS / 3 ))
     sep='{::}'
 
-    # Find Chrome history file
-    if [[ -f ~/Library/Application\ Support/Google/Chrome/Default/History ]]; then
-        historyfile=~/Library/Application\ Support/Google/Chrome/Default/History
-    elif [[ -f ~/Library/Application\ Support/Google/Chrome/Profile\ 1/History ]]; then
-        historyfile=~/Library/Application\ Support/Google/Chrome/Profile\ 1/History
+    # Find Brave history file
+    if [[ -f ~/Library/Application\ Support/BraveSoftware/Brave-Browser/Default/History ]]; then
+        historyfile=~/Library/Application\ Support/BraveSoftware/Brave-Browser/Default/History
+    elif [[ -f ~/Library/Application\ Support/BraveSoftware/Brave-Browser/Profile\ 1/History ]]; then
+        historyfile=~/Library/Application\ Support/BraveSoftware/Brave-Browser/Profile\ 1/History
     else
-        echo 'Cannot find Chrome history file'
+        echo 'Cannot find Brave history file'
         return 1
     fi
 
@@ -162,11 +162,11 @@ function chromehistory() {
         return 1
     fi
 
-    # Copy history file (Chrome locks the original)
-    cp -f "$historyfile" /tmp/chrome_history_tmp
+    # Copy history file (Brave locks the original)
+    cp -f "$historyfile" /tmp/brave_history_tmp
 
     # Query history and pipe to fzf
-    sqlite3 -separator "$sep" /tmp/chrome_history_tmp \
+    sqlite3 -separator "$sep" /tmp/brave_history_tmp \
         "SELECT substr(title, 1, $cols), url
          FROM urls
          ORDER BY last_visit_time DESC" | \
@@ -176,7 +176,7 @@ function chromehistory() {
             --preview 'echo {..-2}; echo $(tput setaf 12){-1} | sed -E '\''s#([&?])#'$(tput setaf 8)'\1'$(tput setaf 10)'#g'\' \
             --preview-window 'up:35%:wrap' \
             --header 'CTRL-o: open in browser | CTRL-s: toggle sort | CTRL-/: toggle preview' \
-            --prompt 'Chrome History> ' \
+            --prompt 'Brave History> ' \
             --bind 'ctrl-/:toggle-preview' \
             --bind 'ctrl-s:toggle-sort' \
             --bind 'ctrl-o:execute:open {-1}' | \
@@ -184,21 +184,21 @@ function chromehistory() {
         xargs open
 
     # Cleanup
-    rm -f /tmp/chrome_history_tmp
+    rm -f /tmp/brave_history_tmp
 }
 
-# chromebookmarks - Browse Chrome bookmarks with fzf
-# Usage: chromebookmarks
-function chromebookmarks() {
+# bravebookmarks - Browse Brave bookmarks with fzf
+# Usage: bravebookmarks
+function bravebookmarks() {
     local bookmarks_file cols
 
-    # Find Chrome bookmarks file
-    if [[ -f ~/Library/Application\ Support/Google/Chrome/Profile\ 1/Bookmarks ]]; then
-        bookmarks_file=~/Library/Application\ Support/Google/Chrome/Profile\ 1/Bookmarks
-    elif [[ -f ~/Library/Application\ Support/Google/Chrome/Default/Bookmarks ]]; then
-        bookmarks_file=~/Library/Application\ Support/Google/Chrome/Default/Bookmarks
+    # Find Brave bookmarks file
+    if [[ -f ~/Library/Application\ Support/BraveSoftware/Brave-Browser/Default/Bookmarks ]]; then
+        bookmarks_file=~/Library/Application\ Support/BraveSoftware/Brave-Browser/Default/Bookmarks
+    elif [[ -f ~/Library/Application\ Support/BraveSoftware/Brave-Browser/Profile\ 1/Bookmarks ]]; then
+        bookmarks_file=~/Library/Application\ Support/BraveSoftware/Brave-Browser/Profile\ 1/Bookmarks
     else
-        echo 'Cannot find Chrome bookmarks file'
+        echo 'Cannot find Brave bookmarks file'
         return 1
     fi
 
@@ -258,9 +258,9 @@ function chromebookmarks() {
         xargs open
 }
 
-# Aliases for chromebookmarks
-alias cb='chromebookmarks'
-alias bookmarks='chromebookmarks'
+# Aliases for bravebookmarks
+alias cb='bravebookmarks'
+alias bookmarks='bravebookmarks'
 
 # fa - File finder with preview
 # Usage: fa
