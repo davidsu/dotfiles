@@ -28,6 +28,10 @@ brew "mise"                   # Multi-language version manager (Node, Python, et
 # Editor
 brew "neovim"                 # Extensible text editor
 
+# Text-to-speech
+tap "mazdak/tap"
+brew "audiowhisper"           # Audio transcription and text-to-speech tool
+
 # Container runtime
 brew "colima"                 # Lightweight Docker-compatible container runtime
 
@@ -35,6 +39,7 @@ brew "colima"                 # Lightweight Docker-compatible container runtime
 cask "ghostty"                # Fast, native, GPU-accelerated terminal emulator
 cask "karabiner-elements"     # Powerful keyboard customizer for macOS
 cask "rectangle"              # Window management with keyboard shortcuts
+cask "alttab"                 # Windows-style alt-tab window switcher
 cask "claude-code"            # Official CLI for Claude AI
 cask "zoom"                   # Video conferencing
 cask "brave-browser"          # Privacy-focused web browser
