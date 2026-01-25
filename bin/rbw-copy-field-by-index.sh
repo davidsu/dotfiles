@@ -1,6 +1,8 @@
 #!/bin/bash
 # Copy a field from rbw entry by index
 
+field_num=1
+
 copy_to_clipboard() {
     local value="$1"
     local label="$2"
@@ -17,32 +19,34 @@ get_json_field() {
 
 try_copy_field() {
     local json="$1"
-    local current_index="$2"
-    local target_index="$3"
-    local json_path="$4"
-    local label="$5"
+    local index="$2"
+    local json_path="$3"
+    local label="$4"
 
     local value=$(get_json_field "$json" "$json_path")
-    if [[ -n "$value" && $current_index -eq $target_index ]]; then
+    [[ -z "$value" ]] && return
+
+    if [[ $field_num -eq $index ]]; then
         copy_to_clipboard "$value" "$label"
     fi
 
-    [[ -n "$value" ]] && echo "$((current_index + 1))" || echo "$current_index"
+    ((field_num++))
 }
 
 try_copy_computed_field() {
     local json="$1"
-    local current_index="$2"
-    local target_index="$3"
-    local compute_fn="$4"
-    local label="$5"
+    local index="$2"
+    local compute_fn="$3"
+    local label="$4"
 
     local value=$($compute_fn "$json")
-    if [[ -n "$value" && $current_index -eq $target_index ]]; then
+    [[ -z "$value" ]] && return
+
+    if [[ $field_num -eq $index ]]; then
         copy_to_clipboard "$value" "$label"
     fi
 
-    [[ -n "$value" ]] && echo "$((current_index + 1))" || echo "$current_index"
+    ((field_num++))
 }
 
 compute_full_name() {
@@ -72,8 +76,8 @@ compute_expiration() {
 }
 
 compute_totp_code() {
-    local json="$1"
-    local entry="$2"
+    local entry="$1"
+    local json="$2"
     local totp=$(get_json_field "$json" '.data.totp')
     [[ -n "$totp" ]] && rbw code "$entry" 2>/dev/null
 }
@@ -91,58 +95,52 @@ is_card_entry() {
 process_identity_fields() {
     local json="$1"
     local index="$2"
-    local field_num="$3"
 
-    field_num=$(try_copy_computed_field "$json" $field_num $index compute_full_name "Name")
-    field_num=$(try_copy_field "$json" $field_num $index '.data.email' "Email")
-    field_num=$(try_copy_field "$json" $field_num $index '.data.phone' "Phone")
-    field_num=$(try_copy_computed_field "$json" $field_num $index compute_full_address "Address")
-    field_num=$(try_copy_field "$json" $field_num $index '.data.passport_number' "Passport number")
-    field_num=$(try_copy_field "$json" $field_num $index '.data.license_number' "License number")
-
-    echo "$field_num"
+    try_copy_computed_field "$json" "$index" compute_full_name "Name"
+    try_copy_field "$json" "$index" '.data.email' "Email"
+    try_copy_field "$json" "$index" '.data.phone' "Phone"
+    try_copy_computed_field "$json" "$index" compute_full_address "Address"
+    try_copy_field "$json" "$index" '.data.passport_number' "Passport number"
+    try_copy_field "$json" "$index" '.data.license_number' "License number"
 }
 
 process_card_fields() {
     local json="$1"
     local index="$2"
-    local field_num="$3"
 
-    field_num=$(try_copy_field "$json" $field_num $index '.data.cardholder_name' "Cardholder name")
-    field_num=$(try_copy_field "$json" $field_num $index '.data.number' "Card number")
-    field_num=$(try_copy_computed_field "$json" $field_num $index compute_expiration "Expiration date")
-    field_num=$(try_copy_field "$json" $field_num $index '.data.code' "CVV")
-
-    echo "$field_num"
+    try_copy_field "$json" "$index" '.data.cardholder_name' "Cardholder name"
+    try_copy_field "$json" "$index" '.data.number' "Card number"
+    try_copy_computed_field "$json" "$index" compute_expiration "Expiration date"
+    try_copy_field "$json" "$index" '.data.code' "CVV"
 }
 
 process_login_fields() {
     local json="$1"
     local index="$2"
-    local field_num="$3"
-    local entry="$4"
+    local entry="$3"
 
-    field_num=$(try_copy_field "$json" $field_num $index '.data.username' "Username")
+    try_copy_field "$json" "$index" '.data.username' "Username"
 
     local uri=$(get_json_field "$json" '.data.uris[]?.uri' | head -1)
-    if [[ -n "$uri" && $field_num -eq $index ]]; then
-        copy_to_clipboard "$uri" "Website URL"
+    if [[ -n "$uri" ]]; then
+        if [[ $field_num -eq $index ]]; then
+            copy_to_clipboard "$uri" "Website URL"
+        fi
+        ((field_num++))
     fi
-    [[ -n "$uri" ]] && ((field_num++))
 
-    local totp_code=$(compute_totp_code "$json" "$entry")
-    if [[ -n "$totp_code" && $field_num -eq $index ]]; then
-        copy_to_clipboard "$totp_code" "TOTP code"
+    local totp_code=$(compute_totp_code "$entry" "$json")
+    if [[ -n "$totp_code" ]]; then
+        if [[ $field_num -eq $index ]]; then
+            copy_to_clipboard "$totp_code" "TOTP code"
+        fi
+        ((field_num++))
     fi
-    [[ -n "$totp_code" ]] && ((field_num++))
-
-    echo "$field_num"
 }
 
 process_custom_fields() {
     local json="$1"
     local index="$2"
-    local field_num="$3"
 
     local custom_fields=$(echo "$json" | jq -c '.fields[]? // empty' 2>/dev/null)
     [[ -z "$custom_fields" ]] && return
@@ -168,17 +166,15 @@ main() {
     local json=$(rbw get "$entry" --raw 2>/dev/null)
     [[ -z "$json" ]] && exit 1
 
-    local field_num=1
-
     if is_identity_entry "$json"; then
-        field_num=$(process_identity_fields "$json" "$index" "$field_num")
+        process_identity_fields "$json" "$index"
     elif is_card_entry "$json"; then
-        field_num=$(process_card_fields "$json" "$index" "$field_num")
+        process_card_fields "$json" "$index"
     else
-        field_num=$(process_login_fields "$json" "$index" "$field_num" "$entry")
+        process_login_fields "$json" "$index" "$entry"
     fi
 
-    process_custom_fields "$json" "$index" "$field_num"
+    process_custom_fields "$json" "$index"
 
     exit 1
 }
