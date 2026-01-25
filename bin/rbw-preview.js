@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { extractEntries, createKeybindGenerator } from "./rbw-fields.js";
+import { extractEntries } from "./rbw-fields.js";
 
 const COLUMN_WIDTH = 60;
 
@@ -103,8 +103,7 @@ const main = async () => {
     process.exit(0);
   }
 
-  const nextKeybind = createKeybindGenerator();
-  const entries = extractEntries(json, nextKeybind);
+  const entries = extractEntries(json);
 
   addLine(colors.cyan(`━━━ ${entryName} ━━━`));
   addBlankLine();

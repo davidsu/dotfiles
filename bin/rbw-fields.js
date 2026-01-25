@@ -7,6 +7,14 @@ const KEYS = [
   "alt-y", "alt-z"
 ];
 
+const nextKeybind = () => {
+  const rawKey = KEYS.shift();
+  if (!rawKey) return { rawKey: "", displayKey: "" };
+
+  const displayKey = rawKey.replace("ctrl-", "Ctrl+").replace("alt-", "Alt+");
+  return { rawKey, displayKey };
+};
+
 export const humanizeKey = (key) =>
   key
     .split("_")
@@ -32,21 +40,9 @@ export const getMaskForKey = (key) => {
   return "••••••••";
 };
 
-export const createKeybindGenerator = () => {
-  const keys = [...KEYS].reverse();
-
-  return () => {
-    const rawKey = keys.pop();
-    if (!rawKey) return { rawKey: "", displayKey: "" };
-
-    const displayKey = rawKey.replace("ctrl-", "Ctrl+").replace("alt-", "Alt+");
-    return { rawKey, displayKey };
-  };
-};
-
-const extractData = (json, nextKeybind) =>
+const extractData = (json) =>
   Object.entries(json.data || {})
-    .filter(([key, value]) => value && typeof value === "string")
+    .filter(([_key, value]) => value && typeof value === "string")
     .map(([key, value]) => {
       const { rawKey, displayKey } = nextKeybind();
       return {
@@ -58,7 +54,7 @@ const extractData = (json, nextKeybind) =>
       };
     });
 
-const extractUris = (json, nextKeybind) => {
+const extractUris = (json) => {
   const firstUri = json.data?.uris?.[0]?.uri;
   if (!firstUri) return [];
 
@@ -72,7 +68,7 @@ const extractUris = (json, nextKeybind) => {
   }];
 };
 
-const extractFields = (json, nextKeybind) =>
+const extractFields = (json) =>
   (json.fields || []).map((field) => {
     const { rawKey, displayKey } = nextKeybind();
     return {
@@ -97,11 +93,21 @@ const extractNotes = (json) =>
 
 const DUMMY = { label: " ", displayValue: " ", rawValue: null, rawKey: "", displayKey: "" };
 
-export const extractEntries = (json, nextKeybind) => [
-  ...extractData(json, nextKeybind),
-  ...extractUris(json, nextKeybind),
+export const extractEntries = (json) => [
+  ...extractData(json),
+  ...extractUris(json),
   DUMMY,
-  ...extractFields(json, nextKeybind),
+  ...extractFields(json),
   DUMMY,
   ...extractNotes(json),
 ];
+
+export const generateFzfBindings = () => {
+  return KEYS.map(key =>
+    `${key}:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-keybind.js {} ${key})`
+  ).join(',');
+};
+
+if (import.meta.main) {
+  console.log(generateFzfBindings());
+}
