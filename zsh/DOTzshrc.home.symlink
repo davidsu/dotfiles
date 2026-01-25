@@ -5,8 +5,8 @@ export DOTFILES="$HOME/.dotfiles"
 
 # reload zsh configuration
 function reload() {
-    # Source all .zsh files in the sources directory
-    for f in "$DOTFILES"/zsh/sources/*.zsh; do
+    # Source all .zsh files in the sources directory and subdirectories
+    for f in "$DOTFILES"/zsh/sources/**/*.zsh(N); do
         source "$f"
     done
 }
