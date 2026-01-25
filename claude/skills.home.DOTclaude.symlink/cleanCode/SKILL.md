@@ -7,6 +7,8 @@ description: Refactor/clean/simplify code - eliminate duplication, small functio
 
 After getting code working, run mandatory refactoring checklist.
 
+**Influences:** This skill draws from Douglas Crockford's "JavaScript: The Good Parts" (favor simplicity, avoid unnecessary features) and Robert C. Martin's "Clean Code" (readable names, small functions, single responsibility).
+
 ## Core Principle: Code Reads Like English
 
 The ultimate test: **Can someone read the code like prose and understand what it does?**
@@ -136,33 +138,80 @@ function transformPath(filename) {
 
 Each line reads like English, describing **what** not **how**.
 
-## 5. Type-Based Dispatch
+## 5. Eliminate Type Dispatch - Iterate the Source
 
-When you have multiple "types" with different behavior, use clear routing:
+**Red flag:** Multiple `extractTypeA()`, `extractTypeB()`, `extractTypeC()` functions doing similar field extraction.
 
-```bash
-# Bad: Nested conditionals
-if [[ -n "$first_name" ]]; then
-    # 50 lines of identity logic
-elif [[ -n "$cardholder" ]]; then
-    # 40 lines of card logic
-else
-    # 35 lines of login logic
-fi
+**Pattern to recognize:**
+```javascript
+// Bad: Type-specific extractors
+const extractIdentityFields = (json) => {
+  const fields = [];
+  if (json.data.first_name) fields.push({label: 'Name:', value: json.data.first_name});
+  if (json.data.email) fields.push({label: 'Email:', value: json.data.email});
+  // ... 10 more lines
+  return fields;
+};
 
-# Good: Separate functions + clean dispatch
-function render_entry_fields() {
-    local json="$1"
+const extractCardFields = (json) => {
+  const fields = [];
+  if (json.data.number) fields.push({label: 'Number:', value: '••••'});
+  if (json.data.cardholder_name) fields.push({label: 'Cardholder:', value: json.data.cardholder_name});
+  // ... 8 more lines
+  return fields;
+};
 
-    if is_identity_entry "$json"; then
-        render_identity_entry "$json"
-    elif is_card_entry "$json"; then
-        render_card_entry "$json"
-    else
-        render_login_entry "$json"
-    fi
+const extractLoginFields = (json) => {
+  // ... another variant
+};
+
+// Type dispatch
+if (isIdentity(json)) return extractIdentityFields(json);
+if (isCard(json)) return extractCardFields(json);
+return extractLoginFields(json);
+```
+
+**Solution: Iterate the source data structure directly**
+
+Instead of hardcoding which fields to extract for each type, iterate over what exists:
+
+```javascript
+// Good: Generic extraction - no type checking needed
+const extractData = (json) =>
+  Object.entries(json.data || {})
+    .filter(([key, value]) => value && typeof value === 'string')
+    .map(([key, value]) => ({
+      label: humanizeKey(key),                    // username → "Username:"
+      displayValue: shouldMask(key) ? mask(key) : value,
+      keybind: shouldMask(key) ? '[Enter]' : nextKey()
+    }));
+
+const extractFields = (json) =>
+  (json.fields || []).map(field => ({
+    label: field.name + ':',
+    displayValue: field.type === 'hidden' ? '•••' : field.value,
+    keybind: field.type === 'hidden' ? '[Enter]' : nextKey()
+  }));
+
+// No type dispatch - just merge and render
+const entries = [...extractData(json), ...extractFields(json)];
+for (const entry of entries) {
+  printField(entry.displayValue, entry.label, entry.keybind);
 }
 ```
+
+**Why this works:**
+- Identity entries have `{first_name, last_name, email}` → extracted
+- Card entries have `{number, cardholder_name, exp_month}` → extracted
+- Login entries have `{username, password}` → extracted
+- All normalized to `{label, displayValue, keybind}` → same rendering
+
+**The cookbook pattern:**
+1. You have: `extractTypeA`, `extractTypeB`, `extractTypeC` doing similar work
+2. Replace with: `Object.entries(source)` + `.map()` to normalize
+3. Result: One extractor, no type checking
+
+**Key insight:** Don't ask "what type is this?" Ask "what data exists?" Iterate the source, normalize the structure, process uniformly.
 
 ## 6. Special Case Elimination
 
@@ -182,15 +231,78 @@ if (files.length === 1) {
 return files.map(handleFile);
 ```
 
-## 7. Complexity Budget
+## 7. Question Every Wrapper
+
+If a function is only called once, inline it. Don't create wrappers "for organization."
+
+```javascript
+// Bad: Unnecessary wrapper
+const renderEntry = (renderer, entries, name) => {
+  renderer.addLine(name);
+  for (const entry of entries) {
+    renderer.printField(entry);
+  }
+};
+
+const main = () => {
+  const renderer = createRenderer();
+  renderEntry(renderer, entries, name); // Only called once
+};
+
+// Good: Inline it
+const main = () => {
+  addLine(name);
+  for (const entry of entries) {
+    printField(entry);
+  }
+};
+```
+
+**Same for factories:** If you're creating an object just to call its methods once, you don't need a factory. Use module-level state for one-shot scripts.
+
+```javascript
+// Bad: Factory for one-shot script
+const createRenderer = () => {
+  const content = [];
+  return {
+    addLine: (line) => content.push(line),
+    render: () => console.log(content.join('\n'))
+  };
+};
+
+// Good: Module-level state
+const content = [];
+const addLine = (line) => content.push(line);
+const render = () => console.log(content.join('\n'));
+```
+
+## 8. Side Effects: for...of, Not forEach
+
+Use `for...of` for side effects, not `forEach`. `forEach` implies functional/no side effects.
+
+```javascript
+// Bad: forEach for side effects (confusing)
+entries.forEach(entry => {
+  printField(entry); // Side effect!
+});
+
+// Good: for...of makes side effects clear
+for (const entry of entries) {
+  printField(entry);
+}
+```
+
+## 9. Complexity Budget
 
 **Hard limits:**
 
 - Function >25 lines → Extract subfunctions
-- File >100 lines → Consider splitting by responsibility
+- File >100 lines → Consider splitting by responsibility (but not prematurely!)
 - Nested blocks >2 deep → Extract function
 
 If you need to scroll to understand a function, it's too long.
+
+**But:** Don't split files just to split them. A focused 200-line file is better than 5 poorly-abstracted 40-line files.
 
 ## Refactoring Checklist
 
@@ -198,14 +310,17 @@ Before considering code "done":
 
 1. **Can I read it like English?** Function names should tell the story
 2. **Did I copy-paste any code?** Extract to function
-3. **Are there parallel if/else blocks?** Extract common pattern
+3. **Are there parallel if/else blocks?** Extract common pattern or normalize data
 4. **Is any function >20 lines?** Break into subfunctions
-5. **Do branches represent real differences?** Try uniform handling
-6. **Can I compose small functions instead of branching?** Prefer pipeline
-7. **Does every special case justify itself?** Remove if possible
+5. **Do I have multiple extractType functions?** Replace with `Object.entries(source).map()` pattern
+6. **Do I have type dispatch (if/else on types)?** Iterate the source data instead
+7. **Is this wrapper called only once?** Inline it
+8. **Am I using a factory for a one-shot script?** Use module-level state
+9. **Am I using forEach for side effects?** Use for...of instead
+10. **Does every special case justify itself?** Remove if possible
 
 ## Self-Prompt
 
 **Before finishing:**
 
-"Are there duplicate patterns? Can special cases be unified? Can I use function composition instead of branching? Does the code read like English?"
+"Do I have extractTypeA/B/C functions? Can I use Object.entries(source) instead? Are wrappers/factories necessary, or ceremony? Do I have side effects with forEach instead of for...of? Does the code read like English?"
