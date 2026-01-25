@@ -1,14 +1,8 @@
 #!/usr/bin/env bun
 
+import { extractEntries, createKeybindGenerator } from "./rbw-fields.js";
+
 const COLUMN_WIDTH = 60;
-const KEYS = [
-  "ctrl-b", "ctrl-f", "ctrl-g", "ctrl-h", "ctrl-j", "ctrl-q", "ctrl-v", "ctrl-x",
-  "ctrl-r", "ctrl-t", "ctrl-y", "ctrl-l", "ctrl-d",
-  "alt-a", "alt-b", "alt-c", "alt-d", "alt-e", "alt-f", "alt-g", "alt-h",
-  "alt-i", "alt-j", "alt-k", "alt-l", "alt-m", "alt-n", "alt-o", "alt-p",
-  "alt-q", "alt-r", "alt-s", "alt-t", "alt-u", "alt-v", "alt-w", "alt-x",
-  "alt-y", "alt-z"
-];
 
 const colors = {
   cyan: (s) => `\x1b[1;36m${s}\x1b[0m`,
@@ -35,54 +29,21 @@ const hashLabel = (label) => {
   return hash % fieldColors.length;
 };
 
-const keys = [...KEYS].reverse();
 const content = [];
 
 const calculatePadding = (text) =>
   " ".repeat(Math.max(0, COLUMN_WIDTH - text.length));
 
-const humanizeKey = (key) =>
-  key
-    .split("_")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ") + ":";
-
-const shouldMask = (key) => {
-  const sensitive = [
-    "password",
-    "number",
-    "code",
-    "totp",
-    "cvv",
-    "ssn",
-    "passport_number",
-  ];
-  return sensitive.includes(key.toLowerCase());
-};
-
-const getMaskForKey = (key) => {
-  if (key === "number") return "•••• •••• •••• ••••";
-  if (key === "code" || key === "cvv") return "•••";
-  return "••••••••";
-};
-
 const addLine = (line) => content.push(line);
 const addBlankLine = () => addLine("");
 
-const nextKeybind = () => {
-  const key = keys.pop();
-  if (!key) return "";
-
-  const display = key.replace("ctrl-", "Ctrl+").replace("alt-", "Alt+");
-  return colors.green(`[${display}]`);
-};
-
-const printField = (color, { displayValue, label, keybind }) => {
+const printField = (color, { displayValue, label, displayKey }) => {
   if (!displayValue) return;
 
   const coloredLabel = color(label);
   const text = `${label} ${displayValue}`;
   const padding = calculatePadding(text);
+  const keybind = displayKey ? colors.green(`[${displayKey}]`) : "";
 
   addLine(`${coloredLabel} ${displayValue}${padding}${keybind}`);
 };
@@ -126,44 +87,6 @@ const fetchEntry = async (entryName) => {
   }
 };
 
-const extractData = (json) =>
-  Object.entries(json.data || {})
-    .filter(([key, value]) => value && typeof value === "string")
-    .map(([key, value]) => ({
-      label: humanizeKey(key),
-      displayValue: shouldMask(key) ? getMaskForKey(key) : value,
-      keybind: nextKeybind(),
-    }));
-
-const extractUris = (json) => {
-  const firstUri = json.data?.uris?.[0]?.uri;
-  return firstUri
-    ? [{ label: "Website:", displayValue: firstUri, keybind: nextKeybind() }]
-    : [];
-};
-
-const extractFields = (json) =>
-  (json.fields || []).map((field) => ({
-    label: field.name + ":",
-    displayValue: field.type === "hidden" ? "•••••••" : field.value,
-    keybind: nextKeybind(),
-  }));
-
-const extractNotes = (json) =>
-  json.notes
-    ? [{ label: "Notes:", displayValue: json.notes, keybind: "" }]
-    : [];
-
-const DUMMY = { label: " ", displayValue: " ", keybind: "" };
-
-const extractEntries = (json) => [
-  ...extractData(json),
-  ...extractUris(json),
-  DUMMY,
-  ...extractFields(json),
-  DUMMY,
-  ...extractNotes(json),
-];
 
 const main = async () => {
   const entryName = process.argv[2];
@@ -180,7 +103,8 @@ const main = async () => {
     process.exit(0);
   }
 
-  const entries = extractEntries(json);
+  const nextKeybind = createKeybindGenerator();
+  const entries = extractEntries(json, nextKeybind);
 
   addLine(colors.cyan(`━━━ ${entryName} ━━━`));
   addBlankLine();

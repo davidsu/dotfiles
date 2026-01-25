@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { $ } from "bun";
-import { extractEntries } from "./rbw-fields.js";
+import { extractEntries, createKeybindGenerator } from "./rbw-fields.js";
 
 const copyToClipboard = (value, label) => {
   Bun.spawnSync(["pbcopy"], { stdin: new TextEncoder().encode(value) });
@@ -10,10 +10,9 @@ const copyToClipboard = (value, label) => {
 };
 
 const main = async () => {
-  const [entry, indexStr] = process.argv.slice(2);
-  const targetIndex = parseInt(indexStr, 10);
+  const [entry, targetKeybind] = process.argv.slice(2);
 
-  if (!entry || isNaN(targetIndex)) {
+  if (!entry || !targetKeybind) {
     process.exit(1);
   }
 
@@ -23,16 +22,13 @@ const main = async () => {
   }
 
   const json = JSON.parse(jsonResult);
-  const entries = extractEntries(json);
+  const nextKeybind = createKeybindGenerator();
+  const entries = extractEntries(json, nextKeybind);
 
-  let currentIndex = 1;
   for (const entry of entries) {
-    if (!entry.rawValue) continue;
-
-    if (currentIndex === targetIndex) {
+    if (entry.rawKey === targetKeybind && entry.rawValue) {
       copyToClipboard(entry.rawValue, entry.label);
     }
-    currentIndex++;
   }
 
   process.exit(1);
