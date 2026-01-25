@@ -22,33 +22,52 @@ function fbw() {
     local entry
     entry=$(rbw list | \
         fzf --prompt 'Bitwarden> ' \
-            --preview '$HOME/.dotfiles/bin/rbw-preview.sh {}' \
+            --preview '$HOME/.dotfiles/bin/rbw-preview.js {}' \
             --preview-window 'top:50%:wrap' \
             --bind 'ctrl-p:up' \
             --bind 'ctrl-n:down' \
             --bind 'ctrl-s:toggle-sort' \
             --bind 'ctrl-/:toggle-preview' \
             --bind "ctrl-o:execute-silent(rbw get {} --field uris 2>/dev/null | head -1 | xargs open)" \
-            --bind "ctrl-b:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 1)" \
-            --bind "ctrl-f:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 2)" \
-            --bind "ctrl-g:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 3)" \
-            --bind "ctrl-h:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 4)" \
-            --bind "ctrl-i:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 5)" \
-            --bind "ctrl-j:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 6)" \
-            --bind "ctrl-m:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 7)" \
-            --bind "ctrl-q:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 8)" \
-            --bind "ctrl-v:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 9)" \
-            --bind "ctrl-x:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 10)" \
-            --bind "B:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 11)" \
-            --bind "F:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 12)" \
-            --bind "G:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 13)" \
-            --bind "H:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 14)" \
-            --bind "I:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 15)" \
-            --bind "J:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 16)" \
-            --bind "M:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 17)" \
-            --bind "Q:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 18)" \
-            --bind "V:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 19)" \
-            --bind "X:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.sh {} 20)" \
+            --bind "ctrl-b:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 1)" \
+            --bind "ctrl-f:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 2)" \
+            --bind "ctrl-g:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 3)" \
+            --bind "ctrl-h:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 4)" \
+            --bind "ctrl-j:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 5)" \
+            --bind "ctrl-q:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 6)" \
+            --bind "ctrl-v:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 7)" \
+            --bind "ctrl-x:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 8)" \
+            --bind "ctrl-r:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 9)" \
+            --bind "ctrl-t:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 10)" \
+            --bind "ctrl-y:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 11)" \
+            --bind "ctrl-l:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 12)" \
+            --bind "ctrl-d:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 13)" \
+            --bind "alt-a:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 14)" \
+            --bind "alt-b:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 15)" \
+            --bind "alt-c:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 16)" \
+            --bind "alt-d:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 17)" \
+            --bind "alt-e:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 18)" \
+            --bind "alt-f:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 19)" \
+            --bind "alt-g:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 20)" \
+            --bind "alt-h:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 21)" \
+            --bind "alt-i:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 22)" \
+            --bind "alt-j:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 23)" \
+            --bind "alt-k:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 24)" \
+            --bind "alt-l:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 25)" \
+            --bind "alt-m:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 26)" \
+            --bind "alt-n:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 27)" \
+            --bind "alt-o:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 28)" \
+            --bind "alt-p:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 29)" \
+            --bind "alt-q:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 30)" \
+            --bind "alt-r:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 31)" \
+            --bind "alt-s:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 32)" \
+            --bind "alt-t:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 33)" \
+            --bind "alt-u:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 34)" \
+            --bind "alt-v:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 35)" \
+            --bind "alt-w:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 36)" \
+            --bind "alt-x:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 37)" \
+            --bind "alt-y:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 38)" \
+            --bind "alt-z:execute-silent($HOME/.dotfiles/bin/rbw-copy-field-by-index.js {} 39)" \
             --bind "enter:execute-silent(rbw get {} 2>/dev/null | pbcopy || (rbw get {} --raw | jq -r '.data.number // empty' | pbcopy && echo '✓ Card number copied'))")
 
     # No output needed - user pressed Esc to exit
