@@ -1,40 +1,59 @@
 #!/bin/bash
 # Preview script for rbw entries with numbered fields
 
-entry="$1"
-if [[ -z "$entry" ]]; then
-    echo "No entry selected"
-    exit 0
-fi
+# ============================================================================
+# Configuration
+# ============================================================================
 
-# Get raw JSON
-json=$(rbw get "$entry" --raw 2>/dev/null)
-if [[ -z "$json" ]]; then
-    echo "Failed to fetch entry"
-    exit 0
-fi
+COLUMN_WIDTH=60
 
-# Colors
-CYAN='\033[1;36m'
-YELLOW='\033[33m'
-GREEN='\033[32m'
-BLUE='\033[36m'
-MAGENTA='\033[35m'
-GRAY='\033[90m'
-RESET='\033[0m'
+KEYS=(b f g h i j m q v x B F G H I J M Q V X)
+field_number=0
 
-# Column width for alignment (plain text, no ANSI codes)
-COL_WIDTH=60
-
-# Capture all content in a variable
 content=""
 
-# Helper function to add line to content
+# ============================================================================
+# Colors
+# ============================================================================
+
+define_colors() {
+    CYAN='\033[1;36m'
+    YELLOW='\033[33m'
+    GREEN='\033[32m'
+    BLUE='\033[36m'
+    MAGENTA='\033[35m'
+    GRAY='\033[90m'
+    RESET='\033[0m'
+}
+
+# ============================================================================
+# Content Building
+# ============================================================================
+
 add_line() {
     content+="$1"$'\n'
 }
 
-# Helper function to print aligned line
+add_blank_line() {
+    add_line ""
+}
+
+# ============================================================================
+# Field Rendering
+# ============================================================================
+
+get_next_keybind() {
+    local key="${KEYS[$field_number]}"
+    ((field_number++))
+    echo "Ctrl+$key"
+}
+
+calculate_padding() {
+    local text="$1"
+    local padding=$((COLUMN_WIDTH - ${#text}))
+    printf '%*s' "$padding" ''
+}
+
 print_field() {
     local color="$1"
     local label="$2"
@@ -42,214 +61,328 @@ print_field() {
     local keybind="$4"
 
     local text="$label $value"
-    local padding=$((COL_WIDTH - ${#text}))
-    local spaces=$(printf '%*s' "$padding" '')
+    local spaces=$(calculate_padding "$text")
 
     add_line "${color}${label}${RESET} ${value}${spaces}${GREEN}${keybind}${RESET}"
 }
 
-# Map field positions to keys
-# Avoid terminal defaults: a, c, d, e, k, l, r, t, u, w, y, z
-# Avoid fzf: o (open), p/n (navigation), s (sort)
-# Safe to use: Ctrl+b,f,g,h,i,j,m,q,v,x + Shift+b,f,g,h,i,j,m,q,v,x (20 keys total)
-keys=(b f g h i j m q v x B F G H I J M Q V X)
-field_num=0
+print_field_with_next_keybind() {
+    local color="$1"
+    local label="$2"
+    local value="$3"
 
-# Header
-add_line "${CYAN}━━━ $entry ━━━${RESET}"
-add_line ""
+    local keybind=$(get_next_keybind)
+    print_field "$color" "$label" "$value" "[$keybind]"
+}
 
-# Detect entry type (identity vs card vs login)
-first_name=$(echo "$json" | jq -r '.data.first_name // empty')
-cardholder_name=$(echo "$json" | jq -r '.data.cardholder_name // empty')
+print_field_if_present() {
+    local json="$1"
+    local json_path="$2"
+    local color="$3"
+    local label="$4"
 
-if [[ -n "$first_name" ]]; then
-    # IDENTITY ENTRY
+    local value=$(echo "$json" | jq -r "$json_path // empty")
+    if [[ -n "$value" ]]; then
+        print_field_with_next_keybind "$color" "$label" "$value"
+    fi
+}
 
-    # Full name
-    last_name=$(echo "$json" | jq -r '.data.last_name // empty')
-    full_name="$first_name${last_name:+ $last_name}"
-    key="${keys[$field_num]}"
-    print_field "$GREEN" "Name:" "$full_name" "[Ctrl+$key]"
-    ((field_num++))
+print_hidden_field() {
+    local color="$1"
+    local label="$2"
+    local keybind="$3"
+    local mask="${4:-••••••••}"
 
-    # Email
-    email=$(echo "$json" | jq -r '.data.email // empty')
-    if [[ -n "$email" ]]; then
-        key="${keys[$field_num]}"
-        print_field "$BLUE" "Email:" "$email" "[Ctrl+$key]"
-        ((field_num++))
+    print_field "$color" "$label" "$mask" "$keybind"
+}
+
+# ============================================================================
+# Entry Type Detection
+# ============================================================================
+
+is_identity_entry() {
+    local json="$1"
+    local first_name=$(echo "$json" | jq -r '.data.first_name // empty')
+    [[ -n "$first_name" ]]
+}
+
+is_card_entry() {
+    local json="$1"
+    local cardholder=$(echo "$json" | jq -r '.data.cardholder_name // empty')
+    [[ -n "$cardholder" ]]
+}
+
+# ============================================================================
+# Identity Entry
+# ============================================================================
+
+render_identity_name() {
+    local json="$1"
+    local first_name=$(echo "$json" | jq -r '.data.first_name // empty')
+    local last_name=$(echo "$json" | jq -r '.data.last_name // empty')
+    local full_name="$first_name${last_name:+ $last_name}"
+
+    print_field_with_next_keybind "$GREEN" "Name:" "$full_name"
+}
+
+render_identity_address() {
+    local json="$1"
+    local address1=$(echo "$json" | jq -r '.data.address1 // empty')
+    local city=$(echo "$json" | jq -r '.data.city // empty')
+
+    if [[ -z "$address1" && -z "$city" ]]; then
+        return
     fi
 
-    # Phone
-    phone=$(echo "$json" | jq -r '.data.phone // empty')
-    if [[ -n "$phone" ]]; then
-        key="${keys[$field_num]}"
-        print_field "$MAGENTA" "Phone:" "$phone" "[Ctrl+$key]"
-        ((field_num++))
-    fi
+    local state=$(echo "$json" | jq -r '.data.state // empty')
+    local postal=$(echo "$json" | jq -r '.data.postal_code // empty')
+    local country=$(echo "$json" | jq -r '.data.country // empty')
 
-    # Address
-    address1=$(echo "$json" | jq -r '.data.address1 // empty')
-    city=$(echo "$json" | jq -r '.data.city // empty')
-    if [[ -n "$address1" || -n "$city" ]]; then
-        state=$(echo "$json" | jq -r '.data.state // empty')
-        postal=$(echo "$json" | jq -r '.data.postal_code // empty')
-        country=$(echo "$json" | jq -r '.data.country // empty')
-        addr_parts=()
-        [[ -n "$address1" ]] && addr_parts+=("$address1")
-        [[ -n "$city" ]] && addr_parts+=("$city")
-        [[ -n "$state" ]] && addr_parts+=("$state")
-        [[ -n "$postal" ]] && addr_parts+=("$postal")
-        [[ -n "$country" ]] && addr_parts+=("$country")
-        address=$(IFS=", "; echo "${addr_parts[*]}")
-        key="${keys[$field_num]}"
-        print_field "$CYAN" "Address:" "$address" "[Ctrl+$key]"
-        ((field_num++))
-    fi
+    local parts=()
+    [[ -n "$address1" ]] && parts+=("$address1")
+    [[ -n "$city" ]] && parts+=("$city")
+    [[ -n "$state" ]] && parts+=("$state")
+    [[ -n "$postal" ]] && parts+=("$postal")
+    [[ -n "$country" ]] && parts+=("$country")
 
-    # Passport number (hidden)
-    passport=$(echo "$json" | jq -r '.data.passport_number // empty')
+    local address=$(IFS=", "; echo "${parts[*]}")
+    print_field_with_next_keybind "$CYAN" "Address:" "$address"
+}
+
+render_identity_passport() {
+    local json="$1"
+    local passport=$(echo "$json" | jq -r '.data.passport_number // empty')
+
     if [[ -n "$passport" ]]; then
-        key="${keys[$field_num]}"
-        print_field "$YELLOW" "Passport:" "••••••••" "[Ctrl+$key]"
-        ((field_num++))
+        print_field_with_next_keybind "$YELLOW" "Passport:" "••••••••"
     fi
+}
 
-    # License number
-    license=$(echo "$json" | jq -r '.data.license_number // empty')
-    if [[ -n "$license" ]]; then
-        key="${keys[$field_num]}"
-        print_field "$GREEN" "License:" "$license" "[Ctrl+$key]"
-        ((field_num++))
-    fi
+render_identity_entry() {
+    local json="$1"
 
-elif [[ -n "$cardholder_name" ]]; then
-    # CARD ENTRY
+    render_identity_name "$json"
+    print_field_if_present "$json" '.data.email' "$BLUE" "Email:"
+    print_field_if_present "$json" '.data.phone' "$MAGENTA" "Phone:"
+    render_identity_address "$json"
+    render_identity_passport "$json"
+    print_field_if_present "$json" '.data.license_number' "$GREEN" "License:"
+}
 
-    # Card number (hidden) - Enter key for cards
-    card_number=$(echo "$json" | jq -r '.data.number // empty')
+# ============================================================================
+# Card Entry
+# ============================================================================
+
+render_card_number() {
+    local json="$1"
+    local card_number=$(echo "$json" | jq -r '.data.number // empty')
+
     if [[ -n "$card_number" ]]; then
-        print_field "$YELLOW" "Number:" "•••• •••• •••• ••••" "[Enter]"
+        print_hidden_field "$YELLOW" "Number:" "[Enter]" "•••• •••• •••• ••••"
     fi
+}
 
-    # Cardholder name
-    key="${keys[$field_num]}"
-    print_field "$GREEN" "Cardholder:" "$cardholder_name" "[Ctrl+$key]"
-    ((field_num++))
+render_card_expiration() {
+    local json="$1"
+    local exp_month=$(echo "$json" | jq -r '.data.exp_month // empty')
+    local exp_year=$(echo "$json" | jq -r '.data.exp_year // empty')
 
-    # Expiration
-    exp_month=$(echo "$json" | jq -r '.data.exp_month // empty')
-    exp_year=$(echo "$json" | jq -r '.data.exp_year // empty')
     if [[ -n "$exp_month" && -n "$exp_year" ]]; then
-        key="${keys[$field_num]}"
-        print_field "$BLUE" "Expiration:" "$exp_month / $exp_year" "[Ctrl+$key]"
-        ((field_num++))
+        print_field_with_next_keybind "$BLUE" "Expiration:" "$exp_month / $exp_year"
     fi
+}
 
-    # Security code (CVV)
-    code=$(echo "$json" | jq -r '.data.code // empty')
+render_card_cvv() {
+    local json="$1"
+    local code=$(echo "$json" | jq -r '.data.code // empty')
+
     if [[ -n "$code" ]]; then
-        key="${keys[$field_num]}"
-        print_field "$MAGENTA" "CVV:" "•••" "[Ctrl+$key]"
-        ((field_num++))
+        print_field_with_next_keybind "$MAGENTA" "CVV:" "•••"
     fi
+}
 
-else
-    # LOGIN ENTRY
+render_card_entry() {
+    local json="$1"
 
-    # Password (always first - Enter key)
-    password=$(echo "$json" | jq -r '.data.password // empty')
+    render_card_number "$json"
+    print_field_if_present "$json" '.data.cardholder_name' "$GREEN" "Cardholder:"
+    render_card_expiration "$json"
+    render_card_cvv "$json"
+}
+
+# ============================================================================
+# Login Entry
+# ============================================================================
+
+render_login_password() {
+    local json="$1"
+    local password=$(echo "$json" | jq -r '.data.password // empty')
+
     if [[ -n "$password" ]]; then
-        print_field "$YELLOW" "Password:" "••••••••" "[Enter]"
+        print_hidden_field "$YELLOW" "Password:" "[Enter]"
     fi
+}
 
-    # Username
-    username=$(echo "$json" | jq -r '.data.username // empty')
-    if [[ -n "$username" ]]; then
-        key="${keys[$field_num]}"
-        print_field "$GREEN" "Username:" "$username" "[Ctrl+$key]"
-        ((field_num++))
+render_login_website() {
+    local json="$1"
+    local uri=$(echo "$json" | jq -r '.data.uris[]?.uri // empty' 2>/dev/null | head -1)
+
+    if [[ -n "$uri" ]]; then
+        print_field_with_next_keybind "$BLUE" "Website:" "$uri"
     fi
+}
 
-    # URIs
-    uris=$(echo "$json" | jq -r '.data.uris[]?.uri // empty' 2>/dev/null | head -1)
-    if [[ -n "$uris" ]]; then
-        key="${keys[$field_num]}"
-        print_field "$BLUE" "Website:" "$uris" "[Ctrl+$key]"
-        ((field_num++))
-    fi
+render_login_totp() {
+    local json="$1"
+    local totp=$(echo "$json" | jq -r '.data.totp // empty')
 
-    # TOTP
-    totp=$(echo "$json" | jq -r '.data.totp // empty')
     if [[ -n "$totp" ]]; then
-        key="${keys[$field_num]}"
-        print_field "$MAGENTA" "TOTP:" "Enabled" "[Ctrl+$key]"
-        ((field_num++))
+        print_field_with_next_keybind "$MAGENTA" "TOTP:" "Enabled"
     fi
-fi
+}
 
-# Custom fields (common to all types)
-custom_fields=$(echo "$json" | jq -c '.fields[]? // empty' 2>/dev/null)
-if [[ -n "$custom_fields" ]]; then
-    add_line ""
+render_login_entry() {
+    local json="$1"
+
+    render_login_password "$json"
+    print_field_if_present "$json" '.data.username' "$GREEN" "Username:"
+    render_login_website "$json"
+    render_login_totp "$json"
+}
+
+# ============================================================================
+# Common Sections
+# ============================================================================
+
+render_custom_fields() {
+    local json="$1"
+    local custom_fields=$(echo "$json" | jq -c '.fields[]? // empty' 2>/dev/null)
+
+    if [[ -z "$custom_fields" ]]; then
+        return
+    fi
+
+    add_blank_line
     add_line "${CYAN}Custom Fields:${RESET}"
+
     while IFS= read -r field; do
-        if [[ -n "$field" && $field_num -lt ${#keys[@]} ]]; then
-            name=$(echo "$field" | jq -r '.name')
-            value=$(echo "$field" | jq -r '.value // empty')
-            field_type=$(echo "$field" | jq -r '.type // "text"')
-
-            # Hide value if type is "hidden"
-            if [[ "$field_type" == "hidden" ]]; then
-                display_value="•••••••"
-            else
-                display_value="$value"
-            fi
-
-            key="${keys[$field_num]}"
-
-            # Print with custom field indentation
-            text="  $name: $display_value"
-            padding=$((COL_WIDTH - ${#text}))
-            spaces=$(printf '%*s' "$padding" '')
-
-            add_line "  ${BLUE}$name:${RESET} ${display_value}${spaces}${GREEN}[Ctrl+$key]${RESET}"
-            ((field_num++))
+        if [[ -z "$field" || $field_number -ge ${#KEYS[@]} ]]; then
+            continue
         fi
+
+        local name=$(echo "$field" | jq -r '.name')
+        local value=$(echo "$field" | jq -r '.value // empty')
+        local field_type=$(echo "$field" | jq -r '.type // "text"')
+
+        local display_value="$value"
+        if [[ "$field_type" == "hidden" ]]; then
+            display_value="•••••••"
+        fi
+
+        local keybind=$(get_next_keybind)
+        local text="  $name: $display_value"
+        local spaces=$(calculate_padding "$text")
+
+        add_line "  ${BLUE}$name:${RESET} ${display_value}${spaces}${GREEN}[Ctrl+$keybind]${RESET}"
     done <<< "$custom_fields"
-fi
+}
 
-# Notes
-notes=$(echo "$json" | jq -r '.notes // empty')
-if [[ -n "$notes" ]]; then
-    add_line ""
-    add_line "${MAGENTA}Notes:${RESET}"
-    add_line "$notes"
-fi
+render_notes() {
+    local json="$1"
+    local notes=$(echo "$json" | jq -r '.notes // empty')
 
-# Calculate padding to push navigation to bottom
-terminal_lines=$(tput lines 2>/dev/null || echo 40)
-preview_height=$((terminal_lines / 2 - 3))
+    if [[ -n "$notes" ]]; then
+        add_blank_line
+        add_line "${MAGENTA}Notes:${RESET}"
+        add_line "$notes"
+    fi
+}
 
-# Count actual content lines
-content_lines=$(echo -n "$content" | wc -l)
-footer_lines=2
+render_header() {
+    local entry_name="$1"
+    add_line "${CYAN}━━━ $entry_name ━━━${RESET}"
+    add_blank_line
+}
 
-# Calculate padding needed
-padding_lines=$((preview_height - content_lines - footer_lines))
-if [[ $padding_lines -lt 0 ]]; then
-    padding_lines=0
-fi
+render_footer() {
+    local terminal_lines=$(tput lines 2>/dev/null || echo 40)
+    local preview_height=$((terminal_lines / 2 - 3))
+    local content_lines=$(echo -n "$content" | wc -l)
+    local footer_lines=2
+    local padding_lines=$((preview_height - content_lines - footer_lines))
 
-# Print content
-echo -e "$content"
+    if [[ $padding_lines -lt 0 ]]; then
+        padding_lines=0
+    fi
 
-# Add padding
-for ((i=0; i<padding_lines; i++)); do
-    echo ""
-done
+    echo -e "$content"
 
-# Footer at bottom
-echo -e "${GRAY}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
-echo -e "${GRAY}Navigation: ${RESET}${GREEN}Ctrl+P/N${RESET} up/down  ${GREEN}Ctrl+/${RESET} toggle  ${GREEN}Ctrl+O${RESET} open URL  ${GREEN}Ctrl+S${RESET} sort"
+    for ((i=0; i<padding_lines; i++)); do
+        echo ""
+    done
+
+    echo -e "${GRAY}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+    echo -e "${GRAY}Navigation: ${RESET}${GREEN}Ctrl+P/N${RESET} up/down  ${GREEN}Ctrl+/${RESET} toggle  ${GREEN}Ctrl+O${RESET} open URL  ${GREEN}Ctrl+S${RESET} sort"
+}
+
+# ============================================================================
+# Entry Routing
+# ============================================================================
+
+render_entry_fields() {
+    local json="$1"
+
+    if is_identity_entry "$json"; then
+        render_identity_entry "$json"
+    elif is_card_entry "$json"; then
+        render_card_entry "$json"
+    else
+        render_login_entry "$json"
+    fi
+}
+
+# ============================================================================
+# Main
+# ============================================================================
+
+fetch_entry_json() {
+    local entry_name="$1"
+    rbw get "$entry_name" --raw 2>/dev/null
+}
+
+validate_entry_name() {
+    local entry_name="$1"
+
+    if [[ -z "$entry_name" ]]; then
+        echo "No entry selected"
+        exit 0
+    fi
+}
+
+validate_entry_json() {
+    local json="$1"
+
+    if [[ -z "$json" ]]; then
+        echo "Failed to fetch entry"
+        exit 0
+    fi
+}
+
+print_preview() {
+    local entry_name="$1"
+
+    validate_entry_name "$entry_name"
+
+    local json=$(fetch_entry_json "$entry_name")
+    validate_entry_json "$json"
+
+    define_colors
+
+    render_header "$entry_name"
+    render_entry_fields "$json"
+    render_custom_fields "$json"
+    render_notes "$json"
+    render_footer
+}
+
+print_preview "$1"

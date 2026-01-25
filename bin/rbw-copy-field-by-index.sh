@@ -1,202 +1,186 @@
 #!/bin/bash
 # Copy a field from rbw entry by index
-# Handles both login and card entries
 
-entry="$1"
-index="$2"
+copy_to_clipboard() {
+    local value="$1"
+    local label="$2"
+    echo -n "$value" | pbcopy
+    echo "✓ $label copied to clipboard"
+    exit 0
+}
 
-if [[ -z "$entry" || -z "$index" ]]; then
-    exit 1
-fi
+get_json_field() {
+    local json="$1"
+    local path="$2"
+    echo "$json" | jq -r "$path // empty"
+}
 
-# Get raw JSON
-json=$(rbw get "$entry" --raw 2>/dev/null)
-if [[ -z "$json" ]]; then
-    exit 1
-fi
+try_copy_field() {
+    local json="$1"
+    local current_index="$2"
+    local target_index="$3"
+    local json_path="$4"
+    local label="$5"
 
-field_num=1
-
-# Detect entry type (identity, card, or login)
-first_name=$(echo "$json" | jq -r '.data.first_name // empty')
-cardholder_name=$(echo "$json" | jq -r '.data.cardholder_name // empty')
-
-if [[ -n "$first_name" ]]; then
-    # IDENTITY ENTRY
-
-    # Full name
-    last_name=$(echo "$json" | jq -r '.data.last_name // empty')
-    full_name="$first_name${last_name:+ $last_name}"
-    if [[ $field_num -eq $index ]]; then
-        echo -n "$full_name" | pbcopy
-        echo "✓ Name copied to clipboard"
-        exit 0
-    fi
-    ((field_num++))
-
-    # Email
-    email=$(echo "$json" | jq -r '.data.email // empty')
-    if [[ -n "$email" ]]; then
-        if [[ $field_num -eq $index ]]; then
-            echo -n "$email" | pbcopy
-            echo "✓ Email copied to clipboard"
-            exit 0
-        fi
-        ((field_num++))
+    local value=$(get_json_field "$json" "$json_path")
+    if [[ -n "$value" && $current_index -eq $target_index ]]; then
+        copy_to_clipboard "$value" "$label"
     fi
 
-    # Phone
-    phone=$(echo "$json" | jq -r '.data.phone // empty')
-    if [[ -n "$phone" ]]; then
-        if [[ $field_num -eq $index ]]; then
-            echo -n "$phone" | pbcopy
-            echo "✓ Phone copied to clipboard"
-            exit 0
-        fi
-        ((field_num++))
+    [[ -n "$value" ]] && echo "$((current_index + 1))" || echo "$current_index"
+}
+
+try_copy_computed_field() {
+    local json="$1"
+    local current_index="$2"
+    local target_index="$3"
+    local compute_fn="$4"
+    local label="$5"
+
+    local value=$($compute_fn "$json")
+    if [[ -n "$value" && $current_index -eq $target_index ]]; then
+        copy_to_clipboard "$value" "$label"
     fi
 
-    # Address
-    address1=$(echo "$json" | jq -r '.data.address1 // empty')
-    city=$(echo "$json" | jq -r '.data.city // empty')
-    if [[ -n "$address1" || -n "$city" ]]; then
-        if [[ $field_num -eq $index ]]; then
-            state=$(echo "$json" | jq -r '.data.state // empty')
-            postal=$(echo "$json" | jq -r '.data.postal_code // empty')
-            country=$(echo "$json" | jq -r '.data.country // empty')
-            addr_parts=()
-            [[ -n "$address1" ]] && addr_parts+=("$address1")
-            [[ -n "$city" ]] && addr_parts+=("$city")
-            [[ -n "$state" ]] && addr_parts+=("$state")
-            [[ -n "$postal" ]] && addr_parts+=("$postal")
-            [[ -n "$country" ]] && addr_parts+=("$country")
-            address=$(IFS=", "; echo "${addr_parts[*]}")
-            echo -n "$address" | pbcopy
-            echo "✓ Address copied to clipboard"
-            exit 0
-        fi
-        ((field_num++))
+    [[ -n "$value" ]] && echo "$((current_index + 1))" || echo "$current_index"
+}
+
+compute_full_name() {
+    local json="$1"
+    local first_name=$(get_json_field "$json" '.data.first_name')
+    local last_name=$(get_json_field "$json" '.data.last_name')
+    echo "$first_name${last_name:+ $last_name}"
+}
+
+compute_full_address() {
+    local json="$1"
+    local addr_parts=()
+
+    for field in address1 city state postal_code country; do
+        local value=$(get_json_field "$json" ".data.$field")
+        [[ -n "$value" ]] && addr_parts+=("$value")
+    done
+
+    [[ ${#addr_parts[@]} -gt 0 ]] && (IFS=", "; echo "${addr_parts[*]}")
+}
+
+compute_expiration() {
+    local json="$1"
+    local month=$(get_json_field "$json" '.data.exp_month')
+    local year=$(get_json_field "$json" '.data.exp_year')
+    [[ -n "$month" && -n "$year" ]] && echo "$month/$year"
+}
+
+compute_totp_code() {
+    local json="$1"
+    local entry="$2"
+    local totp=$(get_json_field "$json" '.data.totp')
+    [[ -n "$totp" ]] && rbw code "$entry" 2>/dev/null
+}
+
+is_identity_entry() {
+    local json="$1"
+    [[ -n $(get_json_field "$json" '.data.first_name') ]]
+}
+
+is_card_entry() {
+    local json="$1"
+    [[ -n $(get_json_field "$json" '.data.cardholder_name') ]]
+}
+
+process_identity_fields() {
+    local json="$1"
+    local index="$2"
+    local field_num="$3"
+
+    field_num=$(try_copy_computed_field "$json" $field_num $index compute_full_name "Name")
+    field_num=$(try_copy_field "$json" $field_num $index '.data.email' "Email")
+    field_num=$(try_copy_field "$json" $field_num $index '.data.phone' "Phone")
+    field_num=$(try_copy_computed_field "$json" $field_num $index compute_full_address "Address")
+    field_num=$(try_copy_field "$json" $field_num $index '.data.passport_number' "Passport number")
+    field_num=$(try_copy_field "$json" $field_num $index '.data.license_number' "License number")
+
+    echo "$field_num"
+}
+
+process_card_fields() {
+    local json="$1"
+    local index="$2"
+    local field_num="$3"
+
+    field_num=$(try_copy_field "$json" $field_num $index '.data.cardholder_name' "Cardholder name")
+    field_num=$(try_copy_field "$json" $field_num $index '.data.number' "Card number")
+    field_num=$(try_copy_computed_field "$json" $field_num $index compute_expiration "Expiration date")
+    field_num=$(try_copy_field "$json" $field_num $index '.data.code' "CVV")
+
+    echo "$field_num"
+}
+
+process_login_fields() {
+    local json="$1"
+    local index="$2"
+    local field_num="$3"
+    local entry="$4"
+
+    field_num=$(try_copy_field "$json" $field_num $index '.data.username' "Username")
+
+    local uri=$(get_json_field "$json" '.data.uris[]?.uri' | head -1)
+    if [[ -n "$uri" && $field_num -eq $index ]]; then
+        copy_to_clipboard "$uri" "Website URL"
     fi
+    [[ -n "$uri" ]] && ((field_num++))
 
-    # Passport number
-    passport=$(echo "$json" | jq -r '.data.passport_number // empty')
-    if [[ -n "$passport" ]]; then
-        if [[ $field_num -eq $index ]]; then
-            echo -n "$passport" | pbcopy
-            echo "✓ Passport number copied to clipboard"
-            exit 0
-        fi
-        ((field_num++))
+    local totp_code=$(compute_totp_code "$json" "$entry")
+    if [[ -n "$totp_code" && $field_num -eq $index ]]; then
+        copy_to_clipboard "$totp_code" "TOTP code"
     fi
+    [[ -n "$totp_code" ]] && ((field_num++))
 
-    # License number
-    license=$(echo "$json" | jq -r '.data.license_number // empty')
-    if [[ -n "$license" ]]; then
-        if [[ $field_num -eq $index ]]; then
-            echo -n "$license" | pbcopy
-            echo "✓ License number copied to clipboard"
-            exit 0
-        fi
-        ((field_num++))
-    fi
+    echo "$field_num"
+}
 
-elif [[ -n "$cardholder_name" ]]; then
-    # CARD ENTRY
+process_custom_fields() {
+    local json="$1"
+    local index="$2"
+    local field_num="$3"
 
-    # Cardholder name
-    if [[ $field_num -eq $index ]]; then
-        echo -n "$cardholder_name" | pbcopy
-        echo "✓ Cardholder name copied to clipboard"
-        exit 0
-    fi
-    ((field_num++))
+    local custom_fields=$(echo "$json" | jq -c '.fields[]? // empty' 2>/dev/null)
+    [[ -z "$custom_fields" ]] && return
 
-    # Card number
-    card_number=$(echo "$json" | jq -r '.data.number // empty')
-    if [[ -n "$card_number" ]]; then
-        if [[ $field_num -eq $index ]]; then
-            echo -n "$card_number" | pbcopy
-            echo "✓ Card number copied to clipboard"
-            exit 0
-        fi
-        ((field_num++))
-    fi
-
-    # Expiration (MM/YYYY format)
-    exp_month=$(echo "$json" | jq -r '.data.exp_month // empty')
-    exp_year=$(echo "$json" | jq -r '.data.exp_year // empty')
-    if [[ -n "$exp_month" && -n "$exp_year" ]]; then
-        if [[ $field_num -eq $index ]]; then
-            echo -n "$exp_month/$exp_year" | pbcopy
-            echo "✓ Expiration date copied to clipboard"
-            exit 0
-        fi
-        ((field_num++))
-    fi
-
-    # CVV/Security code
-    code=$(echo "$json" | jq -r '.data.code // empty')
-    if [[ -n "$code" ]]; then
-        if [[ $field_num -eq $index ]]; then
-            echo -n "$code" | pbcopy
-            echo "✓ CVV copied to clipboard"
-            exit 0
-        fi
-        ((field_num++))
-    fi
-
-else
-    # LOGIN ENTRY
-
-    # Username
-    username=$(echo "$json" | jq -r '.data.username // empty')
-    if [[ -n "$username" ]]; then
-        if [[ $field_num -eq $index ]]; then
-            echo -n "$username" | pbcopy
-            echo "✓ Username copied to clipboard"
-            exit 0
-        fi
-        ((field_num++))
-    fi
-
-    # Website (copy URL)
-    uris=$(echo "$json" | jq -r '.data.uris[]?.uri // empty' 2>/dev/null | head -1)
-    if [[ -n "$uris" ]]; then
-        if [[ $field_num -eq $index ]]; then
-            echo -n "$uris" | pbcopy
-            echo "✓ Website URL copied to clipboard"
-            exit 0
-        fi
-        ((field_num++))
-    fi
-
-    # TOTP
-    totp=$(echo "$json" | jq -r '.data.totp // empty')
-    if [[ -n "$totp" ]]; then
-        if [[ $field_num -eq $index ]]; then
-            rbw code "$entry" 2>/dev/null | pbcopy
-            echo "✓ TOTP code copied to clipboard"
-            exit 0
-        fi
-        ((field_num++))
-    fi
-fi
-
-# Custom fields (common to all types)
-custom_fields=$(echo "$json" | jq -c '.fields[]? // empty' 2>/dev/null)
-if [[ -n "$custom_fields" ]]; then
     while IFS= read -r field; do
-        if [[ -n "$field" ]]; then
-            if [[ $field_num -eq $index ]]; then
-                name=$(echo "$field" | jq -r '.name')
-                value=$(echo "$field" | jq -r '.value // empty')
-                echo -n "$value" | pbcopy
-                echo "✓ $name copied to clipboard"
-                exit 0
-            fi
-            ((field_num++))
-        fi
-    done <<< "$custom_fields"
-fi
+        [[ -z "$field" ]] && continue
 
-exit 1
+        if [[ $field_num -eq $index ]]; then
+            local name=$(echo "$field" | jq -r '.name')
+            local value=$(echo "$field" | jq -r '.value // empty')
+            copy_to_clipboard "$value" "$name"
+        fi
+        ((field_num++))
+    done <<< "$custom_fields"
+}
+
+main() {
+    local entry="$1"
+    local index="$2"
+
+    [[ -z "$entry" || -z "$index" ]] && exit 1
+
+    local json=$(rbw get "$entry" --raw 2>/dev/null)
+    [[ -z "$json" ]] && exit 1
+
+    local field_num=1
+
+    if is_identity_entry "$json"; then
+        field_num=$(process_identity_fields "$json" "$index" "$field_num")
+    elif is_card_entry "$json"; then
+        field_num=$(process_card_fields "$json" "$index" "$field_num")
+    else
+        field_num=$(process_login_fields "$json" "$index" "$field_num" "$entry")
+    fi
+
+    process_custom_fields "$json" "$index" "$field_num"
+
+    exit 1
+}
+
+main "$@"
