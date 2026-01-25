@@ -23,26 +23,28 @@ Function names should be so clear that you rarely need comments.
 
 ## 1. Small Functions with Descriptive Names
 
-**Target: 3-10 lines per function.** If a function is >15 lines, it's doing too much.
+**Target: 3-10 lines per function.** If a function is >20 lines, it's doing too much.
 
 Each function should do **one thing** and have a name that explains that thing:
 
 ```javascript
 // Bad: Generic name, does multiple things
 function process(filename) {
-  const ext = filename.replace(/.*symlink/, '');
-  const base = filename.replace(/\.symlink.*$/, '');
-  const name = base.replace(/DOT/g, '.');
+  const ext = filename.replace(/.*symlink/, "");
+  const base = filename.replace(/\.symlink.*$/, "");
+  const name = base.replace(/DOT/g, ".");
   // ... 20 more lines
 }
 
 // Good: Small functions with clear names
-const extractExtension = (filename) => filename.replace(/.*symlink/, '');
-const removeSymlinkAndExtension = (filename) => filename.replace(/\.symlink.*$/, '');
-const replaceDOTWithDot = (str) => str.replace(/DOT/g, '.');
+const extractExtension = (filename) => filename.replace(/.*symlink/, "");
+const removeSymlinkAndExtension = (filename) =>
+  filename.replace(/\.symlink.*$/, "");
+const replaceDOTWithDot = (str) => str.replace(/DOT/g, ".");
 ```
 
 **Naming rules:**
+
 - Use full words, no abbreviations: `handleExistingFile()` not `handleFile()`
 - Verbs for actions: `createLink()`, `validate()`, `render()`
 - Boolean checks: `is...()`, `has...()`, `can...()`
@@ -149,7 +151,7 @@ else
 fi
 
 # Good: Separate functions + clean dispatch
-render_entry_fields() {
+function render_entry_fields() {
     local json="$1"
 
     if is_identity_entry "$json"; then
@@ -183,7 +185,8 @@ return files.map(handleFile);
 ## 7. Complexity Budget
 
 **Hard limits:**
-- Function >15 lines → Extract subfunctions
+
+- Function >25 lines → Extract subfunctions
 - File >100 lines → Consider splitting by responsibility
 - Nested blocks >2 deep → Extract function
 
@@ -196,7 +199,7 @@ Before considering code "done":
 1. **Can I read it like English?** Function names should tell the story
 2. **Did I copy-paste any code?** Extract to function
 3. **Are there parallel if/else blocks?** Extract common pattern
-4. **Is any function >15 lines?** Break into subfunctions
+4. **Is any function >20 lines?** Break into subfunctions
 5. **Do branches represent real differences?** Try uniform handling
 6. **Can I compose small functions instead of branching?** Prefer pipeline
 7. **Does every special case justify itself?** Remove if possible
