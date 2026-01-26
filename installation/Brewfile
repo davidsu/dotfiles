@@ -24,8 +24,7 @@ brew "git"                    # Version control
 brew "git-open"               # Opens GitHub page for repo in browser
 
 # Task management for AI agents
-tap "steveyegge/beads"
-brew "bd"                     # Beads - git-backed task management for coding agents
+brew "beads"                  # Beads - git-backed task management for coding agents
 
 # Runtime management
 brew "mise"                   # Multi-language version manager (Node, Python, etc.)
