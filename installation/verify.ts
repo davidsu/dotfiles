@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { execSync } from 'child_process'
-import { logInfo, logSuccess, logError } from './logging'
+import { log } from './logging'
 import { getBrewfilePath } from './system'
 
 function runBrewBundleCheck(brewfilePath: string) {
@@ -20,14 +20,14 @@ function showMissingPackages(brewfilePath: string) {
 export function verifyAllTools() {
   const brewfilePath = getBrewfilePath()
 
-  logInfo('Verifying all packages are installed...')
+  log.info('Verifying all packages are installed...')
 
   if (runBrewBundleCheck(brewfilePath)) {
-    logSuccess('All packages verified.')
+    log.success('All packages verified.')
     return
   }
 
-  logError('Some packages are missing:')
+  log.error('Some packages are missing:')
   showMissingPackages(brewfilePath)
   process.exit(1)
 }

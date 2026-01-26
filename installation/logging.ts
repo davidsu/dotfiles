@@ -32,32 +32,32 @@ function writeToLog(logPath: string, message: string) {
   appendFileSync(logPath, message + '\n')
 }
 
-export function logInfo(message: string) {
+function info(message: string) {
   const formatted = formatMessage('INFO', message)
   writeToLog(INSTALL_LOG, formatted)
   console.log(colorize(BLUE, formatted))
 }
 
-export function logSuccess(message: string) {
+function success(message: string) {
   const formatted = formatMessage('SUCCESS', message)
   writeToLog(INSTALL_LOG, formatted)
   console.log(colorize(GREEN, formatted))
 }
 
-export function logWarn(message: string) {
+function warn(message: string) {
   const formatted = formatMessage('WARN', message)
   writeToLog(INSTALL_LOG, formatted)
   console.log(colorize(YELLOW, formatted))
 }
 
-export function logError(message: string) {
+function error(message: string) {
   const formatted = formatMessage('ERROR', message)
   writeToLog(INSTALL_LOG, formatted)
   writeToLog(ERROR_LOG, formatted)
   console.error(colorize(RED, formatted))
 }
 
-export function logBanner(message: string) {
+function banner(message: string) {
   const border = '='.repeat(60)
   const lines = ['', border, `  ${message}`, border, '']
 
@@ -68,10 +68,4 @@ export function logBanner(message: string) {
   writeToLog(INSTALL_LOG, lines.join('\n'))
 }
 
-export const log = {
-  info: logInfo,
-  success: logSuccess,
-  warn: logWarn,
-  error: logError,
-  banner: logBanner
-}
+export const log = { info, success, warn, error, banner }
