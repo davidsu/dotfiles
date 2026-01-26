@@ -28,7 +28,17 @@ if [[ -e "$DOTFILES_DIR" ]]; then
 fi
 
 git clone "$REPO_HTTPS" "$DOTFILES_DIR" || fail "git clone failed."
-bash "$DOTFILES_DIR/installation/install.sh" || fail "install.sh failed."
+
+# Install mise and Bun for TypeScript installation scripts
+if ! command -v mise >/dev/null 2>&1; then
+  brew install mise || fail "mise install failed."
+fi
+
+mise use --global bun@latest || fail "bun install failed."
+export PATH="$HOME/.local/share/mise/shims:$PATH"
+
+# Run TypeScript installation script
+bun "$DOTFILES_DIR/installation/install.ts" || fail "install.ts failed."
 
 # Switch to SSH remote for future git operations
 cd "$DOTFILES_DIR"

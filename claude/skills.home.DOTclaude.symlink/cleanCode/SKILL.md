@@ -9,7 +9,7 @@ After getting code working, run mandatory refactoring checklist.
 
 **Influences:** This skill draws from Douglas Crockford's "JavaScript: The Good Parts" (favor simplicity, avoid unnecessary features) and Robert C. Martin's "Clean Code" (readable names, small functions, single responsibility).
 
-**TypeScript-specific guidance:** When working with TypeScript code, also load the `/cleanTypes` skill for type-specific best practices.
+**🚨 CRITICAL - TypeScript-specific guidance:** Before writing ANY TypeScript code, you MUST IMMEDIATELY run `/cleanTypes`. Do NOT proceed with TypeScript work until you've loaded cleanTypes. This is MANDATORY, not optional. If you write TypeScript without loading `/cleanTypes`, you WILL violate type annotation best practices.
 
 ## Core Principle: Code Reads Like English
 

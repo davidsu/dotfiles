@@ -38,13 +38,16 @@ Clone this repository into `~/.dotfiles` and run the installation script:
 ```bash
 git clone git@github.com:davidsu/dotfiles.git ~/.dotfiles
 cd ~/.dotfiles
-./installation/install.sh
+./installation/install.ts
 ```
 
 **The script will:**
 1. ✅ Perform pre-flight system checks
 2. 📦 Bootstrap `mise` for Bun and Node.js runtime management
 3. 🛠️ Install and verify all tools from `installation/Brewfile`
+4. 🔗 Symlink configuration files to their target locations
+5. ⚙️ Apply macOS system defaults (disable animations, fast keyboard repeat, etc.)
+6. 🎨 Install Neovim plugins via lazy.nvim
 
 ---
 

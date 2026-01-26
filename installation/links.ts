@@ -1,36 +1,12 @@
 #!/usr/bin/env bun
 
-/**
- * Symlinking Logic for Dotfiles
- * Handles linking all .symlink files to their target locations
- */
-
 import { execSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
+import { log } from './logging'
 
-// Configuration
 const SCRIPT_DIR = import.meta.dir
 const DOTFILES_ROOT = path.dirname(SCRIPT_DIR)
-const LOGGING_SCRIPT = path.join(SCRIPT_DIR, 'logging.sh')
-
-// Types
-type LogLevel = 'info' | 'success' | 'warn' | 'error'
-
-// Logging helpers
-const createLogFunction = (level: LogLevel) => (msg: string) => {
-  execSync(`source "${LOGGING_SCRIPT}" && log_${level} '${msg}'`, {
-    stdio: 'inherit',
-    shell: '/bin/bash'
-  })
-}
-
-const log = {
-  info: createLogFunction('info'),
-  success: createLogFunction('success'),
-  warn: createLogFunction('warn'),
-  error: createLogFunction('error')
-}
 
 // Path transformation logic
 const extractExtension = (filename: string) => filename.replace(/.*symlink/, '')
@@ -61,6 +37,7 @@ function transformPath(filename: string) {
 function handleConfigEdgeCase() {
   const configPath = path.join(process.env.HOME!, '.config')
 
+  if (!fs.existsSync(configPath)) return
   if (isSymlink(configPath)) return
 
   const contents = fs.readdirSync(configPath).filter((f) => !f.startsWith('.'))
