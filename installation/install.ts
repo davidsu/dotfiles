@@ -80,6 +80,4 @@ function main() {
   logBanner('MANUAL STEPS REQUIRED - See README.md → Post-install manual steps')
 }
 
-if (import.meta.main) {
-  main()
-}
+main()
