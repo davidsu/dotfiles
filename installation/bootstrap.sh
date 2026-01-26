@@ -7,15 +7,8 @@ DOTFILES_DIR="${HOME}/.dotfiles"
 fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 
 if ! command -v brew >/dev/null 2>&1; then
-  curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh -o /tmp/brew-install.sh
-  if [[ -t 0 ]]; then
-    # stdin is TTY (script run directly) - full interactive mode
-    bash /tmp/brew-install.sh || fail "Homebrew install failed."
-  else
-    # stdin is pipe (curl | bash) - non-interactive to avoid breaking pipe
-    NONINTERACTIVE=1 bash /tmp/brew-install.sh || fail "Homebrew install failed."
-  fi
-  rm -f /tmp/brew-install.sh
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" \
+    || fail "Homebrew install failed."
 
   if [[ -x /opt/homebrew/bin/brew ]]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
