@@ -122,8 +122,34 @@ After running `./installation/install.sh`, complete these manual steps:
 - Set global Git identity:
   - `git config --global user.name "Your Name"`
   - `git config --global user.email "you@example.com"`
-- Generate an SSH key and add it to GitHub if needed:
-  - `ssh-keygen -t ed25519 -C "you@example.com"`
+
+- **Set up SSH key for GitHub** (required for pushing/pulling changes):
+
+  The dotfiles repo is configured to use SSH. Set up your SSH key:
+
+  **Option 1: Step-by-step**
+  ```bash
+  # 1. Generate an SSH key (if you don't have one)
+  ssh-keygen -t ed25519 -C "you@example.com"
+
+  # 2. Add the key to your SSH agent
+  ssh-add --apple-use-keychain ~/.ssh/id_ed25519
+
+  # 3. Copy your public key and add it to GitHub
+  pbcopy < ~/.ssh/id_ed25519.pub
+  # Then go to: https://github.com/settings/keys
+
+  # 4. Test the connection
+  ssh -T git@github.com
+  ```
+
+  **Option 2: One command**
+  ```bash
+  ssh-keygen -t ed25519 -C "you@example.com" -f ~/.ssh/id_ed25519 -N "" && \
+  ssh-add --apple-use-keychain ~/.ssh/id_ed25519 && \
+  pbcopy < ~/.ssh/id_ed25519.pub
+  # Then go to: https://github.com/settings/keys and paste
+  ```
 
 ### 5. Dock & workspace
 
