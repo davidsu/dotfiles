@@ -120,29 +120,31 @@ const log = {
 
 **Do annotate:**
 1. **Function parameters** - Always annotate (TypeScript can't infer these)
-2. **When inference fails** - If compiler infers `any`, you MUST declare explicitly
+2. **At the source** - Type variables early in the chain to help inference flow
 3. **Public APIs** - Types are documentation for exported functions
-4. **Complex inference** - When the inferred type is wrong or unclear
+4. **When inference fails** - If compiler infers `any`, you MUST declare explicitly
 
-**Example of inference failure:**
+**Example - Type at the source to enable inference:**
 ```typescript
-// Bad: TypeScript infers return type as `any`
+// Bad: No type annotation, chain can't infer properly
 function findFiles(rootDir: string) {
   const output = execSync(`find . -name '*.txt'`, { cwd: rootDir, encoding: 'utf-8' })
-  return output.trim().split('\n').filter((line) => line.length > 0)
+  return output.trim().split('\n').filter(line => line.length > 0)
 }
+// Compiler may not infer that output is string, causing downstream issues
 
-// Good: Explicit return type when inference fails
-function findFiles(rootDir: string): string[] {
-  const output = execSync(`find . -name '*.txt'`, { cwd: rootDir, encoding: 'utf-8' })
-  return output.trim().split('\n').filter((line) => line.length > 0)
+// Good: Type the source variable, inference flows through the chain
+function findFiles(rootDir: string) {
+  const output: string = execSync(`find . -name '*.txt'`, { cwd: rootDir, encoding: 'utf-8' })
+  return output.trim().split('\n').filter(line => line.length > 0)
 }
+// Now .trim() knows it's working with string, .split() returns string[], etc.
 ```
 
 **Don't annotate:**
 1. **Obvious return types** - String methods, boolean literals, void functions
-2. **Variable assignments** - When the value makes the type obvious
-3. **Intermediate values** - Let inference flow through transformations
+2. **Intermediate transformations** - Once you've typed the source, let inference flow
+3. **Collection operations** - `.map()`, `.filter()` preserve and transform types correctly
 
 ### Benefits
 
@@ -217,6 +219,88 @@ const processFiles: ProcessFiles = (rootDir, filter, transform, onError) => {
 - Types are obvious (string, number, boolean)
 - Compiler can infer the return type
 - The inline signature is still readable
+
+## 3. Accept Nullable Types, Handle Explicitly
+
+**Rule:** Accept `T | null` in your type signatures, handle the null case explicitly with clear failure semantics.
+
+**Bad:**
+```typescript
+// Filter nulls early, pass only valid values
+function buildPlan() {
+  return files.map(transformPath).filter(path => path !== null)
+}
+
+function executePlan(plan: string[]) {
+  // Silent assumption: all paths are valid
+  return plan.map(path => createLink(path))
+}
+```
+
+**Good:**
+```typescript
+// Accept nullable type, handle explicitly
+function buildPlan() {
+  return files.map(file => ({
+    from: file,
+    to: transformPath(file) // Returns string | null
+  }))
+}
+
+function executePlan(plan: Array<{from: string, to: string | null}>) {
+  return plan.map(({ from, to }) => safeLink(from, to))
+}
+
+function safeLink(src: string, dest: string | null) {
+  if (!dest) {
+    // Explicit failure with error result
+    return { from: src, to: '<unparseable>', success: false }
+  }
+  // Continue with valid dest
+}
+```
+
+**Why:**
+- **Explicit over silent** - Failures are visible in results, not hidden by filtering
+- **Push responsibility down** - Let `safeLink` decide what to do with nulls (it's about safety!)
+- **Better error tracking** - You can count and report failures, not silently skip them
+
+## 4. Export Discipline
+
+**Rule:** Only export what's actually used by other modules. Everything else is internal implementation.
+
+**Bad:**
+```typescript
+// links.ts
+export { setupSymlinks, buildSymlinkPlan, safeLink, transformPath }
+export type { SymlinkPlan, LinkResult }
+```
+
+Check if these are imported anywhere:
+```bash
+$ rg "import.*buildSymlinkPlan"
+# No results
+
+$ rg "import.*safeLink"
+# No results
+```
+
+**Good:**
+```typescript
+// links.ts - Only export the public API
+export { setupSymlinks }
+export type { LinkResult }  // Used by consumers
+```
+
+**Why:**
+- **Clear API surface** - What's exported is your public interface
+- **Easier refactoring** - Internal functions can be renamed/removed freely
+- **Finds dead code** - Unused exports highlight unnecessary abstractions
+
+**Process:**
+1. After writing a module, search for usages: `rg "import.*functionName"`
+2. Remove exports that have zero imports
+3. Keep only: (a) main public API functions, (b) types used by consumers
 
 ## References
 
