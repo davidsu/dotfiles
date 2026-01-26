@@ -21,7 +21,7 @@ function installDependencies() {
 
   const brewfilePath = getBrewfilePath()
   logInfo('Installing packages via brew bundle...')
-  execSync(`brew bundle --no-upgrade --file="${brewfilePath}"`, { stdio: 'inherit' })
+  execSync(`brew bundle --no-upgrade --verbose --file="${brewfilePath}"`, { stdio: 'inherit' })
   logSuccess('All packages installed.')
 }
 
