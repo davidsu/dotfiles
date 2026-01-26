@@ -52,3 +52,6 @@ function goto(){
     cd $(dirname $(realpath $(which $1)))
 }
 
+# Claude Code Aliases
+alias cyolo='claude --dangerously-skip-permissions'
+
