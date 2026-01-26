@@ -23,9 +23,9 @@ install_homebrew() {
     fi
 }
 
-# Bootstrap mise and node (needed for links.js)
+# Bootstrap mise, bun, and node (needed for links.js and general dev work)
 bootstrap_js_runtime() {
-    log_info "Bootstrapping mise and Node.js..."
+    log_info "Bootstrapping mise, Bun, and Node.js..."
 
     if ! command -v mise >/dev/null 2>&1; then
         log_info "Installing mise via Homebrew..."
@@ -35,13 +35,19 @@ bootstrap_js_runtime() {
     # Activate mise in the current shell
     eval "$(/opt/homebrew/bin/mise activate bash)"
 
+    if ! command -v bun >/dev/null 2>&1; then
+        log_info "Installing Bun via mise..."
+        mise use --global bun@latest
+        eval "$(/opt/homebrew/bin/mise activate bash)"
+    fi
+
     if ! command -v node >/dev/null 2>&1; then
         log_info "Installing Node.js via mise..."
         mise use --global node@lts
         eval "$(/opt/homebrew/bin/mise activate bash)"
     fi
 
-    log_success "JS runtime (Node.js) is ready."
+    log_success "JS runtimes (Bun and Node.js) are ready."
 }
 
 # Install all tools via brew bundle

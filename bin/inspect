@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 const port = Number(process.argv[2])
 const query = port ? `#localhost\\\\\\\\:${port} .actions .action` : '#node-frontend'
 function openDevtool(query, count = 0) {

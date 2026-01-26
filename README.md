@@ -43,7 +43,7 @@ cd ~/.dotfiles
 
 **The script will:**
 1. ✅ Perform pre-flight system checks
-2. 📦 Bootstrap `mise` for Node.js version management
+2. 📦 Bootstrap `mise` for Bun and Node.js runtime management
 3. 🛠️ Install and verify all tools from `installation/Brewfile`
 
 ---

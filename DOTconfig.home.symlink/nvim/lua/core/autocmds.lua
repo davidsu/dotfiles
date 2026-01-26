@@ -45,6 +45,17 @@ vim.api.nvim_create_autocmd('FocusGained', {
   end,
 })
 
+-- Detect files with bun shebang as TypeScript (only check for generic filetypes)
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "conf", "" },
+  callback = function()
+    local first_line = vim.fn.getline(1)
+    if first_line:match("^#!/usr/bin/env bun") then
+      vim.bo.filetype = "typescript"
+    end
+  end,
+})
+
 -- This tells Neovim to use the built-in filetype indent instead of Treesitter's
 vim.api.nvim_create_autocmd("FileType", {
   pattern = { "typescript", "typescriptreact" },

@@ -32,7 +32,7 @@ main() {
     resolve_dependencies
 
     # 3. Symlinking
-    node "${INST_DIR}/links.js"
+    bun "${INST_DIR}/links.js"
 
     # 4. Verification
     verify_all_tools
