@@ -20,7 +20,7 @@ if ! command -v brew >/dev/null 2>&1; then
 fi
 
 if ! command -v git >/dev/null 2>&1; then
-  brew install git || fail "git install failed."
+  brew install git < /dev/null || fail "git install failed."
 fi
 
 if [[ -e "$DOTFILES_DIR" ]]; then
@@ -31,7 +31,7 @@ git clone "$REPO_HTTPS" "$DOTFILES_DIR" || fail "git clone failed."
 
 # Install mise and Bun for TypeScript installation scripts
 if ! command -v mise >/dev/null 2>&1; then
-  brew install mise || fail "mise install failed."
+  brew install mise < /dev/null || fail "mise install failed."
 fi
 
 mise use --global bun@latest || fail "bun install failed."
