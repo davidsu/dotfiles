@@ -104,7 +104,7 @@ function printInstructions() {
   console.log('   A macOS window will open')
   console.log('')
   log('3. In the VM Terminal, run the bootstrap script:')
-  console.log(`   curl -fsSL ${bootstrapURL} | bash`)
+  console.log(`   /bin/bash -c "$(curl -fsSL ${bootstrapURL})"`)
   console.log('   or ssh into the machine:')
   console.log(`   ssh admin@$(tart ip ${VM_NAME})`)
   console.log('')
