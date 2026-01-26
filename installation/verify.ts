@@ -1,33 +1,28 @@
 #!/usr/bin/env bun
 
-import { execSync } from 'child_process'
 import { log } from './logging'
-import { getBrewfilePath } from './system'
+import { loadTools, verifyTool } from './tools'
 
-function runBrewBundleCheck(brewfilePath: string) {
-  try {
-    execSync(`brew bundle check --file="${brewfilePath}"`, { stdio: 'ignore' })
-    return true
-  } catch {
-    return false
-  }
-}
-
-function showMissingPackages(brewfilePath: string) {
-  execSync(`brew bundle check --file="${brewfilePath}"`, { stdio: 'inherit' })
-}
-
-export function verifyAllTools() {
-  const brewfilePath = getBrewfilePath()
-
+export async function verifyAllTools() {
   log.info('Verifying all packages are installed...')
 
-  if (runBrewBundleCheck(brewfilePath)) {
-    log.success('All packages verified.')
+  const tools = await loadTools()
+  const failed: string[] = []
+
+  for (const [name, tool] of Object.entries(tools)) {
+    if (!verifyTool(name, tool)) {
+      failed.push(name)
+    }
+  }
+
+  if (failed.length === 0) {
+    log.success('All packages verified')
     return
   }
 
-  log.warn('Some packages failed to install:')
-  showMissingPackages(brewfilePath)
-  log.info('You can retry failed packages with: brew bundle --file=installation/Brewfile')
+  log.warn('Some packages failed verification:')
+  for (const name of failed) {
+    log.error(`  - ${name}`)
+  }
+  log.info('You can retry with: bun installation/install.ts')
 }

@@ -5,7 +5,8 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { homedir } from 'os'
 import { log } from './logging'
-import { isMacOS, getMacOSVersion, hasCommand, getBrewfilePath } from './system'
+import { isMacOS, getMacOSVersion, hasCommand } from './system'
+import { installAllTools } from './tools'
 import { verifyAllTools } from './verify'
 import { applyMacOSDefaults } from './macos-defaults'
 
@@ -16,18 +17,18 @@ function installNode() {
   execSync('mise use --global node@lts', { stdio: 'inherit' })
 }
 
-function installDependencies() {
+async function installDependencies() {
   installNode()
 
-  const brewfilePath = getBrewfilePath()
-  log.info('Installing packages via brew bundle...')
+  log.info('Installing packages from tools.yaml...')
+  const results = await installAllTools()
 
-  try {
-    execSync(`brew bundle --no-upgrade --verbose --file="${brewfilePath}"`, { stdio: 'inherit' })
-    log.success('All packages installed.')
-  } catch (error) {
-    log.warn('Some packages failed to install. Continuing with installation...')
-    log.info('Failed packages will be reported during verification step.')
+  const failed = results.filter((r) => !r.success)
+  if (failed.length === 0) {
+    log.success('All packages installed successfully')
+  } else {
+    log.warn(`${failed.length} package(s) failed to install`)
+    log.info('Failed packages will be reported during verification step')
   }
 }
 
@@ -73,13 +74,13 @@ function runPostInstallSteps() {
   installNeovimPlugins()
 }
 
-function main() {
+async function main() {
   log.info(`Starting dotfiles installation from ${import.meta.dir}...`)
 
   checkMacOS()
-  installDependencies()
+  await installDependencies()
   symlinkDotfiles()
-  verifyAllTools()
+  await verifyAllTools()
   runPostInstallSteps()
 
   log.success('Installation and verification completed successfully.')

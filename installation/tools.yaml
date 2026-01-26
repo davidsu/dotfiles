@@ -1,0 +1,141 @@
+tools:
+  # Build dependencies (required for Neovim and high-performance plugins)
+  cmake:
+    brew_type: formula
+    description: Build system for compiling native extensions
+
+  ninja:
+    brew_type: formula
+    description: High-speed build system for native Neovim plugins
+
+  gettext:
+    brew_type: formula
+    description: Internationalization library
+
+  # Search and file tools
+  ripgrep:
+    brew_type: formula
+    cmd: rg
+    description: Fast line-oriented search tool
+
+  fd:
+    brew_type: formula
+    description: Simple, fast alternative to find
+
+  bat:
+    brew_type: formula
+    description: Cat clone with syntax highlighting (used by fzf previews)
+
+  fzf:
+    brew_type: formula
+    description: Command-line fuzzy finder
+
+  zoxide:
+    brew_type: formula
+    description: Smarter cd command - tracks frequently used directories
+
+  tree-sitter:
+    brew_type: formula
+    description: Parser generator for syntax highlighting in Neovim
+
+  jq:
+    brew_type: formula
+    description: Lightweight and flexible command-line JSON processor
+
+  # Shell and prompt
+  zsh:
+    brew_type: formula
+    description: Primary shell
+
+  starship:
+    brew_type: formula
+    description: Minimal, blazing-fast, customizable prompt
+
+  # Version control
+  git:
+    brew_type: formula
+    description: Version control
+
+  git-open:
+    brew_type: formula
+    description: Opens GitHub page for repo in browser
+
+  # Task management for AI agents
+  beads:
+    brew_type: formula
+    cmd: bd
+    description: Git-backed task management for coding agents
+
+  # Runtime management
+  mise:
+    brew_type: formula
+    description: Multi-language version manager (Node, Python, etc.)
+
+  # Editor
+  neovim:
+    brew_type: formula
+    cmd: nvim
+    description: Extensible text editor
+
+  # Security
+  bitwarden-cli:
+    brew_type: formula
+    cmd: bw
+    description: Bitwarden password manager CLI (official)
+
+  rbw:
+    brew_type: formula
+    description: Bitwarden password manager CLI (fast Rust alternative)
+
+  # Text-to-speech
+  audiowhisper:
+    brew_type: formula
+    tap: mazdak/tap
+    description: Audio transcription and text-to-speech tool
+
+  # Container runtime
+  colima:
+    brew_type: formula
+    description: Lightweight Docker-compatible container runtime
+
+  # GUI applications
+  ghostty:
+    brew_type: cask
+    description: Fast, native, GPU-accelerated terminal emulator
+
+  karabiner-elements:
+    brew_type: cask
+    description: Powerful keyboard customizer for macOS
+
+  rectangle:
+    brew_type: cask
+    description: Window management with keyboard shortcuts
+
+  alt-tab:
+    brew_type: cask
+    description: Windows-style alt-tab window switcher
+
+  claude-code:
+    brew_type: cask
+    cmd: claude
+    description: Official CLI for Claude AI
+
+  zoom:
+    brew_type: cask
+    description: Video conferencing
+
+  brave-browser:
+    brew_type: cask
+    description: Privacy-focused web browser
+
+  spotify:
+    brew_type: cask
+    description: Music streaming service
+
+  bitwarden:
+    brew_type: cask
+    description: Password manager
+
+  dropbox:
+    brew_type: cask
+    description: Cloud storage and file synchronization
