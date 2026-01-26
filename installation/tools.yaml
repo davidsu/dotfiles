@@ -78,11 +78,6 @@ tools:
     description: Extensible text editor
 
   # Security
-  bitwarden-cli:
-    brew_type: formula
-    cmd: bw
-    description: Bitwarden password manager CLI (official)
-
   rbw:
     brew_type: formula
     description: Bitwarden password manager CLI (fast Rust alternative)
