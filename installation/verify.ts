@@ -27,7 +27,7 @@ export function verifyAllTools() {
     return
   }
 
-  log.error('Some packages are missing:')
+  log.warn('Some packages failed to install:')
   showMissingPackages(brewfilePath)
-  process.exit(1)
+  log.info('You can retry failed packages with: brew bundle --file=installation/Brewfile')
 }

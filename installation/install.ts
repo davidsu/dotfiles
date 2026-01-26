@@ -21,8 +21,14 @@ function installDependencies() {
 
   const brewfilePath = getBrewfilePath()
   log.info('Installing packages via brew bundle...')
-  execSync(`brew bundle --no-upgrade --verbose --file="${brewfilePath}"`, { stdio: 'inherit' })
-  log.success('All packages installed.')
+
+  try {
+    execSync(`brew bundle --no-upgrade --verbose --file="${brewfilePath}"`, { stdio: 'inherit' })
+    log.success('All packages installed.')
+  } catch (error) {
+    log.warn('Some packages failed to install. Continuing with installation...')
+    log.info('Failed packages will be reported during verification step.')
+  }
 }
 
 function checkMacOS() {
