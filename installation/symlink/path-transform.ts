@@ -10,7 +10,7 @@ const transformPathToDirectory = (pathPart: string) =>
   pathPart ? '/' + pathPart.replace(/\./g, '/').replace(/DOT/g, '.') : ''
 
 export function transformPath(filename: string) {
-  if (!/\.home/.test(filename)) return null
+  if (!/\.home\./.test(filename)) return null
 
   const extension = extractExtension(filename)
   const base = removeSymlinkAndExtension(filename)

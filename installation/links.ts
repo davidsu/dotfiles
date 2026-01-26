@@ -25,8 +25,8 @@ function findSymlinkFiles(rootDir: string) {
   return output
     .trim()
     .split('\n')
-    .filter((line: string) => line.length > 0)
-    .map((file: string) => path.join(rootDir, file))
+    .filter((line) => line.length > 0)
+    .map((file) => path.join(rootDir, file))
 }
 
 function buildSymlinkPlan() {
