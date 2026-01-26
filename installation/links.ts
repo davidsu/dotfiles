@@ -8,6 +8,18 @@ import { log } from './logging'
 const SCRIPT_DIR = import.meta.dir
 const DOTFILES_ROOT = path.dirname(SCRIPT_DIR)
 
+interface SymlinkPlan {
+  from: string
+  to: string | null
+}
+
+interface LinkResult {
+  from: string
+  to: string
+  success: boolean
+  alreadyExists: boolean
+}
+
 // Path transformation logic
 const extractExtension = (filename: string) => filename.replace(/.*symlink/, '')
 
@@ -33,14 +45,14 @@ function transformPath(filename: string) {
   return `${process.env.HOME}${directory}/${name}${extension}`
 }
 
-// Handle edge case: mise creates ~/.config before symlinks run
-function handleConfigEdgeCase() {
+// Remove ~/.config if it only contains mise/ (created during mise bootstrap)
+function removeDotConfigWithMiseOnly() {
   const configPath = path.join(process.env.HOME!, '.config')
 
   if (!fs.existsSync(configPath)) return
   if (isSymlink(configPath)) return
 
-  const contents = fs.readdirSync(configPath).filter((f) => !f.startsWith('.'))
+  const contents = fs.readdirSync(configPath).filter((f: string) => !f.startsWith('.'))
   if (contents.length === 1 && contents[0] === 'mise') {
     log.info('~/.config only contains mise/, removing to allow symlink...')
     fs.rmSync(configPath, { recursive: true })
@@ -110,24 +122,25 @@ function createLink(src: string, dest: string) {
   }
 }
 
-function safeLink(src: string, dest: string) {
+function safeLink(src: string, dest: string): LinkResult {
   // Handle existing symlink
   if (isSymlink(dest)) {
     const shouldStop = handleExistingSymlink(src, dest)
-    if (shouldStop) return true
+    if (shouldStop) return { from: src, to: dest, success: true, alreadyExists: true }
   }
 
   // Handle existing file
   if (fileExists(dest)) {
-    if (!handleExistingFile(dest)) return false
+    if (!handleExistingFile(dest)) return { from: src, to: dest, success: false, alreadyExists: false }
   }
 
   // Create parent directory and link
   fs.mkdirSync(path.dirname(dest), { recursive: true })
-  return createLink(src, dest)
+  const success = createLink(src, dest)
+  return { from: src, to: dest, success, alreadyExists: false }
 }
 
-function findSymlinkFiles(rootDir: string) {
+function findSymlinkFiles(rootDir: string): string[] {
   const output = execSync(`find . -name '*.symlink*' \\( -type f -o -type d \\)`, {
     cwd: rootDir,
     encoding: 'utf-8'
@@ -136,37 +149,52 @@ function findSymlinkFiles(rootDir: string) {
   return output
     .trim()
     .split('\n')
-    .filter((line) => line.length > 0)
-    .map((file) => path.join(rootDir, file))
+    .filter((line: string) => line.length > 0)
+    .map((file: string) => path.join(rootDir, file))
 }
 
-function linkHomeFiles() {
-  log.info(`Finding .home.* files in ${DOTFILES_ROOT}...`)
-
+function buildSymlinkPlan() {
   const symlinkFiles = findSymlinkFiles(DOTFILES_ROOT)
-  let failedCount = 0
 
-  for (const src of symlinkFiles) {
+  return symlinkFiles.map(src => {
     const filename = path.basename(src)
     const dest = transformPath(filename)
 
-    if (dest) {
-      if (!safeLink(src, dest)) {
-        failedCount++
-      }
-    } else {
+    if (!dest) {
       log.warn(`Could not parse filename pattern: ${filename}`)
+    }
+
+    return { from: src, to: dest }
+  })
+}
+
+function executeSymlinkPlan(plan: SymlinkPlan[]): LinkResult[] {
+  const results: LinkResult[] = []
+
+  for (const { from, to } of plan) {
+    if (to) {
+      results.push(safeLink(from, to))
     }
   }
 
-  return failedCount
+  return results
 }
 
-function setupSymlinks() {
+function setupSymlinks(): LinkResult[] {
   log.info('Starting symlinking process...')
+  log.info(`Finding .home.* files in ${DOTFILES_ROOT}...`)
 
-  handleConfigEdgeCase()
-  const failedCount = linkHomeFiles()
+  removeDotConfigWithMiseOnly()
+  const plan = buildSymlinkPlan()
+  const results = executeSymlinkPlan(plan)
+
+  return results
+}
+
+// Run if executed directly
+if (import.meta.main) {
+  const results = setupSymlinks()
+  const failedCount = results.filter((r) => !r.success).length
 
   if (failedCount > 0) {
     log.error('Symlinking process completed with errors.')
@@ -176,9 +204,5 @@ function setupSymlinks() {
   }
 }
 
-// Run if executed directly
-if (import.meta.main) {
-  setupSymlinks()
-}
-
-export { setupSymlinks, safeLink, transformPath }
+export { setupSymlinks, buildSymlinkPlan, safeLink, transformPath }
+export type { SymlinkPlan, LinkResult }

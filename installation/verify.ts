@@ -17,12 +17,7 @@ export async function verifyAllTools() {
 
   if (failed.length === 0) {
     log.success('All packages verified')
-    return
   }
 
-  log.warn('Some packages failed verification:')
-  for (const name of failed) {
-    log.error(`  - ${name}`)
-  }
-  log.info('You can retry with: bun installation/install.ts')
+  return failed
 }

@@ -9,6 +9,8 @@ import { isMacOS, getMacOSVersion, hasCommand } from './system'
 import { installAllTools } from './tools'
 import { verifyAllTools } from './verify'
 import { applyMacOSDefaults } from './macos-defaults'
+import { setupSymlinks } from './links'
+import type { LinkResult } from './links'
 
 function installNode() {
   if (hasCommand('node')) return
@@ -44,9 +46,8 @@ function checkMacOS() {
   log.info('Logs will be written to ~/Library/Logs/dotfiles/')
 }
 
-function symlinkDotfiles() {
-  const linksScript = path.join(import.meta.dir, 'links.ts')
-  execSync(`bun ${linksScript}`, { stdio: 'inherit' })
+function symlinkDotfiles(): LinkResult[] {
+  return setupSymlinks()
 }
 
 function trustMiseConfig() {
@@ -79,11 +80,49 @@ async function main() {
 
   checkMacOS()
   await installDependencies()
-  symlinkDotfiles()
-  await verifyAllTools()
+  const symlinkResults = symlinkDotfiles()
+  const failedPackages = await verifyAllTools()
   runPostInstallSteps()
 
-  log.success('Installation and verification completed successfully.')
+  // Display summary
+  console.log('')
+  console.log('============================================================')
+
+  // Symlink results
+  const failedSymlinks = symlinkResults.filter((r) => !r.success)
+  const successfulSymlinks = symlinkResults.filter((r) => r.success && !r.alreadyExists)
+  const existingSymlinks = symlinkResults.filter((r) => r.alreadyExists)
+
+  if (failedSymlinks.length > 0) {
+    log.error(`${failedSymlinks.length} symlink(s) failed:`)
+    for (const link of failedSymlinks) {
+      log.error(`  ✗ ${link.to}`)
+    }
+  }
+
+  if (successfulSymlinks.length > 0) {
+    log.success(`${successfulSymlinks.length} symlink(s) created`)
+  }
+
+  if (existingSymlinks.length > 0) {
+    log.info(`${existingSymlinks.length} symlink(s) already existed`)
+  }
+
+  console.log('------------------------------------------------------------')
+
+  // Package results
+  if (failedPackages.length > 0) {
+    log.warn(`${failedPackages.length} package(s) failed:`)
+    for (const pkg of failedPackages) {
+      log.error(`  ✗ ${pkg}`)
+    }
+    log.info('Retry with: bun installation/install.ts')
+  } else {
+    log.success('All packages verified')
+  }
+
+  console.log('============================================================')
+  console.log('')
   log.banner('MANUAL STEPS REQUIRED - See README.md → Post-install manual steps')
 }
 

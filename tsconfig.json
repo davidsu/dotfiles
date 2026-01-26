@@ -3,6 +3,7 @@
     "types": ["bun-types"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "noImplicitAny": true
   }
 }
