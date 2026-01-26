@@ -44,16 +44,4 @@ bun "$DOTFILES_DIR/installation/install.ts" || fail "install.ts failed."
 cd "$DOTFILES_DIR"
 git remote set-url origin git@github.com:davidsu/dotfiles.git
 
-echo ""
-echo "============================================================"
-echo "  Bootstrap complete!"
-echo "============================================================"
-echo ""
-echo "Next steps:"
-echo "  1. Set up SSH key for GitHub (see README.md → Git/GitHub section)"
-echo "  2. Complete other manual steps (see README.md → Post-install manual steps)"
-echo ""
-echo "View README: cat ~/.dotfiles/README.md | less"
-echo "============================================================"
-
 
