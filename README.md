@@ -84,6 +84,9 @@ After running `./installation/install.sh`, complete these manual steps:
 #### Brave
 - Sign in / enable Brave Sync (if you use it).
 - Make Brave the **default browser** via Brave settings.
+- **Enable automation** (required for `inspect` command and browser automation):
+  - Open Brave → **View** → **Developer** → ✓ **Allow JavaScript from Apple Events**
+  - This enables AppleScript to control the browser (used by dotfiles automation scripts)
 - Install the **Bitwarden** browser extension in Brave:
   - Open Brave and visit the Chrome Web Store (Brave is Chromium-based): `https://chrome.google.com/webstore/detail/bitwarden-password-manager/nngceckbapebfimnlniiiahkandclblb`
   - Click **Add to Brave** and confirm.
