@@ -2,6 +2,7 @@
 *.swp
 node_modules
 mcp-shell.log
+bun.lock
 
 # iTerm2 generated files
 config.home.symlink/iterm2/AppSupport

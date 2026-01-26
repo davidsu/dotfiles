@@ -133,7 +133,7 @@ Because the installer clears the Dock:
 
 | Directory | Purpose |
 |-----------|---------|
-| `installation/` | Bootstrap scripts + `links.js` (symlink path transformer) |
+| `installation/` | Bootstrap scripts + `links.ts` (symlink path transformer) |
 | `zsh/` | Modular Zsh config (`env.zsh`, `aliases.zsh`, etc.) |
 | `DOTconfig.home.symlink/` | Tool configs → `~/.config` |
 | `Brewfile` | Homebrew packages (formulas + casks) |
@@ -153,7 +153,7 @@ DOTconfig.home.symlink/          → ~/.config/
 - 📍 `DOT` = literal `.` for hidden files/directories
 - 📂 Dots between path components = `/` slashes
 - 🎯 Repository organization = ignored (only filename matters!)
-- 🤖 `links.js` parses filenames → destinations (via its internal symlink path transformer)
+- 🤖 `links.ts` parses filenames → destinations (via its internal symlink path transformer)
 
 > 💡 This convention lets you organize by topic in the repo while encoding destination paths in filenames.
 

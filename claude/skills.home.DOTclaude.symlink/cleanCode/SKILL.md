@@ -9,6 +9,8 @@ After getting code working, run mandatory refactoring checklist.
 
 **Influences:** This skill draws from Douglas Crockford's "JavaScript: The Good Parts" (favor simplicity, avoid unnecessary features) and Robert C. Martin's "Clean Code" (readable names, small functions, single responsibility).
 
+**TypeScript-specific guidance:** When working with TypeScript code, also load the `/cleanTypes` skill for type-specific best practices.
+
 ## Core Principle: Code Reads Like English
 
 The ultimate test: **Can someone read the code like prose and understand what it does?**

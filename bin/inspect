@@ -1,24 +1,40 @@
 #!/usr/bin/env bun
+// vim: set filetype=typescript:
+
+/**
+ * Developer Tool for Opening Chrome DevTools
+ * Opens Brave Browser DevTools inspector for Node.js/Bun debugging
+ */
+
+import { execSync } from 'child_process'
+
+// Configuration
 const port = Number(process.argv[2])
 const query = port ? `#localhost\\\\\\\\:${port} .actions .action` : '#node-frontend'
-function openDevtool(query, count = 0) {
-    if(count < 5) {
-        const openDevtoolButton = document.querySelector(`${query}`)
-        if(!openDevtoolButton) {
-            setTimeout(() => openDevtoolButton(query, count + 1), 500)
-            return
-        }
-        openDevtoolButton.click()
-    }
+
+// DevTools automation
+function openDevtool(query: string, count = 0): void {
+  if (count >= 5) return
+
+  const openDevtoolButton = document.querySelector(query)
+  if (!openDevtoolButton) {
+    setTimeout(() => openDevtool(query, count + 1), 500)
+    return
+  }
+
+  ;(openDevtoolButton as HTMLElement).click()
 }
+
+// AppleScript template for Brave Browser
 const osascript = `
-            osascript << 'END'
-            tell application "Brave Browser"
-                activate
-                open location "brave://inspect"
-                delay 1
-                execute front window's active tab javascript "(${openDevtool.toString()})('${query}')"
-            end tell
-            END
-           `
-require('child_process').execSync(osascript)
+osascript << 'END'
+tell application "Brave Browser"
+  activate
+  open location "brave://inspect"
+  delay 1
+  execute front window's active tab javascript "(${openDevtool.toString()})('${query}')"
+end tell
+END
+`
+
+execSync(osascript)

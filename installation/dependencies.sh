@@ -23,7 +23,7 @@ install_homebrew() {
     fi
 }
 
-# Bootstrap mise, bun, and node (needed for links.js and general dev work)
+# Bootstrap mise, bun, and node (needed for links.ts and general dev work)
 bootstrap_js_runtime() {
     log_info "Bootstrapping mise, Bun, and Node.js..."
 
