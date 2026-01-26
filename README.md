@@ -17,7 +17,7 @@
 For a brand-new macOS machine, bootstrap everything with a single command:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/davidsu/dotfiles/master/installation/bootstrap.sh | bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/davidsu/dotfiles/master/installation/bootstrap.sh)"
 ```
 
 > 💡 **Note:** Ghostty is pre-configured to use JetBrains Mono Nerd Font via `~/.config/ghostty/config` for proper icon display in nvim-tree and terminal applications.
