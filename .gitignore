@@ -14,3 +14,4 @@ config.home.symlink/iterm2/sockets/
 
 # bv (beads viewer) local config and caches
 .bv/
+beads_report*
