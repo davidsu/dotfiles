@@ -9,6 +9,23 @@ Migrating and modernizing dotfiles from old implementation:
 - **Platform**: macOS only (remove all Linux compatibility code)
 - **Goal**: Keep functionality, modernize implementation, clean up cruft
 
+## Task Management
+
+**Use Beads for task tracking and agent memory:**
+
+- Use `bd` (Beads) for all task tracking and project memory
+- Beads provides git-backed, project-scoped task management
+- Tasks live in `.beads/` and branch with your code
+- Perfect for multi-session work and team collaboration
+
+**Common Beads commands:**
+- `bd add "task description"` - Create a new task
+- `bd add "task" --blocks <id>` - Create task with dependencies
+- `bd list` - List all tasks
+- `bd ready` - Show unblocked tasks ready to work on
+- `bd show <id>` - Show task details
+- `bd close <id>` - Mark task as complete
+
 ## Auto-Load Skills
 
 **When working on Neovim configuration or Lua code for Neovim**, load the neovim skill first:

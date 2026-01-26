@@ -10,3 +10,6 @@ config.home.symlink/iterm2/sockets/
 # AI tools
 .claude/settings.local.json
 .aider*
+
+# bv (beads viewer) local config and caches
+.bv/
