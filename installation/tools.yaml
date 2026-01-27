@@ -109,10 +109,6 @@ tools:
     description: Window management with keyboard shortcuts
     setup_message: "Use Spectacle keybinds, use Cmd+Alt+/ for fullscreen."
 
-  alt-tab:
-    brew_type: cask
-    description: Windows-style alt-tab window switcher
-
   claude-code:
     brew_type: cask
     cmd: claude
