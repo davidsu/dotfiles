@@ -15,7 +15,8 @@ interface Tool {
   cmd?: string
   tap?: string
   description: string
-  post_install?: string
+  setup_message?: string
+  app_path?: string
 }
 
 interface InstallResult {
@@ -108,8 +109,11 @@ function openApp(appPath: string) {
   spawn('open', [appPath], { stdio: 'ignore', detached: true }).unref()
 }
 
-function handlePostInstall(caskName: string, postInstallMessage: string) {
-  const appPaths = getAppPathsFromCask(caskName)
+function handlePostInstall(caskName: string, postInstallMessage: string, explicitAppPath?: string) {
+  let appPaths = getAppPathsFromCask(caskName)
+  if (appPaths.length === 0 && explicitAppPath) {
+    appPaths = [explicitAppPath]
+  }
   if (appPaths.length === 0) return
 
   const appPath = appPaths[0]
@@ -152,8 +156,8 @@ export function installTool(name: string, tool: Tool): InstallResult {
 
   if (success) {
     log.success(`Installed ${name}`)
-    if (tool.brew_type === 'cask' && tool.post_install) {
-      handlePostInstall(name, tool.post_install)
+    if (tool.brew_type === 'cask' && tool.setup_message) {
+      handlePostInstall(name, tool.setup_message, tool.app_path)
     }
   } else {
     log.error(`Failed to install ${name}`)

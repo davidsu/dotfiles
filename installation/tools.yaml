@@ -102,17 +102,16 @@ tools:
   karabiner-elements:
     brew_type: cask
     description: Powerful keyboard customizer for macOS
-    post_install: "Grant accessibility permissions in System Settings → Privacy & Security → Accessibility."
+    app_path: /Applications/Karabiner-Elements.app
 
   rectangle:
     brew_type: cask
     description: Window management with keyboard shortcuts
-    post_install: "Grant accessibility permissions. Use Spectacle keybinds, use Cmd+Alt+/ for fullscreen."
+    setup_message: "Use Spectacle keybinds, use Cmd+Alt+/ for fullscreen."
 
   alt-tab:
     brew_type: cask
     description: Windows-style alt-tab window switcher
-    post_install: "Grant accessibility permissions in System Settings → Privacy & Security → Accessibility."
 
   claude-code:
     brew_type: cask
@@ -121,12 +120,13 @@ tools:
 
   zoom:
     brew_type: cask
+    app_path: /Applications/zoom.us.app
     description: Video conferencing
 
   brave-browser:
     brew_type: cask
     description: Privacy-focused web browser
-    post_install: "Enable View → Developer → Allow JavaScript from Apple Events. This is needed for the `inspect` command."
+    setup_message: "Enable View → Developer → Allow JavaScript from Apple Events. This is needed for the `inspect` command."
 
   spotify:
     brew_type: cask
@@ -135,9 +135,7 @@ tools:
   bitwarden:
     brew_type: cask
     description: Password manager
-    post_install: "Sign in to access your vault."
 
   dropbox:
     brew_type: cask
     description: Cloud storage and file synchronization
-    post_install: "Sign in to sync your files."
