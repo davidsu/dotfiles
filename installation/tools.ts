@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { execSync } from 'child_process'
+import { execSync, spawn } from 'child_process'
 import path from 'path'
 import { log } from './logging'
 
@@ -96,10 +96,11 @@ function removeQuarantineFromCask(caskName: string) {
 function showPopup(title: string, message: string) {
   const escapedMessage = message.replace(/"/g, '\\"')
   const escapedTitle = title.replace(/"/g, '\\"')
-  execSync(
-    `osascript -e 'display dialog "${escapedMessage}" with title "${escapedTitle}" buttons {"OK"} default button "OK"'`,
-    { stdio: 'ignore' }
-  )
+  // Fire and forget - don't block installation
+  spawn('osascript', ['-e', `display dialog "${escapedMessage}" with title "${escapedTitle}" buttons {"OK"} default button "OK"`], {
+    stdio: 'ignore',
+    detached: true
+  }).unref()
 }
 
 function openApp(appPath: string) {
