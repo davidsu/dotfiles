@@ -66,9 +66,9 @@ function installTap(tap: string) {
 
 function getAppPathsFromCask(caskName: string) {
   try {
-    const info = execSync(`brew info --cask ${caskName} --json`, { encoding: 'utf-8' })
+    const info = execSync(`brew info --cask ${caskName} --json=v2`, { encoding: 'utf-8' })
     const parsed = JSON.parse(info)
-    const artifacts = parsed[0]?.artifacts
+    const artifacts = parsed.casks?.[0]?.artifacts
     const appPaths: string[] = []
 
     if (!artifacts) return appPaths
