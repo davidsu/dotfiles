@@ -1,37 +1,21 @@
 #!/usr/bin/env bun
 
-import { execSync } from 'child_process'
+import { execSync, spawn } from 'child_process'
 import { existsSync } from 'fs'
 import path from 'path'
 import { homedir } from 'os'
 import { log } from './logging'
 import { isMacOS, getMacOSVersion, hasCommand } from './system'
-import { installAllTools } from './tools'
+import { loadTools, installTool } from './tools'
 import { verifyAllTools } from './verify'
 import { applyMacOSDefaults } from './macos-defaults'
 import { setupSymlinks } from './links'
 import type { LinkResult } from './links'
 
-function installNode() {
-  if (hasCommand('node')) return
-
-  log.info('Installing Node.js via mise...')
-  execSync('mise use --global node@lts', { stdio: 'inherit' })
-}
-
-async function installDependencies() {
-  installNode()
-
-  log.info('Installing packages from tools.yaml...')
-  const results = await installAllTools()
-
-  const failed = results.filter((r) => !r.success)
-  if (failed.length === 0) {
-    log.success('All packages installed successfully')
-  } else {
-    log.warn(`${failed.length} package(s) failed to install`)
-    log.info('Failed packages will be reported during verification step')
-  }
+interface InstallResult {
+  name: string
+  success: boolean
+  alreadyInstalled: boolean
 }
 
 function checkMacOS() {
@@ -46,8 +30,14 @@ function checkMacOS() {
   log.info('Logs will be written to ~/Library/Logs/dotfiles/')
 }
 
-function symlinkDotfiles(): LinkResult[] {
-  return setupSymlinks()
+function installNode() {
+  if (hasCommand('node')) {
+    log.success('Node.js is already installed')
+    return
+  }
+
+  log.info('Installing Node.js via mise...')
+  execSync('mise use --global node@lts', { stdio: 'inherit' })
 }
 
 function trustMiseConfig() {
@@ -59,36 +49,48 @@ function trustMiseConfig() {
   execSync(`mise trust "${miseConfig}"`, { stdio: 'inherit' })
 }
 
-function installNeovimPlugins() {
-  if (!hasCommand('nvim')) return
+function installNeovimPluginsAsync() {
+  if (!hasCommand('nvim')) return Promise.resolve()
 
-  log.info('Installing Neovim plugins (this may take a minute)...')
-  execSync('nvim --headless "+Lazy! sync" +qa', { stdio: 'inherit' })
-  log.success('Neovim plugins installed')
+  log.info('Installing Neovim plugins (running in background)...')
+
+  return new Promise<void>((resolve, reject) => {
+    const child = spawn('nvim', ['--headless', '+Lazy! sync', '+qa'], { stdio: 'inherit' })
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        log.success('Neovim plugins installed')
+        resolve()
+      } else {
+        log.error('Neovim plugins installation failed')
+        reject(new Error(`nvim exited with code ${code}`))
+      }
+    })
+
+    child.on('error', (err) => {
+      log.error(`Neovim plugins error: ${err.message}`)
+      reject(err)
+    })
+  })
 }
 
-function runPostInstallSteps() {
-  log.info('Running post-installation configurations...')
-  trustMiseConfig()
-  log.info('Applying macOS defaults...')
-  applyMacOSDefaults()
-  installNeovimPlugins()
+function installTools(tools: Record<string, unknown>) {
+  const results: InstallResult[] = []
+  for (const [name, tool] of Object.entries(tools)) {
+    results.push(installTool(name, tool as Parameters<typeof installTool>[1]))
+  }
+  return results
 }
 
-async function main() {
-  log.info(`Starting dotfiles installation from ${import.meta.dir}...`)
+function omit<T extends Record<string, unknown>>(obj: T, key: string) {
+  const { [key]: _, ...rest } = obj
+  return rest
+}
 
-  checkMacOS()
-  await installDependencies()
-  const symlinkResults = symlinkDotfiles()
-  const failedPackages = await verifyAllTools()
-  runPostInstallSteps()
-
-  // Display summary
+function displaySummary(symlinkResults: LinkResult[], failedPackages: string[]) {
   console.log('')
   console.log('============================================================')
 
-  // Symlink results
   const failedSymlinks = symlinkResults.filter((r) => !r.success)
   const successfulSymlinks = symlinkResults.filter((r) => r.success && !r.alreadyExists)
   const existingSymlinks = symlinkResults.filter((r) => r.alreadyExists)
@@ -110,7 +112,6 @@ async function main() {
 
   console.log('------------------------------------------------------------')
 
-  // Package results
   if (failedPackages.length > 0) {
     log.warn(`${failedPackages.length} package(s) failed:`)
     for (const pkg of failedPackages) {
@@ -124,6 +125,57 @@ async function main() {
   console.log('============================================================')
   console.log('')
   log.banner('MANUAL STEPS REQUIRED - See README.md → Post-install manual steps')
+}
+
+async function main() {
+  log.info(`Starting dotfiles installation from ${import.meta.dir}...`)
+
+  checkMacOS()
+
+  // Load tools and separate neovim for dependency tracking
+  const allTools = await loadTools()
+  const neovimTool = allTools.neovim
+  const otherTools = omit(allTools, 'neovim')
+
+  // Phase 1: Fast operations (run first, they're quick)
+  log.info('Phase 1: Quick setup tasks...')
+  const symlinkResults = setupSymlinks()
+  installNode()
+  log.info('Applying macOS defaults...')
+  applyMacOSDefaults()
+
+  // Phase 2: Install neovim first (needed for plugins)
+  log.info('Phase 2: Installing neovim...')
+  const neovimResult = installTool('neovim', neovimTool)
+
+  // Phase 3: Neovim plugins + remaining brew installs in parallel
+  // spawn() runs nvim as separate process while brew installs continue
+  log.info('Phase 3: Installing neovim plugins + remaining tools in parallel...')
+
+  const neovimPluginsPromise = installNeovimPluginsAsync()
+
+  // Continue with other brew installs (sequential, brew limitation)
+  const otherToolsResults = installTools(otherTools)
+
+  // Wait for neovim plugins to finish (likely already done by now)
+  await neovimPluginsPromise
+
+  // Combine tool results for reporting
+  const allToolResults = [neovimResult, ...otherToolsResults]
+  const failedInstalls = allToolResults.filter((r) => !r.success)
+  if (failedInstalls.length === 0) {
+    log.success('All packages installed successfully')
+  } else {
+    log.warn(`${failedInstalls.length} package(s) failed to install`)
+  }
+
+  // Trust mise config (needs symlinks done)
+  trustMiseConfig()
+
+  // Verification
+  const failedPackages = await verifyAllTools()
+
+  displaySummary(symlinkResults, failedPackages)
 }
 
 main()
