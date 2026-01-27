@@ -6,17 +6,11 @@ import path from 'path'
 import { homedir } from 'os'
 import { log } from './logging'
 import { isMacOS, getMacOSVersion, hasCommand } from './system'
-import { loadTools, installTool } from './tools'
+import { loadTools, installTool, getToolsByType, installAllTaps, batchInstall, runCaskPostInstall } from './tools'
 import { verifyAllTools } from './verify'
 import { applyMacOSDefaults } from './macos-defaults'
 import { setupSymlinks } from './links'
 import type { LinkResult } from './links'
-
-interface InstallResult {
-  name: string
-  success: boolean
-  alreadyInstalled: boolean
-}
 
 function checkMacOS() {
   log.info('Running pre-flight checks...')
@@ -74,19 +68,6 @@ function installNeovimPluginsAsync() {
   })
 }
 
-function installTools(tools: Record<string, unknown>) {
-  const results: InstallResult[] = []
-  for (const [name, tool] of Object.entries(tools)) {
-    results.push(installTool(name, tool as Parameters<typeof installTool>[1]))
-  }
-  return results
-}
-
-function omit<T extends Record<string, unknown>>(obj: T, key: string) {
-  const { [key]: _, ...rest } = obj
-  return rest
-}
-
 function displaySummary(symlinkResults: LinkResult[], failedPackages: string[]) {
   console.log('')
   console.log('============================================================')
@@ -132,10 +113,10 @@ async function main() {
 
   checkMacOS()
 
-  // Load tools and separate neovim for dependency tracking
+  // Load and categorize tools
   const allTools = await loadTools()
-  const neovimTool = allTools.neovim
-  const otherTools = omit(allTools, 'neovim')
+  const { formulas, casks, taps } = getToolsByType(allTools)
+  const formulasWithoutNeovim = formulas.filter((f) => f !== 'neovim')
 
   // Phase 1: Fast operations (run first, they're quick)
   log.info('Phase 1: Quick setup tasks...')
@@ -144,30 +125,25 @@ async function main() {
   log.info('Applying macOS defaults...')
   applyMacOSDefaults()
 
-  // Phase 2: Install neovim first (needed for plugins)
-  log.info('Phase 2: Installing neovim...')
-  const neovimResult = installTool('neovim', neovimTool)
+  // Phase 2: Install all taps
+  log.info('Phase 2: Installing taps...')
+  installAllTaps(taps)
 
-  // Phase 3: Neovim plugins + remaining brew installs in parallel
-  // spawn() runs nvim as separate process while brew installs continue
-  log.info('Phase 3: Installing neovim plugins + remaining tools in parallel...')
+  // Phase 3: Batch install all casks, then open GUI apps
+  log.info('Phase 3: Installing casks (parallel downloads)...')
+  batchInstall(casks, 'cask')
+  log.info('Opening GUI apps that need setup...')
+  runCaskPostInstall(allTools)
 
+  // Phase 4: Install neovim (needed for plugins)
+  log.info('Phase 4: Installing neovim...')
+  installTool('neovim', allTools.neovim)
+
+  // Phase 5: Neovim plugins + remaining formulas in parallel
+  log.info('Phase 5: Installing neovim plugins + remaining formulas in parallel...')
   const neovimPluginsPromise = installNeovimPluginsAsync()
-
-  // Continue with other brew installs (sequential, brew limitation)
-  const otherToolsResults = installTools(otherTools)
-
-  // Wait for neovim plugins to finish (likely already done by now)
+  batchInstall(formulasWithoutNeovim, 'formula')
   await neovimPluginsPromise
-
-  // Combine tool results for reporting
-  const allToolResults = [neovimResult, ...otherToolsResults]
-  const failedInstalls = allToolResults.filter((r) => !r.success)
-  if (failedInstalls.length === 0) {
-    log.success('All packages installed successfully')
-  } else {
-    log.warn(`${failedInstalls.length} package(s) failed to install`)
-  }
 
   // Trust mise config (needs symlinks done)
   trustMiseConfig()

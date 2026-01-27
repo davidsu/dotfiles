@@ -53,6 +53,7 @@ function vmExists() {
 function deleteExistingVM() {
   if (!vmExists()) return
   log('Deleting existing VM...')
+  execSync(`tart stop ${VM_NAME} 2>/dev/null || true`, { stdio: 'inherit' })
   execSync(`tart delete ${VM_NAME}`, { stdio: 'inherit' })
 }
 

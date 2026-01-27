@@ -176,15 +176,54 @@ export function installTool(name: string, tool: Tool): InstallResult {
   return { name, success, alreadyInstalled: false }
 }
 
-export async function installAllTools() {
-  const tools = await loadTools()
-  const results: InstallResult[] = []
+export function getToolsByType(tools: Record<string, Tool>) {
+  const formulas: string[] = []
+  const casks: string[] = []
+  const taps: string[] = []
 
   for (const [name, tool] of Object.entries(tools)) {
-    results.push(installTool(name, tool))
+    if (tool.tap) taps.push(tool.tap)
+    if (tool.brew_type === 'formula') formulas.push(name)
+    else casks.push(name)
   }
 
-  return results
+  return { formulas, casks, taps }
+}
+
+export function installAllTaps(taps: string[]) {
+  for (const tap of taps) {
+    installTap(tap)
+  }
+}
+
+export function batchInstall(packages: string[], brewType: BrewType) {
+  if (packages.length === 0) return
+
+  const flag = brewType === 'cask' ? '--cask ' : ''
+  const packageList = packages.join(' ')
+
+  log.info(`Installing ${packages.length} ${brewType}s: ${packageList}`)
+
+  try {
+    execSync(`brew install ${flag}${packageList} < /dev/null`, { stdio: 'inherit' })
+    log.success(`Batch install complete`)
+  } catch {
+    log.warn(`Some packages may have failed - verification will check`)
+  }
+
+  if (brewType === 'cask') {
+    for (const pkg of packages) {
+      removeQuarantineFromCask(pkg)
+    }
+  }
+}
+
+export function runCaskPostInstall(tools: Record<string, Tool>) {
+  for (const [name, tool] of Object.entries(tools)) {
+    if (tool.brew_type === 'cask' && tool.setup_message) {
+      handlePostInstall(name, tool.setup_message, tool.app_path, tool.open_url)
+    }
+  }
 }
 
 export function verifyTool(name: string, tool: Tool): boolean {
