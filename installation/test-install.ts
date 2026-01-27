@@ -50,22 +50,10 @@ function vmExists() {
   return output.includes(`\n${VM_NAME}\t`) || output.startsWith(`${VM_NAME}\t`)
 }
 
-function promptDeleteVM() {
-  warn(`VM '${VM_NAME}' already exists`)
-
-  const answer = prompt('Delete and recreate? (y/N): ')
-  if (answer?.toLowerCase() === 'y') {
-    log('Deleting existing VM...')
-    execSync(`tart delete ${VM_NAME}`, { stdio: 'inherit' })
-    return
-  }
-
-  error(`Aborted. Delete the VM manually with: tart delete ${VM_NAME}`)
-}
-
-function checkExistingVM() {
+function deleteExistingVM() {
   if (!vmExists()) return
-  promptDeleteVM()
+  log('Deleting existing VM...')
+  execSync(`tart delete ${VM_NAME}`, { stdio: 'inherit' })
 }
 
 function cloneVM() {
@@ -161,30 +149,17 @@ function startVMInBackground() {
   log('VM started')
 }
 
-function printCompletionMessage() {
-  log('Installation complete!')
-  console.log('')
-  log('To interact with the VM:')
-  console.log(`   ssh admin@$(tart ip ${VM_NAME})`)
-  console.log('')
-  log('To verify installation:')
-  console.log('   - brew list')
-  console.log('   - ls -la ~ | grep \'^l\'')
-  console.log('   - nvim')
-  console.log('')
-  log('When done, delete the VM:')
-  console.log(`   tart delete ${VM_NAME}`)
-}
-
 async function main() {
   ensureTart()
-  checkExistingVM()
+  deleteExistingVM()
   cloneVM()
   configureVM()
   startVMInBackground()
   const ip = await waitForSSH()
   runBootstrapViaSSH(ip)
-  printCompletionMessage()
+  log('Installation complete!')
+  log('When done, delete the VM:')
+  console.log(`   tart delete ${VM_NAME}`)
 }
 
 if (import.meta.main) {
