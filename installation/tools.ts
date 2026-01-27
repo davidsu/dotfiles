@@ -15,6 +15,7 @@ interface Tool {
   cmd?: string
   tap?: string
   description: string
+  post_install?: string
 }
 
 interface InstallResult {
@@ -63,26 +64,63 @@ function installTap(tap: string) {
   }
 }
 
-function removeQuarantineFromCask(caskName: string) {
+function getAppPathsFromCask(caskName: string) {
   try {
     const info = execSync(`brew info --cask ${caskName} --json`, { encoding: 'utf-8' })
     const parsed = JSON.parse(info)
     const artifacts = parsed[0]?.artifacts
+    const appPaths: string[] = []
 
-    if (!artifacts) return
+    if (!artifacts) return appPaths
 
-    // Find .app artifacts
     for (const artifact of artifacts) {
       if (artifact.app) {
         const appNames = Array.isArray(artifact.app) ? artifact.app : [artifact.app]
         for (const appName of appNames) {
-          const appPath = `/Applications/${appName}`
-          execSync(`xattr -dr com.apple.quarantine "${appPath}" 2>/dev/null || true`, { stdio: 'ignore' })
+          appPaths.push(`/Applications/${appName}`)
         }
       }
     }
+    return appPaths
   } catch {
-    // Silently fail - app info might not be available or already unquarantined
+    return []
+  }
+}
+
+function removeQuarantineFromCask(caskName: string) {
+  for (const appPath of getAppPathsFromCask(caskName)) {
+    execSync(`xattr -dr com.apple.quarantine "${appPath}" 2>/dev/null || true`, { stdio: 'ignore' })
+  }
+}
+
+function showPopup(title: string, message: string) {
+  const escapedMessage = message.replace(/"/g, '\\"')
+  const escapedTitle = title.replace(/"/g, '\\"')
+  execSync(
+    `osascript -e 'display dialog "${escapedMessage}" with title "${escapedTitle}" buttons {"OK"} default button "OK"'`,
+    { stdio: 'ignore' }
+  )
+}
+
+function openApp(appPath: string) {
+  try {
+    execSync(`open "${appPath}"`, { stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+}
+
+function handlePostInstall(caskName: string, postInstallMessage: string) {
+  const appPaths = getAppPathsFromCask(caskName)
+  if (appPaths.length === 0) return
+
+  const appPath = appPaths[0]
+  const appName = appPath.replace('/Applications/', '').replace('.app', '')
+
+  log.info(`Opening ${appName}...`)
+  if (openApp(appPath)) {
+    showPopup(`Setup: ${appName}`, postInstallMessage)
   }
 }
 
@@ -102,7 +140,9 @@ function installPackage(name: string, brewType: BrewType): boolean {
 }
 
 export function installTool(name: string, tool: Tool): InstallResult {
-  if (isInstalled(name, tool.brew_type)) {
+  const alreadyInstalled = isInstalled(name, tool.brew_type)
+
+  if (alreadyInstalled) {
     log.success(`${name} is already installed`)
     return { name, success: true, alreadyInstalled: true }
   }
@@ -116,6 +156,9 @@ export function installTool(name: string, tool: Tool): InstallResult {
 
   if (success) {
     log.success(`Installed ${name}`)
+    if (tool.brew_type === 'cask' && tool.post_install) {
+      handlePostInstall(name, tool.post_install)
+    }
   } else {
     log.error(`Failed to install ${name}`)
   }

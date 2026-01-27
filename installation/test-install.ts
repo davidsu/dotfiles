@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { execSync } from 'child_process'
+import { execSync, spawn } from 'child_process'
 import { RED, GREEN, YELLOW, colorize } from './logging'
 import { hasCommand } from './system'
 
@@ -8,19 +8,20 @@ const VM_NAME = 'dotfiles-test'
 const MACOS_IMAGE = 'ghcr.io/cirruslabs/macos-sonoma-vanilla:latest'
 const VM_DISK_SIZE = 50
 const VM_MEMORY = 8
+const SSH_RETRY_INTERVAL_MS = 5000
+const SSH_MAX_RETRIES = 60
+const VM_USER = 'admin'
+const VM_PASSWORD = 'admin'
 
-function log(message: string) {
-  console.log(colorize(GREEN, `[TEST] ${message}`))
-}
+const log = (message: string) => console.log(colorize(GREEN, `[TEST] ${message}`))
+const warn = (message: string) => console.log(colorize(YELLOW, `[WARN] ${message}`))
 
-function warn(message: string) {
-  console.log(colorize(YELLOW, `[WARN] ${message}`))
-}
-
-function error(message: string) {
+function error(message: string): never {
   console.error(colorize(RED, `[ERROR] ${message}`))
   process.exit(1)
 }
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 function installTart() {
   warn('Tart is not installed. Installing via Homebrew...')
@@ -90,43 +91,100 @@ function getBootstrapURL() {
   return `https://raw.githubusercontent.com/${repo}/master/installation/bootstrap.sh`
 }
 
-function printInstructions() {
-  const bootstrapURL = getBootstrapURL()
+function getVMIP() {
+  const output = execSync(`tart ip ${VM_NAME}`, { encoding: 'utf-8' })
+  return output.trim()
+}
 
-  log('VM created successfully: ' + VM_NAME)
+function ensureSshpass() {
+  if (hasCommand('sshpass')) return
+
+  warn('sshpass not found. Installing via Homebrew...')
+  execSync('brew install hudochenkov/sshpass/sshpass', { stdio: 'inherit' })
+}
+
+function sshCommand(ip: string, cmd: string) {
+  return `sshpass -p '${VM_PASSWORD}' ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no ${VM_USER}@${ip} "${cmd}"`
+}
+
+function trySSHConnection(ip: string) {
+  try {
+    execSync(sshCommand(ip, 'echo connected'), { encoding: 'utf-8', stdio: 'pipe' })
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function waitForSSH() {
+  ensureSshpass()
+  log('Waiting for VM to boot and SSH to become available...')
+
+  for (let attempt = 1; attempt <= SSH_MAX_RETRIES; attempt++) {
+    try {
+      const ip = getVMIP()
+      if (trySSHConnection(ip)) {
+        log(`SSH connection established to ${ip}`)
+        return ip
+      }
+    } catch {
+      // VM IP not available yet
+    }
+
+    process.stdout.write(`\r[TEST] Attempt ${attempt}/${SSH_MAX_RETRIES} - waiting for SSH...`)
+    await sleep(SSH_RETRY_INTERVAL_MS)
+  }
+
   console.log('')
-  log('Next steps:')
+  error('SSH connection timeout. VM may not have booted properly.')
+}
+
+function runBootstrapViaSSH(ip: string) {
+  const bootstrapURL = getBootstrapURL()
+  const bootstrapCommand = `/bin/bash -c "$(curl -fsSL ${bootstrapURL})"`
+
+  log('Running bootstrap script via SSH...')
+  log(`Command: ${bootstrapCommand}`)
+
+  execSync(`sshpass -p '${VM_PASSWORD}' ssh -o StrictHostKeyChecking=no ${VM_USER}@${ip} '${bootstrapCommand}'`, {
+    stdio: 'inherit'
+  })
+}
+
+function startVMInBackground() {
+  log('Starting VM in background...')
+  const child = spawn('tart', ['run', VM_NAME], {
+    detached: true,
+    stdio: 'ignore'
+  })
+  child.unref()
+  log('VM started')
+}
+
+function printCompletionMessage() {
+  log('Installation complete!')
   console.log('')
-  log('1. Start the VM:')
-  console.log(`   tart run ${VM_NAME}`)
-  console.log('')
-  log('2. Wait for macOS to boot (first boot takes 2-3 minutes)')
-  console.log('   A macOS window will open')
-  console.log('')
-  log('3. In the VM Terminal, run the bootstrap script:')
-  console.log(`   /bin/bash -c "$(curl -fsSL ${bootstrapURL})"`)
-  console.log('   or ssh into the machine:')
+  log('To interact with the VM:')
   console.log(`   ssh admin@$(tart ip ${VM_NAME})`)
   console.log('')
-  log('   Note: Bootstrap uses HTTPS (no SSH key needed for installation)')
-  log('   The script will show instructions for switching to SSH afterward')
+  log('To verify installation:')
+  console.log('   - brew list')
+  console.log('   - ls -la ~ | grep \'^l\'')
+  console.log('   - nvim')
   console.log('')
-  log('4. Test the installation:')
-  console.log('   - Verify all tools installed: brew list')
-  console.log('   - Check symlinks: ls -la ~ | grep \'^l\'')
-  console.log('   - Test Neovim: nvim')
-  console.log('   - Test aliases: jfzf, mru, etc.')
-  console.log('')
-  log('5. When done, delete the VM:')
+  log('When done, delete the VM:')
   console.log(`   tart delete ${VM_NAME}`)
 }
 
-function main() {
+async function main() {
   ensureTart()
   checkExistingVM()
   cloneVM()
   configureVM()
-  printInstructions()
+  startVMInBackground()
+  const ip = await waitForSSH()
+  runBootstrapViaSSH(ip)
+  printCompletionMessage()
 }
 
 if (import.meta.main) {
