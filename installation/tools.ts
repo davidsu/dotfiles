@@ -63,10 +63,38 @@ function installTap(tap: string) {
   }
 }
 
+function removeQuarantineFromCask(caskName: string) {
+  try {
+    const info = execSync(`brew info --cask ${caskName} --json`, { encoding: 'utf-8' })
+    const parsed = JSON.parse(info)
+    const artifacts = parsed[0]?.artifacts
+
+    if (!artifacts) return
+
+    // Find .app artifacts
+    for (const artifact of artifacts) {
+      if (artifact.app) {
+        const appNames = Array.isArray(artifact.app) ? artifact.app : [artifact.app]
+        for (const appName of appNames) {
+          const appPath = `/Applications/${appName}`
+          execSync(`xattr -dr com.apple.quarantine "${appPath}" 2>/dev/null || true`, { stdio: 'ignore' })
+        }
+      }
+    }
+  } catch {
+    // Silently fail - app info might not be available or already unquarantined
+  }
+}
+
 function installPackage(name: string, brewType: BrewType): boolean {
   try {
     const flag = brewType === 'cask' ? '--cask' : ''
     execSync(`brew install ${flag} ${name} < /dev/null`, { stdio: 'inherit' })
+
+    if (brewType === 'cask') {
+      removeQuarantineFromCask(name)
+    }
+
     return true
   } catch {
     return false
