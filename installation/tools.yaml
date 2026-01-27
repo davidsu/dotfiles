@@ -34,9 +34,10 @@ tools:
     brew_type: formula
     description: Smarter cd command - tracks frequently used directories
 
-  tree-sitter:
+  tree-sitter-cli:
     brew_type: formula
-    description: Parser generator for syntax highlighting in Neovim
+    cmd: tree-sitter
+    description: Required for nvim-treesitter plugin (parser generation)
 
   jq:
     brew_type: formula
@@ -84,9 +85,9 @@ tools:
 
   # Text-to-speech
   audiowhisper:
-    brew_type: formula
+    brew_type: cask
     tap: mazdak/tap
-    description: Audio transcription and text-to-speech tool
+    description: Menu bar app for voice transcription using Whisper AI
 
   # Container runtime
   colima:
