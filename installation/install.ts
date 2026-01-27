@@ -1,9 +1,6 @@
 #!/usr/bin/env bun
 
-import { execSync, spawn } from 'child_process'
-import { existsSync } from 'fs'
-import path from 'path'
-import { homedir } from 'os'
+import { spawn } from 'child_process'
 import { log } from './logging'
 import { isMacOS, getMacOSVersion, hasCommand } from './system'
 import { loadTools, installTool, getToolsByType, installAllTaps, batchInstall, runCaskPostInstall } from './tools'
@@ -29,17 +26,12 @@ function installNode() {
     log.success('Node.js is already installed')
     return
   }
-  log.info('Installing Node.js via mise (background)...')
-  spawn('mise', ['use', '--global', 'node@lts'], { stdio: 'inherit' })
-}
-
-function trustMiseConfig() {
-  const miseConfig = path.join(homedir(), '.config', 'mise', 'config.toml')
-
-  if (!existsSync(miseConfig) || !hasCommand('mise')) return
-
-  log.info('Trusting mise configuration...')
-  execSync(`mise trust "${miseConfig}"`, { stdio: 'inherit' })
+  if (!hasCommand('fnm')) {
+    log.warn('fnm not installed yet, skipping Node.js installation')
+    return
+  }
+  log.info('Installing Node.js via fnm (background)...')
+  spawn('fnm', ['install', '--lts'], { stdio: 'inherit' })
 }
 
 function installNeovimPluginsAsync() {
@@ -144,8 +136,6 @@ async function main() {
   const formulasPromise = batchInstall(formulasWithoutNeovim, 'formula')
   await Promise.all([neovimPluginsPromise, formulasPromise])
 
-  // Trust mise config (needs symlinks done)
-  trustMiseConfig()
 
   // Verification
   const failedPackages = await verifyAllTools()

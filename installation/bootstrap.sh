@@ -27,22 +27,19 @@ if [[ -e "$DOTFILES_DIR" ]]; then
   fail "$DOTFILES_DIR already exists."
 fi
 
-# Run git clone and mise install in parallel
+# Run git clone and bun install in parallel
 git clone "$REPO_HTTPS" "$DOTFILES_DIR" &
 clone_pid=$!
 
-if ! command -v mise >/dev/null 2>&1; then
-  brew install mise < /dev/null &
-  mise_pid=$!
+if ! command -v bun >/dev/null 2>&1; then
+  brew install bun < /dev/null &
+  bun_pid=$!
 else
-  mise_pid=""
+  bun_pid=""
 fi
 
 wait "$clone_pid" || fail "git clone failed."
-[[ -n "$mise_pid" ]] && { wait "$mise_pid" || fail "mise install failed."; }
-
-mise use --global bun@latest || fail "bun install failed."
-export PATH="$HOME/.local/share/mise/shims:$PATH"
+[[ -n "$bun_pid" ]] && { wait "$bun_pid" || fail "bun install failed."; }
 
 # Run TypeScript installation script
 bun "$DOTFILES_DIR/installation/install.ts" || fail "install.ts failed."

@@ -68,9 +68,13 @@ tools:
     description: Git-backed task management for coding agents
 
   # Runtime management
-  mise:
+  fnm:
     brew_type: formula
-    description: Multi-language version manager (Node, Python, etc.)
+    description: Fast Node Manager (faster shell init than mise)
+
+  bun:
+    brew_type: formula
+    description: Fast JavaScript runtime (runs install scripts)
 
   # Editor
   neovim:

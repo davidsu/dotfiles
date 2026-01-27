@@ -27,7 +27,8 @@ brew "git-open"               # Opens GitHub page for repo in browser
 brew "beads"                  # Beads - git-backed task management for coding agents
 
 # Runtime management
-brew "mise"                   # Multi-language version manager (Node, Python, etc.)
+brew "fnm"                    # Fast Node Manager (faster shell init than mise)
+brew "bun"                    # Fast JavaScript runtime (runs install scripts)
 
 # Editor
 brew "neovim"                 # Extensible text editor

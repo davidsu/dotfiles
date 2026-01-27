@@ -5,9 +5,9 @@ if command -v starship >/dev/null 2>&1; then
     eval "$(starship init zsh)"
 fi
 
-# Initialize mise (Node, etc.)
-if command -v mise >/dev/null 2>&1; then
-    eval "$(mise activate zsh)"
+# Initialize fnm (Fast Node Manager)
+if command -v fnm >/dev/null 2>&1; then
+    eval "$(fnm env --use-on-cd)"
 fi
 
 # fzf shell integration

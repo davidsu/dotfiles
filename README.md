@@ -43,7 +43,7 @@ cd ~/.dotfiles
 
 **The script will:**
 1. ✅ Perform pre-flight system checks
-2. 📦 Bootstrap `mise` for Bun and Node.js runtime management
+2. 📦 Bootstrap `fnm` for Node.js runtime management
 3. 🛠️ Install and verify all tools from `installation/Brewfile`
 4. 🔗 Symlink configuration files to their target locations
 5. ⚙️ Apply macOS system defaults (disable animations, fast keyboard repeat, etc.)
@@ -109,9 +109,9 @@ After running `./installation/install.sh`, complete these manual steps:
   - Starship prompt is active.
   - `fzf`, `zoxide`, `rg`, `fd`, `bat` are on `PATH`.
 
-- Verify **mise**:
-  - Run `mise --version` or `mise doctor`.
-  - Install core runtimes with `mise use -g <tool>@<version>` if needed.
+- Verify **fnm**:
+  - Run `fnm --version`.
+  - Install Node with `fnm install --lts` or `fnm install <version>`.
 
 - Verify **Neovim**:
   - Run `nvim` once to let it install plugins and LSPs.
@@ -198,7 +198,7 @@ DOTconfig.home.symlink/          → ~/.config/
 | Tool | Description |
 |------|-------------|
 | **Neovim** | 📝 Lua-based editor with fast startup |
-| **mise** | 🔄 Multi-language version manager |
+| **fnm** | 🔄 Fast Node Manager |
 | **ripgrep** | 🔍 Fast search tool with deep integration |
 
 ### 🐚 Shell & Terminal
