@@ -13,12 +13,12 @@ local function config()
   vim.cmd([[highlight link markdownError NONE]])
 
   -- Fix diff highlighting to be more transparent and preserve syntax
-  -- Use background colors with blend instead of inverse foreground colors
+  -- DiffChange = line with changes (subtle), DiffText = actual changed chars (prominent)
   vim.cmd([[
         highlight DiffAdd    guifg=NONE guibg=#2d3d45 gui=NONE
         highlight DiffChange guifg=NONE guibg=#3d4220 gui=NONE
         highlight DiffDelete guifg=#cc241d guibg=#442e2d gui=NONE
-        highlight DiffText   guifg=NONE guibg=#4d4020 gui=bold
+        highlight DiffText   guifg=NONE guibg=#324f5d gui=NONE
         highlight Visual     guifg=NONE guibg=#4a4a4a gui=NONE
       ]])
 end

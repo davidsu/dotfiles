@@ -75,6 +75,8 @@ opt.timeoutlen = 500
 -- Diff
 opt.diffopt:append('vertical')
 opt.diffopt:append('iwhite')
+opt.diffopt:append('algorithm:histogram') -- better inline change detection
+opt.diffopt:append('linematch:60')        -- match similar lines for better word-level diffs
 
 -- Misc
 opt.textwidth = 1000
