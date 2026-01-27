@@ -59,7 +59,7 @@ function setDockDefaults() {
 }
 
 function setAppearanceDefaults() {
-  execSync(`osascript -e 'tell app "System Events" to tell appearance preferences to set dark mode to true'`)
+  setGlobalDefault('AppleInterfaceStyle', 'string', 'Dark')
 }
 
 function restartAffectedApps() {
