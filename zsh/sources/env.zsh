@@ -31,9 +31,9 @@ export FZF_DEFAULT_OPTS="
   --bind=ctrl-s:toggle-sort
 "
 
-# FZF Ctrl+T (file search) - preview with bat
+# FZF Ctrl+T (file search) - preview with bat (directories use tree)
 export FZF_CTRL_T_OPTS="
-  --preview 'bat --style=numbers --color=always --line-range :500 {}'
+  --preview '[[ -d {} ]] && tree -C -L 2 {} | head -200 || bat --style=numbers --color=always --line-range :500 {}'
 "
 
 # FZF Ctrl+R (history search) - no preview needed

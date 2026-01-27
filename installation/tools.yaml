@@ -26,6 +26,10 @@ tools:
     brew_type: formula
     description: Cat clone with syntax highlighting (used by fzf previews)
 
+  tree:
+    brew_type: formula
+    description: Directory listing as tree (used by fzf previews)
+
   fzf:
     brew_type: formula
     description: Command-line fuzzy finder
