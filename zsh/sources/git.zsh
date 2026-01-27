@@ -38,15 +38,6 @@ alias gsva='gsv'
 gdc() {
   _require_git_repo gdc || return 1
 
-  if [[ -z "$1" ]]; then
-    echo "Usage: gdc <commit1> <commit2>  or  gdc <commit1>..<commit2>" >&2
-    return 1
-  fi
-
-  # Support both "commit1 commit2" and "commit1..commit2" syntax
-  if [[ -n "$2" ]]; then
-    nvim -c "Gdc $1 $2"
-  else
-    nvim -c "Gdc $1"
-  fi
+  [[ -z "$1" ]] && { echo "Usage: gdc <commit1>..<commit2>" >&2; return 1; }
+  nvim -c "Gdc $*"
 }
