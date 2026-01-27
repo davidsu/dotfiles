@@ -53,7 +53,7 @@ cd ~/.dotfiles
 
 ## ✅ Post-install manual steps
 
-After running `./installation/install.sh`, complete these manual steps:
+After running `./installation/install.ts`, complete these manual steps:
 
 ### 1. macOS Privacy & Security permissions
 
@@ -221,7 +221,6 @@ DOTconfig.home.symlink/          → ~/.config/
 **⌨️ System Tools**
 - 🎹 **Karabiner-Elements** - Vim-style navigation + smart modifiers
 - 📐 **Rectangle** - Window management shortcuts
-- 📋 **Spotlight** - Clipboard history (⌘+Space → ⌘+4)
 
 ### 🐳 Container & Version Control
 
@@ -235,7 +234,7 @@ DOTconfig.home.symlink/          → ~/.config/
 
 ## ⚙️ Tool Configurations
 
-### 🎨 Prettier (`~/.config/prettierrc.json`)
+### 🎨 Prettier (`~/.prettierrc.json`)
 
 ```json
 {

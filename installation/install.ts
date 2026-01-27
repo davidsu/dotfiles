@@ -109,10 +109,9 @@ async function main() {
   const { formulas, casks, taps } = getToolsByType(allTools)
   const formulasWithoutNeovim = formulas.filter((f) => f !== 'neovim')
 
-  // Phase 1: Quick setup + start node install in background
+  // Phase 1: Quick setup
   log.info('Phase 1: Quick setup tasks...')
   const symlinkResults = setupSymlinks()
-  installNode()
   log.info('Applying macOS defaults...')
   applyMacOSDefaults()
 
@@ -136,6 +135,9 @@ async function main() {
   const formulasPromise = batchInstall(formulasWithoutNeovim, 'formula')
   await Promise.all([neovimPluginsPromise, formulasPromise])
 
+  // Phase 6: Install Node.js via fnm (now that fnm is installed)
+  log.info('Phase 6: Installing Node.js...')
+  installNode()
 
   // Verification
   const failedPackages = await verifyAllTools()

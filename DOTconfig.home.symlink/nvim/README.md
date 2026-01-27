@@ -17,6 +17,7 @@ nvim/
 │   │   ├── commands.lua       # User-defined commands
 │   │   └── lazy.lua           # Plugin manager bootstrap
 │   ├── config/                # Feature modules
+│   │   ├── claude.lua         # Claude AI integration settings
 │   │   └── mru.lua            # MRU (Most Recently Used) file tracking
 │   ├── plugins/               # Plugin specifications
 │   │   ├── bufonly.lua        # Delete all buffers except current
@@ -61,7 +62,7 @@ nvim/
 - 🔎 Case-insensitive smart search
 - ♻️ Persistent undo
 - 🚫 No swap/backup files
-- ⚡ Ripgrep/ag integration
+- ⚡ Ripgrep integration
 
 ### 🔄 Core Autocommands
 - 💾 **Auto-save**: Files automatically save when focus is lost or switching windows
