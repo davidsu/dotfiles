@@ -5,7 +5,7 @@ function fa() {
 
     filename=$(find . -type f 2>/dev/null | \
         fzf --exact \
-            --preview '$HOME/.dotfiles/bin/preview.sh {}' \
+            --preview '$HOME/.dotfiles/bin/preview.ts {}' \
             --preview-window 'top:50%' \
             --header 'Enter: open in nvim | CTRL-s: toggle sort | CTRL-/: toggle preview' \
             --bind 'ctrl-s:toggle-sort' \

@@ -7,7 +7,7 @@ function fag() {
         fzf --multi \
             --ansi \
             --delimiter ':' \
-            --preview '$HOME/.dotfiles/bin/preview.sh {}' \
+            --preview '$HOME/.dotfiles/bin/preview.ts {}' \
             --preview-window 'top:50%:+{2}-/2' \
             --bind 'ctrl-a:select-all' \
             --bind 'ctrl-s:toggle-sort' \

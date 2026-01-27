@@ -22,14 +22,14 @@ function fbw() {
     local entry
     entry=$(rbw list | \
         fzf --prompt 'Bitwarden> ' \
-            --preview '$HOME/.dotfiles/bin/rbw-preview.js {}' \
+            --preview '$HOME/.dotfiles/bin/rbw-preview.ts {}' \
             --preview-window 'top:50%:wrap' \
             --bind 'ctrl-p:up' \
             --bind 'ctrl-n:down' \
             --bind 'ctrl-s:toggle-sort' \
             --bind 'ctrl-/:toggle-preview' \
             --bind "ctrl-o:execute-silent(rbw get {} --field uris 2>/dev/null | head -1 | xargs open)" \
-            --bind "$(bun $HOME/.dotfiles/bin/rbw-fields.js)" \
+            --bind "$(bun $HOME/.dotfiles/bin/rbw-fields.ts)" \
             --bind "enter:execute-silent(rbw get {} 2>/dev/null | pbcopy || (rbw get {} --raw | jq -r '.data.number // empty' | pbcopy && echo '✓ Card number copied'))")
 
     # No output needed - user pressed Esc to exit

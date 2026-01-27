@@ -14,7 +14,7 @@ function mru() {
     fzfresult=$(grep -v '^fugitive://' "$MRU_FILE" | \
         fzf --no-sort \
             --delimiter ':' \
-            --preview '$HOME/.dotfiles/bin/preview.sh {}' \
+            --preview '$HOME/.dotfiles/bin/preview.ts {}' \
             --preview-window 'top:50%:+{2}-/2' \
             --bind 'ctrl-s:toggle-sort' \
             --bind 'ctrl-/:toggle-preview' \
