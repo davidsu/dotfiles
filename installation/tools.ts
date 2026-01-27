@@ -20,12 +20,6 @@ interface Tool {
   open_url?: string
 }
 
-interface InstallResult {
-  name: string
-  success: boolean
-  alreadyInstalled: boolean
-}
-
 export async function loadTools() {
   const toolsPath = getToolsPath()
   const content = await Bun.file(toolsPath).text()
@@ -99,10 +93,17 @@ function showPopup(title: string, message: string) {
   const escapedMessage = message.replace(/"/g, '\\"')
   const escapedTitle = title.replace(/"/g, '\\"')
   // Fire and forget - don't block installation
-  spawn('osascript', ['-e', `display dialog "${escapedMessage}" with title "${escapedTitle}" buttons {"OK"} default button "OK"`], {
-    stdio: 'ignore',
-    detached: true
-  }).unref()
+  spawn(
+    'osascript',
+    [
+      '-e',
+      `display dialog "${escapedMessage}" with title "${escapedTitle}" buttons {"OK"} default button "OK"`
+    ],
+    {
+      stdio: 'ignore',
+      detached: true
+    }
+  ).unref()
 }
 
 function openApp(appPath: string) {
@@ -115,7 +116,12 @@ function openUrl(url: string) {
   spawn('open', [url], { stdio: 'ignore', detached: true }).unref()
 }
 
-function handlePostInstall(caskName: string, postInstallMessage: string, explicitAppPath?: string, openUrlPath?: string) {
+function handlePostInstall(
+  caskName: string,
+  postInstallMessage: string,
+  explicitAppPath?: string,
+  openUrlPath?: string
+) {
   let appPaths = getAppPathsFromCask(caskName)
   if (appPaths.length === 0 && explicitAppPath) {
     appPaths = [explicitAppPath]
@@ -149,7 +155,7 @@ function installPackage(name: string, brewType: BrewType): boolean {
   }
 }
 
-export function installTool(name: string, tool: Tool): InstallResult {
+export function installTool(name: string, tool: Tool) {
   const alreadyInstalled = isInstalled(name, tool.brew_type)
 
   if (alreadyInstalled) {
@@ -196,14 +202,25 @@ export function installAllTaps(taps: string[]) {
   }
 }
 
-export function batchInstall(packages: string[], brewType: BrewType) {
+function fetchPackage(pkg: string, brewType: BrewType): Promise<void> {
+  return new Promise((resolve) => {
+    const flag = brewType === 'cask' ? '--cask' : ''
+    const child = spawn('brew', ['fetch', flag, pkg].filter(Boolean), { stdio: 'inherit' })
+    child.on('close', () => resolve())
+    child.on('error', () => resolve())
+  })
+}
+
+export async function batchInstall(packages: string[], brewType: BrewType) {
   if (packages.length === 0) return
 
   const flag = brewType === 'cask' ? '--cask ' : ''
   const packageList = packages.join(' ')
 
-  log.info(`Installing ${packages.length} ${brewType}s: ${packageList}`)
+  log.info(`Fetching ${packages.length} ${brewType}s in parallel...`)
+  await Promise.all(packages.map((pkg) => fetchPackage(pkg, brewType)))
 
+  log.info(`Installing ${packages.length} ${brewType}s from cache...`)
   try {
     execSync(`brew install ${flag}${packageList} < /dev/null`, { stdio: 'inherit' })
     log.success(`Batch install complete`)

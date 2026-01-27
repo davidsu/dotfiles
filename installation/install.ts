@@ -29,9 +29,8 @@ function installNode() {
     log.success('Node.js is already installed')
     return
   }
-
-  log.info('Installing Node.js via mise...')
-  execSync('mise use --global node@lts', { stdio: 'inherit' })
+  log.info('Installing Node.js via mise (background)...')
+  spawn('mise', ['use', '--global', 'node@lts'], { stdio: 'inherit' })
 }
 
 function trustMiseConfig() {
@@ -118,7 +117,7 @@ async function main() {
   const { formulas, casks, taps } = getToolsByType(allTools)
   const formulasWithoutNeovim = formulas.filter((f) => f !== 'neovim')
 
-  // Phase 1: Fast operations (run first, they're quick)
+  // Phase 1: Quick setup + start node install in background
   log.info('Phase 1: Quick setup tasks...')
   const symlinkResults = setupSymlinks()
   installNode()
@@ -130,8 +129,8 @@ async function main() {
   installAllTaps(taps)
 
   // Phase 3: Batch install all casks, then open GUI apps
-  log.info('Phase 3: Installing casks (parallel downloads)...')
-  batchInstall(casks, 'cask')
+  log.info('Phase 3: Installing casks (parallel fetch, then install)...')
+  await batchInstall(casks, 'cask')
   log.info('Opening GUI apps that need setup...')
   runCaskPostInstall(allTools)
 
@@ -142,8 +141,8 @@ async function main() {
   // Phase 5: Neovim plugins + remaining formulas in parallel
   log.info('Phase 5: Installing neovim plugins + remaining formulas in parallel...')
   const neovimPluginsPromise = installNeovimPluginsAsync()
-  batchInstall(formulasWithoutNeovim, 'formula')
-  await neovimPluginsPromise
+  const formulasPromise = batchInstall(formulasWithoutNeovim, 'formula')
+  await Promise.all([neovimPluginsPromise, formulasPromise])
 
   // Trust mise config (needs symlinks done)
   trustMiseConfig()
