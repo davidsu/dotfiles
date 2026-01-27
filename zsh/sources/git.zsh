@@ -12,33 +12,7 @@ _require_git_repo() {
   }
 }
 
-_require_clean_worktree() {
-  git diff-index --quiet HEAD -- 2>/dev/null || {
-    echo "$1: uncommitted changes, commit or stash first" >&2
-    return 1
-  }
-}
-
-_valid_commit() {
-  git rev-parse "$1" >/dev/null 2>&1
-}
-
-_commit_timestamp() {
-  git log -1 --format=%ct "$1"
-}
-
-_order_commits_by_time() {
-  local ts1=$(_commit_timestamp "$1")
-  local ts2=$(_commit_timestamp "$2")
-
-  if [[ $ts1 -lt $ts2 ]]; then
-    echo "$1" "$2"
-  else
-    echo "$2" "$1"
-  fi
-}
-
-_open_fugitive_diff() {
+_open_fugitive_status() {
   nvim -c 'call feedkeys(":Git\<cr>]mdd\<C-K>")'
 }
 
@@ -53,42 +27,26 @@ gsv() {
       -c 'call feedkeys("\\<C-n>dv:Gstatus\\<cr>\\<C-w>K".g:tmp."G") ' \
       "$(git rev-parse --show-toplevel)/.git/index"
   else
-    _open_fugitive_diff
+    _open_fugitive_status
   fi
 }
 
 alias gsva='gsv'
 
-# gdc - Git Diff Commits with Fugitive UI
-# Usage: gdc <commit1> <commit2>  (order doesn't matter)
+# gdc - Git Diff Commits (Fugitive-style UI via :Gdc)
+# Usage: gdc <commit1> <commit2>  or  gdc <commit1>..<commit2>
 gdc() {
   _require_git_repo gdc || return 1
-  _require_clean_worktree gdc || return 1
 
-  if [[ -z "$1" || -z "$2" ]]; then
-    echo "Usage: gdc <commit1> <commit2>" >&2
+  if [[ -z "$1" ]]; then
+    echo "Usage: gdc <commit1> <commit2>  or  gdc <commit1>..<commit2>" >&2
     return 1
   fi
 
-  for commit in "$1" "$2"; do
-    if ! _valid_commit "$commit"; then
-      echo "gdc: invalid commit '$commit'" >&2
-      return 1
-    fi
-  done
-
-  local commits=($(_order_commits_by_time "$1" "$2"))
-  local earlier="${commits[1]}"
-  local later="${commits[2]}"
-
-  local original_ref=$(git symbolic-ref -q HEAD || git rev-parse HEAD)
-  local temp_branch="temp-diff-$$"
-
-  git checkout -b "$temp_branch" "$later" || return 1
-  git reset "$earlier"
-
-  _open_fugitive_diff
-
-  git checkout -f "${original_ref#refs/heads/}"
-  git branch -D "$temp_branch"
+  # Support both "commit1 commit2" and "commit1..commit2" syntax
+  if [[ -n "$2" ]]; then
+    nvim -c "Gdc $1 $2"
+  else
+    nvim -c "Gdc $1"
+  fi
 }
