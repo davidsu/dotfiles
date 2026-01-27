@@ -126,7 +126,8 @@ tools:
   brave-browser:
     brew_type: cask
     description: Privacy-focused web browser
-    setup_message: "Enable View → Developer → Allow JavaScript from Apple Events. This is needed for the `inspect` command."
+    open_url: brave://settings/defaultBrowser
+    setup_message: "Set as default browser. Then enable View → Developer → Allow JavaScript from Apple Events (for `inspect` command)."
 
   spotify:
     brew_type: cask

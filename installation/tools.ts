@@ -17,6 +17,7 @@ interface Tool {
   description: string
   setup_message?: string
   app_path?: string
+  open_url?: string
 }
 
 interface InstallResult {
@@ -109,7 +110,12 @@ function openApp(appPath: string) {
   spawn('open', [appPath], { stdio: 'ignore', detached: true }).unref()
 }
 
-function handlePostInstall(caskName: string, postInstallMessage: string, explicitAppPath?: string) {
+function openUrl(url: string) {
+  // Fire and forget - don't block installation
+  spawn('open', [url], { stdio: 'ignore', detached: true }).unref()
+}
+
+function handlePostInstall(caskName: string, postInstallMessage: string, explicitAppPath?: string, openUrlPath?: string) {
   let appPaths = getAppPathsFromCask(caskName)
   if (appPaths.length === 0 && explicitAppPath) {
     appPaths = [explicitAppPath]
@@ -120,7 +126,11 @@ function handlePostInstall(caskName: string, postInstallMessage: string, explici
   const appName = appPath.replace('/Applications/', '').replace('.app', '')
 
   log.info(`Opening ${appName}...`)
-  openApp(appPath)
+  if (openUrlPath) {
+    openUrl(openUrlPath)
+  } else {
+    openApp(appPath)
+  }
   showPopup(`Setup: ${appName}`, postInstallMessage)
 }
 
@@ -157,7 +167,7 @@ export function installTool(name: string, tool: Tool): InstallResult {
   if (success) {
     log.success(`Installed ${name}`)
     if (tool.brew_type === 'cask' && tool.setup_message) {
-      handlePostInstall(name, tool.setup_message, tool.app_path)
+      handlePostInstall(name, tool.setup_message, tool.app_path, tool.open_url)
     }
   } else {
     log.error(`Failed to install ${name}`)

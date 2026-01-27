@@ -58,6 +58,10 @@ function setDockDefaults() {
   setDefault('com.apple.dock', 'show-recents', 'bool', 'false')
 }
 
+function setAppearanceDefaults() {
+  execSync(`osascript -e 'tell app "System Events" to tell appearance preferences to set dark mode to true'`)
+}
+
 function restartAffectedApps() {
   execSync('killall Dock Finder 2>/dev/null || true', { stdio: 'inherit' })
 }
@@ -71,6 +75,7 @@ function applyMacOSDefaults() {
   setTrackpadPointAndClickDefaults()
   setTrackpadScrollAndZoomDefaults()
   setDockDefaults()
+  setAppearanceDefaults()
   restartAffectedApps()
 
   console.log('macOS defaults applied. Some changes may require logout.')
