@@ -28,6 +28,7 @@ brew "beads"                  # Beads - git-backed task management for coding ag
 
 # Runtime management
 brew "fnm"                    # Fast Node Manager (faster shell init than mise)
+tap "oven-sh/bun"
 brew "bun"                    # Fast JavaScript runtime (runs install scripts)
 
 # Editor
