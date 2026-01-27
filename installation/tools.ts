@@ -104,12 +104,8 @@ function showPopup(title: string, message: string) {
 }
 
 function openApp(appPath: string) {
-  try {
-    execSync(`open "${appPath}"`, { stdio: 'ignore' })
-    return true
-  } catch {
-    return false
-  }
+  // Fire and forget - don't block installation
+  spawn('open', [appPath], { stdio: 'ignore', detached: true }).unref()
 }
 
 function handlePostInstall(caskName: string, postInstallMessage: string) {
@@ -120,9 +116,8 @@ function handlePostInstall(caskName: string, postInstallMessage: string) {
   const appName = appPath.replace('/Applications/', '').replace('.app', '')
 
   log.info(`Opening ${appName}...`)
-  if (openApp(appPath)) {
-    showPopup(`Setup: ${appName}`, postInstallMessage)
-  }
+  openApp(appPath)
+  showPopup(`Setup: ${appName}`, postInstallMessage)
 }
 
 function installPackage(name: string, brewType: BrewType): boolean {
