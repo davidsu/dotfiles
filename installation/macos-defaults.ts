@@ -27,7 +27,8 @@ function setAnimationDefaults() {
 }
 
 function setKeyboardDefaults() {
-  setDefault('NSGlobalDomain', 'KeyRepeat', 'int', '1')
+  setDefault('NSGlobalDomain', 'InitialKeyRepeat', 'int', '15')
+  setDefault('NSGlobalDomain', 'KeyRepeat', 'int', '2')
 }
 
 function setMouseDefaults() {

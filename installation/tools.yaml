@@ -108,6 +108,7 @@ tools:
     brew_type: cask
     description: Powerful keyboard customizer for macOS
     app_path: /Applications/Karabiner-Elements.app
+    setup_message: "Grant Input Monitoring and Accessibility permissions in System Settings → Privacy & Security."
 
   rectangle:
     brew_type: cask
@@ -123,12 +124,13 @@ tools:
     brew_type: cask
     app_path: /Applications/zoom.us.app
     description: Video conferencing
+    setup_message: "Grant Screen Recording, Microphone, Camera, and Accessibility permissions in System Settings → Privacy & Security for screen sharing to work."
 
   brave-browser:
     brew_type: cask
     description: Privacy-focused web browser
-    open_url: brave://settings/defaultBrowser
-    setup_message: "Set as default browser. Then enable View → Developer → Allow JavaScript from Apple Events (for `inspect` command)."
+    app_path: /Applications/Brave Browser.app
+    setup_message: "1. Set as default: brave://settings/defaultBrowser\n2. Enable automation: View → Developer → Allow JavaScript from Apple Events"
 
   spotify:
     brew_type: cask

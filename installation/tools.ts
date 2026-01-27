@@ -17,7 +17,6 @@ interface Tool {
   description: string
   setup_message?: string
   app_path?: string
-  open_url?: string
 }
 
 export async function loadTools() {
@@ -111,17 +110,7 @@ function openApp(appPath: string) {
   spawn('open', [appPath], { stdio: 'ignore', detached: true }).unref()
 }
 
-function openUrl(url: string) {
-  // Fire and forget - don't block installation
-  spawn('open', [url], { stdio: 'ignore', detached: true }).unref()
-}
-
-function handlePostInstall(
-  caskName: string,
-  postInstallMessage: string,
-  explicitAppPath?: string,
-  openUrlPath?: string
-) {
+function handlePostInstall(caskName: string, postInstallMessage: string, explicitAppPath?: string) {
   let appPaths = getAppPathsFromCask(caskName)
   if (appPaths.length === 0 && explicitAppPath) {
     appPaths = [explicitAppPath]
@@ -132,11 +121,7 @@ function handlePostInstall(
   const appName = appPath.replace('/Applications/', '').replace('.app', '')
 
   log.info(`Opening ${appName}...`)
-  if (openUrlPath) {
-    openUrl(openUrlPath)
-  } else {
-    openApp(appPath)
-  }
+  openApp(appPath)
   showPopup(`Setup: ${appName}`, postInstallMessage)
 }
 
@@ -173,7 +158,7 @@ export function installTool(name: string, tool: Tool) {
   if (success) {
     log.success(`Installed ${name}`)
     if (tool.brew_type === 'cask' && tool.setup_message) {
-      handlePostInstall(name, tool.setup_message, tool.app_path, tool.open_url)
+      handlePostInstall(name, tool.setup_message, tool.app_path)
     }
   } else {
     log.error(`Failed to install ${name}`)
@@ -238,7 +223,7 @@ export async function batchInstall(packages: string[], brewType: BrewType) {
 export function runCaskPostInstall(tools: Record<string, Tool>) {
   for (const [name, tool] of Object.entries(tools)) {
     if (tool.brew_type === 'cask' && tool.setup_message) {
-      handlePostInstall(name, tool.setup_message, tool.app_path, tool.open_url)
+      handlePostInstall(name, tool.setup_message, tool.app_path)
     }
   }
 }
