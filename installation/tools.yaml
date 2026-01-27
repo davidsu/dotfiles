@@ -107,7 +107,7 @@ tools:
   rectangle:
     brew_type: cask
     description: Window management with keyboard shortcuts
-    post_install: "Grant accessibility permissions in System Settings → Privacy & Security → Accessibility."
+    post_install: "Grant accessibility permissions. Use Spectacle keybinds, use Cmd+Alt+/ for fullscreen."
 
   alt-tab:
     brew_type: cask
