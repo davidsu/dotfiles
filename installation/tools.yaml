@@ -74,6 +74,7 @@ tools:
 
   bun:
     brew_type: formula
+    tap: oven-sh/bun
     description: Fast JavaScript runtime (runs install scripts)
 
   # Editor

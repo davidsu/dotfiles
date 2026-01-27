@@ -59,7 +59,7 @@ Before suggesting GitHub repos, npm packages, or external resources:
 
 **Installation** - Keep installation script in sync:
 
-- When adding a tool via Homebrew: Add to `installation/Brewfile`
+- When adding a tool via Homebrew: Add to `installation/tools.yaml`
 - When creating files that need symlinking to home directory: Use `*.symlink` naming convention (handled automatically by installation script)
 
 **Why this matters**:

@@ -44,7 +44,7 @@ cd ~/.dotfiles
 **The script will:**
 1. ✅ Perform pre-flight system checks
 2. 📦 Bootstrap `fnm` for Node.js runtime management
-3. 🛠️ Install and verify all tools from `installation/Brewfile`
+3. 🛠️ Install and verify all tools from `installation/tools.yaml`
 4. 🔗 Symlink configuration files to their target locations
 5. ⚙️ Apply macOS system defaults (disable animations, fast keyboard repeat, etc.)
 6. 🎨 Install Neovim plugins via lazy.nvim
@@ -165,10 +165,9 @@ Because the installer clears the Dock:
 
 | Directory | Purpose |
 |-----------|---------|
-| `installation/` | Bootstrap scripts + `links.ts` (symlink path transformer) |
+| `installation/` | Bootstrap scripts, `tools.yaml` (packages), `links.ts` (symlinks) |
 | `zsh/` | Modular Zsh config (`env.zsh`, `aliases.zsh`, etc.) |
 | `DOTconfig.home.symlink/` | Tool configs → `~/.config` |
-| `Brewfile` | Homebrew packages (formulas + casks) |
 
 ### 🔗 Symlink Naming Convention
 

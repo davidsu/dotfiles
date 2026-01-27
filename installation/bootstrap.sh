@@ -32,6 +32,7 @@ git clone "$REPO_HTTPS" "$DOTFILES_DIR" &
 clone_pid=$!
 
 if ! command -v bun >/dev/null 2>&1; then
+  brew tap oven-sh/bun
   brew install bun < /dev/null &
   bun_pid=$!
 else
