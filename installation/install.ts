@@ -3,7 +3,7 @@
 import { spawn } from 'child_process'
 import { log } from './logging'
 import { isMacOS, getMacOSVersion, hasCommand } from './system'
-import { loadTools, installTool, getToolsByType, installAllTaps, batchInstall, runCaskPostInstall } from './tools'
+import { loadTools, installTool, installNativeTool, getToolsByType, installAllTaps, batchInstall, runCaskPostInstall } from './tools'
 import { verifyAllTools } from './verify'
 import { applyMacOSDefaults } from './macos-defaults'
 import { setupSymlinks } from './links'
@@ -19,19 +19,6 @@ function checkMacOS() {
 
   log.success(`macOS detected (v${getMacOSVersion()})`)
   log.info('Logs will be written to ~/Library/Logs/dotfiles/')
-}
-
-function installNode() {
-  if (hasCommand('node')) {
-    log.success('Node.js is already installed')
-    return
-  }
-  if (!hasCommand('fnm')) {
-    log.warn('fnm not installed yet, skipping Node.js installation')
-    return
-  }
-  log.info('Installing Node.js via fnm (background)...')
-  spawn('fnm', ['install', '--lts'], { stdio: 'inherit' })
 }
 
 function installNeovimPluginsAsync() {
@@ -106,7 +93,7 @@ async function main() {
 
   // Load and categorize tools
   const allTools = await loadTools()
-  const { formulas, casks, taps } = getToolsByType(allTools)
+  const { formulas, casks, native, taps } = getToolsByType(allTools)
   const formulasWithoutNeovim = formulas.filter((f) => f !== 'neovim')
 
   // Phase 1: Quick setup
@@ -127,7 +114,10 @@ async function main() {
 
   // Phase 4: Install neovim (needed for plugins)
   log.info('Phase 4: Installing neovim...')
-  installTool('neovim', allTools.neovim)
+  const neovimTool = allTools.neovim
+  if (neovimTool.install_type !== 'native') {
+    installTool('neovim', neovimTool)
+  }
 
   // Phase 5: Neovim plugins + remaining formulas in parallel
   log.info('Phase 5: Installing neovim plugins + remaining formulas in parallel...')
@@ -135,9 +125,14 @@ async function main() {
   const formulasPromise = batchInstall(formulasWithoutNeovim, 'formula')
   await Promise.all([neovimPluginsPromise, formulasPromise])
 
-  // Phase 6: Install Node.js via fnm (now that fnm is installed)
-  log.info('Phase 6: Installing Node.js...')
-  installNode()
+  // Phase 6: Install native tools (non-Homebrew)
+  log.info('Phase 6: Installing native tools...')
+  for (const name of native) {
+    const tool = allTools[name]
+    if (tool.install_type === 'native') {
+      installNativeTool(name, tool)
+    }
+  }
 
   // Verification
   const failedPackages = await verifyAllTools()

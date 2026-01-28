@@ -5,304 +5,100 @@ description: TypeScript type best practices - proper typing patterns, avoiding t
 
 # TypeScript Type Best Practices
 
-## 1. Implicit is Better Than Explicit
+## 1. Prefer Inference Over Explicit Types
 
-**Rule:** If TypeScript can infer the type, don't annotate it.
+Remove return type annotations and variable types when TypeScript can infer them:
 
-TypeScript has powerful type inference. Let the compiler do the work.
-
-### Remove Return Type Annotations
-
-**Bad:**
 ```typescript
-const extractExtension = (filename: string): string =>
-  filename.replace(/.*symlink/, '')
+// Bad
+function isSymlink(path: string): boolean { return fs.lstatSync(path).isSymbolicLink() }
+const plan: SymlinkPlan[] = files.map(f => ({ from: f, to: transform(f) }))
 
-function isSymlink(filePath: string): boolean {
-  try {
-    return fs.lstatSync(filePath).isSymbolicLink()
-  } catch {
-    return false
-  }
-}
-
-function buildSymlinkPlan(): SymlinkPlan[] {
-  return symlinkFiles.map(src => ({ from: src, to: transformPath(src) }))
-}
+// Good
+function isSymlink(path: string) { return fs.lstatSync(path).isSymbolicLink() }
+const plan = files.map(f => ({ from: f, to: transform(f) }))
 ```
 
-**Good:**
+**Type at the source** — when a function returns a broad type, annotate the variable to help inference flow downstream:
+
 ```typescript
-const extractExtension = (filename: string) =>
-  filename.replace(/.*symlink/, '')
+// Bad - execSync returns string | Buffer, downstream calls may lose type info
+const output = execSync('find . -name "*.txt"', { cwd: rootDir, encoding: 'utf-8' })
+return output.trim().split('\n')  // compiler may not know output is string
 
-function isSymlink(filePath: string) {
-  try {
-    return fs.lstatSync(filePath).isSymbolicLink()
-  } catch {
-    return false
-  }
-}
-
-function buildSymlinkPlan() {
-  return symlinkFiles.map(src => ({ from: src, to: transformPath(src) }))
-}
+// Good - annotate the source, inference flows through the chain
+const output: string = execSync('find . -name "*.txt"', { cwd: rootDir, encoding: 'utf-8' })
+return output.trim().split('\n')  // .trim() knows it's string, .split() returns string[]
 ```
 
-**Why:**
-- `.replace()` returns `string` - TypeScript knows this
-- `return true/false` is clearly `boolean`
-- `.map()` with object literal - TypeScript infers the array type
+**Always annotate:** function parameters, public APIs, ambiguous sources (inference fails or infers too broadly)
+**Never annotate:** obvious returns (string methods, booleans), intermediate variables, collection operations
 
-### Use .map() Instead of Imperative Loops
+## 2. Type Aliases for Complex Signatures Only
 
-**Bad:**
+Use type aliases when function signatures have 4+ params or complex types (callbacks, generics). Keep simple signatures inline.
+
 ```typescript
-function buildSymlinkPlan(): SymlinkPlan[] {
-  const plan: SymlinkPlan[] = []
+// Bad - unnecessary aliases
+type FilePath = string
+function read(path: FilePath) { ... }
 
-  for (const src of symlinkFiles) {
-    plan.push({ from: src, to: transformPath(src) })
-  }
-
-  return plan
-}
-```
-
-**Good:**
-```typescript
-function buildSymlinkPlan() {
-  return symlinkFiles.map(src => ({ from: src, to: transformPath(src) }))
-}
-```
-
-**Why:**
-- No need for explicit array type annotation
-- No need for return type annotation
-- More declarative, less noise
-- Compiler infers everything correctly
-
-### Remove Variable Type Annotations
-
-**Bad:**
-```typescript
-interface Logger {
-  info: (msg: string) => void
-  success: (msg: string) => void
-  warn: (msg: string) => void
-  error: (msg: string) => void
-}
-
-const log: Logger = {
-  info: createLogFunction('info'),
-  success: createLogFunction('success'),
-  warn: createLogFunction('warn'),
-  error: createLogFunction('error')
-}
-```
-
-**Good:**
-```typescript
-const log = {
-  info: createLogFunction('info'),
-  success: createLogFunction('success'),
-  warn: createLogFunction('warn'),
-  error: createLogFunction('error')
-}
-```
-
-**Why:**
-- TypeScript infers the shape from the object literal
-- If you remove the annotation and the interface becomes unused, delete it
-- Less noise, same type safety
-
-### When to Keep Type Annotations
-
-**Do annotate:**
-1. **Function parameters** - Always annotate (TypeScript can't infer these)
-2. **At the source** - Type variables early in the chain to help inference flow
-3. **Public APIs** - Types are documentation for exported functions
-4. **When inference fails** - If compiler infers `any`, you MUST declare explicitly
-
-**Example - Type at the source to enable inference:**
-```typescript
-// Bad: No type annotation, chain can't infer properly
-function findFiles(rootDir: string) {
-  const output = execSync(`find . -name '*.txt'`, { cwd: rootDir, encoding: 'utf-8' })
-  return output.trim().split('\n').filter(line => line.length > 0)
-}
-// Compiler may not infer that output is string, causing downstream issues
-
-// Good: Type the source variable, inference flows through the chain
-function findFiles(rootDir: string) {
-  const output: string = execSync(`find . -name '*.txt'`, { cwd: rootDir, encoding: 'utf-8' })
-  return output.trim().split('\n').filter(line => line.length > 0)
-}
-// Now .trim() knows it's working with string, .split() returns string[], etc.
-```
-
-**Don't annotate:**
-1. **Obvious return types** - String methods, boolean literals, void functions
-2. **Intermediate transformations** - Once you've typed the source, let inference flow
-3. **Collection operations** - `.map()`, `.filter()` preserve and transform types correctly
-
-### Benefits
-
-- **Less code** - Fewer type annotations to write and maintain
-- **Easier refactoring** - Change implementation, types update automatically
-- **Better signal-to-noise** - Annotations that remain are truly meaningful
-- **Finds dead code** - Unused interfaces become obvious when you stop annotating
-
-## 2. Type Aliases for Busy Function Signatures
-
-**Rule:** Only use type aliases when the function signature gets "busy" with type noise.
-
-### Simple Signatures - Keep Inline
-
-**Good:**
-```typescript
-function isSymlink(filePath: string) {
-  return fs.lstatSync(filePath).isSymbolicLink()
-}
-
-function findSymlinkFiles(rootDir: string): string[] {
-  const output = execSync('find . -name "*.txt"', { cwd: rootDir })
-  return output.trim().split('\n')
-}
-```
-
-These are clean - minimal noise, easy to read.
-
-### Busy Signatures - Use Type Alias
-
-**Bad:**
-```typescript
-function processFiles(
-  rootDir: string,
-  filter: (file: string, stats: fs.Stats) => boolean,
-  transform: (content: string, path: string) => Promise<string>,
-  onError: (error: Error, file: string) => void
-): Promise<ProcessResult[]> {
-  // implementation
-}
-```
-
-**Good:**
-```typescript
+// Good - complex signature gets aliases
 type FileFilter = (file: string, stats: fs.Stats) => boolean
 type FileTransform = (content: string, path: string) => Promise<string>
-type ErrorHandler = (error: Error, file: string) => void
-type ProcessFiles = (
-  rootDir: string,
-  filter: FileFilter,
-  transform: FileTransform,
-  onError: ErrorHandler
-) => Promise<ProcessResult[]>
-
-const processFiles: ProcessFiles = (rootDir, filter, transform, onError) => {
-  // implementation
-}
+function process(root: string, filter: FileFilter, transform: FileTransform) { ... }
 ```
-
-**Why:** The signature is now scannable - you see the parameter names clearly, and can check the type alias definitions separately if needed.
-
-### When to Use Type Aliases
-
-**Use type aliases when:**
-- Function has 4+ parameters
-- Parameters have complex types (callbacks, generic types)
-- The same signature is used multiple times
-- The inline signature makes the function definition hard to scan
-
-**Don't use type aliases when:**
-- Function has 1-3 simple parameters
-- Types are obvious (string, number, boolean)
-- Compiler can infer the return type
-- The inline signature is still readable
 
 ## 3. Accept Nullable Types, Handle Explicitly
 
-**Rule:** Accept `T | null` in your type signatures, handle the null case explicitly with clear failure semantics.
+Don't filter nulls early - accept `T | null` and handle failures explicitly with error results.
 
-**Bad:**
 ```typescript
-// Filter nulls early, pass only valid values
-function buildPlan() {
-  return files.map(transformPath).filter(path => path !== null)
-}
+// Bad - silently drops failures
+const plan = files.map(transformPath).filter(p => p !== null)
 
-function executePlan(plan: string[]) {
-  // Silent assumption: all paths are valid
-  return plan.map(path => createLink(path))
-}
+// Good - explicit failure tracking
+const plan = files.map(f => ({ from: f, to: transformPath(f) })) // to: string | null
+const results = plan.map(({ from, to }) => to ? link(from, to) : { from, success: false })
 ```
 
-**Good:**
+## 4. Discriminated Unions for Mutually Exclusive Variants
+
+Use discriminated unions when types have exclusive variants with different required fields.
+
 ```typescript
-// Accept nullable type, handle explicitly
-function buildPlan() {
-  return files.map(file => ({
-    from: file,
-    to: transformPath(file) // Returns string | null
-  }))
+// Bad - optional properties, no enforcement
+interface Tool {
+  type?: 'brew' | 'native'
+  brew_type?: 'formula' | 'cask'  // Should only exist for brew
+  install_command?: string         // Should only exist for native
 }
 
-function executePlan(plan: Array<{from: string, to: string | null}>) {
-  return plan.map(({ from, to }) => safeLink(from, to))
-}
+// Good - separate types, compile-time safety
+type BrewTool = { type: 'brew', brew_type: 'formula' | 'cask', tap?: string }
+type NativeTool = { type: 'native', install_command: string, requires?: string[] }
+type Tool = BrewTool | NativeTool
 
-function safeLink(src: string, dest: string | null) {
-  if (!dest) {
-    // Explicit failure with error result
-    return { from: src, to: '<unparseable>', success: false }
+// Type narrowing
+function install(tool: Tool) {
+  if (tool.type === 'native') {
+    spawn('bash', ['-c', tool.install_command])  // tool.install_command exists
+  } else {
+    brew(['install', tool.brew_type])            // tool.brew_type exists
   }
-  // Continue with valid dest
 }
 ```
 
-**Why:**
-- **Explicit over silent** - Failures are visible in results, not hidden by filtering
-- **Push responsibility down** - Let `safeLink` decide what to do with nulls (it's about safety!)
-- **Better error tracking** - You can count and report failures, not silently skip them
+**Use when:** Variants have different required properties (Result = Success | Error, Response = Loading | Loaded | Failed)
 
-## 4. Export Discipline
+## 5. Only Export What's Used
 
-**Rule:** Only export what's actually used by other modules. Everything else is internal implementation.
+Export only functions/types actually imported by other modules. Check with `rg "import.*functionName"`.
 
-**Bad:**
 ```typescript
-// links.ts
+// Bad - over-exporting
 export { setupSymlinks, buildSymlinkPlan, safeLink, transformPath }
-export type { SymlinkPlan, LinkResult }
-```
 
-Check if these are imported anywhere:
-```bash
-$ rg "import.*buildSymlinkPlan"
-# No results
-
-$ rg "import.*safeLink"
-# No results
-```
-
-**Good:**
-```typescript
-// links.ts - Only export the public API
+// Good - only public API (after checking imports with ripgrep)
 export { setupSymlinks }
-export type { LinkResult }  // Used by consumers
 ```
-
-**Why:**
-- **Clear API surface** - What's exported is your public interface
-- **Easier refactoring** - Internal functions can be renamed/removed freely
-- **Finds dead code** - Unused exports highlight unnecessary abstractions
-
-**Process:**
-1. After writing a module, search for usages: `rg "import.*functionName"`
-2. Remove exports that have zero imports
-3. Keep only: (a) main public API functions, (b) types used by consumers
-
-## References
-
-- TypeScript Handbook: https://www.typescriptlang.org/docs/handbook/
-- Effective TypeScript by Dan Vanderkam

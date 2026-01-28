@@ -3,6 +3,7 @@
 import { execSync, spawn } from 'child_process'
 import path from 'path'
 import { log } from './logging'
+import { hasCommand } from './system'
 
 function getToolsPath() {
   return path.join(import.meta.dir, 'tools.yaml')
@@ -10,8 +11,9 @@ function getToolsPath() {
 
 type BrewType = 'formula' | 'cask'
 
-interface Tool {
-  brew_type: BrewType
+type BrewTool = {
+  install_type?: 'formula' | 'cask'
+  brew_type?: BrewType
   cmd?: string
   tap?: string
   description: string
@@ -19,7 +21,17 @@ interface Tool {
   app_path?: string
 }
 
-export async function loadTools() {
+type NativeTool = {
+  install_type: 'native'
+  install_command: string
+  requires?: string | string[]
+  cmd?: string
+  description: string
+}
+
+type Tool = BrewTool | NativeTool
+
+async function loadTools() {
   const toolsPath = getToolsPath()
   const content = await Bun.file(toolsPath).text()
   const parsed = Bun.YAML.parse(content) as { tools: Record<string, Tool> }
@@ -140,8 +152,33 @@ function installPackage(name: string, brewType: BrewType): boolean {
   }
 }
 
-export function installTool(name: string, tool: Tool) {
-  const alreadyInstalled = isInstalled(name, tool.brew_type)
+function installNativeTool(name: string, tool: NativeTool) {
+  const commandName = tool.cmd || name
+
+  if (hasCommand(commandName)) {
+    log.success(`${name} is already installed`)
+    return
+  }
+
+  // Check if required dependencies are installed
+  if (tool.requires) {
+    const deps = Array.isArray(tool.requires) ? tool.requires : [tool.requires]
+    for (const dep of deps) {
+      if (!hasCommand(dep)) {
+        log.warn(`${name} requires ${dep}, skipping installation`)
+        return
+      }
+    }
+  }
+
+  log.info(`Installing ${name} (native)...`)
+  spawn('bash', ['-c', tool.install_command], { stdio: 'inherit', detached: true }).unref()
+}
+
+function installTool(name: string, tool: BrewTool) {
+  const brewType = tool.brew_type || 'formula'
+
+  const alreadyInstalled = isInstalled(name, brewType)
 
   if (alreadyInstalled) {
     log.success(`${name} is already installed`)
@@ -152,12 +189,12 @@ export function installTool(name: string, tool: Tool) {
     installTap(tool.tap)
   }
 
-  log.info(`Installing ${name} (${tool.brew_type})...`)
-  const success = installPackage(name, tool.brew_type)
+  log.info(`Installing ${name} (${brewType})...`)
+  const success = installPackage(name, brewType)
 
   if (success) {
     log.success(`Installed ${name}`)
-    if (tool.brew_type === 'cask' && tool.setup_message) {
+    if (brewType === 'cask' && tool.setup_message) {
       handlePostInstall(name, tool.setup_message, tool.app_path)
     }
   } else {
@@ -167,21 +204,30 @@ export function installTool(name: string, tool: Tool) {
   return { name, success, alreadyInstalled: false }
 }
 
-export function getToolsByType(tools: Record<string, Tool>) {
+function getToolsByType(tools: Record<string, Tool>) {
   const formulas: string[] = []
   const casks: string[] = []
+  const native: string[] = []
   const taps: string[] = []
 
   for (const [name, tool] of Object.entries(tools)) {
-    if (tool.tap) taps.push(tool.tap)
-    if (tool.brew_type === 'formula') formulas.push(name)
-    else casks.push(name)
+    if (tool.install_type === 'native') {
+      native.push(name)
+    } else {
+      // TypeScript now knows tool is BrewTool
+      if (tool.tap) taps.push(tool.tap)
+      if (tool.brew_type === 'formula') {
+        formulas.push(name)
+      } else if (tool.brew_type === 'cask') {
+        casks.push(name)
+      }
+    }
   }
 
-  return { formulas, casks, taps }
+  return { formulas, casks, native, taps }
 }
 
-export function installAllTaps(taps: string[]) {
+function installAllTaps(taps: string[]) {
   for (const tap of taps) {
     installTap(tap)
   }
@@ -196,7 +242,7 @@ function fetchPackage(pkg: string, brewType: BrewType): Promise<void> {
   })
 }
 
-export async function batchInstall(packages: string[], brewType: BrewType) {
+async function batchInstall(packages: string[], brewType: BrewType) {
   if (packages.length === 0) return
 
   const flag = brewType === 'cask' ? '--cask ' : ''
@@ -220,24 +266,41 @@ export async function batchInstall(packages: string[], brewType: BrewType) {
   }
 }
 
-export function runCaskPostInstall(tools: Record<string, Tool>) {
+function runCaskPostInstall(tools: Record<string, Tool>) {
   for (const [name, tool] of Object.entries(tools)) {
+    if (tool.install_type === 'native') continue
+    // TypeScript now knows tool is BrewTool
     if (tool.brew_type === 'cask' && tool.setup_message) {
       handlePostInstall(name, tool.setup_message, tool.app_path)
     }
   }
 }
 
-export function verifyTool(name: string, tool: Tool): boolean {
+function verifyTool(name: string, tool: Tool): boolean {
   const commandName = tool.cmd || name
 
   try {
     execSync(`command -v ${commandName}`, { stdio: 'ignore' })
     return true
   } catch {
-    if (tool.brew_type === 'cask') {
-      return isInstalled(name, 'cask')
+    // For casks, check if installed via brew
+    if (tool.install_type !== 'native') {
+      const brewType = tool.brew_type || 'formula'
+      if (brewType === 'cask') {
+        return isInstalled(name, 'cask')
+      }
     }
     return false
   }
+}
+
+export {
+  loadTools,
+  installNativeTool,
+  installTool,
+  getToolsByType,
+  installAllTaps,
+  batchInstall,
+  runCaskPostInstall,
+  verifyTool
 }
