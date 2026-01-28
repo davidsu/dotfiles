@@ -164,4 +164,9 @@ local command_opts = {
 vim.api.nvim_create_user_command("Gfh", command_handler, command_opts)
 vim.api.nvim_create_user_command("GitFileHistory", command_handler, command_opts)
 
+-- Keybind: <space>bh for buffer history
+vim.keymap.set('n', '<leader>bh', '<cmd>GitFileHistory<cr>', {
+  desc = 'Git: Buffer History'
+})
+
 return { gfh = gfh }
