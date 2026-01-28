@@ -48,6 +48,7 @@ cd ~/.dotfiles
 4. 🔗 Symlink configuration files to their target locations
 5. ⚙️ Apply macOS system defaults (disable animations, fast keyboard repeat, etc.)
 6. 🎨 Install Neovim plugins via lazy.nvim
+7. 🤖 Install Claude Code via native installer (auto-updates enabled)
 
 ---
 
@@ -330,6 +331,8 @@ Installation logs:
 ---
 
 ## 🤖 Claude Code Setup
+
+> ⚡ **Auto-Updates Enabled**: Claude Code is installed via the native installer, which automatically updates in the background.
 
 ### 🔑 API Key Setup (One-time)
 

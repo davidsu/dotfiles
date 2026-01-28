@@ -1,4 +1,18 @@
 tools:
+  # Native installations (non-Homebrew)
+  claude-code:
+    install_type: native
+    cmd: claude
+    install_command: 'curl -fsSL https://claude.ai/install.sh | bash'
+    description: Official CLI for Claude AI (auto-updates enabled)
+
+  node:
+    install_type: native
+    cmd: node
+    install_command: 'fnm install --lts'
+    description: Node.js LTS runtime
+    requires: fnm
+
   # Build dependencies (required for Neovim and high-performance plugins)
   cmake:
     brew_type: formula
@@ -118,11 +132,6 @@ tools:
     brew_type: cask
     description: Window management with keyboard shortcuts
     setup_message: "Use Spectacle keybinds, use Cmd+Alt+/ for fullscreen."
-
-  claude-code:
-    brew_type: cask
-    cmd: claude
-    description: Official CLI for Claude AI
 
   zoom:
     brew_type: cask
