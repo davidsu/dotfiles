@@ -2,12 +2,13 @@
 -- Usage: :Gfh or :GitFileHistory
 
 local git = require("git.helpers")
+local commit_viewer = require("git.commit-viewer")
 
 -- Git helpers
 
 local function get_file_log(filepath, limit)
   limit = limit or 100
-  local output, ok = git.run(string.format("log -n %d --name-status --follow -- %s", limit, vim.fn.shellescape(filepath)))
+  local output, ok = git.run(string.format("log -n %d --oneline --follow -- %s", limit, vim.fn.shellescape(filepath)))
   if not ok then return nil end
   return output
 end
@@ -19,23 +20,11 @@ local function setup_syntax(bufnr)
     vim.cmd([[
       if exists("b:current_syntax") | finish | endif
 
-      syn match gfhCommit /^commit [a-f0-9]\+/
-      syn match gfhAuthor /^Author:.*$/
-      syn match gfhDate /^Date:.*$/
-      syn match gfhModified /^M\t/ nextgroup=gfhPath
-      syn match gfhAdded /^A\t/ nextgroup=gfhPath
-      syn match gfhDeleted /^D\t/ nextgroup=gfhPath
-      syn match gfhRenamed /^R[0-9]*\t/ nextgroup=gfhPath
-      syn match gfhPath /.*$/ contained
+      syn match gfhSha /^[a-f0-9]\{7,\}/ nextgroup=gfhMessage
+      syn match gfhMessage / .*$/ contained
 
-      hi def link gfhCommit Type
-      hi def link gfhAuthor Normal
-      hi def link gfhDate Comment
-      hi def link gfhModified Type
-      hi def link gfhAdded DiffAdd
-      hi def link gfhDeleted DiffDelete
-      hi def link gfhRenamed Special
-      hi def link gfhPath Normal
+      hi def link gfhSha Type
+      hi def link gfhMessage Normal
 
       let b:current_syntax = "gfh"
     ]])
@@ -47,32 +36,27 @@ end
 local function parse_log(lines)
   local commits = {}
   local line_to_commit = {}
-  local current_commit = nil
 
   for i, line in ipairs(lines) do
-    local sha = line:match("^commit ([a-f0-9]+)")
+    local sha = line:match("^([a-f0-9]+)")
     if sha then
-      current_commit = sha
       table.insert(commits, { sha = sha, line = i })
+      line_to_commit[i] = sha
     end
-    line_to_commit[i] = current_commit
   end
 
   return commits, line_to_commit
 end
 
-local function get_commit_pair(commits, line_to_commit, cursor_line)
-  local current_sha = line_to_commit[cursor_line]
-  if not current_sha then return nil, nil end
-
+local function get_commit_pair(commits, cursor_line)
   for i, commit in ipairs(commits) do
-    if commit.sha == current_sha then
+    if commit.line == cursor_line then
       local next_commit = commits[i + 1]
       local next_sha = next_commit and next_commit.sha or nil
-      return current_sha, next_sha
+      return commit.sha, next_sha
     end
   end
-  return current_sha, nil
+  return nil, nil
 end
 
 local function get_commit_at_cursor(line_to_commit)
@@ -82,36 +66,71 @@ end
 
 -- UI: Actions
 
+local function find_commit_sha(commits, cursor_line)
+  for _, commit in ipairs(commits) do
+    if commit.line == cursor_line then
+      return commit.sha
+    end
+  end
+  return nil
+end
+
+local function show_commit_details(commits, cursor_line)
+  local sha = find_commit_sha(commits, cursor_line)
+  if not sha then
+    return vim.notify("No commit at cursor", vim.log.levels.WARN)
+  end
+
+  local history_win = vim.api.nvim_get_current_win()
+  commit_viewer.show(sha, history_win)
+end
+
 local function show_help()
   vim.notify(
-    "Gfh keymaps:\n  dd    Show diff (this commit vs parent)\n  <CR>  Open file at commit\n  q     Close\n  g?    Help",
+    "Gfh keymaps:\n  <C-s>  Show commit details\n  dd     Show diff (this commit vs parent)\n  <CR>   Open file at commit\n  q      Close\n  g?     Help",
     vim.log.levels.INFO
   )
 end
 
 -- UI: Buffer setup
 
-local function create_buffer(filepath, log_output)
-  local bufnr = git.create_scratch_buffer()
-  local lines = vim.split(log_output, "\n", { plain = true })
+local function create_history_buffer(filepath, log_output)
+  local bufnr = vim.api.nvim_create_buf(false, true)
+  vim.bo[bufnr].buftype = "nofile"
+  vim.bo[bufnr].bufhidden = "wipe"
+  vim.bo[bufnr].swapfile = false
 
+  local lines = vim.split(log_output, "\n", { plain = true })
   git.set_buffer_lines(bufnr, lines)
 
   local short_path = vim.fn.fnamemodify(filepath, ":~:.")
   vim.api.nvim_buf_set_name(bufnr, "gfh://" .. short_path)
 
-  local commits, line_to_commit = parse_log(lines)
+  return bufnr, lines
+end
 
-  setup_syntax(bufnr)
+local function open_history_window(bufnr)
+  local height = math.floor(vim.o.lines * 0.4)
+  vim.cmd(string.format("topleft %dsplit", height))
+  vim.api.nvim_win_set_buf(0, bufnr)
+  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+end
 
+local function setup_history_keymaps(bufnr, commits, line_to_commit, filepath)
   git.map(bufnr, "dd", function()
     local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
-    local current, parent = get_commit_pair(commits, line_to_commit, cursor_line)
+    local current, parent = get_commit_pair(commits, cursor_line)
     if not current then
       return vim.notify("No commit at cursor", vim.log.levels.WARN)
     end
     git.show_diff(current, parent, filepath)
   end)
+
+  git.map(bufnr, "<C-s>", function()
+    local cursor_line = vim.api.nvim_win_get_cursor(0)[1]
+    show_commit_details(commits, cursor_line)
+  end)
+
   git.map(bufnr, "<CR>", function()
     local sha = get_commit_at_cursor(line_to_commit)
     if not sha then
@@ -119,13 +138,40 @@ local function create_buffer(filepath, log_output)
     end
     git.open_file(sha, filepath)
   end)
+
   git.map(bufnr, "q", function() vim.cmd("bdelete") end)
   git.map(bufnr, "g?", show_help)
+end
 
-  vim.api.nvim_win_set_cursor(0, { 1, 0 })
+local function create_buffer(filepath, log_output)
+  local bufnr, lines = create_history_buffer(filepath, log_output)
+  open_history_window(bufnr)
+
+  local commits, line_to_commit = parse_log(lines)
+  setup_syntax(bufnr)
+  setup_history_keymaps(bufnr, commits, line_to_commit, filepath)
 end
 
 -- Main function
+
+local function close_existing_history_buffers()
+  -- First close all windows showing these buffers
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    local bufnr = vim.api.nvim_win_get_buf(win)
+    local bufname = vim.api.nvim_buf_get_name(bufnr)
+    if bufname:match("^gfh://") or bufname:match("^commit%-viewer://") then
+      pcall(vim.api.nvim_win_close, win, true)
+    end
+  end
+
+  -- Then wipe all buffers
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    local bufname = vim.api.nvim_buf_get_name(bufnr)
+    if bufname:match("^gfh://") or bufname:match("^commit%-viewer://") then
+      pcall(vim.cmd, "bwipeout! " .. bufnr)
+    end
+  end
+end
 
 local function gfh(filepath)
   if not git.in_repo() then
@@ -145,6 +191,7 @@ local function gfh(filepath)
     return vim.notify("Gfh: no history found for " .. filepath, vim.log.levels.WARN)
   end
 
+  close_existing_history_buffers()
   create_buffer(filepath, log)
 end
 
