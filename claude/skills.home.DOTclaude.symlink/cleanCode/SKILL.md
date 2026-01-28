@@ -9,7 +9,16 @@ description: Refactor/clean/simplify code - eliminate duplication, small functio
 
 **Influences:** Douglas Crockford's "JavaScript: The Good Parts", Robert C. Martin's "Clean Code"
 
-**🚨 TypeScript:** Before writing TypeScript, run `/cleanTypes` for type annotation best practices.
+**🚨 TypeScript:** Before writing TypeScript, run `/cleanCode:typescript` for type annotation best practices.
+
+**🚨 Bash/Shell:** Before writing bash/zsh, run `/cleanCode:bash` for shell-specific patterns.
+
+## General Principles
+
+- **Understand before changing** - Read existing code before making modifications
+- **Ask for clarity** - When requirements are ambiguous, ask rather than guess
+- **Minimize scope** - Only change what's directly requested or clearly necessary
+- **Prefer clarity** - Clear code over clever code
 
 ## 1. Small Functions, Clear Names
 
@@ -29,6 +38,7 @@ const replaceDOTWithDot = (str) => str.replace(/DOT/g, '.')
 - Verbs for actions: `createLink()`, `handleExistingFile()`
 - Booleans: `isSymlink()`, `hasExtension()`, `canWrite()`
 - No generic names: `process()`, `handle()`, `do()` → What specifically?
+- Names should express intent - make the code self-documenting
 
 ## 2. No Duplication
 
@@ -93,6 +103,18 @@ When a file exceeds 250 lines, look for natural module boundaries.
 ```
 
 **Don't split prematurely:** 200-line focused file > 5 poorly-abstracted 40-line files.
+
+**Structure and Organization:**
+- Define functions and configuration logic before return/export statements
+- Keep return/export blocks clean by referencing named functions rather than inline definitions
+- Separate declaration (function definitions) from usage (return/export statements)
+- Extract inline configuration functions into named functions defined above the return/export
+- This improves readability and makes the module's public interface immediately clear
+
+**Clear APIs:**
+- Hide implementation details
+- Only expose what's necessary
+- Internal helpers should be separate from public functions
 
 ## 5. Fluent APIs for Sequential Operations
 
@@ -207,6 +229,17 @@ const executeSymlinkPlan = (plan: SymlinkPlan[]) =>
 
 **Note side effects:** Add comment if `.map()` has side effects (creates files, mutates state).
 
+**Minimize boilerplate:**
+- Reduce unnecessary ceremony
+- Use idiomatic language features (return early, compact conditionals, etc.)
+- Don't add comments to obviously simple code
+
+**Prefer directness:**
+- Add parameters instead of creating higher-order functions or closures
+- Explicit parameters over captured variables
+- Avoid over-nesting functions, objects, or data structures
+- Clear data flow (inputs → function → outputs)
+
 ## Refactoring Checklist
 
 Before code is "done":
@@ -219,6 +252,8 @@ Before code is "done":
 6. **Sequential operations with branches?** Consider fluent API
 7. **Silently filtering failures?** Make them explicit with error results
 8. **Special cases that can be unified?** Handle uniformly when possible
+9. **Comments explain "why" not "what"?** Code should show what it does
+10. **Are implementation details hidden?** Only expose necessary APIs
 
 ## Complexity Limits
 

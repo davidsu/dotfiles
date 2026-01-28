@@ -1,9 +1,13 @@
 ---
-name: bash-refactoring
+name: cleanCode:bash
 description: Bash/shell-specific refactoring knowledge - gotchas, patterns, and anti-patterns for shell scripts
 ---
 
-# Bash Refactoring Guide
+# Bash/Shell Code Simplification
+
+**Core principle:** Shell scripts are full of traps. Know the gotchas, write defensive code, keep it simple.
+
+**Influences:** Google Shell Style Guide, ShellCheck best practices
 
 ## Critical Bash Gotchas
 
@@ -119,7 +123,7 @@ print_field_if_present "$json" '.data.phone' "$MAGENTA" "Phone:"
 process_entry() {
     [[ -z "$entry" ]] && return 1
     [[ ! -f "$file" ]] && return 1
-    
+
     # Main logic here without nesting
 }
 
@@ -132,3 +136,23 @@ process_entry() {
     fi
 }
 ```
+
+## Refactoring Checklist for Bash
+
+Before shell script is "done":
+
+1. **Run ShellCheck** - Fix all warnings
+2. **Quote everything** - `"$var"` not `$var` (unless you want word splitting)
+3. **Use `[[ ]]` not `[ ]`** - More consistent, fewer gotchas
+4. **Check for subshell traps** - Any `$(...)` that should modify state?
+5. **Functions used 2+ times?** - If only once and simple, inline it
+6. **Early returns for validation** - Reduce nesting
+7. **Test output before/after** - Diff to ensure no behavior changes
+
+## Complexity Limits
+
+- Function >20 lines → Consider breaking up
+- Script >200 lines → Consider splitting into modules
+- Nested blocks >2 deep → Extract function or use early returns
+
+**Self-prompt:** "Are any variables modified in subshells? Can I inline this single-use function? Does this need to be a function or just a clear comment? Have I quoted all variables? Would ShellCheck complain?"

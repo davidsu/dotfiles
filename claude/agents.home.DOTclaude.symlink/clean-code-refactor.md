@@ -25,7 +25,7 @@ This is your refactoring guide. Every change you make must align with cleanCode 
 
 **Then load language-specific skills:**
 - Bash/shell scripts: `/bash-refactoring` (critical for scope/subshell gotchas)
-- Neovim config: `/neovim`
+- Neovim config: `/cleanCode:neovim`
 - Project-specific: Check for `/coding` skill
 
 **Review project context:**
@@ -161,7 +161,7 @@ const extractData = (json) =>
 ## Pre-Refactoring Checklist
 
 - [ ] I have loaded `/cleanCode` skill
-- [ ] I have loaded language-specific skills (`/bash-refactoring`, `/neovim`, etc.)
+- [ ] I have loaded language-specific skills (`/bash-refactoring`, `/cleanCode:neovim`, etc.)
 - [ ] I have checked for project-specific `/coding` skill and CLAUDE.md
 - [ ] I have run the original code with test inputs
 - [ ] I have captured original outputs for comparison

@@ -11,8 +11,6 @@
 
 ### Coding Context
 
-**IMPORTANT**: Before writing, editing, or refactoring code, you MUST read the coding skill if you haven't already read it in this conversation:
+**CRITICAL REQUIREMENT**: Before writing or modifying code, you MUST load `/cleanCode` if you haven't already loaded it in this conversation.
 
-- Run: `/coding` to load coding style guidelines
-
-This ensures you follow the project's coding standards automatically.
+This ensures you follow clean code principles and coding standards automatically.

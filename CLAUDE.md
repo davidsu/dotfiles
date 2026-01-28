@@ -2,12 +2,12 @@
 
 ## Project Overview
 
-Migrating and modernizing dotfiles from old implementation:
+Modern dotfiles configuration:
 
-- **Source**: `dotfilesold` branch (Vimscript, vim-plug, ag, fnm)
-- **Target**: `master` branch at `~/.dotfiles/` (Pure Lua, lazy.nvim, ripgrep, mise)
-- **Platform**: macOS only (remove all Linux compatibility code)
-- **Goal**: Keep functionality, modernize implementation, clean up cruft
+- **Location**: `~/.dotfiles/` on `master` branch
+- **Stack**: Pure Lua, lazy.nvim, ripgrep, mise
+- **Platform**: macOS only
+- **Goal**: Clean, maintainable, well-documented personal development environment
 
 ## Task Management
 
@@ -26,12 +26,6 @@ Migrating and modernizing dotfiles from old implementation:
 - `bd show <id>` - Show task details
 - `bd close <id>` - Mark task as complete
 
-## Auto-Load Skills
-
-**When working on Neovim configuration or Lua code for Neovim**, load the neovim skill first:
-
-- Run: `/neovim` to load Neovim-specific rules (Lua patterns, local docs, debugging)
-
 ## Critical Rules
 
 ### 1. Don't Rush to Implementation
@@ -39,7 +33,7 @@ Migrating and modernizing dotfiles from old implementation:
 When user asks a question, **answer the question** - don't implement anything unless explicitly asked.
 
 **Bad**: User asks "what colorscheme did I use?" → You immediately add a colorscheme plugin
-**Good**: User asks "what colorscheme did I use?" → You check dotfilesold and tell them
+**Good**: User asks "what colorscheme did I use?" → You check the config and tell them
 
 ### 2. Verify External Resources
 
