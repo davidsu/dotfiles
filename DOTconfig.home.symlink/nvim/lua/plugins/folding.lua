@@ -20,6 +20,10 @@ end
 
 -- Select which fold provider to use based on filetype
 local function select_fold_provider(_bufnr, filetype, _buftype)
+  -- Disable ufo for quickfix (causes errors when window closes)
+  if filetype == 'qf' then
+    return ''
+  end
   if filetype == 'markdown' then
     return { 'treesitter', 'indent' }
   end
