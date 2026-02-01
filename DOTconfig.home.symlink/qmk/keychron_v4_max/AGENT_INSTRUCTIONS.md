@@ -20,8 +20,48 @@ The user had two primary configuration sources:
 - **Escape key** (upper left corner): Remapped to Backtick/Tilde [`~]
 - **Left Ctrl** (lower left): Activates VIM layer when held
 
-#### 3. VIM Layer (Layer 2)
-Activated by holding Left Ctrl (lower left key):
+#### 3. Layer Switching
+
+**IMPORTANT NOTE FOR FUTURE REFACTORING:**
+Current implementation has multiple ways to switch layers (listed below). This works well but could be simplified in the future. The redundancy exists because:
+- We wanted to keep Left Ctrl as momentary VIM layer activation
+- We also wanted Ctrl+Q/W/E/R for layer switching
+- Solution: Q/W/E/R switch layers directly in VIM/NUMPAD (no Ctrl needed)
+- This makes Right Ctrl+Q/W/E/R redundant except in BASE layer
+Consider revisiting to make this cleaner/more consistent.
+
+**Current Layer Switching Methods:**
+
+**From BASE layer:**
+- **Hold Left Ctrl** (bottom left) → Temporarily activate VIM layer (release to return)
+- **Ctrl + Q/W** → Switch to Base layer permanently
+- **Ctrl + E** → Switch to VIM layer permanently
+- **Ctrl + R** → Switch to Numpad layer permanently
+- Works with both physical Left Ctrl and Right Ctrl
+- **Visual indicator:** Q/W/E/R light up RED when physical Ctrl is pressed
+- **Does NOT work** with Caps Lock or Enter (even though they act as Ctrl when held)
+
+**From VIM layer:**
+- **Q or W** → Switch to Base layer (no Ctrl needed)
+- **E** → Stay in VIM layer
+- **R** → Switch to Numpad layer (no Ctrl needed)
+- **S** → Switch to Numpad layer (legacy, same as R)
+- **D** → Switch to Base layer (legacy, same as Q/W)
+
+**From NUMPAD layer:**
+- **Q or W** → Switch to Base layer (no Ctrl needed)
+- **E** → Switch to VIM layer (no Ctrl needed)
+- **R** → Stay in Numpad layer
+- **S** → Switch to VIM layer (legacy, same as E)
+- **D** → Switch to Base layer (legacy, same as Q/W)
+
+**RGB Control:**
+- **Ctrl + \\** → Toggle base layer RGB on/off (works with physical Left or Right Ctrl)
+
+#### 4. VIM Layer (Layer 2)
+Can be activated by:
+- Right Ctrl + E (permanent switch)
+- Hold Left Ctrl (momentary activation)
 
 **Navigation:**
 - H → Left Arrow
@@ -50,16 +90,34 @@ Activated by holding Left Ctrl (lower left key):
 Letters A, B, C, E, F, G, N, O, P, Q, R, T, V, W, X, Y, Z and numbers 1-7 are disabled in this layer (return KC_NO).
 
 #### 4. Numpad Layer (Layer 3)
-Accessible by pressing S while in VIM layer:
+Accessible by pressing S while in VIM layer or Right Ctrl + R:
 
-**Number Mappings:**
+**Number Mappings (using regular digits, not numpad keycodes):**
 ```
-U I O → 7 8 9
-J K L → 4 5 6
-M , . → 1 2 3
-N     → 0
-; /   → , .
+Top row: 1 2 3 4 5 6 7 8 9 0 → 1 2 3 4 5 6 7 8 9 0
+Letters:  U I O → 7 8 9
+         J K L → 4 5 6
+       M , . N → 1 2 3 0
 ```
+
+**Special Characters (lit in RED):**
+```
+; → , (comma)
+/ → . (period)
+\ → / (division)
+```
+
+**Mathematical Operators (natural Shift positions):**
+- ! (Shift+1) → ! (factorial)
+- Shift+5 → % (modulo)
+- Shift+6 → ^ (power)
+- Shift+8 → * (multiply)
+- - → - (minus)
+- Shift+- → _ (underscore)
+- = → = (equals)
+- Shift+= → + (plus)
+- Shift+, → < (less than)
+- Shift+. → > (greater than)
 
 **Layer Switching:**
 - S → Switch to VIM layer
@@ -73,15 +131,24 @@ Keys to the right of spacebar (bottom row):
 - Right Ctrl → Stays Ctrl, but **Right Ctrl + /** → Up Arrow
 
 #### 6. RGB Lighting Layer Indication
-- **Base Layer**: White
-- **VIM Layer**: Blue (HSV_BLUE)
-- **Numpad Layer**: Green (HSV_GREEN)
 
-This matches the GK6X lighting profiles:
-- `baseLayer.le` → White
-- `vimLike.le` → Blue
-- `numpad.le` → Green
-- `arrows.le` → (not currently used)
+**Base Layer:** Solid white
+
+**VIM Layer:** Per-key colors (from GK6X vimLike.le):
+- S & D (layer switching): Dark blue
+- 8, 9, 0 (volume): White
+- U & I (Page Up/Down): Orange
+- M & Comma (Home/End): Green
+- Backspace (Forward Delete): Red
+- H, J, K, L (arrows): Purple
+- All other keys: Off
+
+**Numpad Layer:** Per-key colors (from GK6X numpad.le):
+- Numbers 1-9 (U, I, O, J, K, L, M, Comma, Period): Purple
+- Number 0 (N): Green
+- Semicolon & Slash (numpad comma/period): Red
+- S & D (layer switching): Dark blue
+- All other keys: Off
 
 ## NOT Implemented (from Karabiner)
 
@@ -138,6 +205,18 @@ The following Karabiner feature was NOT implemented due to QMK limitations:
   1. Base layer returns to white properly
   2. LED indices corrected (H, J, K, L, S, D, M, Comma all light up correct keys)
 - See "RGB Lighting Issues" section below for technical details
+
+**All Features Now Working (2026-02-01 final):**
+- All numbers 0-9 work on top row in numpad layer ✓
+- All numbers work on letter keys (UIOJKLM,.N) ✓
+- Mathematical operators: =, +, -, _, !, ^, % all working ✓
+- Division: \ → / working and lit in red ✓
+- ; → , (comma) working ✓
+- / → . (period) working ✓
+- Both Left Ctrl and Right Ctrl + Q/W/E/R for layer switching ✓
+- Q/W/E/R light up RED when physical Ctrl pressed (visual indicator) ✓
+- Ctrl + \ toggles base layer RGB on/off ✓
+- P key disabled in numpad layer ✓
 
 ✅ **COMPILATION SETUP COMPLETED:**
 - QMK toolchain installed via pipx (not Homebrew due to Python path issues)

@@ -58,7 +58,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      */
     [_VIM] = LAYOUT_ansi_61(
         _______, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_MUTE, KC_VOLD, KC_VOLU, _______, _______, KC_DEL,
-        _______, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_PGUP, KC_PGDN, KC_NO,   KC_NO,   _______, _______, _______,
+        _______, TO(_BASE), TO(_BASE), KC_TRNS, TO(_NUMPAD), KC_NO, KC_NO, KC_PGUP, KC_PGDN, KC_NO, KC_NO, _______, _______, _______,
         _______, KC_NO,   TO(_NUMPAD), TO(_BASE), KC_NO, KC_NO, KC_LEFT, KC_DOWN, KC_UP,   KC_RGHT, _______, _______, _______,
         KC_LSFT, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_HOME, KC_END,  KC_NO,   KC_NO,   _______,
         _______, _______, _______,                   _______,                   _______, _______, _______, _______
@@ -83,27 +83,91 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * RGB lighting: Green color for numpad layer
      */
     [_NUMPAD] = LAYOUT_ansi_61(
-        _______, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_P7,   KC_P8,   KC_P9,   KC_NO,   _______, _______, _______,
-        _______, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_P7,   KC_P8,   KC_P9,   _______, _______, _______, _______,
-        _______, KC_NO,   TO(_VIM), TO(_BASE), KC_NO, KC_NO,   KC_NO,   KC_P4,   KC_P5,   KC_P6,   KC_PCMM, _______, _______,
-        _______, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_P0,   KC_P1,   KC_P2,   KC_P3,   KC_PDOT, _______,
+        _______, KC_1,    KC_2,    KC_3,    KC_4,    KC_5,    KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    _______, _______, _______,
+        _______, TO(_BASE), TO(_BASE), TO(_VIM), KC_TRNS, KC_NO, KC_NO, KC_7, KC_8, KC_9, KC_NO, _______, _______, _______,
+        _______, KC_NO,   TO(_VIM), TO(_BASE), KC_NO, KC_NO,   KC_NO,   KC_4,    KC_5,    KC_6,    KC_COMM, _______, _______,
+        _______, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_0,    KC_1,    KC_2,    KC_3,    KC_DOT,  _______,
         _______, _______, _______,                   _______,                   _______, _______, _______, _______
     )
 };
 
-// Handle Right Ctrl + / = Up arrow
+// State tracking for Ctrl keys and RGB toggle
+static bool lctrl_pressed = false;  // Physical left ctrl
+static bool rctrl_pressed = false;  // Physical right ctrl
+static bool base_rgb_enabled = true;  // Toggle for base layer RGB
+
+// Handle Ctrl + combinations and numpad layer special keys
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-    static bool rctrl_pressed = false;
 
     switch (keycode) {
+        case KC_LCTL:
+            lctrl_pressed = record->event.pressed;
+            return true;
+
         case KC_RCTL:
             rctrl_pressed = record->event.pressed;
             return true;
 
+        case KC_DOT:
+            // In numpad layer: Shift+/ (?) produces / for division
+            if (get_highest_layer(layer_state) == _NUMPAD &&
+                get_mods() & MOD_MASK_SHIFT &&
+                record->event.pressed) {
+                // Remove shift, send slash, restore shift
+                uint8_t mods = get_mods();
+                del_mods(MOD_MASK_SHIFT);
+                tap_code(KC_SLSH);
+                set_mods(mods);
+                return false;
+            }
+            return true;
+
+        case KC_BSLS:
+            // Ctrl + \ = Toggle base layer RGB
+            if ((lctrl_pressed || rctrl_pressed) && record->event.pressed) {
+                base_rgb_enabled = !base_rgb_enabled;
+                return false;
+            }
+            // In numpad layer: \ produces /
+            if (get_highest_layer(layer_state) == _NUMPAD && record->event.pressed) {
+                tap_code(KC_SLSH);
+                return false;
+            }
+            return true;
+
         case KC_SLSH:
-            if (rctrl_pressed && record->event.pressed) {
+            // Ctrl + / = Up arrow (only when not in numpad layer)
+            if ((lctrl_pressed || rctrl_pressed) && record->event.pressed &&
+                get_highest_layer(layer_state) != _NUMPAD) {
                 tap_code(KC_UP);
-                return false; // Don't process the slash
+                return false;
+            }
+            return true;
+
+        case KC_Q:
+        case KC_W:
+            // Ctrl + Q or W = Switch to Base layer
+            if ((lctrl_pressed || rctrl_pressed) && record->event.pressed) {
+                layer_clear();
+                return false;
+            }
+            return true;
+
+        case KC_E:
+            // Ctrl + E = Switch to VIM layer
+            if ((lctrl_pressed || rctrl_pressed) && record->event.pressed) {
+                layer_clear();
+                layer_on(_VIM);
+                return false;
+            }
+            return true;
+
+        case KC_R:
+            // Ctrl + R = Switch to Numpad layer
+            if ((lctrl_pressed || rctrl_pressed) && record->event.pressed) {
+                layer_clear();
+                layer_on(_NUMPAD);
+                return false;
             }
             return true;
     }
@@ -149,15 +213,57 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         rgb_matrix_set_color(37, 128, 0, 128);  // L (was 36, fixed to 37)
 
     } else if (get_highest_layer(layer_state) == _NUMPAD) {
-        // Numpad layer: solid green - explicitly set all LEDs
+        // Turn off all keys first
         for (uint8_t i = led_min; i < led_max; i++) {
-            rgb_matrix_set_color(i, 0, 255, 0);  // Green
+            rgb_matrix_set_color(i, 0, 0, 0);
         }
+
+        // S & D (layer switching): Dark blue 0x020020
+        rgb_matrix_set_color(30, 2, 0, 32);  // S
+        rgb_matrix_set_color(31, 2, 0, 32);  // D
+
+        // Numbers 1-9 (U, I, O, J, K, L, M, Comma, Period): Purple 0x800080
+        rgb_matrix_set_color(21, 128, 0, 128);  // U (7)
+        rgb_matrix_set_color(22, 128, 0, 128);  // I (8)
+        rgb_matrix_set_color(23, 128, 0, 128);  // O (9)
+        rgb_matrix_set_color(35, 128, 0, 128);  // J (4)
+        rgb_matrix_set_color(36, 128, 0, 128);  // K (5)
+        rgb_matrix_set_color(37, 128, 0, 128);  // L (6)
+        rgb_matrix_set_color(48, 128, 0, 128);  // M (1)
+        rgb_matrix_set_color(49, 128, 0, 128);  // Comma (2)
+        rgb_matrix_set_color(50, 128, 0, 128);  // Period (3)
+
+        // Number 0 (N): Green 0x00ff00
+        rgb_matrix_set_color(47, 0, 255, 0);  // N (0)
+
+        // Semicolon and Slash (numpad comma/period): Red 0xFF0000
+        rgb_matrix_set_color(38, 255, 0, 0);  // Semicolon (numpad comma)
+        rgb_matrix_set_color(51, 255, 0, 0);  // Slash (numpad period)
+
+        // Backslash (division): Red 0xFF0000
+        rgb_matrix_set_color(27, 255, 0, 0);  // Backslash
+
     } else {
-        // Base layer: solid white - explicitly set all LEDs to clear VIM layer colors
-        for (uint8_t i = led_min; i < led_max; i++) {
-            rgb_matrix_set_color(i, 255, 255, 255);  // White
+        // Base layer: check if RGB is enabled
+        if (base_rgb_enabled) {
+            // Solid white - explicitly set all LEDs to clear VIM layer colors
+            for (uint8_t i = led_min; i < led_max; i++) {
+                rgb_matrix_set_color(i, 255, 255, 255);  // White
+            }
+        } else {
+            // RGB disabled - turn off all LEDs
+            for (uint8_t i = led_min; i < led_max; i++) {
+                rgb_matrix_set_color(i, 0, 0, 0);  // Off
+            }
         }
+    }
+
+    // Visual indicator: Q/W/E/R in red when physical Ctrl is pressed (all layers)
+    if (lctrl_pressed || rctrl_pressed) {
+        rgb_matrix_set_color(15, 255, 0, 0);  // Q
+        rgb_matrix_set_color(16, 255, 0, 0);  // W
+        rgb_matrix_set_color(17, 255, 0, 0);  // E
+        rgb_matrix_set_color(18, 255, 0, 0);  // R
     }
 
     return false;

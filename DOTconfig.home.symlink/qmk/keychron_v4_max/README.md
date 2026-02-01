@@ -10,11 +10,26 @@ This keymap replicates your Karabiner configuration and GK6X keyboard settings f
 
 ### Physical Key Remaps
 - **Escape key** (upper left): Now `Backtick/Tilde` [`~]
-- **Left Ctrl** (lower left): Activates VIM layer when held
+- **Left Ctrl** (lower left): Hold to temporarily activate VIM layer
+
+### Layer Switching
+**From Base Layer:**
+- **Hold Left Ctrl**: Temporarily activate VIM layer (release to return)
+- **Ctrl + Q/W**: Switch to Base layer permanently
+- **Ctrl + E**: Switch to VIM layer permanently
+- **Ctrl + R**: Switch to Numpad layer permanently
+- **Visual indicator**: Q/W/E/R glow RED when Ctrl is pressed
+
+**From VIM/Numpad Layers:**
+- **Q or W**: Return to Base layer (no Ctrl needed)
+- **E**: Go to VIM layer (no Ctrl needed)
+- **R**: Go to Numpad layer (no Ctrl needed)
 
 ### Right Side Arrow Keys
 To the right of spacebar: `Left Arrow`, `Down Arrow`, `Right Arrow`, `Right Ctrl`
-- **Right Ctrl + `/`**: Produces `Up Arrow`
+
+### RGB Control
+- **Ctrl + \\**: Toggle base layer RGB on/off
 
 ### VIM Layer (Layer 2)
 Activated by holding Left Ctrl (lower left key):
@@ -38,32 +53,57 @@ Activated by holding Left Ctrl (lower left key):
 - `0` → Volume Up
 
 **Layer Switching:**
-- `S` → Switch to Numpad layer
-- `D` → Switch to Base layer
+- **Q or W** → Base layer (direct)
+- **E** → Stay in VIM
+- **R** → Numpad layer (direct)
+- `S` → Numpad layer (legacy)
+- `D` → Base layer (legacy)
 - `Shift` → Still works as Shift
 
 **Disabled Keys:**
-Letters A, B, C, E, F, G, N, O, P, Q, R, T, V, W, X, Y, Z and numbers 1-7 are disabled in this layer.
+Letters A, B, C, F, G, N, O, P, T, V, X, Y, Z and numbers 1-7 are disabled in this layer.
 
 ### Numpad Layer (Layer 3)
-Activated by pressing `S` in VIM layer:
+Activated by pressing `R` (or `S`) in VIM layer, or `Ctrl+R` from Base:
 
+**Numbers (regular digits, not numpad):**
 ```
-U I O  →  7 8 9
-J K L  →  4 5 6
-M , .  →  1 2 3
-N      →  0
-; /    →  , .
+Top Row: 1 2 3 4 5 6 7 8 9 0
+Letters: U I O  →  7 8 9
+         J K L  →  4 5 6
+       M , . N  →  1 2 3 0
 ```
+
+**Special Characters:**
+```
+;  →  , (comma)
+/  →  . (period)
+\  →  / (division)
+```
+
+**Mathematical Operators (natural Shift positions):**
+- `!` (Shift+1) → ! (factorial)
+- Shift+5 → % (modulo)
+- Shift+6 → ^ (power)
+- Shift+8 → * (multiply)
+- `-` → - (minus)
+- `=` → = (equals)
+- Shift+= → + (plus)
+- Shift+, → < (less than)
+- Shift+. → > (greater than)
 
 **Layer Switching:**
-- `S` → Switch to VIM layer
-- `D` → Switch to Base layer
+- **Q or W** → Base layer (direct)
+- **E** → VIM layer (direct)
+- **R** → Stay in Numpad
+- `S` → VIM layer (legacy)
+- `D` → Base layer (legacy)
 
 ### RGB Lighting
-- **Base Layer**: White
-- **VIM Layer**: Blue
-- **Numpad Layer**: Green
+- **Base Layer**: White (toggle on/off with Ctrl+\\)
+- **VIM Layer**: Per-key colors (H/J/K/L purple, S/D dark blue, etc.)
+- **Numpad Layer**: Per-key colors (numbers purple, 0 green, operators red)
+- **Ctrl Indicator**: Q/W/E/R glow RED when Ctrl is pressed
 
 ---
 
