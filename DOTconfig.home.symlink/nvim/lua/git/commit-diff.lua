@@ -202,4 +202,22 @@ local command_opts = {
 vim.api.nvim_create_user_command("Gdc", command_handler, command_opts)
 vim.api.nvim_create_user_command("GitDiffCommits", command_handler, command_opts)
 
+-- GDiffBranch: Compare HEAD with a branch
+-- NOTE: This is a simplified version that compares commits only (HEAD vs branch tip).
+-- The original VimScript version compared working tree (dirty filesystem) against branch.
+-- For full working tree support, see .dotfiles-543
+local function gdiffbranch_handler(opts)
+  local branch = opts.args
+  if not branch or branch == "" then
+    return vim.notify("Usage: :GDiffBranch <branch>", vim.log.levels.ERROR)
+  end
+  gdc("HEAD", branch)
+end
+
+vim.api.nvim_create_user_command("GDiffBranch", gdiffbranch_handler, {
+  nargs = 1,
+  desc = "Compare HEAD with a branch (commit-to-commit only, no working tree)",
+  complete = complete_refs,
+})
+
 return { gdc = gdc }

@@ -41,3 +41,14 @@ gdc() {
   [[ -z "$1" ]] && { echo "Usage: gdc <commit1>..<commit2>" >&2; return 1; }
   nvim -c "Gdc $*"
 }
+
+# gdiffbranch - Git Diff Branch (compare HEAD with branch)
+# Usage: gdiffbranch <branch>
+# NOTE: Compares commits only (HEAD vs branch tip), not working tree.
+# For working tree comparison, see .dotfiles-543
+gdiffbranch() {
+  _require_git_repo gdiffbranch || return 1
+
+  [[ -z "$1" ]] && { echo "Usage: gdiffbranch <branch>" >&2; return 1; }
+  nvim -c "GDiffBranch $1"
+}
