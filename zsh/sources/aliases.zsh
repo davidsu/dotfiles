@@ -31,4 +31,4 @@ goto() {
 alias cyolo='claude --dangerously-skip-permissions'
 
 # Markdown viewer
-alias mdview='nvim --headless -c "MarkdownPreview" -c "sleep 4000m | qa"'
+alias mdview='nvim --headless -c "MarkdownPreview"'
