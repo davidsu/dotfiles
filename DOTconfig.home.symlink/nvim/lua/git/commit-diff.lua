@@ -1,7 +1,8 @@
 -- Compare two commits with Fugitive-style UI
--- Usage: :Gdc <commit1> <commit2> or :GitDiffCommits <commit1> <commit2>
+-- Usage: :Gdc <commit1> [commit2] (defaults to HEAD)
 
 local git = require("git.helpers")
+local panes = require("panes")
 
 -- Git helpers
 
@@ -61,8 +62,7 @@ end
 
 -- UI: Actions
 
-local function parse_file_line()
-  local line = vim.api.nvim_get_current_line()
+local function parse_file_line(line)
   local status, path = line:match("^(.) (.+)$")
   return status, path
 end
@@ -72,8 +72,8 @@ local function get_commit_for_status(status, earlier, later)
 end
 
 local function close_all()
-  git.close_diff_windows()
-  vim.cmd("bdelete")
+  panes.close_all_details()
+  panes.close_list_window()
 end
 
 local function show_help()
@@ -90,9 +90,48 @@ local function format_status(status)
   return icons[status] or status
 end
 
-local function create_buffer(earlier, later, files)
-  local bufnr = git.create_scratch_buffer()
+local function build_on_select(earlier, later)
+  return function(line)
+    local status, filepath = parse_file_line(line)
+    if not filepath then return nil end
 
+    local commit = get_commit_for_status(status, earlier, later)
+    local fugitive_path = "fugitive://" .. vim.fn.FugitiveGitDir() .. "//" .. commit .. "/" .. filepath
+
+    -- Create buffer without changing current window
+    local bufnr = vim.fn.bufadd(fugitive_path)
+    vim.fn.bufload(bufnr)
+    vim.bo[bufnr].buftype = "nowrite"
+
+    return bufnr
+  end
+end
+
+local function build_keymaps(earlier, later)
+  return {
+    {
+      key = "dd",
+      fn = function(line)
+        local status, filepath = parse_file_line(line)
+        if not filepath then return end
+        git.show_diff(later, earlier, filepath)
+      end
+    },
+    {
+      key = "o",
+      fn = function(line)
+        local status, filepath = parse_file_line(line)
+        if filepath then
+          git.open_split(get_commit_for_status(status, earlier, later), filepath)
+        end
+      end
+    },
+    { key = "q", fn = function() close_all() end },
+    { key = "g?", fn = function() show_help() end },
+  }
+end
+
+local function create_buffer(earlier, later, files)
   local lines = {
     string.format("Comparing: %s → %s", earlier:sub(1, 8), later:sub(1, 8)),
     string.format("Files changed: %d", #files),
@@ -102,32 +141,14 @@ local function create_buffer(earlier, later, files)
     table.insert(lines, format_status(file.status) .. " " .. file.path)
   end
 
-  git.set_buffer_lines(bufnr, lines)
-  vim.api.nvim_buf_set_name(bufnr, string.format("gdc://%s..%s", earlier:sub(1, 8), later:sub(1, 8)))
-
-  setup_syntax(bufnr)
-
-  git.map(bufnr, "dd", function()
-    local status, filepath = parse_file_line()
-    if not filepath then return end
-    if status == "+" or status == "-" then
-      git.open_file(get_commit_for_status(status, earlier, later), filepath)
-    else
-      git.show_diff(later, earlier, filepath)
-    end
-  end)
-  git.map(bufnr, "<CR>", function()
-    local status, filepath = parse_file_line()
-    if filepath then git.open_file(get_commit_for_status(status, earlier, later), filepath) end
-  end)
-  git.map(bufnr, "o", function()
-    local status, filepath = parse_file_line()
-    if filepath then git.open_split(get_commit_for_status(status, earlier, later), filepath) end
-  end)
-  git.map(bufnr, "q", close_all)
-  git.map(bufnr, "g?", show_help)
-
-  vim.api.nvim_win_set_cursor(0, { 4, 0 })
+  panes.show_list({
+    lines = lines,
+    name = string.format("gdc://%s..%s", earlier:sub(1, 8), later:sub(1, 8)),
+    syntax = setup_syntax,
+    cursor = { 4, 0 },
+    on_select = build_on_select(earlier, later),
+    keymaps = build_keymaps(earlier, later),
+  })
 end
 
 -- Main function
@@ -160,11 +181,22 @@ end
 
 -- Command registration
 
-local function parse_args(args)
-  local c1, c2 = args:match("^(%S+)%s+(%S+)$")
-  if c1 and c2 then return c1, c2 end
-  c1, c2 = args:match("^(%S+)%.%.(%S+)$")
-  if c1 and c2 then return c1, c2 end
+local function parse_commits(args)
+  local first_commit, second_commit = args:match("^(%S+)%s+(%S+)$")
+  if first_commit and second_commit then
+    return first_commit, second_commit
+  end
+
+  first_commit, second_commit = args:match("^(%S+)%.%.(%S+)$")
+  if first_commit and second_commit then
+    return first_commit, second_commit
+  end
+
+  first_commit = args:match("^(%S+)$")
+  if first_commit then
+    return first_commit, "HEAD"
+  end
+
   return nil, nil
 end
 
@@ -186,9 +218,9 @@ local function complete_refs(arglead)
 end
 
 local function command_handler(opts)
-  local commit1, commit2 = parse_args(opts.args)
+  local commit1, commit2 = parse_commits(opts.args)
   if not commit1 or not commit2 then
-    return vim.notify("Usage: :Gdc <commit1> <commit2>", vim.log.levels.ERROR)
+    return vim.notify("Usage: :Gdc <commit1> [commit2] (defaults to HEAD)", vim.log.levels.ERROR)
   end
   gdc(commit1, commit2)
 end

@@ -71,15 +71,30 @@ local function open_split(commit, filepath)
   vim.cmd("Gsplit " .. commit .. ":" .. filepath)
 end
 
+local function show_file_in_pane(commit, filepath)
+  local panes = require('panes')
+  panes.close_all_except_list()
+  panes.focus_list_window()
+
+  vim.cmd("below split")
+  vim.cmd("Gedit " .. commit .. ":" .. filepath)
+
+  panes.focus_list_window()
+end
+
 local function show_diff(commit, parent, filepath)
-  local list_win = vim.api.nvim_get_current_win()
-  close_diff_windows()
+  local panes = require('panes')
+  panes.close_all_except_list()
+  panes.focus_list_window()
+
   vim.cmd("below split")
   vim.cmd("Gedit " .. commit .. ":" .. filepath)
   if parent then
-    vim.cmd("Gvdiffsplit " .. parent .. ":" .. filepath)
+    -- Suppress error if file doesn't exist in parent commit
+    vim.cmd("silent! Gvdiffsplit " .. parent .. ":" .. filepath)
   end
-  vim.api.nvim_set_current_win(list_win)
+
+  panes.focus_list_window()
 end
 
 return {
@@ -93,5 +108,6 @@ return {
   map = map,
   open_file = open_file,
   open_split = open_split,
+  show_file_in_pane = show_file_in_pane,
   show_diff = show_diff,
 }
