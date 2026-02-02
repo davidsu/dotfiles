@@ -1,0 +1,4 @@
+#!/bin/zsh
+
+# Add ~/.local/bin to PATH for pipx and other local binaries
+export PATH="$PATH:$HOME/.local/bin"
