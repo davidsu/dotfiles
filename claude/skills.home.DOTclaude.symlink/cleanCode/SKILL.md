@@ -262,3 +262,66 @@ Before code is "done":
 - Nested blocks >2 deep → Extract function
 
 **Self-prompt:** "Do I have extractTypeA/B/C functions? Can I iterate the source instead? Would a fluent API make this read better? Are failures explicit? Does the code read like English?"
+
+## Descriptive Names Over Abbreviations
+
+Only abbreviate if universally understood: `i`, `idx`, `err`, `ctx`, `buf`.
+Otherwise use full words.
+
+```typescript
+// Bad
+const c1, c2 = parseArgs(args)
+const cfg = getConfig()
+
+// Good
+const firstCommit, secondCommit = parseCommits(args)
+const config = getConfig()
+```
+
+**Exception:** Loop counters (`i`, `j`), error (`err`), buffer (`buf`).
+
+## Configuration Objects Over Positional Parameters
+
+When function takes >3 parameters, use config object.
+
+```typescript
+// Bad: Hard to read, rigid order
+showList(lines, name, syntax, cursor, keymaps, onSelect)
+
+// Good: Self-documenting, optional fields clear
+showList({
+  lines,
+  name,
+  syntax,
+  cursor: [4, 0],      // optional
+  onSelect: handler,   // optional
+})
+```
+
+**Benefits:** Named parameters, optional fields obvious, easy to extend.
+
+## Encapsulation of State
+
+Hide storage mechanism. Expose operations, not variables.
+
+```typescript
+// Bad: Leaking implementation
+if (this.windowId && isValid(this.windowId)) {
+  focusWindow(this.windowId)
+}
+
+// Good: Operation hides state
+panes.focusListWindow()
+```
+
+**Inside module:**
+```typescript
+function focusListWindow() {
+  const win = this.windowId  // Internal only
+  if (win && isValid(win)) {
+    focusWindow(win)
+  }
+}
+```
+
+State storage is implementation detail. Can change without breaking clients.
