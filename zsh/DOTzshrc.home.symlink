@@ -16,3 +16,6 @@ reload
 
 # Alias for manual reload
 alias a='reload'
+
+# needed for claude-code installed through curl command
+export PATH="$HOME/.local/bin:$PATH"
