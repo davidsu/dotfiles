@@ -5,7 +5,7 @@
 // Tapping configuration
 #define TAPPING_TERM 200                    // Time in ms for tap vs hold
 #define PERMISSIVE_HOLD                     // Makes tap and hold more reliable
-#define IGNORE_MOD_TAP_INTERRUPT            // Helps prevent accidental mod activation
+// IGNORE_MOD_TAP_INTERRUPT removed - now default behavior in modern QMK
 
 // Caps Lock as Ctrl/Esc configuration
 #define TAPPING_FORCE_HOLD                  // Makes held keys repeat

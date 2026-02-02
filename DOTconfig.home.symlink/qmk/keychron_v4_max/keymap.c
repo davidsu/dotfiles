@@ -6,8 +6,9 @@
 // Layer definitions
 enum layers {
     _BASE = 0,
-    _VIM = 1,      // Layer2 from GK6X config - vim-style navigation
-    _NUMPAD = 2    // Layer3 from GK6X config - numpad
+    _VIM = 1,       // Layer2 from GK6X config - vim-style navigation
+    _NUMPAD = 2,    // Layer3 from GK6X config - numpad
+    _BLUETOOTH = 3  // Bluetooth pairing layer - stock layout for Fn access
 };
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
@@ -88,6 +89,32 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         _______, KC_NO,   TO(_VIM), TO(_BASE), KC_NO, KC_NO,   KC_NO,   KC_4,    KC_5,    KC_6,    KC_COMM, _______, _______,
         _______, KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_NO,   KC_0,    KC_1,    KC_2,    KC_3,    KC_DOT,  _______,
         _______, _______, _______,                   _______,                   _______, _______, _______, _______
+    ),
+
+    /*
+     * BLUETOOTH LAYER
+     * Activated by Right Ctrl + Esc
+     * Stock layout to enable Bluetooth pairing via Fn+Q/W/E
+     * ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───────┐
+     * │Esc│ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │ 8 │ 9 │ 0 │ - │ = │ Bkspc │
+     * ├───┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─────┤
+     * │ Tab │ Q │ W │ E │ R │ T │ Y │ U │ I │ O │ P │ [ │ ] │  \  │
+     * ├─────┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴┬──┴─────┤
+     * │ Caps │ A │ S │ D │ F │ G │ H │ J │ K │ L │ ; │ ' │ Enter │
+     * ├──────┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴─┬─┴────────┤
+     * │ Shift  │ Z │ X │ C │ V │ B │ N │ M │ , │ . │ / │   Shift  │
+     * ├────┬───┴┬──┴─┬─┴───┴───┴───┴───┴───┴──┬┴───┼───┴┬────┬────┤
+     * │Ctrl│ Alt│ Cmd│        Space           │RCmd│Fn1 │Fn3 │RCt │
+     * └────┴────┴────┴────────────────────────┴────┴────┴────┴────┘
+     * Fn+Q/W/E (hold 4 sec) = Pair to Bluetooth device 1/2/3
+     * RGB: Q, W, E, Fn1 lit in cyan (Bluetooth/media/RGB control keys)
+     */
+    [_BLUETOOTH] = LAYOUT_ansi_61(
+        KC_ESC,  KC_1,    KC_2,    KC_3,    KC_4,    KC_5,    KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,  KC_BSPC,
+        KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,
+        KC_CAPS, KC_A,    KC_S,    KC_D,    KC_F,    KC_G,    KC_H,    KC_J,    KC_K,    KC_L,    KC_SCLN, KC_QUOT, KC_ENT,
+        KC_LSFT, KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,
+        KC_LCTL, KC_LALT, KC_LGUI,                   KC_SPC,                    KC_RGUI, KC_TRNS, KC_TRNS, KC_RCTL
     )
 };
 
@@ -106,6 +133,15 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case KC_RCTL:
             rctrl_pressed = record->event.pressed;
+            return true;
+
+        case KC_GRV:
+            // Ctrl + ` (physical Escape key) = Switch to Bluetooth layer
+            if ((lctrl_pressed || rctrl_pressed) && record->event.pressed) {
+                layer_clear();
+                layer_on(_BLUETOOTH);
+                return false;
+            }
             return true;
 
         case KC_DOT:
@@ -243,6 +279,18 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         // Backslash (division): Red 0xFF0000
         rgb_matrix_set_color(27, 255, 0, 0);  // Backslash
 
+    } else if (get_highest_layer(layer_state) == _BLUETOOTH) {
+        // Turn off all keys first
+        for (uint8_t i = led_min; i < led_max; i++) {
+            rgb_matrix_set_color(i, 0, 0, 0);
+        }
+
+        // Bluetooth pairing indicators in cyan (0x00FFFF)
+        rgb_matrix_set_color(15, 0, 255, 255);  // Q (Fn1+Q = BT device 1)
+        rgb_matrix_set_color(16, 0, 255, 255);  // W (Fn1+W = BT device 2)
+        rgb_matrix_set_color(17, 0, 255, 255);  // E (Fn1+E = BT device 3)
+        rgb_matrix_set_color(58, 0, 255, 255);  // Fn1 (Bluetooth/media/RGB control key)
+
     } else {
         // Base layer: check if RGB is enabled
         if (base_rgb_enabled) {
@@ -258,12 +306,14 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
         }
     }
 
-    // Visual indicator: Q/W/E/R in red when physical Ctrl is pressed (all layers)
+    // Visual indicator: ESC/Q/W/E/R in red when physical Ctrl is pressed (all layers)
+    // Shows available layer switching keys: Ctrl+Esc/Q/W/E/R
     if (lctrl_pressed || rctrl_pressed) {
-        rgb_matrix_set_color(15, 255, 0, 0);  // Q
-        rgb_matrix_set_color(16, 255, 0, 0);  // W
-        rgb_matrix_set_color(17, 255, 0, 0);  // E
-        rgb_matrix_set_color(18, 255, 0, 0);  // R
+        rgb_matrix_set_color(0, 255, 0, 0);   // ESC (Ctrl+Esc → Bluetooth)
+        rgb_matrix_set_color(15, 255, 0, 0);  // Q (Ctrl+Q → Base)
+        rgb_matrix_set_color(16, 255, 0, 0);  // W (Ctrl+W → Base)
+        rgb_matrix_set_color(17, 255, 0, 0);  // E (Ctrl+E → VIM)
+        rgb_matrix_set_color(18, 255, 0, 0);  // R (Ctrl+R → Numpad)
     }
 
     return false;

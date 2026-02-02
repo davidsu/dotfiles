@@ -15,10 +15,11 @@ This keymap replicates your Karabiner configuration and GK6X keyboard settings f
 ### Layer Switching
 **From Base Layer:**
 - **Hold Left Ctrl**: Temporarily activate VIM layer (release to return)
+- **Ctrl + `` ` ``** (physical Escape key): Switch to Bluetooth layer permanently
 - **Ctrl + Q/W**: Switch to Base layer permanently
 - **Ctrl + E**: Switch to VIM layer permanently
 - **Ctrl + R**: Switch to Numpad layer permanently
-- **Visual indicator**: Q/W/E/R glow RED when Ctrl is pressed
+- **Visual indicator**: `` ` ``, Q/W/E/R glow RED when Ctrl is pressed
 
 **From VIM/Numpad Layers:**
 - **Q or W**: Return to Base layer (no Ctrl needed)
@@ -99,11 +100,35 @@ Letters: U I O  →  7 8 9
 - `S` → VIM layer (legacy)
 - `D` → Base layer (legacy)
 
+### Bluetooth Layer (Layer 3)
+Activated by pressing **Ctrl + `` ` ``** (physical Escape key):
+
+**Purpose:** Access Bluetooth pairing functions while preserving stock key positions.
+
+**Bluetooth Pairing:**
+- **Fn + Q** (hold 4 seconds) → Pair to Bluetooth device slot 1
+- **Fn + W** (hold 4 seconds) → Pair to Bluetooth device slot 2
+- **Fn + E** (hold 4 seconds) → Pair to Bluetooth device slot 3
+- **Fn + Q/W/E** (tap) → Switch between already paired devices
+
+**Visual Indicators (Cyan):**
+- **Q, W, E** → Bluetooth pairing keys (shows which key pairs to which slot)
+- **Fn1** → Function keys (bottom row, to the right of spacebar)
+
+**Note:** Bluetooth pairing can be done while USB cable is connected. To actually use Bluetooth:
+1. Flip the physical switch on the keyboard to BT mode
+2. Unplug the USB cable
+3. Keyboard will connect to the last paired device
+
+**Layer Switching:**
+- **Ctrl + Q/W/E/R** → Switch to other layers (works in Bluetooth layer too)
+
 ### RGB Lighting
 - **Base Layer**: White (toggle on/off with Ctrl+\\)
 - **VIM Layer**: Per-key colors (H/J/K/L purple, S/D dark blue, etc.)
 - **Numpad Layer**: Per-key colors (numbers purple, 0 green, operators red)
-- **Ctrl Indicator**: Q/W/E/R glow RED when Ctrl is pressed
+- **Bluetooth Layer**: Q/W/E and Fn1 in cyan, all other keys off
+- **Ctrl Indicator**: `` ` ``, Q/W/E/R glow RED when Ctrl is pressed (all layers)
 
 ---
 

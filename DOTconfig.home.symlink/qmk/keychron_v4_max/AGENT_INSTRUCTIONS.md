@@ -26,7 +26,7 @@ The user had two primary configuration sources:
 Current implementation has multiple ways to switch layers (listed below). This works well but could be simplified in the future. The redundancy exists because:
 - We wanted to keep Left Ctrl as momentary VIM layer activation
 - We also wanted Ctrl+Q/W/E/R for layer switching
-- Solution: Q/W/E/R switch layers directly in VIM/NUMPAD (no Ctrl needed)
+- Solution: Q/W/E/R switch layers directly in VIM/NUMPAD/BLUETOOTH (no Ctrl needed)
 - This makes Right Ctrl+Q/W/E/R redundant except in BASE layer
 Consider revisiting to make this cleaner/more consistent.
 
@@ -34,11 +34,12 @@ Consider revisiting to make this cleaner/more consistent.
 
 **From BASE layer:**
 - **Hold Left Ctrl** (bottom left) → Temporarily activate VIM layer (release to return)
+- **Ctrl + `` ` ``** (physical Escape key) → Switch to Bluetooth layer permanently
 - **Ctrl + Q/W** → Switch to Base layer permanently
 - **Ctrl + E** → Switch to VIM layer permanently
 - **Ctrl + R** → Switch to Numpad layer permanently
 - Works with both physical Left Ctrl and Right Ctrl
-- **Visual indicator:** Q/W/E/R light up RED when physical Ctrl is pressed
+- **Visual indicator:** `` ` ``, Q/W/E/R light up RED when physical Ctrl is pressed
 - **Does NOT work** with Caps Lock or Enter (even though they act as Ctrl when held)
 
 **From VIM layer:**
@@ -54,6 +55,11 @@ Consider revisiting to make this cleaner/more consistent.
 - **R** → Stay in Numpad layer
 - **S** → Switch to VIM layer (legacy, same as E)
 - **D** → Switch to Base layer (legacy, same as Q/W)
+
+**From BLUETOOTH layer:**
+- **Q or W** → Switch to Base layer (no Ctrl needed)
+- **E** → Switch to VIM layer (no Ctrl needed)
+- **R** → Switch to Numpad layer (no Ctrl needed)
 
 **RGB Control:**
 - **Ctrl + \\** → Toggle base layer RGB on/off (works with physical Left or Right Ctrl)
@@ -123,16 +129,50 @@ Letters:  U I O → 7 8 9
 - S → Switch to VIM layer
 - D → Return to Base layer
 
-#### 5. Right Side Arrow Keys
+#### 5. Bluetooth Layer (Layer 3)
+Accessible by pressing **Ctrl + `` ` ``** (physical Escape key/Grave key):
+
+**Purpose:**
+This layer was added to enable Bluetooth device pairing while keeping all keys in their stock positions, particularly the Fn keys that are remapped to arrows in the BASE layer.
+
+**Bluetooth Pairing:**
+- **Fn + Q** (hold 4 seconds) → Pair to Bluetooth device slot 1
+- **Fn + W** (hold 4 seconds) → Pair to Bluetooth device slot 2
+- **Fn + E** (hold 4 seconds) → Pair to Bluetooth device slot 3
+- **Fn + Q/W/E** (tap) → Switch between already paired devices
+
+**Important Notes:**
+- Pairing can be done while USB cable is connected
+- To actually USE Bluetooth connection:
+  1. Flip the physical mode switch on keyboard to BT
+  2. Unplug the USB cable
+  3. Keyboard will connect to the last active device
+- The Fn keys on the bottom row are set to `KC_TRNS` (transparent) to allow pass-through to Keychron's proprietary firmware layer
+
+**Bottom Row Layout (Stock):**
+Unlike BASE layer where Fn keys are remapped to arrows, this layer preserves:
+- Left Ctrl, Left Alt, Left Cmd, Space, Right Cmd, Fn1, Right Ctrl
+
+**RGB Lighting:**
+- Q, W, E → Cyan (shows pairing keys)
+- Fn1 → Cyan (function keys for pairing)
+- All other keys → Off
+
+**Layer Switching:**
+- Q or W → Switch to Base layer (no Ctrl needed)
+- E → Switch to VIM layer (no Ctrl needed)
+- R → Switch to Numpad layer (no Ctrl needed)
+
+#### 6. Right Side Arrow Keys
 Keys to the right of spacebar (bottom row):
 - Right Cmd → Left Arrow
 - Fn1 → Down Arrow
 - Fn2 → Right Arrow
 - Right Ctrl → Stays Ctrl, but **Right Ctrl + /** → Up Arrow
 
-#### 6. RGB Lighting Layer Indication
+#### 7. RGB Lighting Layer Indication
 
-**Base Layer:** Solid white
+**Base Layer:** Solid white (can be toggled off with Ctrl+\\)
 
 **VIM Layer:** Per-key colors (from GK6X vimLike.le):
 - S & D (layer switching): Dark blue
@@ -150,6 +190,17 @@ Keys to the right of spacebar (bottom row):
 - S & D (layer switching): Dark blue
 - All other keys: Off
 
+**Bluetooth Layer:** Per-key colors:
+- Q, W, E (pairing keys): Cyan
+- Fn1 (function keys): Cyan
+- All other keys: Off
+
+**All Layers (when Ctrl pressed):**
+- `` ` `` (Escape/Grave key): Red (Ctrl+`` ` ``→Bluetooth layer)
+- Q, W (Base layer): Red
+- E (VIM layer): Red
+- R (Numpad layer): Red
+
 ## NOT Implemented (from Karabiner)
 
 The following Karabiner feature was NOT implemented due to QMK limitations:
@@ -159,7 +210,7 @@ The following Karabiner feature was NOT implemented due to QMK limitations:
 ## File Structure
 
 ### Configuration Files Location: `~/.config/qmk/keychron_v4_max/`
-- `keymap.c` - Main keymap configuration (9.6KB)
+- `keymap.c` - Main keymap configuration with 4 layers (BASE, VIM, NUMPAD, BLUETOOTH)
 - `config.h` - Timing and behavior settings
 - `rules.mk` - Build rules and feature flags
 - `README.md` - Setup and usage instructions
@@ -190,6 +241,7 @@ The following Karabiner feature was NOT implemented due to QMK limitations:
 - Hold Enter → Right Ctrl
 - Physical Escape key → Backtick/Tilde
 - Hold Left Ctrl → Activates VIM layer
+- Ctrl + `` ` `` → Switches to Bluetooth layer
 - VIM layer navigation: H/J/K/L → Arrows
 - VIM layer: M/Comma → Home/End
 - VIM layer: U/I → Page Up/Down
@@ -197,8 +249,11 @@ The following Karabiner feature was NOT implemented due to QMK limitations:
 - VIM layer: Backspace → Forward Delete
 - VIM layer: S → Switch to Numpad, D → Return to Base
 - Numpad layer works (numbers on UIOJKLM,.)
+- Bluetooth layer works (Fn+Q/W/E for pairing)
+- Bluetooth layer RGB: Q/W/E and Fn1 in cyan
 - Right side arrows work (Right Cmd/Fn1/Fn2)
 - Right Ctrl + / → Up arrow
+- Layer switching indicators: `` ` ``/Q/W/E/R glow red when Ctrl pressed
 
 ✅ **RGB LIGHTING FIXED (2026-02-01):**
 - Per-key RGB lighting now working correctly

@@ -7,8 +7,8 @@
 | Enter    | Enter   | Right Ctrl  |
 
 ## Layer Switching
-**From Base:** Ctrl+Q/W→Base, Ctrl+E→VIM, Ctrl+R→Numpad (Q/W/E/R glow RED when Ctrl pressed)
-**From VIM/Numpad:** Q/W→Base, E→VIM, R→Numpad (no Ctrl needed)
+**From Base:** Ctrl+`` ` ``→Bluetooth, Ctrl+Q/W→Base, Ctrl+E→VIM, Ctrl+R→Numpad (`` ` ``/Q/W/E/R glow RED when Ctrl pressed)
+**From VIM/Numpad/Bluetooth:** Q/W→Base, E→VIM, R→Numpad (no Ctrl needed)
 
 ## Special Keys
 | Key          | Function              |
@@ -53,11 +53,20 @@ Numbers: 1, 2, 3, 4, 5, 6, 7
 
 ---
 
+## Bluetooth Layer (Ctrl+`` ` ``)
+**Pairing (hold 4 sec):** Fn+Q→Device 1, Fn+W→Device 2, Fn+E→Device 3
+**Switch devices (tap):** Fn+Q/W/E→Switch to that device
+**Visual:** Q/W/E and Fn1 glow CYAN (all other keys off)
+**Note:** Flip physical switch to BT and unplug cable to use Bluetooth
+
+---
+
 ## RGB Lighting
 - **Base**: White (Ctrl+\ to toggle on/off)
 - **VIM**: Per-key (HJKL purple, SD dark blue, 890 white, etc.)
 - **Numpad**: Per-key (numbers purple, 0 green, /;\ red)
-- **Ctrl**: Q/W/E/R glow RED when Ctrl pressed
+- **Bluetooth**: QWE+Fn1 cyan, all others off
+- **Ctrl**: `` ` ``/Q/W/E/R glow RED when Ctrl pressed
 
 ---
 ## Right Side of Spacebar
