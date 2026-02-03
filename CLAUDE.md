@@ -26,6 +26,10 @@ Modern dotfiles configuration:
 - `bd show <id>` - Show task details
 - `bd close <id>` - Mark task as complete
 
+## Running Tests
+
+Run all Neovim tests: `cd ~/.dotfiles/DOTconfig.home.symlink/nvim && nvim --headless -c "PlenaryBustedDirectory lua" -c "qa"`
+
 ## Critical Rules
 
 ### 1. Don't Rush to Implementation
