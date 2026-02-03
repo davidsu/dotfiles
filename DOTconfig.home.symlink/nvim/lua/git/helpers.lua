@@ -27,6 +27,24 @@ local function list_branches()
   return branches
 end
 
+local function to_repo_relative_path(filepath)
+  local git_root, ok = run("rev-parse --show-toplevel")
+  if not ok then
+    return filepath
+  end
+
+  -- Make sure both paths are absolute and normalized
+  local abs_filepath = vim.fn.fnamemodify(filepath, ":p")
+  local abs_git_root = vim.fn.fnamemodify(git_root, ":p")
+
+  -- Remove git root from filepath
+  if abs_filepath:sub(1, #abs_git_root) == abs_git_root then
+    return abs_filepath:sub(#abs_git_root + 1)
+  end
+
+  return filepath
+end
+
 -- Buffer utilities
 
 local function close_diff_windows()
@@ -94,7 +112,7 @@ local function show_diff(commit, parent, filepath)
     vim.cmd("silent! Gvdiffsplit " .. parent .. ":" .. filepath)
   end
 
-  panes.focus_list_window()
+  -- Leave focus in detail pane (consistent with Fugitive behavior)
 end
 
 return {
@@ -102,6 +120,7 @@ return {
   in_repo = in_repo,
   resolve_commit = resolve_commit,
   list_branches = list_branches,
+  to_repo_relative_path = to_repo_relative_path,
   close_diff_windows = close_diff_windows,
   create_scratch_buffer = create_scratch_buffer,
   set_buffer_lines = set_buffer_lines,
