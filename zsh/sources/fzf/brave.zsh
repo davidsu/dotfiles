@@ -34,7 +34,7 @@ function bravehistory() {
 }
 
 function bravebookmarks() {
-    require_command ruby || return 1
+    require_command jq || return 1
 
     local bookmarks_file
     bookmarks_file=$(find_brave_profile_file "Bookmarks") || return 1

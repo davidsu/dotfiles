@@ -66,38 +66,16 @@ function parse_chromium_bookmarks() {
     local bookmarks_file="$1"
     local cols="$2"
 
-    ruby -rjson -e "
-        file = File.expand_path('$bookmarks_file')
-        json = JSON.parse(File.read(file))
-
-        def build(parent, node)
-            name = [parent, node['name']].compact.join('/')
-            if node['type'] == 'folder'
-                node['children']&.map { |child| build(name, child) } || []
+    # Recursively extract bookmarks from Chrome's native JSON format
+    jq -r '
+        def flatten(path):
+            if .type == "folder" then
+                .children[]? | flatten(path + "/" + .name)
+            elif .url then
+                (path + "/" + .name) + "\t\u001b[36m" + .url + "\u001b[0m"
             else
-                { name: name, url: node['url'] }
-            end
-        end
-
-        def trim(str, width)
-            len = 0
-            str.each_char.with_index do |char, idx|
-                len += char =~ /\p{Han}|\p{Katakana}|\p{Hiragana}|\p{Hangul}/ ? 2 : 1
-                return str[0, idx] if len > width
-            end
-            str
-        end
-
-        items = json['roots']
-                .values_at('bookmark_bar', 'synced', 'other')
-                .compact
-                .flat_map { |e| build(nil, e) }
-                .flatten
-                .compact
-
-        items.each do |item|
-            name = trim(item[:name], $cols)
-            puts \"#{name.ljust($cols)}\t\e[36m#{item[:url]}\e[0m\"
-        end
-    "
+                empty
+            end;
+        .roots | to_entries[] | .value | flatten("")
+    ' "$bookmarks_file"
 }
