@@ -18,6 +18,13 @@ vim.api.nvim_create_user_command('PP', function()
   to_clipboard(path .. ':' .. line)
 end, { desc = 'Copy full file path with line number to clipboard' })
 
+vim.api.nvim_create_user_command('PPP', function()
+  local path = vim.fn.expand('%:p')
+  local line = vim.fn.line('.')
+  local col = vim.fn.col('.')
+  to_clipboard(path .. ':' .. line .. ':' .. col)
+end, { desc = 'Copy full file path with line and column to clipboard' })
+
 vim.api.nvim_create_user_command('CopyFilePath', function()
   to_clipboard(vim.fn.expand('%:p'))
 end, { desc = 'Copy full file path to clipboard' })
