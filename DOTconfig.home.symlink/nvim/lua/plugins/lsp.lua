@@ -58,6 +58,16 @@ local lua_settings = {
   },
 }
 
+local pyright_settings = {
+  python = {
+    analysis = {
+      autoSearchPaths = true,
+      useLibraryCodeForTypes = true,
+      diagnosticMode = 'openFilesOnly',
+    },
+  },
+}
+
 local floating_window = require('utils.floating_window')
 
 local function jump_to_prev_diagnostic()
@@ -137,6 +147,7 @@ local function config()
   setup_lsp('eslint', { capabilities = capabilities, settings = eslint_settings })
   setup_lsp('lua_ls', { capabilities = capabilities, settings = lua_settings })
   setup_lsp('bashls', { capabilities = capabilities, filetypes = bashls_filetypes })
+  setup_lsp('pyright', { capabilities = capabilities, settings = pyright_settings })
 end
 
 local lspconfig = {
