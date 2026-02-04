@@ -117,11 +117,12 @@ describe("GitDiffCommits", function()
       assert.truthy(name:match("gdc://"))
     end)
 
-    it("defaults second commit to HEAD when only one given", function()
+    it("defaults to working tree when only one commit given", function()
       vim.cmd("Gdc " .. commit1:sub(1, 8))
       local lines = get_buffer_lines()
-      -- Should compare commit1 to HEAD (commit3)
+      -- Should compare commit1 to working tree
       assert.truthy(lines[1]:match("Comparing:"))
+      assert.truthy(lines[1]:match("WORKTREE"))
     end)
 
     it("shows error for invalid commit", function()
@@ -418,12 +419,13 @@ describe("GDiffBranch", function()
     cleanup_temp_repo()
   end)
 
-  it("compares HEAD with specified branch", function()
+  it("compares working tree with specified branch", function()
     vim.cmd("GDiffBranch master")
     local lines = get_buffer_lines()
     assert.truthy(lines[1]:match("Comparing:"))
+    assert.truthy(lines[1]:match("WORKTREE"))
 
-    -- Should show feature.txt as added
+    -- Should show feature.txt as added (exists in working tree, not in master)
     local found_feature = false
     for _, line in ipairs(lines) do
       if line:match("feature.txt") then

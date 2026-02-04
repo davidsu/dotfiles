@@ -1,5 +1,6 @@
--- Compare two commits with Fugitive-style UI
--- Usage: :Gdc <commit1> [commit2] (defaults to HEAD)
+-- Compare commits or working tree with Fugitive-style UI
+-- Usage: :Gdc <commit>           (compare commit to working tree)
+--        :Gdc <commit1> <commit2> (compare two commits)
 
 local git = require("git.helpers")
 local panes = require("panes")
@@ -19,7 +20,10 @@ local function order_by_time(ref1, ref2)
 end
 
 local function get_changed_files(earlier, later)
-  local output, ok = git.run(string.format("diff --name-status %s %s", earlier, later))
+  local cmd = later
+    and string.format("diff --name-status %s %s", earlier, later)
+    or string.format("diff --name-status %s", earlier)
+  local output, ok = git.run(cmd)
   if not ok then return nil end
 
   local files = {}
@@ -90,15 +94,39 @@ local function format_status(status)
   return icons[status] or status
 end
 
+local function get_git_root()
+  local root, ok = git.run("rev-parse --show-toplevel")
+  return ok and root or nil
+end
+
 local function build_on_select(earlier, later)
   return function(line)
     local status, filepath = parse_file_line(line)
     if not filepath then return nil end
 
+    -- Working tree mode: open actual file for non-deleted files
+    if not later then
+      if status == "-" then
+        -- Deleted file: show from commit
+        local fugitive_path = "fugitive://" .. vim.fn.FugitiveGitDir() .. "//" .. earlier .. "/" .. filepath
+        local bufnr = vim.fn.bufadd(fugitive_path)
+        vim.fn.bufload(bufnr)
+        vim.bo[bufnr].buftype = "nowrite"
+        return bufnr
+      else
+        -- Modified/added: open working tree file
+        local git_root = get_git_root()
+        local full_path = git_root and (git_root .. "/" .. filepath) or filepath
+        local bufnr = vim.fn.bufadd(full_path)
+        vim.fn.bufload(bufnr)
+        return bufnr
+      end
+    end
+
+    -- Commit-to-commit mode: use fugitive path
     local commit = get_commit_for_status(status, earlier, later)
     local fugitive_path = "fugitive://" .. vim.fn.FugitiveGitDir() .. "//" .. commit .. "/" .. filepath
 
-    -- Create buffer without changing current window
     local bufnr = vim.fn.bufadd(fugitive_path)
     vim.fn.bufload(bufnr)
     vim.bo[bufnr].buftype = "nowrite"
@@ -114,15 +142,25 @@ local function build_keymaps(earlier, later)
       fn = function(line)
         local status, filepath = parse_file_line(line)
         if not filepath then return end
-        git.show_diff(later, earlier, filepath)
+        if later then
+          git.show_diff(later, earlier, filepath)
+        else
+          git.show_worktree_diff(earlier, filepath)
+        end
       end
     },
     {
       key = "o",
       fn = function(line)
         local status, filepath = parse_file_line(line)
-        if filepath then
+        if not filepath then return end
+        if later then
           git.open_split(get_commit_for_status(status, earlier, later), filepath)
+        else
+          -- Working tree mode: open actual file in split
+          local git_root = get_git_root()
+          local full_path = git_root and (git_root .. "/" .. filepath) or filepath
+          vim.cmd("split " .. full_path)
         end
       end
     },
@@ -132,8 +170,9 @@ local function build_keymaps(earlier, later)
 end
 
 local function create_buffer(earlier, later, files)
+  local later_label = later and later:sub(1, 8) or "WORKTREE"
   local lines = {
-    string.format("Comparing: %s → %s", earlier:sub(1, 8), later:sub(1, 8)),
+    string.format("Comparing: %s → %s", earlier:sub(1, 8), later_label),
     string.format("Files changed: %d", #files),
     "",
   }
@@ -143,7 +182,7 @@ local function create_buffer(earlier, later, files)
 
   panes.show_list({
     lines = lines,
-    name = string.format("gdc://%s..%s", earlier:sub(1, 8), later:sub(1, 8)),
+    name = string.format("gdc://%s..%s", earlier:sub(1, 8), later_label),
     syntax = setup_syntax,
     cursor = { 4, 0 },
     on_select = build_on_select(earlier, later),
@@ -159,21 +198,31 @@ local function gdc(commit1, commit2)
   end
 
   local sha1 = git.resolve_commit(commit1)
-  local sha2 = git.resolve_commit(commit2)
   if not sha1 then
     return vim.notify("Gdc: invalid commit '" .. commit1 .. "'", vim.log.levels.ERROR)
   end
-  if not sha2 then
+
+  -- Working tree mode: commit2 is nil
+  local sha2 = commit2 and git.resolve_commit(commit2) or nil
+  if commit2 and not sha2 then
     return vim.notify("Gdc: invalid commit '" .. commit2 .. "'", vim.log.levels.ERROR)
   end
 
-  local earlier, later = order_by_time(sha1, sha2)
+  local earlier, later
+  if sha2 then
+    earlier, later = order_by_time(sha1, sha2)
+  else
+    -- Working tree mode: commit is "earlier", working tree is "later"
+    earlier, later = sha1, nil
+  end
+
   local files = get_changed_files(earlier, later)
   if not files then
     return vim.notify("Gdc: failed to get diff", vim.log.levels.ERROR)
   end
   if #files == 0 then
-    return vim.notify("Gdc: no changes between commits", vim.log.levels.WARN)
+    local target = later and "commits" or "commit and working tree"
+    return vim.notify("Gdc: no changes between " .. target, vim.log.levels.WARN)
   end
 
   create_buffer(earlier, later, files)
@@ -194,7 +243,7 @@ local function parse_commits(args)
 
   first_commit = args:match("^(%S+)$")
   if first_commit then
-    return first_commit, "HEAD"
+    return first_commit, nil  -- Single arg: compare to working tree
   end
 
   return nil, nil
@@ -219,37 +268,22 @@ end
 
 local function command_handler(opts)
   local commit1, commit2 = parse_commits(opts.args)
-  if not commit1 or not commit2 then
-    return vim.notify("Usage: :Gdc <commit1> [commit2] (defaults to HEAD)", vim.log.levels.ERROR)
+  if not commit1 then
+    return vim.notify("Usage: :Gdc <commit> [commit2] (defaults to working tree)", vim.log.levels.ERROR)
   end
   gdc(commit1, commit2)
 end
 
 local command_opts = {
   nargs = "+",
-  desc = "Compare two commits with Fugitive-style UI",
+  desc = "Compare commit to working tree, or two commits",
   complete = complete_refs,
 }
 
 vim.api.nvim_create_user_command("Gdc", command_handler, command_opts)
 vim.api.nvim_create_user_command("GitDiffCommits", command_handler, command_opts)
 
--- GDiffBranch: Compare HEAD with a branch
--- NOTE: This is a simplified version that compares commits only (HEAD vs branch tip).
--- The original VimScript version compared working tree (dirty filesystem) against branch.
--- For full working tree support, see .dotfiles-543
-local function gdiffbranch_handler(opts)
-  local branch = opts.args
-  if not branch or branch == "" then
-    return vim.notify("Usage: :GDiffBranch <branch>", vim.log.levels.ERROR)
-  end
-  gdc("HEAD", branch)
-end
-
-vim.api.nvim_create_user_command("GDiffBranch", gdiffbranch_handler, {
-  nargs = 1,
-  desc = "Compare HEAD with a branch (commit-to-commit only, no working tree)",
-  complete = complete_refs,
-})
+-- GDiffBranch: Alias for Gdc (muscle memory)
+vim.api.nvim_create_user_command("GDiffBranch", command_handler, command_opts)
 
 return { gdc = gdc }

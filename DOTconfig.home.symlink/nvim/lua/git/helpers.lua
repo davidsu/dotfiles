@@ -115,6 +115,16 @@ local function show_diff(commit, parent, filepath)
   -- Leave focus in detail pane (consistent with Fugitive behavior)
 end
 
+local function show_worktree_diff(commit, filepath)
+  local panes = require('panes')
+  panes.close_all_except_list()
+  panes.focus_list_window()
+
+  vim.cmd("below split")
+  vim.cmd("edit " .. filepath)
+  vim.cmd("Gvdiffsplit " .. commit .. ":" .. filepath)
+end
+
 return {
   run = run,
   in_repo = in_repo,
@@ -129,4 +139,5 @@ return {
   open_split = open_split,
   show_file_in_pane = show_file_in_pane,
   show_diff = show_diff,
+  show_worktree_diff = show_worktree_diff,
 }
