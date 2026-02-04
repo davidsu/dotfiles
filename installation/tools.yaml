@@ -13,6 +13,13 @@ tools:
     description: Node.js LTS runtime
     requires: fnm
 
+  pyright:
+    install_type: native
+    cmd: pyright
+    install_command: 'npm install -g pyright'
+    description: Python LSP for Neovim
+    requires: node
+
   # Build dependencies (required for Neovim and high-performance plugins)
   cmake:
     brew_type: formula
