@@ -397,6 +397,59 @@ export PATH="/opt/homebrew/opt/arm-none-eabi-binutils/bin:$PATH"
 export PATH="/opt/homebrew/opt/avr-binutils/bin:$PATH"
 ```
 
+### Build Toolchain Installation (From Scratch)
+
+**⚠️ CRITICAL: Use the osx-cross tap, NOT homebrew/core formulas!**
+
+The standard `brew install arm-none-eabi-gcc` (homebrew/core) is **missing newlib** and will fail with:
+```
+fatal error: stdint.h: No such file or directory
+```
+
+**Correct installation:**
+```bash
+# 1. Install QMK CLI via pipx (NOT brew install qmk - has Python path issues)
+brew install pipx
+pipx ensurepath
+pipx install qmk
+
+# 2. Tap the osx-cross repositories (provides @8 versions with newlib)
+brew tap osx-cross/arm
+brew tap osx-cross/avr
+
+# 3. Install the ARM toolchain (for V4 Max - ARM Cortex-M4)
+#    If you have homebrew/core arm-none-eabi-* installed, uninstall first:
+brew uninstall arm-none-eabi-binutils arm-none-eabi-gcc 2>/dev/null || true
+brew install osx-cross/arm/arm-none-eabi-gcc@8
+
+# 4. Install AVR toolchain (for other keyboards, optional for V4 Max)
+brew install osx-cross/avr/avr-gcc@8
+
+# 5. Clone Keychron's QMK fork (if not already done)
+cd ~
+git clone https://github.com/Keychron/qmk_firmware.git keychron_qmk_firmware
+cd keychron_qmk_firmware
+git checkout wireless_playground
+git submodule update --init --recursive
+
+# 6. Install Python dependencies for Keychron's fork
+~/.local/pipx/venvs/qmk/bin/python -m pip install -r ~/keychron_qmk_firmware/requirements.txt
+```
+
+**Why osx-cross/arm/arm-none-eabi-gcc@8?**
+- The QMK formula (`qmk/qmk/qmk`) depends on `osx-cross/arm/arm-none-eabi-gcc@8`
+- This version includes newlib (C standard library for embedded)
+- The homebrew/core `arm-none-eabi-gcc` is a bare compiler without newlib
+
+**Verification:**
+```bash
+# Should show version 8.5.0
+/opt/homebrew/opt/arm-none-eabi-gcc@8/bin/arm-none-eabi-gcc --version
+
+# Should find stdint.h
+/opt/homebrew/opt/arm-none-eabi-gcc@8/bin/arm-none-eabi-gcc -print-file-name=include/stdint.h
+```
+
 ### Keyboard Details
 - **Model**: Keychron V4 Max (60% layout, wireless-capable: 2.4 GHz + Bluetooth 5.1)
 - **QMK Path**: `keyboards/keychron/v4_max/ansi` (⚠️ **REQUIRES KEYCHRON'S FORK**)
@@ -433,19 +486,43 @@ cd ~
 git clone https://github.com/Keychron/qmk_firmware.git keychron_qmk_firmware
 cd keychron_qmk_firmware
 git checkout wireless_playground
+git submodule update --init --recursive
 
-# Export PATH for build tools
-export PATH="/opt/homebrew/opt/avr-gcc@8/bin:/opt/homebrew/opt/arm-none-eabi-gcc@8/bin:/opt/homebrew/opt/arm-none-eabi-binutils/bin:/opt/homebrew/opt/avr-binutils/bin:$PATH"
+# Install Python dependencies (required for Keychron's fork)
+~/.local/pipx/venvs/qmk/bin/python -m pip install -r ~/keychron_qmk_firmware/requirements.txt
 
-# Copy custom keymap to v4_max directory
-cp -r ~/.config/qmk/keychron_v4_max/keymap.c ~/keychron_qmk_firmware/keyboards/keychron/v4_max/ansi/keymaps/custom/
-cp -r ~/.config/qmk/keychron_v4_max/config.h ~/keychron_qmk_firmware/keyboards/keychron/v4_max/ansi/keymaps/custom/
-cp -r ~/.config/qmk/keychron_v4_max/rules.mk ~/keychron_qmk_firmware/keyboards/keychron/v4_max/ansi/keymaps/custom/
+# Export PATH for build tools (must include ~/.local/bin for qmk CLI)
+export PATH="/opt/homebrew/opt/arm-none-eabi-gcc@8/bin:/opt/homebrew/opt/arm-none-eabi-binutils/bin:$HOME/.local/bin:$PATH"
+
+# Create custom keymap directory (if it doesn't exist)
+mkdir -p ~/keychron_qmk_firmware/keyboards/keychron/v4_max/ansi/keymaps/custom
+
+# Copy custom keymap files from dotfiles
+# NOTE: Config files are in ~/.dotfiles/DOTconfig.home.symlink/qmk/keychron_v4_max/
+#       (symlinked to ~/.config/qmk/keychron_v4_max/)
+cp ~/.dotfiles/DOTconfig.home.symlink/qmk/keychron_v4_max/{keymap.c,config.h,rules.mk} \
+   ~/keychron_qmk_firmware/keyboards/keychron/v4_max/ansi/keymaps/custom/
 
 # Compile the keymap for V4 MAX (not V4!)
 qmk compile -kb keychron/v4_max/ansi -km custom
 
-# Output: ~/keychron_qmk_firmware/keychron_v4_max_ansi_custom.bin
+# Output: ~/keychron_qmk_firmware/.build/keychron_v4_max_ansi_custom.bin
+# (Note: output is in .build/ subdirectory, not root)
+
+# Copy compiled firmware back to dotfiles for safekeeping
+cp ~/keychron_qmk_firmware/.build/keychron_v4_max_ansi_custom.bin \
+   ~/.dotfiles/DOTconfig.home.symlink/qmk/keychron_v4_max/
+```
+
+### One-Liner for Recompilation (after initial setup)
+
+```bash
+export PATH="/opt/homebrew/opt/arm-none-eabi-gcc@8/bin:$HOME/.local/bin:$PATH" && \
+cp ~/.dotfiles/DOTconfig.home.symlink/qmk/keychron_v4_max/{keymap.c,config.h,rules.mk} \
+   ~/keychron_qmk_firmware/keyboards/keychron/v4_max/ansi/keymaps/custom/ && \
+cd ~/keychron_qmk_firmware && \
+qmk compile -kb keychron/v4_max/ansi -km custom && \
+cp .build/keychron_v4_max_ansi_custom.bin ~/.dotfiles/DOTconfig.home.symlink/qmk/keychron_v4_max/
 ```
 
 ## How to Flash Firmware

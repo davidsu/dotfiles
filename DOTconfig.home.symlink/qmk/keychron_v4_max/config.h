@@ -9,7 +9,7 @@
 
 // Caps Lock as Ctrl/Esc configuration
 #define TAPPING_FORCE_HOLD                  // Makes held keys repeat
-#define RETRO_TAPPING                       // Tap on release if no other key pressed
+#define HOLD_ON_OTHER_KEY_PRESS             // Immediately trigger hold when another key is pressed
 
 // RGB Configuration (adjust colors to your preference)
 #ifdef RGB_MATRIX_ENABLE
