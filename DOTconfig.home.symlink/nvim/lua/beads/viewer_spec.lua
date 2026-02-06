@@ -671,7 +671,7 @@ describe("Beads Viewer", function()
       local main_win = wins[1] == win and wins[2] or wins[1]
       local detail_buf = vim.api.nvim_win_get_buf(main_win)
       local buf_name = vim.api.nvim_buf_get_name(detail_buf)
-      assert.truthy(buf_name:match("bead://"), "Main window should show bead details")
+      assert.truthy(buf_name:match("/tmp/beads/"), "Main window should show bead details")
     end)
 
     it("Enter on task opens details (same as o)", function()
@@ -698,7 +698,7 @@ describe("Beads Viewer", function()
 
       local main_win = wins[1] == win and wins[2] or wins[1]
       local buf_name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(main_win))
-      assert.truthy(buf_name:match("bead://"), "Should open details")
+      assert.truthy(buf_name:match("/tmp/beads/"), "Should open details")
     end)
   end)
 

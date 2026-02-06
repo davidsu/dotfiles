@@ -1,6 +1,7 @@
 -- Beads Viewer - nvim-tree style bead browser
 
 local merger = require("beads.merger")
+local editor = require("beads.editor")
 
 local HEADER_LINES = 2
 local WIDTH = 40
@@ -90,6 +91,7 @@ end
 local function wipeBufferByName(pattern)
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_get_name(buf):find(pattern, 1, true) then
+      pcall(vim.api.nvim_clear_autocmds, { buffer = buf })
       pcall(vim.api.nvim_buf_delete, buf, { force = true })
     end
   end
@@ -294,9 +296,11 @@ end
 
 local function findMainWindow()
   for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
-    if win ~= state.win then return win end
+    if win ~= state.win and vim.api.nvim_win_is_valid(win) then
+      return win
+    end
   end
-  return state.win
+  return vim.api.nvim_get_current_win()
 end
 
 local function getItemAtCursor()
@@ -310,26 +314,43 @@ local function showDetails()
   if not item or not item.bead then return end
 
   local id = item.bead.id
-  local bufname = "bead://" .. id
   local output = fetchBeadDetails(id)
   local lines = vim.split(output, "\n")
 
   local main_win = findMainWindow()
+  if not main_win or not vim.api.nvim_win_is_valid(main_win) then
+    vim.notify("Cannot find main window", vim.log.levels.ERROR)
+    return
+  end
+
   local prev_buf = vim.api.nvim_win_get_buf(main_win)
 
-  wipeBufferByName(bufname)
-  local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_name(buf, bufname)
-  vim.bo[buf].buftype = "nofile"
+  -- Write to temp file so the buffer loads clean (no false "modified" state)
+  local tmp_dir = "/tmp/beads"
+  vim.fn.mkdir(tmp_dir, "p")
+  local tmp_file = tmp_dir .. "/" .. id
+  vim.fn.writefile(lines, tmp_file)
+
+  -- Clear modified flag on any previous bead buffer to allow switching away
+  local cur_name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(main_win))
+  if cur_name:find("/tmp/beads/", 1, true) then
+    vim.bo[vim.api.nvim_win_get_buf(main_win)].modified = false
+  end
+
+  wipeBufferByName(tmp_file)
+
+  vim.api.nvim_set_current_win(main_win)
+  vim.cmd.edit(vim.fn.fnameescape(tmp_file))
+  local buf = vim.api.nvim_get_current_buf()
+
   vim.bo[buf].bufhidden = "wipe"
   vim.bo[buf].filetype = "markdown"
-  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.bo[buf].modifiable = false
 
-  vim.api.nvim_win_set_buf(main_win, buf)
-  vim.api.nvim_set_current_win(main_win)
+  local cwd = state.cwd or vim.fn.getcwd()
+  editor.setupEditableBuffer(buf, cwd, id, output)
 
   vim.keymap.set("n", "q", function()
+    vim.bo[buf].modified = false
     if vim.api.nvim_buf_is_valid(prev_buf) then
       vim.api.nvim_win_set_buf(main_win, prev_buf)
     end

@@ -9,7 +9,8 @@ local IGNORED_FTS = {
 
 local IGNORED_PATTERNS = {
   '^fugitive://', '^health://', 'NvimTree_', '/private/var/folders/',
-  'nvim%.runtime', 'fugitiveblame', '/var/folders/.*nvim', '%.git/index'
+  'nvim%.runtime', 'fugitiveblame', '/var/folders/.*nvim', '%.git/index',
+  '/tmp/beads/'
 }
 
 local function should_ignore(filepath)
