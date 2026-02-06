@@ -21,7 +21,6 @@ local priority_highlight = {
   [1] = "DiagnosticWarn",
   [2] = "DiagnosticInfo",
   [3] = "DiagnosticHint",
-  [4] = "DiagnosticOk",
 }
 
 local state = {
