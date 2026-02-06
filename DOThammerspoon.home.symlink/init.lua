@@ -95,7 +95,8 @@ print("ctrlTap eventtap started")
 --------------------------------------------------------------------------------
 -- Mod-tap: Enter → Right Ctrl when held, Enter when tapped
 --------------------------------------------------------------------------------
-local enterTap = hs.eventtap.new({hs.eventtap.event.types.keyDown, hs.eventtap.event.types.keyUp}, function(event)
+local enterTap
+enterTap = hs.eventtap.new({hs.eventtap.event.types.keyDown, hs.eventtap.event.types.keyUp}, function(event)
     local keyCode = event:getKeyCode()
     local type = event:getType()
 
@@ -123,14 +124,17 @@ local enterTap = hs.eventtap.new({hs.eventtap.event.types.keyDown, hs.eventtap.e
         return true  -- block repeat
     elseif type == hs.eventtap.event.types.keyUp then
         if enterPressed then
-            local elapsed = (hs.timer.absoluteTime() - enterPressedTime) / 1000000
-            if not enterUsedAsModifier then
-                -- Not used as modifier: send Enter
-                hs.eventtap.keyStroke({}, "return", 0)
-            end
             enterPressed = false
+            local elapsed = (hs.timer.absoluteTime() - enterPressedTime) / 1000000
             enterPressedTime = 0
+            local wasModifier = enterUsedAsModifier
             enterUsedAsModifier = false
+            if not wasModifier then
+                -- Stop tap, send Enter, restart tap
+                enterTap:stop()
+                hs.eventtap.keyStroke({}, "return", 0)
+                enterTap:start()
+            end
         end
         return true  -- block the keyUp (we handled it)
     end
