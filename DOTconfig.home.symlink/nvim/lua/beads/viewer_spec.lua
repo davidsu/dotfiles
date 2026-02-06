@@ -754,4 +754,171 @@ describe("Beads Viewer", function()
       assert.is_true(found_new, "Should show newly created bead after refresh")
     end)
   end)
+
+  describe("state persistence", function()
+    local function findLineNumber(buf, pattern)
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      for i, line in ipairs(lines) do
+        if line:match(pattern) then return i end
+      end
+    end
+
+    local function bufLines(buf)
+      return vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    end
+
+    local function findLineContent(buf, pattern)
+      for _, line in ipairs(bufLines(buf)) do
+        if line:match(pattern) then return line end
+      end
+    end
+
+    it("restores cursor position after close/reopen", function()
+      vim.cmd("Beads")
+      local win = vim.api.nvim_tabpage_list_wins(0)[1]
+      local buf = vim.api.nvim_win_get_buf(win)
+      vim.api.nvim_set_current_win(win)
+
+      local target_line = findLineNumber(buf, "Standalone task")
+      assert.truthy(target_line, "Should find Standalone task line")
+      vim.api.nvim_win_set_cursor(win, { target_line, 0 })
+
+      -- Close
+      vim.cmd("Beads")
+      eq(1, #vim.api.nvim_tabpage_list_wins(0), "Should be closed")
+
+      -- Reopen
+      vim.cmd("Beads")
+      win = vim.api.nvim_tabpage_list_wins(0)[1]
+      local cursor = vim.api.nvim_win_get_cursor(win)
+      eq(target_line, cursor[1], "Cursor should be restored to Standalone task line")
+    end)
+
+    it("restores cursor position after :only closes sidebar", function()
+      vim.cmd("Beads")
+      local wins = vim.api.nvim_tabpage_list_wins(0)
+      local sidebar_win = wins[1]
+      local main_win = wins[2]
+      local buf = vim.api.nvim_win_get_buf(sidebar_win)
+      vim.api.nvim_set_current_win(sidebar_win)
+
+      local target_line = findLineNumber(buf, "Standalone task")
+      assert.truthy(target_line, "Should find Standalone task line")
+      vim.api.nvim_win_set_cursor(sidebar_win, { target_line, 0 })
+
+      -- Switch to main window (triggers WinLeave on sidebar, saving cursor)
+      vim.api.nvim_set_current_win(main_win)
+      vim.wait(50)
+
+      -- Close sidebar via :only from main window
+      vim.cmd("only")
+      eq(1, #vim.api.nvim_tabpage_list_wins(0), "Should have 1 window after :only")
+
+      -- Reopen
+      vim.cmd("Beads")
+      local new_win = vim.api.nvim_tabpage_list_wins(0)[1]
+      local cursor = vim.api.nvim_win_get_cursor(new_win)
+      eq(target_line, cursor[1], "Cursor should be restored after :only")
+    end)
+
+    it("preserves scoped epic across close/reopen", function()
+      vim.cmd("Beads")
+      local win = vim.api.nvim_tabpage_list_wins(0)[1]
+      local buf = vim.api.nvim_win_get_buf(win)
+      vim.api.nvim_set_current_win(win)
+
+      -- Drill into Epic One
+      local epic_line = findLineNumber(buf, "Epic One")
+      assert.truthy(epic_line, "Should find Epic One")
+      vim.api.nvim_win_set_cursor(win, { epic_line, 0 })
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-]>", true, false, true), "x", false)
+      vim.wait(200)
+
+      -- Verify drilled in
+      buf = vim.api.nvim_win_get_buf(win)
+      assert.truthy(findLineContent(buf, "Epic One"), "Should show Epic One in scoped view")
+
+      -- Close
+      vim.cmd("Beads")
+      eq(1, #vim.api.nvim_tabpage_list_wins(0), "Should be closed")
+
+      -- Reopen
+      vim.cmd("Beads")
+      win = vim.api.nvim_tabpage_list_wins(0)[1]
+      buf = vim.api.nvim_win_get_buf(win)
+      local lines = bufLines(buf)
+
+      -- Title should show epic name with >
+      assert.truthy(lines[1]:match(">"), "Title should show drill-in indicator")
+      assert.truthy(lines[1]:match("Epic One"), "Title should show epic name")
+
+      -- Should NOT show standalone tasks
+      assert.is_nil(findLineContent(buf, "Standalone task"), "Should not show unrelated tasks")
+    end)
+
+    it("preserves filter across close/reopen", function()
+      vim.cmd("Beads")
+      local win = vim.api.nvim_tabpage_list_wins(0)[1]
+      vim.api.nvim_set_current_win(win)
+
+      -- Switch to "all" filter
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-a>", true, false, true), "x", false)
+      vim.wait(200)
+
+      -- Verify filter applied
+      local buf = vim.api.nvim_win_get_buf(win)
+      local lines = bufLines(buf)
+      assert.truthy(lines[1]:match("%[all%]"), "Should show [all] before close")
+
+      -- Close
+      vim.cmd("Beads")
+      eq(1, #vim.api.nvim_tabpage_list_wins(0), "Should be closed")
+
+      -- Reopen
+      vim.cmd("Beads")
+      win = vim.api.nvim_tabpage_list_wins(0)[1]
+      buf = vim.api.nvim_win_get_buf(win)
+      lines = bufLines(buf)
+
+      assert.truthy(lines[1]:match("%[all%]"), "Should still show [all] after reopen")
+
+      -- Should show closed bead
+      assert.truthy(findLineContent(buf, "Closed task"), "Should show closed bead with [all] filter")
+    end)
+
+    it("re-fetches expanded children on reopen", function()
+      vim.cmd("Beads")
+      local win = vim.api.nvim_tabpage_list_wins(0)[1]
+      local buf = vim.api.nvim_win_get_buf(win)
+      vim.api.nvim_set_current_win(win)
+
+      -- Expand Epic One
+      local epic_line = findLineNumber(buf, "Epic One")
+      assert.truthy(epic_line, "Should find Epic One")
+      vim.api.nvim_win_set_cursor(win, { epic_line, 0 })
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", true, false, true), "x", false)
+      vim.wait(100)
+
+      -- Verify children visible
+      buf = vim.api.nvim_win_get_buf(win)
+      assert.truthy(findLineContent(buf, "Task under epic"), "Children should be visible after expand")
+
+      -- Close
+      vim.cmd("Beads")
+      eq(1, #vim.api.nvim_tabpage_list_wins(0), "Should be closed")
+
+      -- Reopen
+      vim.cmd("Beads")
+      win = vim.api.nvim_tabpage_list_wins(0)[1]
+      buf = vim.api.nvim_win_get_buf(win)
+
+      -- Epic should still show expanded icon
+      local epic_content = findLineContent(buf, "Epic One")
+      assert.truthy(epic_content, "Should find Epic One after reopen")
+      assert.truthy(epic_content:match("▼"), "Epic should show expanded icon ▼ after reopen")
+
+      -- Children should be visible (re-fetched)
+      assert.truthy(findLineContent(buf, "Task under epic"), "Children should be re-fetched and visible after reopen")
+    end)
+  end)
 end)
