@@ -731,12 +731,13 @@ describe("Beads Viewer", function()
       local win = vim.api.nvim_tabpage_list_wins(0)[1]
       vim.api.nvim_set_current_win(win)
 
-      -- Create new bead
-      run_bd("create 'New bead' --id test-new --type task --priority 1")
+      -- Create new bead (wait for bd command to complete)
+      run_bd("create 'New bead' --type task --priority 1")
+      vim.wait(300)
 
       -- Refresh
       vim.api.nvim_feedkeys("r", "x", false)
-      vim.wait(200)
+      vim.wait(300)
 
       local buf = vim.api.nvim_win_get_buf(win)
       local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
