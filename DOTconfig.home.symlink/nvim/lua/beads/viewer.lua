@@ -492,12 +492,21 @@ local function clearChildrenCache()
   end
 end
 
-local function refetchExpandedChildren()
-  for _, bead in ipairs(state.beads) do
-    if state.expanded[bead.id] then
-      bead.children = fetchChildren(bead.id)
-    end
+local function reloadBeads()
+  clearChildrenCache()
+  local beads, err
+  if state.scoped_epic then
+    beads = fetchChildren(state.scoped_epic)
+  else
+    beads, err = fetchBeads()
   end
+  if err then
+    vim.notify(err, vim.log.levels.ERROR)
+    return false
+  end
+  state.beads = beads
+  renderToBuffer()
+  return true
 end
 
 local function restoreCursorTo(bead_id)
@@ -516,65 +525,31 @@ local function setFilter(filter)
   local current_bead_id = item and item.bead and item.bead.id
 
   state.status_filter = filter
-  clearChildrenCache()
-  local beads, err
-  if state.scoped_epic then
-    beads = fetchChildren(state.scoped_epic)
-  else
-    beads, err = fetchBeads()
+  if reloadBeads() then
+    restoreCursorTo(current_bead_id)
   end
-  if err then
-    vim.notify(err, vim.log.levels.ERROR)
-    return
-  end
-  state.beads = beads
-  refetchExpandedChildren()
-  renderToBuffer()
-  restoreCursorTo(current_bead_id)
 end
 
 local function drillInto()
   local item = getItemAtCursor()
   if not item or not item.is_epic then return end
-  local epic_id = item.bead.id
-  local epic_bead = item.bead
-  state.scoped_epic = epic_id
-  state.scoped_epic_bead = epic_bead
-  clearChildrenCache()
-  state.beads = fetchChildren(epic_id)
+  state.scoped_epic = item.bead.id
+  state.scoped_epic_bead = item.bead
   state.expanded = {}
-  renderToBuffer()
+  reloadBeads()
 end
 
 local function drillUp()
   if not state.scoped_epic then return end
   state.scoped_epic = nil
   state.scoped_epic_bead = nil
-  clearChildrenCache()
-  local beads, err = fetchBeads()
-  if err then
-    vim.notify(err, vim.log.levels.ERROR)
-    return
-  end
-  state.beads = beads
-  renderToBuffer()
+  reloadBeads()
 end
 
 local function refresh()
-  clearChildrenCache()
-  local beads, err
-  if state.scoped_epic then
-    beads = fetchChildren(state.scoped_epic)
-  else
-    beads, err = fetchBeads()
+  if reloadBeads() then
+    vim.notify("Beads refreshed", vim.log.levels.INFO)
   end
-  if err then
-    vim.notify(err, vim.log.levels.ERROR)
-    return
-  end
-  state.beads = beads
-  renderToBuffer()
-  vim.notify("Beads refreshed", vim.log.levels.INFO)
 end
 
 local function setupKeymaps(buf)
@@ -620,20 +595,10 @@ local function open(opts)
     end,
   })
 
-  local beads, err
-  if state.scoped_epic then
-    beads = fetchChildren(state.scoped_epic)
-  else
-    beads, err = fetchBeads()
-  end
-  if err then
-    vim.notify(err, vim.log.levels.ERROR)
+  if not reloadBeads() then
     closeViewer()
     return
   end
-
-  state.beads = beads
-  renderToBuffer()
 
   if state.saved_cursor then
     local max_line = vim.api.nvim_buf_line_count(state.buf)
