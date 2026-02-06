@@ -1,5 +1,7 @@
 -- Beads Viewer - nvim-tree style bead browser
 
+local merger = require("beads.merger")
+
 local HEADER_LINES = 2
 local WIDTH = 40
 
@@ -103,6 +105,10 @@ local function statusFlag()
 end
 
 local function fetchBeads()
+  local cwd = state.cwd or vim.fn.getcwd()
+  if state.status_filter == "all" then
+    return merger.fetchAllBeads(cwd)
+  end
   local output = runBd("list --json" .. statusFlag())
   if not output then return nil, "Failed to run bd list" end
   local beads = parseJson(output)
@@ -115,6 +121,11 @@ local function fetchBeadDetails(id)
 end
 
 local function fetchChildren(parentId)
+  local cwd = state.cwd or vim.fn.getcwd()
+  if state.status_filter == "all" then
+    local parent_flag = string.format(" --parent %s", vim.fn.shellescape(parentId))
+    return merger.fetchAllBeads(cwd, parent_flag)
+  end
   local output = runBd(string.format("list --parent %s --json%s", vim.fn.shellescape(parentId), statusFlag()))
   return parseJson(output) or {}
 end
@@ -431,8 +442,7 @@ local function setFilter(filter)
   clearChildrenCache()
   local beads, err
   if state.scoped_epic then
-    local output = runBd(string.format("list --parent %s --json%s", vim.fn.shellescape(state.scoped_epic), statusFlag()))
-    beads = parseJson(output) or {}
+    beads = fetchChildren(state.scoped_epic)
   else
     beads, err = fetchBeads()
   end
@@ -453,8 +463,7 @@ local function drillInto()
   state.scoped_epic = epic_id
   state.scoped_epic_bead = epic_bead
   clearChildrenCache()
-  local output = runBd(string.format("list --parent %s --json%s", vim.fn.shellescape(epic_id), statusFlag()))
-  state.beads = parseJson(output) or {}
+  state.beads = fetchChildren(epic_id)
   state.expanded = {}
   renderToBuffer()
 end
@@ -477,8 +486,7 @@ local function refresh()
   clearChildrenCache()
   local beads, err
   if state.scoped_epic then
-    local output = runBd(string.format("list --parent %s --json%s", vim.fn.shellescape(state.scoped_epic), statusFlag()))
-    beads = parseJson(output) or {}
+    beads = fetchChildren(state.scoped_epic)
   else
     beads, err = fetchBeads()
   end
