@@ -5,6 +5,7 @@ return {
   config = function()
     require("beads.viewer").setup()
   end,
+  cmd = { "Beads", "BeadsRefresh" },
   keys = {
     { "<leader>b", "<cmd>Beads<CR>", desc = "Toggle Beads viewer" },
   },

@@ -1,7 +1,5 @@
 -- Beads Viewer - nvim-tree style bead browser
 
-local M = {}
-
 local HEADER_LINES = 2
 local WIDTH = 40
 
@@ -21,7 +19,7 @@ local priority_highlight = {
   [1] = "DiagnosticWarn",
   [2] = "DiagnosticInfo",
   [3] = "DiagnosticHint",
-  [4] = "Comment",
+  [4] = "DiagnosticUnnecessary",
 }
 
 local state = {
@@ -31,42 +29,93 @@ local state = {
   flat = {},
   expanded = {},
   cwd = nil,
+  show_help = false,
+  scoped_epic = nil,
+  status_filter = "open",
 }
+
+local help_lines = {
+  "",
+  " Keymaps",
+  " ───────────────────────────",
+  " Enter   expand epic / open details",
+  " o       open bead details",
+  " K       preview bead (floating)",
+  " Tab     toggle expand/collapse",
+  " BS      collapse epic",
+  " C-]     drill into epic",
+  " -       drill up (back to all)",
+  " C-a     show all (open + closed)",
+  " C-o     show open only",
+  " C-c     show closed only",
+  " r       refresh list",
+  " q/Esc   close viewer",
+  " g?      toggle this help",
+  "",
+  " Icons",
+  " ───────────────────────────",
+  " ▶ ▼     epic (collapsed/open)",
+  " ○       task",
+  " ●       bug",
+  " ◆       feature",
+  "",
+  " Priority",
+  " ───────────────────────────",
+  " P0  critical (red)",
+  " P1  high (yellow)",
+  " P2  medium (blue)",
+  " P3  low (cyan)",
+  " P4  backlog (gray)",
+  "",
+}
+
+-- Helpers
+
+local function runBd(subcmd)
+  local cwd = state.cwd or vim.fn.getcwd()
+  local cmd = string.format("cd %s && bd %s 2>/dev/null", vim.fn.shellescape(cwd), subcmd)
+  local output = vim.fn.system(cmd)
+  if vim.v.shell_error ~= 0 then return nil end
+  return output
+end
+
+local function parseJson(output)
+  if not output then return nil end
+  local ok, data = pcall(vim.json.decode, output)
+  return ok and data or nil
+end
+
+local function wipeBufferByName(pattern)
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_get_name(buf):find(pattern, 1, true) then
+      pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    end
+  end
+end
 
 -- Data fetching
 
+local function statusFlag()
+  if state.status_filter == "all" then return " --status=all" end
+  if state.status_filter == "closed" then return " --status=closed" end
+  return ""
+end
+
 local function fetchBeads()
-  local cwd = state.cwd or vim.fn.getcwd()
-  local cmd = string.format("cd %s && bd list --json 2>/dev/null", vim.fn.shellescape(cwd))
-  local output = vim.fn.system(cmd)
-
-  if vim.v.shell_error ~= 0 then
-    return nil, "Failed to run bd list"
-  end
-
-  local ok, beads = pcall(vim.json.decode, output)
-  if not ok then
-    return nil, "Failed to parse JSON"
-  end
-
-  return beads or {}
+  local output = runBd("list --json" .. statusFlag())
+  if not output then return nil, "Failed to run bd list" end
+  local beads = parseJson(output)
+  if not beads then return nil, "Failed to parse JSON" end
+  return beads
 end
 
 local function fetchBeadDetails(id)
-  local cwd = state.cwd or vim.fn.getcwd()
-  local cmd = string.format("cd %s && bd show %s 2>/dev/null", vim.fn.shellescape(cwd), vim.fn.shellescape(id))
-  return vim.fn.system(cmd)
+  return runBd(string.format("show %s", vim.fn.shellescape(id))) or ""
 end
 
 local function fetchChildren(parentId)
-  local cwd = state.cwd or vim.fn.getcwd()
-  local cmd = string.format("cd %s && bd list --parent %s --json 2>/dev/null", vim.fn.shellescape(cwd), vim.fn.shellescape(parentId))
-  local output = vim.fn.system(cmd)
-
-  if vim.v.shell_error ~= 0 then return {} end
-
-  local ok, children = pcall(vim.json.decode, output)
-  return ok and children or {}
+  local output = runBd(string.format("list --parent %s --json%s", vim.fn.shellescape(parentId), statusFlag()))
+  return parseJson(output) or {}
 end
 
 -- Tree building
@@ -97,7 +146,9 @@ local function buildFlatList(beads)
   for _, epic in ipairs(epics) do
     table.insert(flat, { bead = epic, depth = 0, is_epic = true })
     if state.expanded[epic.id] then
-      for _, child in ipairs(epic.children or {}) do
+      local children = epic.children or {}
+      table.sort(children, sortByPriorityThenTitle)
+      for _, child in ipairs(children) do
         table.insert(flat, { bead = child, depth = 1, is_epic = false })
       end
     end
@@ -138,35 +189,49 @@ local function renderItem(item)
   return string.format("%s%s %s %s %s", indent, icon, status, priority, title)
 end
 
+local function applyHighlights()
+  local ns = vim.api.nvim_create_namespace("beads_viewer")
+  vim.api.nvim_buf_clear_namespace(state.buf, ns, 0, -1)
+
+  for i, item in ipairs(state.flat) do
+    if item.bead then
+      local line = i + (state.header_size or HEADER_LINES) - 1
+      local hl = item.bead.status == "closed" and "Comment"
+        or priority_highlight[item.bead.priority]
+      if hl then
+        vim.api.nvim_buf_add_highlight(state.buf, ns, hl, line, 0, -1)
+      end
+    end
+  end
+end
+
 local function renderToBuffer()
   if not state.buf or not vim.api.nvim_buf_is_valid(state.buf) then return end
 
   state.flat = buildFlatList(state.beads)
 
-  local lines = { " Beads", string.rep("─", WIDTH) }
+  local filter_label = state.status_filter == "all" and " [all]"
+    or state.status_filter == "closed" and " [closed]"
+    or ""
+  local scope_label = state.scoped_epic and (" > " .. state.scoped_epic) or ""
+  local lines = { " Beads" .. filter_label .. scope_label, string.rep("─", WIDTH) }
+
+  if state.show_help then
+    vim.list_extend(lines, help_lines)
+    table.insert(lines, string.rep("─", WIDTH))
+  end
+
+  state.header_size = #lines
+
   for _, item in ipairs(state.flat) do
     table.insert(lines, renderItem(item))
   end
 
-  vim.api.nvim_buf_set_option(state.buf, "modifiable", true)
+  vim.bo[state.buf].modifiable = true
   vim.api.nvim_buf_set_lines(state.buf, 0, -1, false, lines)
-  vim.api.nvim_buf_set_option(state.buf, "modifiable", false)
+  vim.bo[state.buf].modifiable = false
 
   applyHighlights()
-end
-
-function applyHighlights()
-  local ns = vim.api.nvim_create_namespace("beads_viewer")
-  vim.api.nvim_buf_clear_namespace(state.buf, ns, 0, -1)
-
-  for i, item in ipairs(state.flat) do
-    if item.bead and item.bead.priority then
-      local hl = priority_highlight[item.bead.priority]
-      if hl then
-        vim.api.nvim_buf_add_highlight(state.buf, ns, hl, i + HEADER_LINES - 1, 0, -1)
-      end
-    end
-  end
 end
 
 -- Window/Buffer management
@@ -179,39 +244,84 @@ local function closeViewer()
   if isWindowOpen() then
     vim.api.nvim_win_close(state.win, true)
   end
+  if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
+    pcall(vim.api.nvim_buf_delete, state.buf, { force = true })
+  end
   state.win = nil
   state.buf = nil
 end
 
 local function createBuffer()
+  wipeBufferByName("Beads")
   local buf = vim.api.nvim_create_buf(false, true)
-  vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
-  vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
-  vim.api.nvim_buf_set_option(buf, "filetype", "beads")
-  pcall(vim.api.nvim_buf_set_name, buf, "Beads")  -- ignore if name exists
+  vim.bo[buf].buftype = "nofile"
+  vim.bo[buf].bufhidden = "wipe"
+  vim.bo[buf].filetype = "beads"
+  vim.api.nvim_buf_set_name(buf, "Beads")
   return buf
 end
 
 local function createWindow(buf)
-  vim.cmd("topleft vnew")
-  local win = vim.api.nvim_get_current_win()
-  vim.api.nvim_win_set_buf(win, buf)
-  vim.api.nvim_win_set_width(win, WIDTH)
-
-  local win_opts = { number = false, relativenumber = false, signcolumn = "no", winfixwidth = true, cursorline = true }
-  for opt, val in pairs(win_opts) do
-    vim.api.nvim_win_set_option(win, opt, val)
-  end
-
+  local win = vim.api.nvim_open_win(buf, true, {
+    split = "left",
+    width = WIDTH,
+  })
+  vim.wo[win].number = false
+  vim.wo[win].relativenumber = false
+  vim.wo[win].signcolumn = "no"
+  vim.wo[win].winfixwidth = true
+  vim.wo[win].cursorline = true
   return win
 end
 
 -- Actions
 
+local function findMainWindow()
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if win ~= state.win then return win end
+  end
+  return state.win
+end
+
 local function getItemAtCursor()
   local line = vim.api.nvim_win_get_cursor(state.win)[1]
-  local idx = line - HEADER_LINES
+  local idx = line - (state.header_size or HEADER_LINES)
   return (idx > 0 and idx <= #state.flat) and state.flat[idx] or nil
+end
+
+local function showDetails()
+  local item = getItemAtCursor()
+  if not item or not item.bead then return end
+
+  local id = item.bead.id
+  local bufname = "bead://" .. id
+  local output = fetchBeadDetails(id)
+  local lines = vim.split(output, "\n")
+
+  local main_win = findMainWindow()
+  local prev_buf = vim.api.nvim_win_get_buf(main_win)
+
+  wipeBufferByName(bufname)
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_name(buf, bufname)
+  vim.bo[buf].buftype = "nofile"
+  vim.bo[buf].bufhidden = "wipe"
+  vim.bo[buf].filetype = "markdown"
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.bo[buf].modifiable = false
+
+  vim.api.nvim_win_set_buf(main_win, buf)
+  vim.api.nvim_set_current_win(main_win)
+
+  vim.keymap.set("n", "q", function()
+    if vim.api.nvim_buf_is_valid(prev_buf) then
+      vim.api.nvim_win_set_buf(main_win, prev_buf)
+    end
+    pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    if state.win and vim.api.nvim_win_is_valid(state.win) then
+      vim.api.nvim_set_current_win(state.win)
+    end
+  end, { buffer = buf })
 end
 
 local function toggleExpand()
@@ -229,26 +339,125 @@ local function toggleExpand()
   renderToBuffer()
 end
 
-local function showDetails()
+local function showFloatingPreview()
   local item = getItemAtCursor()
   if not item or not item.bead then return end
 
   local output = fetchBeadDetails(item.bead.id)
   local lines = vim.split(output, "\n")
 
-  vim.cmd("botright vnew")
-  local buf = vim.api.nvim_get_current_buf()
-  vim.api.nvim_buf_set_name(buf, "bead://" .. item.bead.id)
-  vim.api.nvim_buf_set_option(buf, "buftype", "nofile")
-  vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
-  vim.api.nvim_buf_set_option(buf, "filetype", "markdown")
+  local editor_width = vim.o.columns
+  local editor_height = vim.o.lines
+  local float_width = editor_width - 4
+  local float_height = editor_height - 4
+
+  local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  vim.api.nvim_buf_set_option(buf, "modifiable", false)
-  vim.keymap.set("n", "q", "<cmd>bdelete<CR>", { buffer = buf })
+  vim.bo[buf].buftype = "nofile"
+  vim.bo[buf].bufhidden = "wipe"
+  vim.bo[buf].filetype = "markdown"
+  vim.bo[buf].modifiable = false
+
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = float_width,
+    height = float_height,
+    col = (editor_width - float_width) / 2,
+    row = (editor_height - float_height) / 2,
+    style = "minimal",
+    border = "rounded",
+    title = " " .. item.bead.id .. " ",
+    title_pos = "center",
+  })
+
+  vim.keymap.set("n", "q", function()
+    pcall(vim.api.nvim_win_close, win, true)
+  end, { buffer = buf })
+  vim.keymap.set("n", "<Esc>", function()
+    pcall(vim.api.nvim_win_close, win, true)
+  end, { buffer = buf })
+end
+
+local function enterItem()
+  local item = getItemAtCursor()
+  if not item then return end
+  if item.is_epic then
+    toggleExpand()
+  else
+    showDetails()
+  end
+end
+
+local function collapseEpic()
+  local item = getItemAtCursor()
+  if not item or not item.bead then return end
+
+  local id = item.is_epic and item.bead.id or nil
+  if not id then return end
+
+  if state.expanded[id] then
+    state.expanded[id] = false
+    renderToBuffer()
+  end
+end
+
+local function toggleHelp()
+  state.show_help = not state.show_help
+  renderToBuffer()
+end
+
+local function clearChildrenCache()
+  for _, bead in ipairs(state.beads) do
+    bead.children = nil
+  end
+end
+
+local function setFilter(filter)
+  state.status_filter = filter
+  state.expanded = {}
+  clearChildrenCache()
+  local beads, err = fetchBeads()
+  if err then
+    vim.notify(err, vim.log.levels.ERROR)
+    return
+  end
+  state.beads = beads
+  renderToBuffer()
+end
+
+local function drillInto()
+  local item = getItemAtCursor()
+  if not item or not item.is_epic then return end
+  state.scoped_epic = item.bead.id
+  clearChildrenCache()
+  local output = runBd(string.format("list --parent %s --json%s", vim.fn.shellescape(item.bead.id), statusFlag()))
+  state.beads = parseJson(output) or {}
+  state.expanded = {}
+  renderToBuffer()
+end
+
+local function drillUp()
+  if not state.scoped_epic then return end
+  state.scoped_epic = nil
+  clearChildrenCache()
+  local beads, err = fetchBeads()
+  if err then
+    vim.notify(err, vim.log.levels.ERROR)
+    return
+  end
+  state.beads = beads
+  renderToBuffer()
 end
 
 local function refresh()
-  local beads, err = fetchBeads()
+  clearChildrenCache()
+  local beads, err
+  if state.scoped_epic then
+    local output = runBd(string.format("list --parent %s --json%s", vim.fn.shellescape(state.scoped_epic), statusFlag()))
+    beads = parseJson(output) or {}
+  else
+    beads, err = fetchBeads()
+  end
   if err then
     vim.notify(err, vim.log.levels.ERROR)
     return
@@ -260,17 +469,25 @@ end
 
 local function setupKeymaps(buf)
   local opts = { buffer = buf }
-  vim.keymap.set("n", "<CR>", showDetails, opts)
-  vim.keymap.set("n", "o", toggleExpand, opts)
+  vim.keymap.set("n", "<CR>", enterItem, opts)
+  vim.keymap.set("n", "o", showDetails, opts)
   vim.keymap.set("n", "<Tab>", toggleExpand, opts)
+  vim.keymap.set("n", "<BS>", collapseEpic, opts)
+  vim.keymap.set("n", "<C-]>", drillInto, opts)
+  vim.keymap.set("n", "-", drillUp, opts)
+  vim.keymap.set("n", "<C-a>", function() setFilter("all") end, opts)
+  vim.keymap.set("n", "<C-o>", function() setFilter("open") end, opts)
+  vim.keymap.set("n", "<C-c>", function() setFilter("closed") end, opts)
   vim.keymap.set("n", "r", refresh, opts)
   vim.keymap.set("n", "q", closeViewer, opts)
   vim.keymap.set("n", "<Esc>", closeViewer, opts)
+  vim.keymap.set("n", "g?", toggleHelp, opts)
+  vim.keymap.set("n", "K", showFloatingPreview, opts)
 end
 
 -- Public API
 
-function M.open(opts)
+local function open(opts)
   opts = opts or {}
   state.cwd = opts.cwd or vim.fn.getcwd()
 
@@ -294,16 +511,20 @@ function M.open(opts)
   renderToBuffer()
 end
 
-function M.toggle(opts)
-  if isWindowOpen() then closeViewer() else M.open(opts) end
+local function toggle(opts)
+  if isWindowOpen() then closeViewer() else open(opts) end
 end
 
-function M.setup()
+local function setup()
   vim.api.nvim_create_user_command("Beads", function(cmd)
-    M.toggle({ cwd = cmd.args ~= "" and cmd.args or nil })
+    toggle({ cwd = cmd.args ~= "" and cmd.args or nil })
   end, { nargs = "?", desc = "Toggle Beads viewer" })
 
   vim.api.nvim_create_user_command("BeadsRefresh", refresh, { desc = "Refresh Beads viewer" })
 end
 
-return M
+return {
+  open = open,
+  toggle = toggle,
+  setup = setup,
+}
