@@ -67,7 +67,7 @@ local help_lines = {
   " P1  high (yellow)",
   " P2  medium (blue)",
   " P3  low (cyan)",
-  " P4  backlog (gray)",
+  " P4  backlog (default)",
   "",
 }
 
