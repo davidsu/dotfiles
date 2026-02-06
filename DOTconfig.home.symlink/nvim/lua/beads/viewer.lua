@@ -436,7 +436,21 @@ local function refetchExpandedChildren()
   end
 end
 
+local function restoreCursorTo(bead_id)
+  if not bead_id or not state.win or not vim.api.nvim_win_is_valid(state.win) then return end
+  for i, item in ipairs(state.flat) do
+    if item.bead and item.bead.id == bead_id then
+      local line = i + (state.header_size or HEADER_LINES)
+      pcall(vim.api.nvim_win_set_cursor, state.win, { line, 0 })
+      return
+    end
+  end
+end
+
 local function setFilter(filter)
+  local item = getItemAtCursor()
+  local current_bead_id = item and item.bead and item.bead.id
+
   state.status_filter = filter
   clearChildrenCache()
   local beads, err
@@ -452,6 +466,7 @@ local function setFilter(filter)
   state.beads = beads
   refetchExpandedChildren()
   renderToBuffer()
+  restoreCursorTo(current_bead_id)
 end
 
 local function drillInto()
