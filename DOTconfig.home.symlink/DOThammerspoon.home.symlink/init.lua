@@ -15,6 +15,7 @@ local ctrlUsedAsModifier = false
 local enterPressed = false
 local enterPressedTime = 0
 local enterUsedAsModifier = false
+local enterOriginalMods = nil
 
 --------------------------------------------------------------------------------
 -- Cmd+Ctrl navigation (replaces fn+hjklnm from Karabiner)
@@ -49,7 +50,8 @@ hs.hotkey.bind(navModsShift, "i", function() hs.eventtap.keyStroke({"shift"}, "p
 --------------------------------------------------------------------------------
 -- Mod-tap: Ctrl (Caps Lock) → Escape when tapped
 --------------------------------------------------------------------------------
-local ctrlTap = hs.eventtap.new({hs.eventtap.event.types.flagsChanged, hs.eventtap.event.types.keyDown}, function(event)
+local ctrlTap
+ctrlTap = hs.eventtap.new({hs.eventtap.event.types.flagsChanged, hs.eventtap.event.types.keyDown}, function(event)
     local type = event:getType()
     local flags = event:getFlags()
 
@@ -69,14 +71,17 @@ local ctrlTap = hs.eventtap.new({hs.eventtap.event.types.flagsChanged, hs.eventt
         elseif not isCtrl and ctrlPressedTime > 0 then
             -- Ctrl just released
             local elapsed = (hs.timer.absoluteTime() - ctrlPressedTime) / 1000000  -- convert to ms
+            ctrlPressedTime = 0
             if DEBUG then print("Ctrl UP - elapsed:", elapsed, "usedAsMod:", ctrlUsedAsModifier) end
-            if elapsed < MOD_TAP_TIMEOUT and not ctrlUsedAsModifier then
+            local wasModifier = ctrlUsedAsModifier
+            ctrlUsedAsModifier = false
+            if elapsed < MOD_TAP_TIMEOUT and not wasModifier then
                 -- Quick tap without using as modifier: send Escape
                 if DEBUG then print("SENDING ESCAPE") end
+                ctrlTap:stop()
                 hs.eventtap.keyStroke({}, "escape", 0)
+                ctrlTap:start()
             end
-            ctrlPressedTime = 0
-            ctrlUsedAsModifier = false
         end
         return false  -- don't block the event
     end
@@ -119,6 +124,7 @@ enterTap = hs.eventtap.new({hs.eventtap.event.types.keyDown, hs.eventtap.event.t
             enterPressed = true
             enterPressedTime = hs.timer.absoluteTime()
             enterUsedAsModifier = false
+            enterOriginalMods = event:getFlags()  -- capture original modifiers
             return true  -- block the keyDown, we'll handle it on keyUp
         end
         return true  -- block repeat
@@ -128,11 +134,18 @@ enterTap = hs.eventtap.new({hs.eventtap.event.types.keyDown, hs.eventtap.event.t
             local elapsed = (hs.timer.absoluteTime() - enterPressedTime) / 1000000
             enterPressedTime = 0
             local wasModifier = enterUsedAsModifier
+            local mods = enterOriginalMods or {}
             enterUsedAsModifier = false
+            enterOriginalMods = nil
             if not wasModifier then
-                -- Stop tap, send Enter, restart tap
+                -- Stop tap, send Enter with original modifiers, restart tap
                 enterTap:stop()
-                hs.eventtap.keyStroke({}, "return", 0)
+                local modList = {}
+                if mods.shift then table.insert(modList, "shift") end
+                if mods.cmd then table.insert(modList, "cmd") end
+                if mods.alt then table.insert(modList, "alt") end
+                -- Note: don't include ctrl since Enter-as-ctrl would have set wasModifier
+                hs.eventtap.keyStroke(modList, "return", 0)
                 enterTap:start()
             end
         end
