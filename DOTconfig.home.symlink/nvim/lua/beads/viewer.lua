@@ -19,7 +19,7 @@ local priority_highlight = {
   [1] = "DiagnosticWarn",
   [2] = "DiagnosticInfo",
   [3] = "DiagnosticHint",
-  [4] = "DiagnosticUnnecessary",
+  [4] = "DiagnosticOk",
 }
 
 local state = {
@@ -31,6 +31,7 @@ local state = {
   cwd = nil,
   show_help = false,
   scoped_epic = nil,
+  scoped_epic_bead = nil,
   status_filter = "open",
 }
 
@@ -213,11 +214,16 @@ local function renderToBuffer()
   local filter_label = state.status_filter == "all" and " [all]"
     or state.status_filter == "closed" and " [closed]"
     or ""
-  local scope_label = state.scoped_epic and (" > " .. state.scoped_epic) or ""
+  local scope_label = state.scoped_epic_bead and (" > " .. (state.scoped_epic_bead.title or state.scoped_epic)) or ""
   local lines = { " Beads" .. filter_label .. scope_label, string.rep("─", WIDTH) }
 
   if state.show_help then
     vim.list_extend(lines, help_lines)
+    table.insert(lines, string.rep("─", WIDTH))
+  end
+
+  if state.scoped_epic_bead then
+    table.insert(lines, renderItem({ bead = state.scoped_epic_bead, depth = 0, is_epic = true }))
     table.insert(lines, string.rep("─", WIDTH))
   end
 
@@ -412,25 +418,42 @@ local function clearChildrenCache()
   end
 end
 
+local function refetchExpandedChildren()
+  for _, bead in ipairs(state.beads) do
+    if state.expanded[bead.id] then
+      bead.children = fetchChildren(bead.id)
+    end
+  end
+end
+
 local function setFilter(filter)
   state.status_filter = filter
-  state.expanded = {}
   clearChildrenCache()
-  local beads, err = fetchBeads()
+  local beads, err
+  if state.scoped_epic then
+    local output = runBd(string.format("list --parent %s --json%s", vim.fn.shellescape(state.scoped_epic), statusFlag()))
+    beads = parseJson(output) or {}
+  else
+    beads, err = fetchBeads()
+  end
   if err then
     vim.notify(err, vim.log.levels.ERROR)
     return
   end
   state.beads = beads
+  refetchExpandedChildren()
   renderToBuffer()
 end
 
 local function drillInto()
   local item = getItemAtCursor()
   if not item or not item.is_epic then return end
-  state.scoped_epic = item.bead.id
+  local epic_id = item.bead.id
+  local epic_bead = item.bead
+  state.scoped_epic = epic_id
+  state.scoped_epic_bead = epic_bead
   clearChildrenCache()
-  local output = runBd(string.format("list --parent %s --json%s", vim.fn.shellescape(item.bead.id), statusFlag()))
+  local output = runBd(string.format("list --parent %s --json%s", vim.fn.shellescape(epic_id), statusFlag()))
   state.beads = parseJson(output) or {}
   state.expanded = {}
   renderToBuffer()
@@ -439,6 +462,7 @@ end
 local function drillUp()
   if not state.scoped_epic then return end
   state.scoped_epic = nil
+  state.scoped_epic_bead = nil
   clearChildrenCache()
   local beads, err = fetchBeads()
   if err then
