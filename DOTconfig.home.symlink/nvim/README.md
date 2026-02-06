@@ -184,7 +184,7 @@ Shows colors inline for hex codes, RGB values, CSS colors
 - `\r` - ⚡ FZF Ripgrep search (interactive)
 
 **Navigation**:
-- `<space>fb` / `\b` / `1b` - 📑 Find buffers
+- `<space>fb` / `\b` - 📑 Find buffers
 - `<space>fh` / `1:` / `1;` - 📜 Command history
 - `1/` - 🔍 Search history
 - `\c` - 🛠️ Browse all available Vim commands

@@ -159,6 +159,9 @@ local function buildFlatList(beads)
   for _, epic in ipairs(epics) do
     table.insert(flat, { bead = epic, depth = 0, is_epic = true })
     if state.expanded[epic.id] then
+      if not epic.children then
+        epic.children = fetchChildren(epic.id)
+      end
       local children = epic.children or {}
       table.sort(children, sortByPriorityThenTitle)
       for _, child in ipairs(children) do
@@ -260,7 +263,11 @@ end
 
 local function closeViewer()
   if isWindowOpen() then
-    vim.api.nvim_win_close(state.win, true)
+    if #vim.api.nvim_tabpage_list_wins(0) == 1 then
+      vim.cmd("enew")
+    else
+      vim.api.nvim_win_close(state.win, true)
+    end
   end
   if state.buf and vim.api.nvim_buf_is_valid(state.buf) then
     pcall(vim.api.nvim_buf_delete, state.buf, { force = true })
@@ -309,36 +316,57 @@ local function getItemAtCursor()
   return (idx > 0 and idx <= #state.flat) and state.flat[idx] or nil
 end
 
-local function showDetails()
-  local item = getItemAtCursor()
-  if not item or not item.bead then return end
+local function parseBeadRef()
+  local line = vim.api.nvim_get_current_line()
+  local col = vim.api.nvim_win_get_cursor(0)[2] + 1
 
-  local id = item.bead.id
+  -- Match bead-id pattern (optional dot prefix, word chars, hyphens, dots)
+  for ref_start, id, suffix in line:gmatch("()(%.?[%w][%w%-%.]+)(:%d+:?%d*)") do
+    local ref_end = ref_start + #id + #suffix - 1
+    if col >= ref_start and col <= ref_end then
+      local ref_line = tonumber(suffix:match(":(%d+)"))
+      return id, ref_line
+    end
+  end
+  -- Fallback: match ID without line:col suffix
+  for ref_start, id in line:gmatch("()(%.?[%w][%w%-%.]+[%w])") do
+    local ref_end = ref_start + #id - 1
+    if col >= ref_start and col <= ref_end then
+      return id
+    end
+  end
+end
+
+local function openBeadById(id, line_nr)
   local output = fetchBeadDetails(id)
-  local lines = vim.split(output, "\n")
-
-  local main_win = findMainWindow()
-  if not main_win or not vim.api.nvim_win_is_valid(main_win) then
-    vim.notify("Cannot find main window", vim.log.levels.ERROR)
+  if output == "" then
+    vim.notify("Bead not found: " .. id, vim.log.levels.WARN)
     return
   end
 
-  local prev_buf = vim.api.nvim_win_get_buf(main_win)
+  local lines = vim.split(output, "\n")
 
-  -- Write to temp file so the buffer loads clean (no false "modified" state)
   local tmp_dir = "/tmp/beads"
   vim.fn.mkdir(tmp_dir, "p")
   local tmp_file = tmp_dir .. "/" .. id
   vim.fn.writefile(lines, tmp_file)
 
-  -- Clear modified flag on any previous bead buffer to allow switching away
-  local cur_name = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(main_win))
-  if cur_name:find("/tmp/beads/", 1, true) then
-    vim.bo[vim.api.nvim_win_get_buf(main_win)].modified = false
+  -- Clear modified flag on any bead buffer before switching away
+  local cur_win = vim.api.nvim_get_current_win()
+  local in_bead_buf = vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(cur_win)):find("/tmp/beads/", 1, true)
+  local main_win = in_bead_buf and cur_win or findMainWindow()
+  if not main_win or not vim.api.nvim_win_is_valid(main_win) then
+    vim.notify("Cannot find main window", vim.log.levels.ERROR)
+    return
   end
 
-  wipeBufferByName(tmp_file)
+  local main_buf = vim.api.nvim_win_get_buf(main_win)
+  if vim.api.nvim_buf_get_name(main_buf):find("/tmp/beads/", 1, true) then
+    vim.bo[main_buf].modified = false
+  end
+  local prev_buf = main_buf
 
+  -- Switch to main window first, then edit (avoids window wipe from bufhidden=wipe)
   vim.api.nvim_set_current_win(main_win)
   vim.cmd.edit(vim.fn.fnameescape(tmp_file))
   local buf = vim.api.nvim_get_current_buf()
@@ -348,6 +376,11 @@ local function showDetails()
 
   local cwd = state.cwd or vim.fn.getcwd()
   editor.setupEditableBuffer(buf, cwd, id, output)
+
+  vim.keymap.set("n", "gd", function()
+    local ref_id, ref_line = parseBeadRef()
+    if ref_id then openBeadById(ref_id, ref_line) end
+  end, { buffer = buf })
 
   vim.keymap.set("n", "q", function()
     vim.bo[buf].modified = false
@@ -359,6 +392,16 @@ local function showDetails()
       vim.api.nvim_set_current_win(state.win)
     end
   end, { buffer = buf })
+
+  if line_nr then
+    pcall(vim.api.nvim_win_set_cursor, 0, { line_nr, 0 })
+  end
+end
+
+local function showDetails()
+  local item = getItemAtCursor()
+  if not item or not item.bead then return end
+  openBeadById(item.bead.id)
 end
 
 local function toggleExpand()
@@ -567,7 +610,22 @@ local function open(opts)
   state.win = createWindow(state.buf)
   setupKeymaps(state.buf)
 
-  local beads, err = fetchBeads()
+  -- Save cursor on focus loss so :only or external close doesn't lose position
+  vim.api.nvim_create_autocmd({ "WinLeave", "BufLeave" }, {
+    buffer = state.buf,
+    callback = function()
+      if state.win and vim.api.nvim_win_is_valid(state.win) then
+        state.saved_cursor = vim.api.nvim_win_get_cursor(state.win)
+      end
+    end,
+  })
+
+  local beads, err
+  if state.scoped_epic then
+    beads = fetchChildren(state.scoped_epic)
+  else
+    beads, err = fetchBeads()
+  end
   if err then
     vim.notify(err, vim.log.levels.ERROR)
     closeViewer()
@@ -576,10 +634,55 @@ local function open(opts)
 
   state.beads = beads
   renderToBuffer()
+
+  if state.saved_cursor then
+    local max_line = vim.api.nvim_buf_line_count(state.buf)
+    local row = math.min(state.saved_cursor[1], max_line)
+    pcall(vim.api.nvim_win_set_cursor, state.win, { row, state.saved_cursor[2] })
+  end
 end
 
 local function toggle(opts)
   if isWindowOpen() then closeViewer() else open(opts) end
+end
+
+local function findBeadInViewer(bead_id)
+  if not bead_id then return end
+
+  if not isWindowOpen() then
+    open()
+  end
+  if not state.beads then return end
+
+  -- Check if bead is a direct child of an epic - expand that epic
+  for _, epic in ipairs(state.beads) do
+    if isEpic(epic) then
+      if not epic.children then
+        epic.children = fetchChildren(epic.id)
+      end
+      for _, child in ipairs(epic.children or {}) do
+        if child.id == bead_id then
+          state.expanded[epic.id] = true
+          renderToBuffer()
+          restoreCursorTo(bead_id)
+          return
+        end
+      end
+    end
+  end
+
+  -- Bead might be top-level
+  restoreCursorTo(bead_id)
+end
+
+local function findCurrentBead()
+  local name = vim.api.nvim_buf_get_name(0)
+  local bead_id = name:match("/tmp/beads/(.+)$")
+  if not bead_id then
+    vim.notify("Not in a bead buffer", vim.log.levels.WARN)
+    return
+  end
+  findBeadInViewer(bead_id)
 end
 
 local function setup()
@@ -588,10 +691,12 @@ local function setup()
   end, { nargs = "?", desc = "Toggle Beads viewer" })
 
   vim.api.nvim_create_user_command("BeadsRefresh", refresh, { desc = "Refresh Beads viewer" })
+  vim.api.nvim_create_user_command("BeadsFind", findCurrentBead, { desc = "Find current bead in viewer" })
 end
 
 return {
   open = open,
   toggle = toggle,
+  find = findCurrentBead,
   setup = setup,
 }

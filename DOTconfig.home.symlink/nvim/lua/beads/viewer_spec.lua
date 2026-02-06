@@ -2,6 +2,7 @@
 --
 -- Run: cd ~/.dotfiles/DOTconfig.home.symlink/nvim && nvim --headless -c "PlenaryBustedDirectory lua" -c "qa"
 
+
 local eq = assert.are.same
 
 -- Test helpers

@@ -62,7 +62,6 @@ return {
       { '<space>fa', '<cmd>FzfLua files<cr>',           desc = 'Find all files' },
       { '<space>fb', '<cmd>FzfLua buffers<cr>',         desc = 'Find buffers' },
       { '\\b',       '<cmd>FzfLua buffers<cr>',         desc = 'Find buffers' },
-      { '1b',        '<cmd>FzfLua buffers<cr>',         desc = 'Find buffers' },
 
       -- Search
       { '<space>fw', grep_word_under_cursor,            desc = 'Grep word under cursor' },
