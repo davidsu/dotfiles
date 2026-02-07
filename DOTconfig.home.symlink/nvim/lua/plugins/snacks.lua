@@ -4,7 +4,6 @@
 return {
   {
     "folke/snacks.nvim",
-    ft = "markdown",
     opts = {
       image = {},
     },

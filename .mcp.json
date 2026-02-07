@@ -9,9 +9,7 @@
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "mcp-neovim-server"],
-      "env": {
-        "NVIM_SOCKET_PATH": "/tmp/nvim"
-      }
+      "env": {}
     }
   }
 }

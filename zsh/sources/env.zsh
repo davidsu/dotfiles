@@ -21,6 +21,15 @@ export BAT_THEME="gruvbox-dark"
 # Use Neovim for man pages
 export MANPAGER='nvim +Man!'
 
+# Neovim MCP socket path for Claude Code integration
+# The mcp-neovim-server reads NVIM_SOCKET_PATH to find the Neovim RPC socket.
+# Normally this would be hardcoded in .mcp.json, but we need multiple connections:
+# each Neovim instance embedding Claude Code (via claudecode.nvim) starts its own
+# socket at /tmp/nvim{pid} and passes NVIM_SOCKET_PATH as a process env var,
+# overriding this default. This fallback serves terminal Claude sessions that
+# connect to the single socket started by :ClaudeConnect.
+export NVIM_SOCKET_PATH="/tmp/nvim"
+
 # FZF Configuration
 # Consistent layout: prompt on top, results top-to-bottom, preview on top
 export FZF_DEFAULT_OPTS="

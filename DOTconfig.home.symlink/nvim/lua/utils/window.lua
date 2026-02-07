@@ -29,24 +29,23 @@ local function horizontal_resize(key)
   end
 end
 
+local function has_vertical_neighbor()
+  local curr = vim.fn.winnr()
+  local right = vim.fn.winnr('l')
+  if right ~= curr then return true end
+  local left = vim.fn.winnr('h')
+  return left ~= curr
+end
+
 local function win_size(key)
   if force_horizontal_resize then
     horizontal_resize(key)
     return
   end
 
-  local curr_win = vim.fn.winnr()
-  vim.cmd('wincmd l')
-
-  if curr_win == vim.fn.winnr() then
-    vim.cmd('wincmd h')
-    if curr_win == vim.fn.winnr() then
-      horizontal_resize(key)
-      return
-    end
-    vim.cmd('wincmd l')
-  else
-    vim.cmd('wincmd h')
+  if not has_vertical_neighbor() then
+    horizontal_resize(key)
+    return
   end
 
   if key == '+' then
