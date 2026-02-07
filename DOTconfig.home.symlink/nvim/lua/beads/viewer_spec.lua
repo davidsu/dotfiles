@@ -180,16 +180,37 @@ describe("Beads Viewer", function()
       local buf = vim.api.nvim_win_get_buf(vim.api.nvim_tabpage_list_wins(0)[1])
       local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
 
-      local found_p0 = false
       local found_p1 = false
+      local found_p3 = false
 
       for _, line in ipairs(lines) do
-        if line:match("P0") then found_p0 = true end
         if line:match("P1") then found_p1 = true end
+        if line:match("P3") then found_p3 = true end
       end
 
-      assert.is_true(found_p0, "Should show P0 priority")
-      assert.is_true(found_p1, "Should show P1 priority")
+      assert.is_true(found_p1, "Should show P1 priority (epic/standalone task)")
+      assert.is_true(found_p3, "Should show P3 priority (Another task)")
+    end)
+
+    it("hides children from top-level Tasks section", function()
+      vim.cmd("Beads")
+
+      local buf = vim.api.nvim_win_get_buf(vim.api.nvim_tabpage_list_wins(0)[1])
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+
+      local found_child_task = false
+      local found_child_bug = false
+      local found_standalone = false
+
+      for _, line in ipairs(lines) do
+        if line:match("Task under epic") then found_child_task = true end
+        if line:match("Bug under epic") then found_child_bug = true end
+        if line:match("Standalone task") then found_standalone = true end
+      end
+
+      assert.is_false(found_child_task, "Child task should not appear at top level")
+      assert.is_false(found_child_bug, "Child bug should not appear at top level")
+      assert.is_true(found_standalone, "Standalone task should still appear")
     end)
   end)
 

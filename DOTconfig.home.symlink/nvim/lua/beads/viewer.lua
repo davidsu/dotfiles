@@ -144,11 +144,24 @@ local function isEpic(bead)
   return bead.issue_type == "epic"
 end
 
+local function hasParent(bead)
+  for _, dep in ipairs(bead.dependencies or {}) do
+    if dep.type == "parent-child" and dep.depends_on_id ~= bead.id then
+      return true
+    end
+  end
+  return false
+end
+
 local function buildFlatList(beads)
   local epics, tasks = {}, {}
 
   for _, bead in ipairs(beads) do
-    table.insert(isEpic(bead) and epics or tasks, bead)
+    if isEpic(bead) then
+      table.insert(epics, bead)
+    elseif state.scoped_epic or not hasParent(bead) then
+      table.insert(tasks, bead)
+    end
   end
 
   table.sort(epics, sortByPriorityThenTitle)
@@ -183,11 +196,6 @@ end
 
 -- Rendering
 
-local function truncateTitle(title, maxLen)
-  if #title <= maxLen then return title end
-  return string.sub(title, 1, maxLen - 1) .. "…"
-end
-
 local function renderItem(item)
   if item.separator then return item.separator end
 
@@ -200,7 +208,7 @@ local function renderItem(item)
 
   local status = icons[bead.status] or icons.open
   local priority = bead.priority and string.format("P%d", bead.priority) or ""
-  local title = truncateTitle(bead.title or bead.id, WIDTH - #indent - 10)
+  local title = bead.title or bead.id
 
   return string.format("%s%s %s %s %s", indent, icon, status, priority, title)
 end
