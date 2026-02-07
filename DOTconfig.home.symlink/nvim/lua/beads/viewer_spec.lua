@@ -360,6 +360,62 @@ describe("Beads Viewer", function()
         end
       end
     end)
+
+    it("supports nested epics (epic within epic)", function()
+      -- Create nested epic structure: Epic One → Child Epic → Grandchild task
+      local epic1_id = vim.trim(vim.fn.system(string.format("cd %s && bd list --json 2>/dev/null | jq -r '.[] | select(.title == \"Epic One\") | .id'", test_dir)))
+      run_bd(string.format("create 'Child Epic' --type epic --priority 2 --parent %s --silent", epic1_id))
+      local child_epic_id = vim.trim(vim.fn.system(string.format("cd %s && bd list --json --status=all 2>/dev/null | jq -r '.[] | select(.title == \"Child Epic\") | .id'", test_dir)))
+      run_bd(string.format("create 'Grandchild task' --type task --priority 2 --parent %s --silent", child_epic_id))
+
+      vim.cmd("Beads")
+      local buf = vim.api.nvim_win_get_buf(vim.api.nvim_tabpage_list_wins(0)[1])
+      local win = vim.api.nvim_tabpage_list_wins(0)[1]
+      vim.api.nvim_set_current_win(win)
+
+      -- Expand Epic One
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local epic_line_num = nil
+      for i, line in ipairs(lines) do
+        if line:match("Epic One") then
+          epic_line_num = i
+          break
+        end
+      end
+      vim.api.nvim_win_set_cursor(win, { epic_line_num, 0 })
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", true, false, true), "x", false)
+      vim.wait(100)
+
+      -- Child Epic should show with epic icon ▶
+      lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local child_epic_line = nil
+      for i, line in ipairs(lines) do
+        if line:match("Child Epic") then
+          child_epic_line = i
+          assert.truthy(line:match("▶"), "Child epic should show ▶ icon")
+          assert.truthy(line:match("^  "), "Child epic should be indented")
+          break
+        end
+      end
+      assert.truthy(child_epic_line, "Should show child epic")
+
+      -- Expand Child Epic
+      vim.api.nvim_win_set_cursor(win, { child_epic_line, 0 })
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", true, false, true), "x", false)
+      vim.wait(100)
+
+      -- Grandchild should appear at depth 2 (4 spaces)
+      lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local found_grandchild = false
+      for _, line in ipairs(lines) do
+        if line:match("Grandchild task") then
+          found_grandchild = true
+          assert.truthy(line:match("^    "), "Grandchild should be indented 4 spaces")
+          break
+        end
+      end
+      assert.is_true(found_grandchild, "Should show grandchild task")
+    end)
   end)
 
   describe("status filters", function()

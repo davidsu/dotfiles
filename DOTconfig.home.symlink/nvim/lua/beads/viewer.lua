@@ -156,10 +156,11 @@ end
 local function buildFlatList(beads)
   local epics, tasks = {}, {}
 
+  local show_all = state.scoped_epic ~= nil
   for _, bead in ipairs(beads) do
-    if isEpic(bead) then
+    if isEpic(bead) and (show_all or not hasParent(bead)) then
       table.insert(epics, bead)
-    elseif state.scoped_epic or not hasParent(bead) then
+    elseif not isEpic(bead) and (show_all or not hasParent(bead)) then
       table.insert(tasks, bead)
     end
   end
@@ -169,18 +170,23 @@ local function buildFlatList(beads)
 
   local flat = {}
 
-  for _, epic in ipairs(epics) do
-    table.insert(flat, { bead = epic, depth = 0, is_epic = true })
-    if state.expanded[epic.id] then
-      if not epic.children then
-        epic.children = fetchChildren(epic.id)
+  local function appendWithChildren(bead, depth)
+    local epic = isEpic(bead)
+    table.insert(flat, { bead = bead, depth = depth, is_epic = epic })
+    if epic and state.expanded[bead.id] then
+      if not bead.children then
+        bead.children = fetchChildren(bead.id)
       end
-      local children = epic.children or {}
+      local children = bead.children or {}
       table.sort(children, sortByPriorityThenTitle)
       for _, child in ipairs(children) do
-        table.insert(flat, { bead = child, depth = 1, is_epic = false })
+        appendWithChildren(child, depth + 1)
       end
     end
+  end
+
+  for _, epic in ipairs(epics) do
+    appendWithChildren(epic, 0)
   end
 
   if #epics > 0 and #tasks > 0 then
