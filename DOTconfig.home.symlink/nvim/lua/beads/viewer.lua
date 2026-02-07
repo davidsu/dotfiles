@@ -303,6 +303,7 @@ end
 local function createWindow(buf)
   local win = vim.api.nvim_open_win(buf, true, {
     split = "left",
+    win = -1,
     width = WIDTH,
   })
   vim.wo[win].number = false
@@ -362,7 +363,7 @@ local function openBeadById(id, line_nr)
 
   local tmp_dir = "/tmp/beads"
   vim.fn.mkdir(tmp_dir, "p")
-  local tmp_file = tmp_dir .. "/" .. id
+  local tmp_file = tmp_dir .. "/" .. id .. ".md"
   vim.fn.writefile(lines, tmp_file)
 
   -- Clear modified flag on any bead buffer before switching away
@@ -386,7 +387,6 @@ local function openBeadById(id, line_nr)
   local buf = vim.api.nvim_get_current_buf()
 
   vim.bo[buf].bufhidden = "wipe"
-  vim.bo[buf].filetype = "markdown"
 
   local cwd = state.cwd or vim.fn.getcwd()
   editor.setupEditableBuffer(buf, cwd, id, output)
@@ -656,7 +656,7 @@ end
 
 local function findCurrentBead()
   local name = vim.api.nvim_buf_get_name(0)
-  local bead_id = name:match("/tmp/beads/(.+)$")
+  local bead_id = name:match("/tmp/beads/(.+)%.md$")
   if not bead_id then
     vim.notify("Not in a bead buffer", vim.log.levels.WARN)
     return
