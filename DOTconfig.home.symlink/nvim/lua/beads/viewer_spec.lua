@@ -418,6 +418,169 @@ describe("Beads Viewer", function()
     end)
   end)
 
+  describe("expand shows all children including closed", function()
+    it("expanding epic shows closed children in default open filter", function()
+      -- Close one of the epic's children
+      local child_id = vim.trim(vim.fn.system(string.format(
+        "cd %s && bd list --json --status=all 2>/dev/null | jq -r '.[] | select(.title == \"Task under epic\") | .id'", test_dir)))
+      run_bd(string.format("close %s", child_id))
+
+      vim.cmd("Beads")
+      local buf = vim.api.nvim_win_get_buf(vim.api.nvim_tabpage_list_wins(0)[1])
+      local win = vim.api.nvim_tabpage_list_wins(0)[1]
+
+      -- Find and expand epic
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local epic_line_num = nil
+      for i, line in ipairs(lines) do
+        if line:match("Epic One") then
+          epic_line_num = i
+          break
+        end
+      end
+      assert.truthy(epic_line_num, "Should find epic")
+
+      vim.api.nvim_win_set_cursor(win, { epic_line_num, 0 })
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<CR>", true, false, true), "x", false)
+      vim.wait(100)
+
+      -- Both children should appear (open Bug + closed Task)
+      lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local found_open_child = false
+      local found_closed_child = false
+      for _, line in ipairs(lines) do
+        if line:match("Bug under epic") then found_open_child = true end
+        if line:match("Task under epic") then found_closed_child = true end
+      end
+
+      assert.is_true(found_open_child, "Should show open child")
+      assert.is_true(found_closed_child, "Should show closed child when expanding epic")
+    end)
+
+    it("drill-into epic shows closed children", function()
+      -- Close one child
+      local child_id = vim.trim(vim.fn.system(string.format(
+        "cd %s && bd list --json --status=all 2>/dev/null | jq -r '.[] | select(.title == \"Bug under epic\") | .id'", test_dir)))
+      run_bd(string.format("close %s", child_id))
+
+      vim.cmd("Beads")
+      local buf = vim.api.nvim_win_get_buf(vim.api.nvim_tabpage_list_wins(0)[1])
+      local win = vim.api.nvim_tabpage_list_wins(0)[1]
+      vim.api.nvim_set_current_win(win)
+
+      -- Find epic and drill in
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local epic_line_num = nil
+      for i, line in ipairs(lines) do
+        if line:match("Epic One") then
+          epic_line_num = i
+          break
+        end
+      end
+
+      vim.api.nvim_win_set_cursor(win, { epic_line_num, 0 })
+      vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<C-]>", true, false, true), "x", false)
+      vim.wait(200)
+
+      lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local found_open = false
+      local found_closed = false
+      for _, line in ipairs(lines) do
+        if line:match("Task under epic") then found_open = true end
+        if line:match("Bug under epic") then found_closed = true end
+      end
+
+      assert.is_true(found_open, "Should show open child in drill-in")
+      assert.is_true(found_closed, "Should show closed child in drill-in")
+    end)
+  end)
+
+  describe("delete", function()
+    it("d deletes a non-epic bead", function()
+      vim.cmd("Beads")
+      local buf = vim.api.nvim_win_get_buf(vim.api.nvim_tabpage_list_wins(0)[1])
+      local win = vim.api.nvim_tabpage_list_wins(0)[1]
+      vim.api.nvim_set_current_win(win)
+
+      -- Find "Another task"
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local task_line = nil
+      for i, line in ipairs(lines) do
+        if line:match("Another task") then
+          task_line = i
+          break
+        end
+      end
+      assert.truthy(task_line, "Should find 'Another task'")
+
+      vim.api.nvim_win_set_cursor(win, { task_line, 0 })
+      vim.api.nvim_feedkeys("d", "x", false)
+      vim.wait(500)
+
+      -- Verify it's gone from the viewer
+      lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local still_there = false
+      for _, line in ipairs(lines) do
+        if line:match("Another task") then
+          still_there = true
+          break
+        end
+      end
+      assert.is_false(still_there, "Deleted bead should be gone from viewer")
+
+      -- Verify it's gone from bd
+      local output = vim.fn.system(string.format("cd %s && bd list --json --status=all 2>/dev/null", test_dir))
+      assert.is_nil(output:match("Another task"), "Deleted bead should be gone from bd")
+    end)
+
+    it("d on epic prompts and cascade-deletes children", function()
+      -- Override vim.ui.select to auto-confirm
+      local orig_select = vim.ui.select
+      vim.ui.select = function(items, opts, on_choice)
+        on_choice(items[1])
+      end
+
+      vim.cmd("Beads")
+      local buf = vim.api.nvim_win_get_buf(vim.api.nvim_tabpage_list_wins(0)[1])
+      local win = vim.api.nvim_tabpage_list_wins(0)[1]
+      vim.api.nvim_set_current_win(win)
+
+      -- Find "Epic One"
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local epic_line = nil
+      for i, line in ipairs(lines) do
+        if line:match("Epic One") then
+          epic_line = i
+          break
+        end
+      end
+      assert.truthy(epic_line, "Should find 'Epic One'")
+
+      vim.api.nvim_win_set_cursor(win, { epic_line, 0 })
+      vim.api.nvim_feedkeys("d", "x", false)
+      vim.wait(1000)
+
+      -- Restore original
+      vim.ui.select = orig_select
+
+      -- Epic should be gone
+      lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+      local found_epic = false
+      for _, line in ipairs(lines) do
+        if line:match("Epic One") then
+          found_epic = true
+          break
+        end
+      end
+      assert.is_false(found_epic, "Epic should be deleted from viewer")
+
+      -- Children should also be gone from bd
+      local output = vim.fn.system(string.format("cd %s && bd list --json --status=all 2>/dev/null", test_dir))
+      assert.is_nil(output:match("Task under epic"), "Children should be cascade-deleted")
+      assert.is_nil(output:match("Bug under epic"), "Children should be cascade-deleted")
+    end)
+  end)
+
   describe("status filters", function()
     it("default shows open beads only", function()
       vim.cmd("Beads")

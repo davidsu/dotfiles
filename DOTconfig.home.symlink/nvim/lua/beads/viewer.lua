@@ -48,6 +48,7 @@ local help_lines = {
   " BS      collapse epic",
   " C-]     drill into epic",
   " -       drill up (back to all)",
+  " d       delete bead (epic: +children)",
   " C-a     show all (open + closed)",
   " C-o     show open only",
   " C-c     show closed only",
@@ -123,12 +124,8 @@ end
 
 local function fetchChildren(parentId)
   local cwd = state.cwd or vim.fn.getcwd()
-  if state.status_filter == "all" then
-    local parent_flag = string.format(" --parent %s", vim.fn.shellescape(parentId))
-    return merger.fetchAllBeads(cwd, parent_flag)
-  end
-  local output = runBd(string.format("list --parent %s --json%s", vim.fn.shellescape(parentId), statusFlag()))
-  return parseJson(output) or {}
+  local parent_flag = string.format(" --parent %s", vim.fn.shellescape(parentId))
+  return merger.fetchAllBeads(cwd, parent_flag)
 end
 
 -- Tree building
@@ -544,6 +541,35 @@ local function setFilter(filter)
   end
 end
 
+local function deleteBead()
+  local item = getItemAtCursor()
+  if not item or not item.bead then return end
+
+  local id = item.bead.id
+  local title = item.bead.title or id
+
+  local function doDelete(cascade)
+    local flag = cascade and " --cascade --force" or " --force"
+    local result = runBd(string.format("delete %s%s", vim.fn.shellescape(id), flag))
+    if result then
+      vim.notify("Deleted: " .. title, vim.log.levels.INFO)
+      reloadBeads()
+    else
+      vim.notify("Failed to delete: " .. title, vim.log.levels.ERROR)
+    end
+  end
+
+  if item.is_epic then
+    vim.ui.select({ "Yes, delete epic and all children", "No, cancel" }, {
+      prompt = string.format("Delete epic '%s' and ALL its children?", title),
+    }, function(choice)
+      if choice and choice:match("^Yes") then doDelete(true) end
+    end)
+  else
+    doDelete(false)
+  end
+end
+
 local function drillInto()
   local item = getItemAtCursor()
   if not item or not item.is_epic then return end
@@ -577,6 +603,7 @@ local function setupKeymaps(buf)
   vim.keymap.set("n", "<C-a>", function() setFilter("all") end, opts)
   vim.keymap.set("n", "<C-o>", function() setFilter("open") end, opts)
   vim.keymap.set("n", "<C-c>", function() setFilter("closed") end, opts)
+  vim.keymap.set("n", "d", deleteBead, opts)
   vim.keymap.set("n", "r", refresh, opts)
   vim.keymap.set("n", "q", closeViewer, opts)
   vim.keymap.set("n", "<Esc>", closeViewer, opts)
