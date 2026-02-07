@@ -3,6 +3,7 @@
 node_modules
 mcp-shell.log
 bun.lock
+bin/links.ts
 
 # iTerm2 generated files
 config.home.symlink/iterm2/AppSupport

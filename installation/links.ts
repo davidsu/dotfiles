@@ -8,8 +8,7 @@ import { removeDotConfigWithMiseOnlyIfExists } from './symlink/file-ops'
 import { safeLink } from './symlink/operation'
 import type { LinkResult } from './symlink/operation'
 
-const SCRIPT_DIR = import.meta.dir
-const DOTFILES_ROOT = path.dirname(SCRIPT_DIR)
+const GIT_ROOT = execSync('git rev-parse --show-toplevel', { encoding: 'utf-8' }).trim()
 
 interface SymlinkPlan {
   from: string
@@ -30,7 +29,7 @@ function findSymlinkFiles(rootDir: string) {
 }
 
 function buildSymlinkPlan() {
-  const symlinkFiles = findSymlinkFiles(DOTFILES_ROOT)
+  const symlinkFiles = findSymlinkFiles(GIT_ROOT)
 
   return symlinkFiles.map(src => {
     const filename = path.basename(src)
@@ -50,7 +49,7 @@ const executeSymlinkPlan = (plan: SymlinkPlan[]) =>
 
 function setupSymlinks() {
   log.info('Starting symlinking process...')
-  log.info(`Finding .home.* files in ${DOTFILES_ROOT}...`)
+  log.info(`Finding .home.* files in ${GIT_ROOT}...`)
 
   removeDotConfigWithMiseOnlyIfExists()
   const plan = buildSymlinkPlan()
