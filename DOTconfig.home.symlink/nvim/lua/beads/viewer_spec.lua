@@ -884,6 +884,99 @@ describe("Beads Viewer", function()
     end)
   end)
 
+  describe("gd file navigation", function()
+    it("parseFileRef matches path:line-line pattern", function()
+      vim.cmd("Beads")
+      local main_win = vim.api.nvim_tabpage_list_wins(0)[2]
+      vim.api.nvim_set_current_win(main_win)
+
+      local buf = vim.api.nvim_create_buf(false, true)
+      vim.api.nvim_win_set_buf(main_win, buf)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "see src/app.py:10-20 for details" })
+      vim.api.nvim_win_set_cursor(main_win, { 1, 6 })
+
+      local t = require("beads.viewer")._test
+      local path, ls, le = t.parseFileRef()
+      eq("src/app.py", path)
+      eq(10, ls)
+      eq(20, le)
+    end)
+
+    it("parseFileRef matches path:line pattern (no range)", function()
+      vim.cmd("Beads")
+      local main_win = vim.api.nvim_tabpage_list_wins(0)[2]
+      vim.api.nvim_set_current_win(main_win)
+
+      local buf = vim.api.nvim_create_buf(false, true)
+      vim.api.nvim_win_set_buf(main_win, buf)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, false, { "check src/app.py:42 here" })
+      vim.api.nvim_win_set_cursor(main_win, { 1, 8 })
+
+      local t = require("beads.viewer")._test
+      local path, ls, le = t.parseFileRef()
+      eq("src/app.py", path)
+      eq(42, ls)
+      assert.is_nil(le)
+    end)
+
+    it("openFileRef opens file at correct line", function()
+      -- Create a test file in the test repo
+      local file_path = test_dir .. "/src/test_file.py"
+      vim.fn.mkdir(test_dir .. "/src", "p")
+      local lines = {}
+      for i = 1, 50 do lines[i] = "# line " .. i end
+      vim.fn.writefile(lines, file_path)
+
+      vim.cmd("Beads")
+      local t = require("beads.viewer")._test
+      t.state.cwd = test_dir
+
+      t.openFileRef("src/test_file.py", 25, nil)
+
+      local cursor = vim.api.nvim_win_get_cursor(0)
+      eq(25, cursor[1], "Should jump to line 25")
+      local buf_name = vim.api.nvim_buf_get_name(0)
+      assert.truthy(buf_name:match("test_file%.py$"), "Should open test_file.py")
+    end)
+
+    it("openFileRef with range positions cursor at start line", function()
+      -- Create a test file
+      local file_path = test_dir .. "/src/range_test.py"
+      vim.fn.mkdir(test_dir .. "/src", "p")
+      local lines = {}
+      for i = 1, 50 do lines[i] = "# line " .. i end
+      vim.fn.writefile(lines, file_path)
+
+      vim.cmd("Beads")
+      local t = require("beads.viewer")._test
+      t.state.cwd = test_dir
+
+      t.openFileRef("src/range_test.py", 10, 15)
+
+      local cursor = vim.api.nvim_win_get_cursor(0)
+      eq(10, cursor[1], "Should position cursor at start of range")
+      local buf_name = vim.api.nvim_buf_get_name(0)
+      assert.truthy(buf_name:match("range_test%.py$"), "Should open range_test.py")
+    end)
+
+    it("openFileRef notifies when file not found", function()
+      vim.cmd("Beads")
+      local t = require("beads.viewer")._test
+      t.state.cwd = test_dir
+
+      local notifications = {}
+      local orig_notify = vim.notify
+      vim.notify = function(msg, level) table.insert(notifications, { msg = msg, level = level }) end
+
+      t.openFileRef("nonexistent/file.py", 1, nil)
+
+      vim.notify = orig_notify
+
+      assert.is_true(#notifications > 0, "Should notify about missing file")
+      assert.truthy(notifications[1].msg:match("not found"), "Should mention file not found")
+    end)
+  end)
+
   describe("details view", function()
     it("o opens details in main window (2-pane layout)", function()
       vim.cmd("Beads")

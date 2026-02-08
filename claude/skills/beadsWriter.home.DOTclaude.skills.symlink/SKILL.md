@@ -197,6 +197,50 @@ graph LR
 ```
 ````
 
+## File Path References
+
+When referencing source files in bead descriptions, use **git-root-relative paths** with line numbers. This enables `gd` navigation from bead detail buffers directly to the source code.
+
+### Format
+
+- Single line: `path/to/file.py:42`
+- Line range: `path/to/file.py:330-335`
+
+### Rules
+
+1. **Always use git-root-relative paths** — not just filenames, not absolute paths
+2. **Verify the path exists** — run `ls` or `find` before writing it into a bead
+3. **Verify line numbers are accurate** — read the file to confirm what's at that line
+4. **Include line ranges** when the relevant code spans multiple lines — `gd` will highlight the range
+5. **Always keep path and lines together** as `path:line` or `path:line-line` — never split them into separate table columns. The `gd` keymap parses `file:line` as a single token.
+
+### Bad
+
+```
+app_core.py:330          ← filename only, ambiguous
+/Users/me/projects/apper/backend/app/models/app_core.py:330  ← absolute path, not portable
+
+| File         | Lines   | Change              |
+|--------------|---------|---------------------|
+| app_core.py  | 330-335 | Remove validator    |  ← path and lines in separate columns, gd can't parse
+```
+
+### Good
+
+```
+backend/app/user_apps/common/models/app_core.py:330-335
+backend/app/user_apps/common/models/app_core.py:266
+```
+
+### In Tables
+
+```
+| Location                                                        | Change                                  |
+|-----------------------------------------------------------------|-----------------------------------------|
+| backend/app/user_apps/common/models/app_core.py:330-335         | Remove `ensure_slug_exists` validator   |
+| backend/app/user_apps/builder/chat/on_message_callback.py:16-34 | Remove proactive slug generation        |
+```
+
 ## Other Bead Formatting
 
 - Use `##` headers to separate major sections

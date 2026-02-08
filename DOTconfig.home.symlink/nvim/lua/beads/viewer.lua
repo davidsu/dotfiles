@@ -328,6 +328,81 @@ local function getItemAtCursor()
   return (idx > 0 and idx <= #state.flat) and state.flat[idx] or nil
 end
 
+local function gitRoot()
+  local cwd = state.cwd or vim.fn.getcwd()
+  local root = vim.fn.system("git -C " .. vim.fn.shellescape(cwd) .. " rev-parse --show-toplevel 2>/dev/null")
+  if vim.v.shell_error ~= 0 then return cwd end
+  return vim.trim(root)
+end
+
+local function parseFileRef()
+  local line = vim.api.nvim_get_current_line()
+  local col = vim.api.nvim_win_get_cursor(0)[2] + 1
+
+  -- Match file_path:lineStart-lineEnd or file_path:line (path must contain / or .)
+  for ref_start, path, suffix in line:gmatch("()([%w_%.%-/]+%.[%w]+)(:%d+%-?%d*)") do
+    local ref_end = ref_start + #path + #suffix - 1
+    if col >= ref_start and col <= ref_end then
+      local line_start = tonumber(suffix:match(":(%d+)"))
+      local line_end = tonumber(suffix:match("%-(%d+)"))
+      return path, line_start, line_end
+    end
+  end
+end
+
+local function highlightRange(line_start, line_end)
+  local ok, iw = pcall(require, "interestingwords")
+  if not ok then return end
+
+  iw.UncolorAllWords(false)
+
+  local line_count = vim.api.nvim_buf_line_count(0)
+  line_end = math.min(line_end, line_count)
+
+  vim.api.nvim_win_set_cursor(0, { line_start, 0 })
+  local range = line_end - line_start
+  if range > 0 then
+    vim.cmd("normal! V" .. range .. "j")
+  else
+    vim.cmd("normal! V")
+  end
+  iw.InterestingWord("v", false)
+end
+
+local function positionViewport(target_line)
+  vim.api.nvim_win_set_cursor(0, { target_line, 0 })
+  vim.cmd("normal! zt")
+  local quarter = math.floor(vim.api.nvim_win_get_height(0) / 4)
+  if quarter > 0 then
+    vim.cmd("normal! " .. quarter .. "\\<C-y>")
+  end
+end
+
+local function openFileRef(path, line_start, line_end)
+  local root = gitRoot()
+  local abs_path = root .. "/" .. path
+  if vim.fn.filereadable(abs_path) ~= 1 then
+    vim.notify("File not found: " .. abs_path, vim.log.levels.WARN)
+    return
+  end
+
+  local main_win = findMainWindow()
+  if not main_win or not vim.api.nvim_win_is_valid(main_win) then
+    vim.notify("Cannot find main window", vim.log.levels.ERROR)
+    return
+  end
+
+  vim.api.nvim_set_current_win(main_win)
+  vim.cmd.edit(vim.fn.fnameescape(abs_path))
+
+  if line_start and line_end then
+    highlightRange(line_start, line_end)
+    positionViewport(line_start)
+  elseif line_start then
+    positionViewport(line_start)
+  end
+end
+
 local function parseBeadRef()
   local line = vim.api.nvim_get_current_line()
   local col = vim.api.nvim_win_get_cursor(0)[2] + 1
@@ -383,12 +458,15 @@ local function openBeadById(id, line_nr)
   vim.cmd.edit(vim.fn.fnameescape(tmp_file))
   local buf = vim.api.nvim_get_current_buf()
 
-  vim.bo[buf].bufhidden = "wipe"
-
   local cwd = state.cwd or vim.fn.getcwd()
   editor.setupEditableBuffer(buf, cwd, id, output)
 
   vim.keymap.set("n", "gd", function()
+    local path, line_start, line_end = parseFileRef()
+    if path then
+      openFileRef(path, line_start, line_end)
+      return
+    end
     local ref_id, ref_line = parseBeadRef()
     if ref_id then openBeadById(ref_id, ref_line) end
   end, { buffer = buf })
@@ -705,4 +783,12 @@ return {
   toggle = toggle,
   find = findCurrentBead,
   setup = setup,
+  _test = {
+    parseFileRef = parseFileRef,
+    openFileRef = openFileRef,
+    highlightRange = highlightRange,
+    positionViewport = positionViewport,
+    gitRoot = gitRoot,
+    state = state,
+  },
 }
