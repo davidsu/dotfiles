@@ -10,6 +10,27 @@ description: >
 
 Load this skill before any `bd create` or `bd update` call.
 
+## NEVER GUESS — Accuracy is Mandatory
+
+Everything written into a bead MUST be correct and verified. Beads are persistent project memory — wrong information pollutes future sessions and misleads other agents.
+
+**Rules:**
+
+1. **Do NOT guess** file paths, line numbers, function names, variable names, error messages, or any factual claim
+2. **Do NOT fabricate** bead IDs, status values, dependency relationships, or statistics
+3. **Research first** — read the code, run the command, check the file before writing claims about them
+4. **Ask the user** if you cannot verify something and cannot research it yourself
+5. **Omit rather than guess** — if you can't confirm a detail, leave it out. A bead with fewer verified facts is better than one with fabricated details
+
+**Examples of violations:**
+
+- Writing `auth.py:142` without reading the file to confirm line 142
+- Claiming "3 callers found" without actually searching and counting
+- Referencing `myapp-research-auth` as a parent without checking it exists via `bd show`
+- Describing behavior of code you haven't read
+
+**When unsure:** Stop and ask the user. Do NOT fill in blanks with plausible-sounding content.
+
 ## Bead ID Naming
 
 Use semantic IDs with the project prefix: `<prefix>-<category>-<descriptive-name>`

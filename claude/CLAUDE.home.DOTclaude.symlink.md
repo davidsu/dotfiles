@@ -14,6 +14,10 @@ This ensures you follow clean code principles and coding standards automatically
 
 This ensures correct bead ID naming, parent-child structure, table alignment, source attribution, and markdown formatting.
 
+## NEVER Guess
+
+**CRITICAL**: NEVER guess. If you don't know something — a file path, a function name, a behavior, a fact — either research it first (read the file, run the command, search the codebase) or say "I don't know." Ask the user to clarify if needed. Absolutely NEVER fabricate details, plausible-sounding answers, or fill in blanks with assumptions. Wrong information is worse than no information.
+
 ## Ask When Uncertain
 
 If you're uncertain about requirements, ask for clarification BEFORE implementing. If an attempt fails and you still don't understand, STOP and ask - don't loop through guesses.
