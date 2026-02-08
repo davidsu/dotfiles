@@ -10,9 +10,9 @@ This ensures you follow clean code principles and coding standards automatically
 
 ### Bead Writing Context
 
-**CRITICAL REQUIREMENT**: Before writing or updating bead descriptions (`bd update --description`, `bd create --description`), you MUST load `/beadWriter` if you haven't already loaded it in this conversation.
+**CRITICAL REQUIREMENT**: Before any `bd create` or `bd update` call, you MUST load `/beadWriter` if you haven't already loaded it in this conversation.
 
-This ensures markdown tables are properly aligned and readable in neovim/terminal.
+This ensures correct bead ID naming, parent-child structure, table alignment, source attribution, and markdown formatting.
 
 ## Ask When Uncertain
 

@@ -1,11 +1,67 @@
 ---
 name: beadWriter
-description: Formatting rules for writing bead descriptions. Load before any bd update --description or bd create --description call. Ensures markdown tables are aligned and readable in terminal/neovim.
+description: >
+  Conventions for creating and writing beads — ID naming, parent-child structure, table
+  alignment, inline source attribution, mermaid diagrams, and general markdown formatting.
+  Use before any bd create or bd update call.
 ---
 
 # Bead Writing Conventions
 
-Load this skill before writing or updating bead descriptions (`bd update --description`, `bd create --description`).
+Load this skill before any `bd create` or `bd update` call.
+
+## Bead ID Naming
+
+Use semantic IDs with the project prefix: `<prefix>-<category>-<descriptive-name>`
+
+Discover the prefix from existing beads:
+```bash
+bd list --limit 1  # Look at existing bead IDs
+```
+
+**Category is a short, descriptive slug for the bead's role.** Examples:
+
+```
+myapp-epic-auth
+myapp-research-auth-login
+myapp-summary-auth
+myapp-review-opt-auth
+myapp-impl-auth-session
+myapp-code-review-auth
+myapp-manual-qa-auth
+myapp-final-auth
+```
+
+Pick a category that makes the bead's purpose obvious from the ID alone. Check existing beads (`bd list`) to stay consistent with categories already in use.
+
+## Parent-Child Structure
+
+Use sub-epics to organize phases under a main epic:
+```bash
+# Main epic
+bd create "Lazy slug generation" --id myapp-epic-lazy-slug --type epic
+
+# Sub-epics for phases
+bd create "Research: lazy slug" --id myapp-research-lazy-slug --type epic --parent myapp-epic-lazy-slug
+bd create "Implementation: lazy slug" --id myapp-impl-lazy-slug --type epic --parent myapp-epic-lazy-slug
+
+# Research beads under the research sub-epic
+bd create "Backend slug generation" --id myapp-research-lazy-slug-backend-gen --parent myapp-research-lazy-slug
+bd create "Frontend null guards" --id myapp-research-lazy-slug-frontend-guards --parent myapp-research-lazy-slug
+
+# Impl beads under the impl sub-epic
+bd create "Remove slug validator" --id myapp-impl-lazy-slug-remove-validator --parent myapp-impl-lazy-slug
+```
+
+**All flags work together in a single command.** Always combine `--id`, `--parent`, `--type`, etc. in one call:
+```bash
+# CORRECT — one command with all flags
+bd create "Session mgmt" --id myapp-research-auth-session --parent myapp-research-auth --type task
+
+# WRONG — do NOT split into create + update
+bd create "Session mgmt" --id myapp-research-auth-session
+bd update myapp-research-auth-session --parent myapp-epic-auth  # unnecessary
+```
 
 ## Markdown Table Alignment
 
