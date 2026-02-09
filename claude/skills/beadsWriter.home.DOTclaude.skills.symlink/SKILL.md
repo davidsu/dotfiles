@@ -31,6 +31,33 @@ Everything written into a bead MUST be correct and verified. Beads are persisten
 
 **When unsure:** Stop and ask the user. Do NOT fill in blanks with plausible-sounding content.
 
+## Command Syntax — COPY THIS EXACTLY
+
+**CRITICAL: `--id` and `--parent` are MUTUALLY EXCLUSIVE.** You cannot use both in the same command. `bd create` will error with `Error: cannot specify both --id and --parent flags`.
+
+To create a bead with a custom ID under a parent, use `--deps parent-child:<parent-id>`:
+
+```bash
+# Standalone bead with custom ID (no parent)
+bd create "Title here" --id myapp-impl-auth --type task
+
+# Bead with custom ID AND a parent — use --deps, NOT --parent
+bd create "Title here" --id myapp-impl-auth-session --type task --deps parent-child:myapp-epic-auth
+
+# Epic with custom ID (no parent)
+bd create "Title here" --id myapp-epic-auth --type epic
+
+# Child epic under parent epic — use --deps, NOT --parent
+bd create "Title here" --id myapp-research-auth --type epic --deps parent-child:myapp-epic-auth
+```
+
+**Key rules:**
+- `--id` sets the bead ID (use the naming convention below)
+- `--deps parent-child:<parent-id>` sets the parent (parent must already exist)
+- `--parent` is for auto-numbered children ONLY (generates dotted IDs like `bd-a3f8e9.1`) — do NOT use it with `--id`
+- `--type` sets task|bug|feature|epic|chore (default: task)
+- Always combine `--id`, `--deps`, `--type`, etc. in one call
+
 ## Bead ID Naming
 
 Use semantic IDs with the project prefix: `<prefix>-<category>-<descriptive-name>`
@@ -57,31 +84,35 @@ Pick a category that makes the bead's purpose obvious from the ID alone. Check e
 
 ## Parent-Child Structure
 
-Use sub-epics to organize phases under a main epic:
+Use sub-epics to organize phases under a main epic. Since `--id` and `--parent` can't be combined, use `--deps parent-child:<parent-id>`:
+
 ```bash
-# Main epic
+# Main epic (no parent)
 bd create "Lazy slug generation" --id myapp-epic-lazy-slug --type epic
 
-# Sub-epics for phases
-bd create "Research: lazy slug" --id myapp-research-lazy-slug --type epic --parent myapp-epic-lazy-slug
-bd create "Implementation: lazy slug" --id myapp-impl-lazy-slug --type epic --parent myapp-epic-lazy-slug
+# Sub-epics for phases (parent = the main epic)
+bd create "Research: lazy slug" --id myapp-research-lazy-slug --type epic --deps parent-child:myapp-epic-lazy-slug
+bd create "Implementation: lazy slug" --id myapp-impl-lazy-slug --type epic --deps parent-child:myapp-epic-lazy-slug
 
 # Research beads under the research sub-epic
-bd create "Backend slug generation" --id myapp-research-lazy-slug-backend-gen --parent myapp-research-lazy-slug
-bd create "Frontend null guards" --id myapp-research-lazy-slug-frontend-guards --parent myapp-research-lazy-slug
+bd create "Backend slug generation" --id myapp-research-lazy-slug-backend-gen --deps parent-child:myapp-research-lazy-slug
+bd create "Frontend null guards" --id myapp-research-lazy-slug-frontend-guards --deps parent-child:myapp-research-lazy-slug
 
 # Impl beads under the impl sub-epic
-bd create "Remove slug validator" --id myapp-impl-lazy-slug-remove-validator --parent myapp-impl-lazy-slug
+bd create "Remove slug validator" --id myapp-impl-lazy-slug-remove-validator --deps parent-child:myapp-impl-lazy-slug
 ```
 
-**All flags work together in a single command.** Always combine `--id`, `--parent`, `--type`, etc. in one call:
+**Common mistakes:**
 ```bash
-# CORRECT — one command with all flags
-bd create "Session mgmt" --id myapp-research-auth-session --parent myapp-research-auth --type task
+# WRONG — --id and --parent are mutually exclusive, this ERRORS
+bd create "Session mgmt" --id myapp-research-auth-session --parent myapp-research-auth
 
-# WRONG — do NOT split into create + update
+# WRONG — unnecessary two-step
 bd create "Session mgmt" --id myapp-research-auth-session
-bd update myapp-research-auth-session --parent myapp-epic-auth  # unnecessary
+bd dep add myapp-research-auth-session myapp-research-auth --type parent-child
+
+# CORRECT — one command with --deps
+bd create "Session mgmt" --id myapp-research-auth-session --type task --deps parent-child:myapp-research-auth
 ```
 
 ## Markdown Table Alignment
