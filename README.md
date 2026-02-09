@@ -98,7 +98,7 @@ After running `./installation/install.ts`, complete these manual steps:
 - (Optional) Enable OS-level autofill / hotkeys in Bitwarden settings.
 
 #### Ghostty
-- Open Ghostty and confirm it’s using your config (font, theme, keybindings).
+- Open Ghostty and confirm it's using your config (font, theme, keybindings).
 - Optionally:
   - Set Ghostty as your default terminal in any tools that support it.
   - Pin Ghostty to the Dock (the installer clears Dock items).

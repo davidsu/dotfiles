@@ -68,6 +68,11 @@ tools:
     brew_type: formula
     description: Lightweight and flexible command-line JSON processor
 
+  # Terminal multiplexer
+  tmux:
+    brew_type: formula
+    description: Terminal multiplexer (used by Claude Code agent teams for split-pane mode)
+
   # Shell and prompt
   zsh:
     brew_type: formula
@@ -91,6 +96,11 @@ tools:
     brew_type: formula
     cmd: bd
     description: Git-backed task management for coding agents
+
+  # Python tooling
+  uv:
+    brew_type: formula
+    description: Extremely fast Python package installer and resolver
 
   # Runtime management
   fnm:

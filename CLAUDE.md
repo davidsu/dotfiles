@@ -5,7 +5,7 @@
 Modern dotfiles configuration:
 
 - **Location**: `~/.dotfiles/` on `master` branch
-- **Stack**: Pure Lua, lazy.nvim, ripgrep, mise
+- **Stack**: Pure Lua, lazy.nvim, ripgrep
 - **Platform**: macOS only
 - **Goal**: Clean, maintainable, well-documented personal development environment
 

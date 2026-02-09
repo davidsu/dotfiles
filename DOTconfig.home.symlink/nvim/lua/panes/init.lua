@@ -67,16 +67,30 @@ local function close_all_details()
   vim.t.pane_detail_wins = nil
 end
 
+local function save_list_state(list_win)
+  if not list_win then return nil end
+  local current_win = vim.api.nvim_get_current_win()
+  vim.api.nvim_set_current_win(list_win)
+  local state = {
+    view = vim.fn.winsaveview(),
+    height = vim.api.nvim_win_get_height(list_win),
+  }
+  vim.api.nvim_set_current_win(current_win)
+  return state
+end
+
+local function restore_list_state(list_win, state)
+  if not list_win or not state then return end
+  vim.api.nvim_win_set_height(list_win, state.height)
+  local current_win = vim.api.nvim_get_current_win()
+  vim.api.nvim_set_current_win(list_win)
+  vim.fn.winrestview(state.view)
+  vim.api.nvim_set_current_win(current_win)
+end
+
 local function show_single_detail(bufnr)
-  -- Save list window's view before rearranging windows
   local list_win = get_list_window()
-  local saved_view = nil
-  if list_win then
-    local current_win = vim.api.nvim_get_current_win()
-    vim.api.nvim_set_current_win(list_win)
-    saved_view = vim.fn.winsaveview()
-    vim.api.nvim_set_current_win(current_win)
-  end
+  local list_state = save_list_state(list_win)
 
   close_all_except_list()
 
@@ -85,21 +99,13 @@ local function show_single_detail(bufnr)
   vim.api.nvim_win_set_buf(detail_win, bufnr)
   vim.t.pane_detail_wins = {detail_win}
 
-  -- Resize list window AFTER creating split so detail window fills remaining space
-  if list_win then
-    vim.api.nvim_win_set_height(list_win, LIST_HEIGHT)
-  end
-
-  -- Restore list window's view after rearranging
-  if list_win and saved_view then
-    local current_win = vim.api.nvim_get_current_win()
-    vim.api.nvim_set_current_win(list_win)
-    vim.fn.winrestview(saved_view)
-    vim.api.nvim_set_current_win(current_win)
-  end
+  restore_list_state(list_win, list_state)
 end
 
 local function show_diff_detail(left_bufnr, right_bufnr)
+  local list_win = get_list_window()
+  local list_state = save_list_state(list_win)
+
   close_all_except_list()
 
   vim.cmd(BOTTOM_SPLIT)
@@ -111,6 +117,8 @@ local function show_diff_detail(left_bufnr, right_bufnr)
   vim.api.nvim_win_set_buf(right_win, right_bufnr)
 
   vim.t.pane_detail_wins = {bottom_win, right_win}
+
+  restore_list_state(list_win, list_state)
 end
 
 local function create_list_buffer(config)
