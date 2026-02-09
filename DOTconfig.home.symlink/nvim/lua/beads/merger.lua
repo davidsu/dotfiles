@@ -19,7 +19,7 @@ local function fetchAllBeads(cwd, parent_flag)
   local all_beads = {}
 
   for _, status in ipairs(statuses) do
-    local subcmd = string.format("list --json --status=%s%s", status, parent_flag or "")
+    local subcmd = string.format("list --json --limit 0 --status=%s%s", status, parent_flag or "")
     local output = runBd(cwd, subcmd)
     local beads = parseJson(output)
 

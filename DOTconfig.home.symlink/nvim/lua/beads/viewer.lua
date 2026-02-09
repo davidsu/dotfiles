@@ -111,7 +111,7 @@ local function fetchBeads()
   if state.status_filter == "all" then
     return merger.fetchAllBeads(cwd)
   end
-  local output = runBd("list --json" .. statusFlag())
+  local output = runBd("list --json --limit 0" .. statusFlag())
   if not output then return nil, "Failed to run bd list" end
   local beads = parseJson(output)
   if not beads then return nil, "Failed to parse JSON" end
