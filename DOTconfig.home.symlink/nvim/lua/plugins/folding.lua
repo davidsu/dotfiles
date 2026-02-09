@@ -50,11 +50,6 @@ local function setup_man_folding()
 end
 
 local function config()
-  vim.o.foldcolumn = '0'
-  vim.o.foldlevel = 99
-  vim.o.foldlevelstart = 99
-  vim.o.foldenable = true
-
   require('ufo').setup({
     open_fold_hl_timeout = 0,
     provider_selector = select_fold_provider,
@@ -69,6 +64,20 @@ return {
     'kevinhwang91/nvim-ufo',
     dependencies = { 'kevinhwang91/promise-async' },
     event = 'VeryLazy',
+    init = function()
+      -- Set early so they're in effect before ufo loads.
+      -- foldlevelstart is ignored for foldmethod=manual (which ufo sets),
+      -- so we also force foldlevel=99 on every new window via autocmd.
+      vim.o.foldcolumn = '0'
+      vim.o.foldlevel = 99
+      vim.o.foldlevelstart = 99
+      vim.o.foldenable = true
+      vim.api.nvim_create_autocmd('BufWinEnter', {
+        callback = function()
+          vim.wo.foldlevel = 99
+        end,
+      })
+    end,
     config = config,
   },
 }
