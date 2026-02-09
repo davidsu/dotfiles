@@ -558,15 +558,29 @@ local function enterItem()
 end
 
 local function collapseEpic()
-  local item = getItemAtCursor()
+  local line = vim.api.nvim_win_get_cursor(state.win)[1]
+  local idx = line - (state.header_size or HEADER_LINES)
+  if idx < 1 or idx > #state.flat then return end
+
+  local item = state.flat[idx]
   if not item or not item.bead then return end
 
-  local id = item.is_epic and item.bead.id or nil
-  if not id then return end
-
-  if state.expanded[id] then
-    state.expanded[id] = false
+  -- If on an expanded epic, collapse it
+  if item.is_epic and state.expanded[item.bead.id] then
+    state.expanded[item.bead.id] = false
     renderToBuffer()
+    return
+  end
+
+  -- Otherwise walk backwards to find the parent epic and collapse it
+  for i = idx - 1, 1, -1 do
+    local prev = state.flat[i]
+    if prev and prev.is_epic and prev.depth < item.depth then
+      state.expanded[prev.bead.id] = false
+      renderToBuffer()
+      vim.api.nvim_win_set_cursor(state.win, { i + (state.header_size or HEADER_LINES), 0 })
+      return
+    end
   end
 end
 
@@ -638,13 +652,17 @@ local function deleteBead()
   end
 
   if item.is_epic then
-    vim.ui.select({ "Yes, delete epic and all children", "No, cancel" }, {
-      prompt = string.format("Delete epic '%s' and ALL its children?", title),
-    }, function(choice)
-      if choice and choice:match("^Yes") then doDelete(true) end
-    end)
+    local ok = vim.fn.confirm(
+      string.format("Delete epic '%s' and ALL its children?", title),
+      "&Yes\n&No", 2
+    )
+    if ok == 1 then doDelete(true) end
   else
-    doDelete(false)
+    local ok = vim.fn.confirm(
+      string.format("Delete '%s'?", title),
+      "&Yes\n&No", 2
+    )
+    if ok == 1 then doDelete(false) end
   end
 end
 

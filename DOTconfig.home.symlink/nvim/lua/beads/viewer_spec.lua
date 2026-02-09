@@ -513,9 +513,15 @@ describe("Beads Viewer", function()
       end
       assert.truthy(task_line, "Should find 'Another task'")
 
+      -- Stub confirm to auto-accept
+      local orig_confirm = vim.fn.confirm
+      vim.fn.confirm = function() return 1 end
+
       vim.api.nvim_win_set_cursor(win, { task_line, 0 })
       vim.api.nvim_feedkeys("d", "x", false)
       vim.wait(500)
+
+      vim.fn.confirm = orig_confirm
 
       -- Verify it's gone from the viewer
       lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
@@ -534,11 +540,9 @@ describe("Beads Viewer", function()
     end)
 
     it("d on epic prompts and cascade-deletes children", function()
-      -- Override vim.ui.select to auto-confirm
-      local orig_select = vim.ui.select
-      vim.ui.select = function(items, opts, on_choice)
-        on_choice(items[1])
-      end
+      -- Stub confirm to auto-accept
+      local orig_confirm = vim.fn.confirm
+      vim.fn.confirm = function() return 1 end
 
       vim.cmd("Beads")
       local buf = vim.api.nvim_win_get_buf(vim.api.nvim_tabpage_list_wins(0)[1])
@@ -560,8 +564,7 @@ describe("Beads Viewer", function()
       vim.api.nvim_feedkeys("d", "x", false)
       vim.wait(1000)
 
-      -- Restore original
-      vim.ui.select = orig_select
+      vim.fn.confirm = orig_confirm
 
       -- Epic should be gone
       lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)

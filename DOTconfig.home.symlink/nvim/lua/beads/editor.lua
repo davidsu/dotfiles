@@ -86,13 +86,8 @@ local function formatDiff(changes)
 end
 
 local function showConfirmDialog(diff_text, on_confirm)
-  vim.ui.select({ "Yes, update bead", "No, cancel" }, {
-    prompt = diff_text .. "\n\nApply changes?",
-  }, function(choice)
-    if choice and choice:match("^Yes") then
-      on_confirm()
-    end
-  end)
+  local ok = vim.fn.confirm(diff_text .. "\n\nApply changes?", "&Yes\n&No", 2)
+  if ok == 1 then on_confirm() end
 end
 
 local function applyUpdate(cwd, id, changes)
@@ -132,6 +127,11 @@ end
 
 local function setupEditableBuffer(buf, cwd, bead_id, original_text)
   vim.bo[buf].modifiable = true
+
+  for _, m in ipairs(vim.fn.getmatches()) do
+    if m.group == "BeadsCloseReason" then vim.fn.matchdelete(m.id) end
+  end
+  vim.fn.matchadd("BeadsCloseReason", "^Close reason:.*$")
 
   vim.api.nvim_buf_create_user_command(buf, "BeadUpdate", function()
     saveBeadBuffer(buf, cwd, bead_id, original_text)
