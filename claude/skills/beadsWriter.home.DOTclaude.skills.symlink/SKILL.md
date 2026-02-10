@@ -272,6 +272,46 @@ backend/app/user_apps/common/models/app_core.py:266
 | backend/app/user_apps/builder/chat/on_message_callback.py:16-34 | Remove proactive slug generation        |
 ```
 
+## Shell Escaping — Backticks in Descriptions
+
+**Pitfall:** Do NOT escape backticks with `\` in `--description`. Single-quoted strings treat `\` as literal, so `--description='...\`\`\`mermaid...'` stores `\`\`\`mermaid` — breaking mermaid and code blocks.
+
+**What works (tested):**
+
+```bash
+# Double quotes — shell interprets \` as ` (WORKS)
+bd create "Title" --description="## Diagram
+
+\`\`\`mermaid
+graph LR
+    A --> B
+\`\`\`
+"
+
+# --body-file — safest, no escaping needed (WORKS)
+cat <<'BEAD_EOF' > /tmp/bead-desc.md
+## Diagram
+
+```mermaid
+graph LR
+    A --> B
+```
+BEAD_EOF
+bd create "Title" --body-file /tmp/bead-desc.md
+```
+
+**What breaks:**
+
+```bash
+# Single quotes with backslash-backtick — \ is literal, stored as \` (BROKEN)
+bd create "Title" --description='```mermaid ...\`\`\`'
+```
+
+**Rules:**
+1. **Prefer `--body-file`** for descriptions with code fences — no escaping to think about
+2. **Double quotes work** but require `\`` for each backtick
+3. **Never use `\`` inside single quotes** — the `\` is stored literally
+
 ## Other Bead Formatting
 
 - Use `##` headers to separate major sections
