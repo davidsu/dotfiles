@@ -29,6 +29,12 @@ goto() {
 
 # Claude Code
 alias cyolo='claude --dangerously-skip-permissions'
+alias cy='claude --dangerously-skip-permissions'
+alias cvim='nvim -c "ClaudeConnect"'
 
 # Markdown viewer
 alias mdview='nvim --headless -c "MarkdownPreview"'
+
+# Beads vim viewer
+alias bvim='nvim -c "Beads"'
+alias vbeads='nvim -c "Beads"'
