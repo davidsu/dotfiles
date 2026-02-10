@@ -5,7 +5,11 @@ return {
   {
     "folke/snacks.nvim",
     opts = {
-      image = {},
+      image = {
+        convert = {
+          mermaid = { "-i", "{src}", "-o", "{file}", "-b", "transparent", "-t", "dark", "-s", "4" },
+        },
+      },
     },
   },
 }
