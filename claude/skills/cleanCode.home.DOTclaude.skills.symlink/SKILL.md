@@ -13,6 +13,8 @@ description: Refactor/clean/simplify code - eliminate duplication, small functio
 
 **🚨 Bash/Shell:** Before writing bash/zsh, run `/cleanCode:bash` for shell-specific patterns.
 
+**🚨 Python:** Before writing Python, run `/cleanCode:python` for Python-specific patterns and FastAPI conventions.
+
 ## General Principles
 
 - **Understand before changing** - Read existing code before making modifications

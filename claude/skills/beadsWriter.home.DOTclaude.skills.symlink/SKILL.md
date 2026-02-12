@@ -153,6 +153,66 @@ When constructing a table string for `bd update --description`:
 3. Pad each cell with spaces to that width
 4. Then build the final markdown string
 
+## Authorship Tracking (Footer)
+
+**Every bead update MUST include authorship tracking in the footer.** This enables tracing which agents or sessions created or modified each bead, critical for debugging workflows and improving agent instructions.
+
+### Format
+
+Add to the **bottom of every bead description** after all content:
+
+```markdown
+---
+**Created by**: <agent-name> (2026-02-11 10:23)
+**Updated by**: <agent-name-1> (2026-02-11 14:45), <agent-name-2> (2026-02-11 16:12)
+```
+
+### Rules
+
+1. **Always at the bottom** — after all content, after Source Beads section if present
+2. **Horizontal rule first** — start with `---` to visually separate from content
+3. **Created by** — agent/session name + timestamp (YYYY-MM-DD HH:MM format)
+4. **Updated by** — comma-separated list of updates, each with agent name + timestamp
+5. **Context-aware naming**:
+   - **If running as an agent** (spawned via Task tool): Use your agent name (e.g., `domain-researcher-auth`, `architect`, `synthesizer`)
+   - **If normal Claude Code session** (no team/agent context): Use `claude-code-session`
+   - **If unclear/unknown**: Use `claude-code`
+
+### When to Update
+
+- **On `bd create`**: Add `Created by` line
+- **On `bd update`**: Append to `Updated by` line (don't remove previous entries)
+
+### Example
+
+```markdown
+## Findings
+
+<bead content here...>
+
+## Source Beads
+- apper-research-auth-backend -> backend session handling
+- apper-research-auth-frontend -> React auth hooks
+
+---
+**Created by**: architect (2026-02-11 09:15)
+**Updated by**: domain-researcher-auth (2026-02-11 11:30), depth-auth (2026-02-11 14:22)
+```
+
+### Detection Logic
+
+```python
+# Pseudo-logic for determining agent name
+if agent_context_available:
+    agent_name = get_agent_name_from_context()  # e.g., "domain-researcher-auth"
+elif running_in_team:
+    agent_name = "claude-code-session"
+else:
+    agent_name = "claude-code-session"
+```
+
+This is **best-effort tracking** for debugging and workflow improvement, not strict auditing.
+
 ## Inline Source Attribution
 
 When a bead's description contains conclusions, findings, or action items that originate from other beads, cite the source bead(s) inline so readers can `bd show <cited-id>` to dig deeper.
