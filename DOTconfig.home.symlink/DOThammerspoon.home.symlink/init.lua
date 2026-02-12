@@ -36,6 +36,9 @@ hs.hotkey.bind(navMods, "m", function() hs.eventtap.keyStroke({}, "end", 0) end)
 hs.hotkey.bind(navMods, "u", function() hs.eventtap.keyStroke({}, "pageup", 0) end, nil, function() hs.eventtap.keyStroke({}, "pageup", 0) end)
 hs.hotkey.bind(navMods, "i", function() hs.eventtap.keyStroke({}, "pagedown", 0) end, nil, function() hs.eventtap.keyStroke({}, "pagedown", 0) end)
 
+-- Forward delete: backspace
+hs.hotkey.bind(navMods, "delete", function() hs.eventtap.keyStroke({}, "forwarddelete", 0) end, nil, function() hs.eventtap.keyStroke({}, "forwarddelete", 0) end)
+
 -- With shift for selection (Cmd+Ctrl+Shift+hjkl)
 local navModsShift = {"cmd", "ctrl", "shift"}
 hs.hotkey.bind(navModsShift, "h", function() hs.eventtap.keyStroke({"shift"}, "left", 0) end, nil, function() hs.eventtap.keyStroke({"shift"}, "left", 0) end)
