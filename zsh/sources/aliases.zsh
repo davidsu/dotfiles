@@ -9,6 +9,7 @@ alias -g V=' > /tmp/t && nvim /tmp/t -c '\''nmap q :q!<cr>'\'''
 alias -g PJ='package.json'
 alias -g IB='--inspect-brk'
 alias -g NO='--name-only'
+alias -g NS='--name-status'
 
 # ls (BSD/macOS): colorized output + classify + one entry per line
 alias ls='ls -GF1'
