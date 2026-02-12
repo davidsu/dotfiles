@@ -13,6 +13,7 @@ local function config()
       'json',
       'html',
       'css',
+      'python',
     },
 
     -- Enable highlighting
