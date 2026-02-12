@@ -1,8 +1,3 @@
----
-name: cleanCode:bash
-description: Bash/shell-specific refactoring knowledge - gotchas, patterns, and anti-patterns for shell scripts
----
-
 # Bash/Shell Code Simplification
 
 **Core principle:** Shell scripts are full of traps. Know the gotchas, write defensive code, keep it simple.
@@ -151,8 +146,8 @@ Before shell script is "done":
 
 ## Complexity Limits
 
-- Function >20 lines → Consider breaking up
-- Script >200 lines → Consider splitting into modules
-- Nested blocks >2 deep → Extract function or use early returns
+- Function >20 lines -> Consider breaking up
+- Script >200 lines -> Consider splitting into modules
+- Nested blocks >2 deep -> Extract function or use early returns
 
 **Self-prompt:** "Are any variables modified in subshells? Can I inline this single-use function? Does this need to be a function or just a clear comment? Have I quoted all variables? Would ShellCheck complain?"

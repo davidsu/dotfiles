@@ -2,8 +2,9 @@
   "mcpServers": {
     "tavily": {
       "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "tavily-mcp@latest"]
+      "command": "tavily-mcp",
+      "args": [],
+      "env": {}
     },
     "neovim": {
       "type": "stdio",

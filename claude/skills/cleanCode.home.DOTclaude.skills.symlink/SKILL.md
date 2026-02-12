@@ -9,11 +9,16 @@ description: Refactor/clean/simplify code - eliminate duplication, small functio
 
 **Influences:** Douglas Crockford's "JavaScript: The Good Parts", Robert C. Martin's "Clean Code"
 
-**🚨 TypeScript:** Before writing TypeScript, run `/cleanCode:typescript` for type annotation best practices.
+## Language-Specific Rules
 
-**🚨 Bash/Shell:** Before writing bash/zsh, run `/cleanCode:bash` for shell-specific patterns.
+**CRITICAL**: Before writing code, read the relevant resource:
 
-**🚨 Python:** Before writing Python, run `/cleanCode:python` for Python-specific patterns and FastAPI conventions.
+| Language   | Resource                                 |
+|------------|------------------------------------------|
+| TypeScript | [typescript.md](resources/typescript.md) |
+| Bash/Shell | [bash.md](resources/bash.md)             |
+| Python     | [python.md](resources/python.md)         |
+| Neovim/Lua | [neovim.md](resources/neovim.md)         |
 
 ## General Principles
 

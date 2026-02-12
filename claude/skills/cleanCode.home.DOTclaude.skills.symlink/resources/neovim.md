@@ -1,8 +1,3 @@
----
-name: neovim
-description: Rules for Neovim plugin configuration and Lua code in this dotfiles repo
----
-
 # Neovim Development Rules
 
 Load this skill when working on Neovim configuration or Lua code for Neovim.

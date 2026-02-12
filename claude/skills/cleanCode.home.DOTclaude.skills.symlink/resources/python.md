@@ -1,8 +1,3 @@
----
-name: cleanCode:python
-description: Python-specific clean code patterns - idiomatic Python, FastAPI conventions, async patterns, and common gotchas
----
-
 # Python Code Simplification
 
 **Core principle:** Python punishes complexity with indentation. Keep it flat, keep it readable.
@@ -11,7 +6,7 @@ description: Python-specific clean code patterns - idiomatic Python, FastAPI con
 
 ## Flatten Nesting
 
-4-space indentation makes deep nesting visually painful — by design. The language pushes you toward flat code.
+4-space indentation makes deep nesting visually painful -- by design. The language pushes you toward flat code.
 
 ### Extract pure guard helpers to flatten loops
 
@@ -27,7 +22,7 @@ async def _read_stream(response) -> bytes:
         chunks.append(chunk)
     return b"".join(chunks)
 
-# Good: pure guard helper — no side effects, just validates and raises
+# Good: pure guard helper -- no side effects, just validates and raises
 def _raise_on_size_exceeded(total: int):
     if total > MAX_SIZE:
         raise HTTPException(status_code=400, detail="File too large")
@@ -140,7 +135,7 @@ Readers see the building blocks first, then the public API that uses them. Match
 
 ## FastAPI Patterns
 
-### Skip one-field Pydantic models — use `Body()` directly
+### Skip one-field Pydantic models -- use `Body()` directly
 
 ```python
 # Bad: ceremony for one field
@@ -196,7 +191,7 @@ for item in items:
 result = [item.name for item in items if item.is_active]
 ```
 
-**Stop at one level.** Nested comprehensions are unreadable — use a loop or extract a helper.
+**Stop at one level.** Nested comprehensions are unreadable -- use a loop or extract a helper.
 
 ```python
 # Bad: nested comprehension

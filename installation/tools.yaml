@@ -20,6 +20,13 @@ tools:
     description: Python LSP for Neovim
     requires: node
 
+  tavily-mcp:
+    install_type: native
+    cmd: tavily-mcp
+    install_command: 'npm install -g tavily-mcp'
+    description: Tavily search MCP server for Claude Code
+    requires: node
+
   # Build dependencies (required for Neovim and high-performance plugins)
   cmake:
     brew_type: formula
@@ -139,18 +146,9 @@ tools:
     brew_type: cask
     description: Fast, native, GPU-accelerated terminal emulator
 
-  # karabiner-elements:
-  #   brew_type: cask
-  #   description: Powerful keyboard customizer for macOS
-  #   app_path: /Applications/Karabiner-Elements.app
-  #   setup_message: "Grant Input Monitoring and Accessibility permissions in System Settings → Privacy & Security."
-  # NOTE: Karabiner disabled - not allowed on company machines. Using Hammerspoon instead.
-
-  hammerspoon:
+  karabiner-elements:
     brew_type: cask
-    description: Lua-based macOS automation (mod-tap, navigation keys)
-    app_path: /Applications/Hammerspoon.app
-    setup_message: "Grant Accessibility permission in System Settings → Privacy & Security."
+    description: Powerful keyboard customizer for macOS
 
   rectangle:
     brew_type: cask

@@ -1,8 +1,3 @@
----
-name: cleanTypes
-description: TypeScript type best practices - proper typing patterns, avoiding type complexity, meaningful type annotations
----
-
 # TypeScript Type Best Practices
 
 ## 1. Prefer Inference Over Explicit Types
@@ -19,7 +14,7 @@ function isSymlink(path: string) { return fs.lstatSync(path).isSymbolicLink() }
 const plan = files.map(f => ({ from: f, to: transform(f) }))
 ```
 
-**Type at the source** — when a function returns a broad type, annotate the variable to help inference flow downstream:
+**Type at the source** -- when a function returns a broad type, annotate the variable to help inference flow downstream:
 
 ```typescript
 // Bad - execSync returns string | Buffer, downstream calls may lose type info
