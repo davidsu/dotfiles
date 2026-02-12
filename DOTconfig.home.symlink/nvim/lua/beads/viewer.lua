@@ -31,49 +31,29 @@ local state = {
   flat = {},
   expanded = {},
   cwd = nil,
-  show_help = false,
   scoped_epic = nil,
   scoped_epic_bead = nil,
   status_filter = "open",
 }
 
-local help_lines = {
-  "",
-  " Keymaps",
-  " ───────────────────────────",
-  " Enter   expand epic / open details",
-  " o       open bead details",
-  " K       preview bead (floating)",
-  " Tab     toggle expand/collapse",
-  " BS      collapse epic",
-  " C-]     drill into epic",
-  " -       drill up (back to all)",
-  " <space>c  close bead (mark done)",
-  " <space>o  (re)open bead",
-  " <space>i  mark in progress",
-  " <space>d  delete bead (epic: +children)",
-  " C-a     show all (open + closed)",
-  " C-o     show open only",
-  " C-c     show closed only",
-  " r       refresh list",
-  " q/Esc   close viewer",
-  " g?      toggle this help",
-  "",
-  " Icons",
-  " ───────────────────────────",
-  " ▶ ▼     epic (collapsed/open)",
-  " ○       task",
-  " ●       bug",
-  " ◆       feature",
-  "",
-  " Priority",
-  " ───────────────────────────",
-  " P0  critical (red)",
-  " P1  high (yellow)",
-  " P2  medium (blue)",
-  " P3  low (cyan)",
-  " P4  backlog (default)",
-  "",
+local help_keymaps = {
+  { lhs = "<CR>",      desc = "expand epic / open details" },
+  { lhs = "o",         desc = "open bead details" },
+  { lhs = "K",         desc = "preview bead (floating)" },
+  { lhs = "<Tab>",     desc = "toggle expand/collapse" },
+  { lhs = "<BS>",      desc = "collapse epic" },
+  { lhs = "<C-]>",     desc = "drill into epic" },
+  { lhs = "-",         desc = "drill up (back to all)" },
+  { lhs = "<space>c",  desc = "close bead (mark done)" },
+  { lhs = "<space>o",  desc = "(re)open bead" },
+  { lhs = "<space>i",  desc = "mark in progress" },
+  { lhs = "<space>d",  desc = "delete bead (epic: +children)" },
+  { lhs = "<C-a>",     desc = "show all (open + closed)" },
+  { lhs = "<C-o>",     desc = "show open only" },
+  { lhs = "<C-c>",     desc = "show closed only" },
+  { lhs = "r",         desc = "refresh list" },
+  { lhs = "q",         desc = "close viewer" },
+  { lhs = "g?",        desc = "search keymaps" },
 }
 
 -- Helpers
@@ -315,10 +295,6 @@ local function renderToBuffer()
   local scope_label = state.scoped_epic_bead and (" > " .. (state.scoped_epic_bead.title or state.scoped_epic)) or ""
   local lines = { " Beads" .. filter_label .. scope_label, string.rep("─", WIDTH) }
 
-  if state.show_help then
-    vim.list_extend(lines, help_lines)
-    table.insert(lines, string.rep("─", WIDTH))
-  end
 
   if state.scoped_epic_bead then
     table.insert(lines, renderItem({ bead = state.scoped_epic_bead, depth = 0, is_epic = true }))
@@ -475,6 +451,39 @@ local function openFileRef(path, line_start, line_end)
   end
 end
 
+local function slugify(text)
+  -- Strip leading # and whitespace
+  text = text:gsub("^#+ *", "")
+  -- Lowercase
+  text = text:lower()
+  -- Replace non-alphanumeric with hyphens
+  text = text:gsub("[^%w]+", "-")
+  -- Collapse consecutive hyphens
+  text = text:gsub("%-+", "-")
+  -- Trim leading/trailing hyphens
+  text = text:gsub("^%-", ""):gsub("%-$", "")
+  return text
+end
+
+local function findSectionLine(lines, section_slug)
+  for i, l in ipairs(lines) do
+    if l:match("^##+ ") then
+      if slugify(l) == section_slug then
+        return i
+      end
+    end
+  end
+  -- Partial match fallback: slug contains or is contained by heading slug
+  for i, l in ipairs(lines) do
+    if l:match("^##+ ") then
+      local heading_slug = slugify(l)
+      if heading_slug:find(section_slug, 1, true) or section_slug:find(heading_slug, 1, true) then
+        return i
+      end
+    end
+  end
+end
+
 local function parseBeadRef()
   local line = vim.api.nvim_get_current_line()
   local col = vim.api.nvim_win_get_cursor(0)[2] + 1
@@ -487,7 +496,14 @@ local function parseBeadRef()
       return id, ref_line
     end
   end
-  -- Fallback: match ID without line:col suffix
+  -- Match beadId#section-slug (e.g. apper-research-auth#key-findings)
+  for ref_start, id, slug in line:gmatch("()(%.?[%w][%w%-%.]+)#([%w%-]+)") do
+    local ref_end = ref_start + #id + 1 + #slug - 1
+    if col >= ref_start and col <= ref_end then
+      return id, nil, slug
+    end
+  end
+  -- Fallback: match ID without line:col suffix or #section
   for ref_start, id in line:gmatch("()(%.?[%w][%w%-%.]+[%w])") do
     local ref_end = ref_start + #id - 1
     if col >= ref_start and col <= ref_end then
@@ -496,7 +512,7 @@ local function parseBeadRef()
   end
 end
 
-local function openBeadById(id, line_nr)
+local function openBeadById(id, line_nr, section_slug)
   local output = fetchBeadDetails(id)
   if output == "" then
     vim.notify("Bead not found: " .. id, vim.log.levels.WARN)
@@ -509,6 +525,11 @@ local function openBeadById(id, line_nr)
   vim.fn.mkdir(tmp_dir, "p")
   local tmp_file = tmp_dir .. "/" .. id .. ".md"
   vim.fn.writefile(lines, tmp_file)
+
+  -- Resolve section slug to line number
+  if section_slug and not line_nr then
+    line_nr = findSectionLine(lines, section_slug)
+  end
 
   -- Clear modified flag on any bead buffer before switching away
   local cur_win = vim.api.nvim_get_current_win()
@@ -539,8 +560,8 @@ local function openBeadById(id, line_nr)
       openFileRef(path, line_start, line_end)
       return
     end
-    local ref_id, ref_line = parseBeadRef()
-    if ref_id then openBeadById(ref_id, ref_line) end
+    local ref_id, ref_line, ref_slug = parseBeadRef()
+    if ref_id then openBeadById(ref_id, ref_line, ref_slug) end
   end, { buffer = buf })
 
   vim.keymap.set("n", "q", function()
@@ -555,7 +576,7 @@ local function openBeadById(id, line_nr)
   end, { buffer = buf })
 
   if line_nr then
-    pcall(vim.api.nvim_win_set_cursor, 0, { line_nr, 0 })
+    positionViewport(line_nr)
   end
 end
 
@@ -656,9 +677,29 @@ local function collapseEpic()
   end
 end
 
-local function toggleHelp()
-  state.show_help = not state.show_help
-  renderToBuffer()
+local function showHelp()
+  local entries = {}
+  local lhs_by_line = {}
+  for _, km in ipairs(help_keymaps) do
+    local entry = string.format("%-12s %s", km.lhs, km.desc)
+    table.insert(entries, entry)
+    lhs_by_line[entry] = km.lhs
+  end
+  local win = state.win
+  require("fzf-lua").fzf_exec(entries, {
+    prompt = "Beads Keymaps> ",
+    winopts = { height = 0.6, width = 0.5 },
+    actions = {
+      ["default"] = function(selected)
+        if not selected or not selected[1] then return end
+        local lhs = lhs_by_line[selected[1]]
+        if not lhs or not win or not vim.api.nvim_win_is_valid(win) then return end
+        vim.api.nvim_set_current_win(win)
+        local keys = vim.api.nvim_replace_termcodes(lhs, true, false, true)
+        vim.api.nvim_feedkeys(keys, "m", false)
+      end,
+    },
+  })
 end
 
 local function clearChildrenCache()
@@ -797,7 +838,7 @@ local function setupKeymaps(buf)
   vim.keymap.set("n", "r", refresh, opts)
   vim.keymap.set("n", "q", closeViewer, opts)
   vim.keymap.set("n", "<Esc>", closeViewer, opts)
-  vim.keymap.set("n", "g?", toggleHelp, opts)
+  vim.keymap.set("n", "g?", showHelp, opts)
   vim.keymap.set("n", "K", showFloatingPreview, opts)
 end
 
@@ -897,9 +938,12 @@ return {
   setup = setup,
   _test = {
     parseFileRef = parseFileRef,
+    parseBeadRef = parseBeadRef,
     openFileRef = openFileRef,
     highlightRange = highlightRange,
     positionViewport = positionViewport,
+    slugify = slugify,
+    findSectionLine = findSectionLine,
     gitRoot = gitRoot,
     state = state,
   },
