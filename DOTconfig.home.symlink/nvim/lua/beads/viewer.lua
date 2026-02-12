@@ -48,7 +48,10 @@ local help_lines = {
   " BS      collapse epic",
   " C-]     drill into epic",
   " -       drill up (back to all)",
-  " d       delete bead (epic: +children)",
+  " <space>c  close bead (mark done)",
+  " <space>o  (re)open bead",
+  " <space>i  mark in progress",
+  " <space>d  delete bead (epic: +children)",
   " C-a     show all (open + closed)",
   " C-o     show open only",
   " C-c     show closed only",
@@ -106,8 +109,77 @@ local function statusFlag()
   return ""
 end
 
+-- Fast SQLite query for parentless beads (avoids loading all beads + filtering in Lua)
+local function fetchParentlessBeadsSQL()
+  local cwd = state.cwd or vim.fn.getcwd()
+  local db_path = cwd .. "/.beads/beads.db"
+
+  -- Check if database exists
+  if vim.fn.filereadable(db_path) ~= 1 then
+    return nil, "No beads database found"
+  end
+
+  -- Build status filter for SQL
+  local status_filter = ""
+  if state.status_filter == "closed" then
+    status_filter = "AND i.status = 'closed'"
+  elseif state.status_filter ~= "all" then
+    status_filter = "AND i.status IN ('open', 'in_progress', 'blocked', 'deferred')"
+  end
+
+  -- Query for parentless beads (excludes children in dependencies table + dotted IDs)
+  local sql = string.format([[
+    SELECT id FROM issues i
+    WHERE i.deleted_at IS NULL
+      %s
+      AND i.id NOT IN (SELECT issue_id FROM dependencies WHERE type = 'parent-child')
+      AND i.id NOT GLOB '*.[0-9]*'
+    ORDER BY i.priority ASC, i.title ASC
+    LIMIT 200
+  ]], status_filter)
+
+  local cmd = string.format("sqlite3 -json %s %s 2>/dev/null",
+    vim.fn.shellescape(db_path),
+    vim.fn.shellescape(sql))
+  local output = vim.fn.system(cmd)
+
+  if vim.v.shell_error ~= 0 then
+    return nil, "SQLite query failed"
+  end
+
+  local id_rows = parseJson(output)
+  if not id_rows or #id_rows == 0 then
+    return {}
+  end
+
+  -- Extract IDs and fetch full details via bd (with status filter to match SQL query)
+  local ids = {}
+  for _, row in ipairs(id_rows) do
+    table.insert(ids, row.id)
+  end
+
+  local id_list = table.concat(vim.tbl_map(vim.fn.shellescape, ids), ",")
+  local beads_output = runBd("list --json --id=" .. id_list .. statusFlag())
+  if not beads_output then
+    return nil, "Failed to fetch bead details"
+  end
+
+  return parseJson(beads_output)
+end
+
 local function fetchBeads()
   local cwd = state.cwd or vim.fn.getcwd()
+
+  -- Try fast SQLite approach first (only for parentless beads view)
+  if not state.scoped_epic then
+    local beads, err = fetchParentlessBeadsSQL()
+    if beads then
+      return beads
+    end
+    -- Fall back to old approach if SQLite fails (silent fallback for tests)
+  end
+
+  -- Fallback: original slow approach
   if state.status_filter == "all" then
     return merger.fetchAllBeads(cwd)
   end
@@ -633,6 +705,25 @@ local function setFilter(filter)
   end
 end
 
+local function updateBeadStatus(status)
+  local item = getItemAtCursor()
+  if not item or not item.bead then return end
+
+  local id = item.bead.id
+  local title = item.bead.title or id
+  local current_bead_id = id
+
+  local result = runBd(string.format("update %s --status=%s", vim.fn.shellescape(id), status))
+  if result then
+    vim.notify(string.format("%s: %s", status, title), vim.log.levels.INFO)
+    if reloadBeads() then
+      restoreCursorTo(current_bead_id)
+    end
+  else
+    vim.notify(string.format("Failed to update %s", title), vim.log.levels.ERROR)
+  end
+end
+
 local function deleteBead()
   local item = getItemAtCursor()
   if not item or not item.bead then return end
@@ -699,7 +790,10 @@ local function setupKeymaps(buf)
   vim.keymap.set("n", "<C-a>", function() setFilter("all") end, opts)
   vim.keymap.set("n", "<C-o>", function() setFilter("open") end, opts)
   vim.keymap.set("n", "<C-c>", function() setFilter("closed") end, opts)
-  vim.keymap.set("n", "d", deleteBead, opts)
+  vim.keymap.set("n", "<space>c", function() updateBeadStatus("closed") end, opts)
+  vim.keymap.set("n", "<space>o", function() updateBeadStatus("open") end, opts)
+  vim.keymap.set("n", "<space>i", function() updateBeadStatus("in_progress") end, opts)
+  vim.keymap.set("n", "<space>d", deleteBead, opts)
   vim.keymap.set("n", "r", refresh, opts)
   vim.keymap.set("n", "q", closeViewer, opts)
   vim.keymap.set("n", "<Esc>", closeViewer, opts)
