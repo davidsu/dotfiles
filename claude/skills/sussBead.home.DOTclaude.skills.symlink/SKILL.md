@@ -15,8 +15,10 @@ Load this skill before any `bd create`, `bd update`, or when reading beads for c
 **CRITICAL**: You MUST `Read` the relevant resource file before proceeding:
 - **Writing a bead** (`bd create`, `bd update`): Read [WRITING.md](resources/WRITING.md) first. Never write without it.
 - **Reading beads for context** (planning, research): Read [READING.md](resources/READING.md) first. Never consume beads without it.
+- **Exporting beads** (`/sussBead export <id>`): Read [EXPORT.md](resources/EXPORT.md) first. Follow its algorithm exactly.
 
 | Resource                                 | When to use                                          |
 |------------------------------------------|------------------------------------------------------|
 | [WRITING.md](resources/WRITING.md)       | Before any `bd create` or `bd update` call           |
 | [READING.md](resources/READING.md)       | When consuming beads for context (planning, research) |
+| [EXPORT.md](resources/EXPORT.md)         | `/sussBead export <bead-id>` — export to markdown    |
