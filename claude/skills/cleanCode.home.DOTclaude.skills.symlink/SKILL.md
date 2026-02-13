@@ -26,6 +26,7 @@ description: Refactor/clean/simplify code - eliminate duplication, small functio
 - **Ask for clarity** - When requirements are ambiguous, ask rather than guess
 - **Minimize scope** - Only change what's directly requested or clearly necessary
 - **Prefer clarity** - Clear code over clever code
+- **Skill rules override existing code** - The codebase is inherited and may contain legacy patterns that violate these guidelines. All **new and modified** code must follow the rules here, even if surrounding code doesn't
 
 ## 1. Small Functions, Clear Names
 

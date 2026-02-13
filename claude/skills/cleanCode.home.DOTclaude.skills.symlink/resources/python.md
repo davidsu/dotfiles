@@ -2,39 +2,114 @@
 
 **Core principle:** Python punishes complexity with indentation. Keep it flat, keep it readable.
 
-**Influences:** PEP 8, "Fluent Python" (Luciano Ramalho), The Zen of Python
+**For JS/Scala engineers:** This covers Python idioms that differ from what you know.
+
+**Inherited codebase rule:** Existing code may violate these guidelines -- it's legacy. All **new and modified** code must follow these rules. Don't copy patterns from existing code that conflict with what's written here.
+
+## Naming: snake_case World
+
+| Element            | Convention     | Example                                        |
+|--------------------|----------------|------------------------------------------------|
+| Variables, functions | `snake_case`  | `user_count`, `get_user_by_id()`               |
+| Classes            | `PascalCase`   | `UserService`, `RateLimitResult`               |
+| Constants          | `UPPER_SNAKE`  | `MAX_RETRIES`, `DEFAULT_TIMEOUT_SECONDS`       |
+| Private/internal   | `_prefix`      | `_validate_url()`, `_extract_slug()`           |
+| Booleans           | question prefix | `is_active`, `has_permission`, `should_skip`   |
+| Settings booleans  | `_enabled` suffix | `audit_logs_enabled`, `redis_compress_enabled` |
+
+**Functions are verb-noun:** `validate_url()`, `build_schema()`, `extract_filename()`, `notify_subscribers()`.
+
+**Classes are domain-specific nouns** -- never bare `Manager`/`Helper`/`Utils`:
+
+```python
+# Bad
+class Manager: ...
+class EmailHelper: ...
+
+# Good -- domain prefix tells you what it manages
+class OAuthStateManager: ...
+class WorkspaceService: ...
+class SendGridFacade: ...
+```
+
+## Structured Data: Dataclasses + Enums
+
+### `@dataclass` for internal structured data
+
+Don't pass dicts when fields are known:
+
+```python
+# Bad: what keys does this dict have?
+result = {"allowed": True, "remaining": 5, "reset_at": 1234}
+
+# Good: self-documenting, IDE autocomplete, type-safe
+@dataclass
+class RateLimitResult:
+    allowed: bool
+    remaining: int
+    reset_at: int
+```
+
+Use **Pydantic `BaseModel`** at API boundaries (request/response), **`@dataclass`** everywhere else.
+
+### `str, Enum` for typed string values
+
+Never compare raw strings for statuses, categories, or types:
+
+```python
+# Bad: typo-prone, no autocomplete
+if status == "pendding":  # silent bug
+
+# Good: type-safe, discoverable
+class AppStage(str, Enum):
+    PENDING = "pending"
+    READY = "ready"
+
+if status == AppStage.PENDING:  # caught at definition time
+```
+
+`str, Enum` allows direct string comparison while providing type safety.
+
+## Constants Over Magic Numbers
+
+```python
+# Bad: what do 3 and 6 mean?
+if retries > 3:
+    abort()
+short_id = org_id[:6]
+
+# Good: self-documenting
+MAX_RETRIES = 3
+SHORT_ID_LENGTH = 6
+
+if retries > MAX_RETRIES:
+    abort()
+short_id = org_id[:SHORT_ID_LENGTH]
+```
+
+Especially for: timeouts, size limits, retry counts, slice indices, threshold values.
 
 ## Flatten Nesting
 
-4-space indentation makes deep nesting visually painful -- by design. The language pushes you toward flat code.
-
-### Extract pure guard helpers to flatten loops
+### Extract pure guard helpers
 
 ```python
-# Bad: if/raise block adds nesting inside a loop
-async def _read_stream(response) -> bytes:
-    chunks = []
-    total = 0
-    async for chunk in response.aiter_bytes():
-        total += len(chunk)
-        if total > MAX_SIZE:
-            raise HTTPException(status_code=400, detail="File too large")
-        chunks.append(chunk)
-    return b"".join(chunks)
+# Bad: if/raise adds nesting inside a loop
+async for chunk in response.aiter_bytes():
+    total += len(chunk)
+    if total > MAX_SIZE:
+        raise HTTPException(status_code=400, detail="File too large")
+    chunks.append(chunk)
 
-# Good: pure guard helper -- no side effects, just validates and raises
-def _raise_on_size_exceeded(total: int):
+# Good: guard helper keeps the loop flat
+def _check_size_limit(total: int):
     if total > MAX_SIZE:
         raise HTTPException(status_code=400, detail="File too large")
 
-async def _read_stream(response) -> bytes:
-    chunks = []
-    total = 0
-    async for chunk in response.aiter_bytes():
-        total += len(chunk)
-        _raise_on_size_exceeded(total)
-        chunks.append(chunk)
-    return b"".join(chunks)
+async for chunk in response.aiter_bytes():
+    total += len(chunk)
+    _check_size_limit(total)
+    chunks.append(chunk)
 ```
 
 ### Combine async context managers (Python 3.10+)
@@ -43,7 +118,6 @@ async def _read_stream(response) -> bytes:
 # Bad: nested pyramid
 async with httpx.AsyncClient(timeout=30.0) as client:
     async with client.stream("GET", url) as response:
-        response.raise_for_status()
         return await _read_stream(response)
 
 # Good: flat
@@ -51,116 +125,68 @@ async with (
     httpx.AsyncClient(timeout=30.0) as client,
     client.stream("GET", url) as response,
 ):
-    response.raise_for_status()
     return await _read_stream(response)
-```
-
-### Guard clauses over nested ifs
-
-```python
-# Bad: nested validation
-def process(data):
-    if data is not None:
-        if data.get("url"):
-            if is_valid_url(data["url"]):
-                return fetch(data["url"])
-    return None
-
-# Good: early returns
-def process(data):
-    if data is None:
-        return None
-    url = data.get("url")
-    if not url or not is_valid_url(url):
-        return None
-    return fetch(url)
 ```
 
 ## One-Liner Returns
 
-Skip intermediate variables when the expression is self-explanatory.
+Skip intermediate variables when the expression is self-explanatory:
 
 ```python
-# Bad: unnecessary variable
+# Unnecessary variable
 def _extract_filename(url: str) -> str:
     parsed = urlparse(url)
     return parsed.path.split("/")[-1]
 
-# Good: direct
+# Direct
 def _extract_filename(url: str) -> str:
     return urlparse(url).path.split("/")[-1]
 ```
 
-**Keep the variable** when it adds clarity or is reused:
+**Keep the variable** when it adds clarity:
 
 ```python
-# Good: 'hostname' is clearer than repeating the chain
 def _is_internal(url: str) -> bool:
     hostname = urlparse(url).hostname or ""
     return hostname.endswith(".internal.com")
 ```
 
-## File Layout: Helpers First, Endpoints Last
+## File Layout
 
-Structure API files top-to-bottom: imports, constants, helpers, then endpoints.
+Structure: imports, constants, shared helpers, private helpers, endpoints.
 
 ```python
-# 1. Imports
 import logging
 from fastapi import HTTPException
 
-# 2. Constants
 MAX_SIZE = 40 * 1024 * 1024
 
-# 3. Shared helpers
 def url_for_file(file_uri: str) -> str: ...
 
-# 4. Private helpers
 def _validate_url(url: str): ...
 def _extract_filename(url: str) -> str: ...
 async def _download_file(url: str) -> bytes: ...
-
-# 5. Endpoints (at the bottom)
-@router.get("/{file_uri}")
-async def get_file_endpoint(file_uri: str): ...
-
-@router.post("/")
-async def upload_file_endpoint(file: UploadFile): ...
 
 @router.post("/reupload")
 async def reupload_file_endpoint(url: str = Body(...)): ...
 ```
 
-Readers see the building blocks first, then the public API that uses them. Matches `custom_integrations/api.py` and other codebase conventions.
+Readers see building blocks first, then the public API.
 
 ## FastAPI Patterns
 
-### Skip one-field Pydantic models -- use `Body()` directly
+### Skip one-field Pydantic models
 
 ```python
-# Bad: ceremony for one field
-class ReuploadFileRequest(BaseModel):
-    url: str
-
-@router.post("/reupload")
-async def reupload(body: ReuploadFileRequest):
-    do_something(body.url)
-
-# Good: inline
-from fastapi import Body
-
+# Use Body() directly instead of a model for one field
 @router.post("/reupload")
 async def reupload(url: str = Body(..., embed=True)):
     do_something(url)
 ```
 
-**Keep the model** when it has 2+ fields, validation logic, or is reused.
+Keep the model when it has 2+ fields, validation, or is reused.
 
-### Request models live next to their endpoint
-
-The codebase convention: define request models in the same file as the route, not in a separate models file. Follow existing patterns.
-
-### Make endpoints read like English
+### Endpoints read like English
 
 ```python
 @router.post("/reupload")
@@ -181,41 +207,40 @@ Each line is one clear step. Helpers hide the how.
 ## Comprehensions Over Loops
 
 ```python
-# Bad: manual accumulation
-result = []
-for item in items:
-    if item.is_active:
-        result.append(item.name)
-
-# Good: comprehension
 result = [item.name for item in items if item.is_active]
 ```
 
-**Stop at one level.** Nested comprehensions are unreadable -- use a loop or extract a helper.
+**Stop at one level.** Nested comprehensions are unreadable:
 
 ```python
-# Bad: nested comprehension
+# Bad
 names = [name for group in groups for item in group.items if item.active for name in item.names]
 
-# Good: extract
+# Good: extract helper
 def active_names(group):
     return [name for item in group.items if item.active for name in item.names]
 
 names = [name for group in groups for name in active_names(group)]
 ```
 
-## Python-Specific Gotchas
+## Walrus Operator `:=`
 
-### `if/raise` is the only way
-
-Python has no inline conditional statements. This is the standard pattern:
+Assign and test in one expression -- useful for "get then check":
 
 ```python
-if total > MAX_SIZE:
-    raise HTTPException(status_code=400, detail="File too large")
+# Without: repeated name
+app_context = context.get("app_context")
+if app_context:
+    log_data["app_id"] = app_context.app_id
+
+# With walrus
+if app_context := context.get("app_context"):
+    log_data["app_id"] = app_context.app_id
 ```
 
-No shortcut exists. Don't fight it.
+Good for `dict.get()`, `re.match()`, `next(..., None)`. Don't nest them.
+
+## Gotchas
 
 ### Mutable default arguments
 
@@ -238,14 +263,12 @@ def add_item(item, items=None):
 ```python
 # Bad
 path = "user_" + str(user.id) + "/" + filename
-msg = "Failed to fetch %s" % url
 
 # Good
 path = f"user_{user.id}/{filename}"
-msg = f"Failed to fetch {url}"
 ```
 
-### Don't catch broad exceptions
+### Catch specific exceptions
 
 ```python
 # Bad: swallows everything including KeyboardInterrupt
@@ -254,7 +277,7 @@ try:
 except Exception:
     pass
 
-# Good: catch specific errors
+# Good
 try:
     result = do_something()
 except (ValueError, KeyError) as e:
@@ -262,26 +285,25 @@ except (ValueError, KeyError) as e:
     raise HTTPException(status_code=400, detail="Invalid input")
 ```
 
-## Refactoring Checklist for Python
+## Python Checklist
 
-Before Python code is "done":
-
-1. **Max 2 levels of nesting?** Extract helper or use guard clauses
-2. **Async context managers combinable?** Use `async with (a, b):` syntax
-3. **One-field Pydantic model?** Replace with `Body(..., embed=True)`
-4. **Loop body >3 lines?** Extract to a named helper
-5. **Comprehension readable at a glance?** If not, use a loop
-6. **`_` prefix on internal helpers?** Don't expose implementation
-7. **Endpoint reads like English?** Each line = one clear step
-8. **Mutable default args?** Use `None` sentinel
-9. **Catching broad exceptions?** Narrow to specific types
-10. **Intermediate variables earning their keep?** Drop if the expression is clear
+1. **snake_case everywhere?** No camelCase leaking from JS/Scala
+2. **Booleans prefixed?** `is_`/`has_`/`can_`/`should_` (or `_enabled` suffix for settings)
+3. **Structured data typed?** `@dataclass` or Pydantic, not bare dicts
+4. **String values enumerated?** `str, Enum` not raw string literals
+5. **Magic numbers named?** Constants for thresholds, limits, sizes
+6. **Async context managers combined?** `async with (a, b):` syntax
+7. **One-field Pydantic model?** Replace with `Body(..., embed=True)`
+8. **Loop body >3 lines?** Extract to a named helper
+9. **Comprehension readable at a glance?** If not, use a loop
+10. **`_` prefix on internal helpers?** Don't expose implementation
+11. **Endpoint reads like English?** Each line = one clear step
+12. **Intermediate variables earning their keep?** Drop if the expression is clear
+13. **Mutable default args?** Use `None` sentinel
+14. **Catching broad exceptions?** Narrow to specific types
 
 ## Complexity Limits
 
-- Function >20 lines -> Extract subfunctions
-- File >250 lines -> Consider splitting by responsibility
-- Nested blocks >2 deep -> Extract function or guard clause
 - Comprehension >1 line -> Consider a loop or helper
 
-**Self-prompt:** "Can I flatten this nesting? Does the function read like a sentence? Is this helper earning its existence or just moving code around? Would a Python developer find this idiomatic?"
+**Self-prompt:** "Does the function read like a sentence? Is this helper earning its existence or just moving code around? Would a Python developer find this idiomatic?"
