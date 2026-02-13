@@ -8,11 +8,11 @@
 
 This ensures you follow clean code principles and coding standards automatically.
 
-### Bead Writing Context
+### Bead Context
 
-**CRITICAL REQUIREMENT**: Before any `bd create` or `bd update` call, you MUST load `/beadWriter` if you haven't already loaded it in this conversation.
+**CRITICAL REQUIREMENT**: Before any `bd create`, `bd update`, or when reading beads for context, you MUST load `/sussBead` if you haven't already loaded it in this conversation.
 
-This ensures correct bead ID naming, parent-child structure, table alignment, source attribution, and markdown formatting.
+This ensures correct bead writing conventions (ID naming, inline source attribution with `#section-slug`, table alignment) and reading protocol (parent traversal, contradiction escalation).
 
 ## NEVER Guess
 

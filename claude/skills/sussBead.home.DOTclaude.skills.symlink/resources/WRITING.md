@@ -1,14 +1,4 @@
----
-name: beadWriter
-description: >
-  Conventions for creating and writing beads — ID naming, parent-child structure, table
-  alignment, inline source attribution, mermaid diagrams, and general markdown formatting.
-  Use before any bd create or bd update call.
----
-
 # Bead Writing Conventions
-
-Load this skill before any `bd create` or `bd update` call.
 
 ## NEVER GUESS — Accuracy is Mandatory
 
@@ -169,7 +159,7 @@ Add to the **bottom of every bead description** after all content:
 
 ### Rules
 
-1. **Always at the bottom** — after all content, after Source Beads section if present
+1. **Always at the bottom** — after all content
 2. **Horizontal rule first** — start with `---` to visually separate from content
 3. **Created by** — agent/session name + timestamp (YYYY-MM-DD HH:MM format)
 4. **Updated by** — comma-separated list of updates, each with agent name + timestamp
@@ -189,10 +179,6 @@ Add to the **bottom of every bead description** after all content:
 ## Findings
 
 <bead content here...>
-
-## Source Beads
-- apper-research-auth-backend -> backend session handling
-- apper-research-auth-frontend -> React auth hooks
 
 ---
 **Created by**: architect (2026-02-11 09:15)
@@ -215,23 +201,42 @@ This is **best-effort tracking** for debugging and workflow improvement, not str
 
 ## Inline Source Attribution
 
-When a bead's description contains conclusions, findings, or action items that originate from other beads, cite the source bead(s) inline so readers can `bd show <cited-id>` to dig deeper.
+When a bead's description contains conclusions, findings, or action items that originate from other beads, cite the source bead(s) inline so readers can navigate to the exact section for deeper context.
 
 ### Format
 
 After each section's content, list source beads on their own lines:
 
 ```
-<full-bead-id> -> <short reason why this bead is relevant>
+<full-bead-id>#<section-slug> -> <short reason why this bead is relevant>
 ```
+
+The `#section-slug` is a kebab-case slug matching a `##` or `###` heading in the target bead. This enables `gd` navigation in the Neovim beads viewer to jump directly to that section.
+
+### Slug Rules
+
+1. Strip the leading `#` characters and whitespace from the heading
+2. Lowercase everything
+3. Replace spaces, colons, and special characters with hyphens
+4. Collapse consecutive hyphens into one
+5. Trim leading/trailing hyphens
+
+**Examples:**
+
+| Heading in target bead                  | Slug                                |
+|-----------------------------------------|-------------------------------------|
+| `## Key Findings: URL Handling`         | `key-findings-url-handling`         |
+| `### Frontend — 8 REAL Risks`           | `frontend-8-real-risks`             |
+| `## Q1: Backend file_urls Processing`   | `q1-backend-file-urls-processing`   |
 
 ### Rules
 
 1. **Use full bead IDs** — no short keys or abbreviations. The ID must be directly usable with `bd show`
-2. **Place after the section content** — not inline within sentences, not in a separate section at the bottom
-3. **Include a short reason** — a few words explaining what this source contributes to the conclusion
-4. **One line per source** — each source bead gets its own line with its own reason
-5. **Keep the Source Beads section** at the bottom as a quick-reference index
+2. **Include `#section-slug`** — the slug MUST match a `##` or `###` heading in the target bead. Verify the heading exists before writing the reference
+3. **Place after the section content** — not inline within sentences
+4. **Do NOT collect references in a footer section** — every reference MUST appear inline after the content it supports. No `## Source Beads` or `## References` section at the bottom
+5. **Include a short reason** — a few words explaining what this source contributes
+6. **One line per source** — each source bead gets its own line with its own reason
 
 ### Example
 
@@ -243,7 +248,7 @@ Designed to support null slugs. `APP#{app_id}` entry written regardless;
 
 - **Status**: NO CHANGE NEEDED
 
-apper-research-runtime-store -> DynamoDB single-table design, defensive null checks in write/delete
+apper-research-runtime-store#url-handling -> DynamoDB single-table design, defensive null checks in write/delete
 
 ### Frontend — 8 REAL Risks
 
@@ -254,9 +259,23 @@ Fresh audit of all 68 `.slug` references found 8 unguarded locations.
 | domains.ts    | CRITICAL | 3 URL functions produce undefined  |
 | AppDomains.js | HIGH     | SlugEditor shows broken URL        |
 
-apper-research-fe-audit-v2 -> found InviteUserModal (missed by first pass)
-apper-research-fe-check-v1 -> items 1-6 (thorough frontend check)
+apper-research-fe-audit-v2#frontend-8-real-risks -> found InviteUserModal (missed by first pass)
+apper-research-fe-check-v1#slug-reference-audit -> items 1-6 (thorough frontend check)
 ```
+
+### Bad — footer collection (PROHIBITED)
+
+```markdown
+## Findings
+Some conclusion about auth...
+Some other conclusion about frontend...
+
+## Source Beads
+- apper-research-auth-backend -> backend session handling
+- apper-research-auth-frontend -> React auth hooks
+```
+
+This loses traceability. You can't tell which finding came from which bead.
 
 ## Mermaid Diagrams
 
