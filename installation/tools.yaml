@@ -75,6 +75,10 @@ tools:
     brew_type: formula
     description: Lightweight and flexible command-line JSON processor
 
+  mdq:
+    brew_type: formula
+    description: jq-like tool for querying and filtering Markdown documents
+
   # Terminal multiplexer
   tmux:
     brew_type: formula
