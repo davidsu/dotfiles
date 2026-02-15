@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# bd-section — extract a specific section from a bead description
+#
+# Usage:
+#   bd-section <bead-id> [section-slug]
+#     - With section-slug: returns only that section's content
+#     - Without section-slug: returns the Summary section
+#
+# Prerequisites: jq, mdq
+
+set -euo pipefail
+
+bead_id="$1"
+section_slug="${2:-Summary}"
+
+# Convert kebab-case slug to mdq regex: "key-findings-url-handling" → /(?i)^key.findings.url.handling$/
+# Uses . for any-char to match hyphens, spaces, colons, em-dashes in original headings
+pattern="$(echo "$section_slug" | sed 's/-/./g')"
+
+# Use --json for clean markdown (bd show plain output appends CHILDREN/NOTES footers)
+bd show "$bead_id" --json 2>/dev/null | jq -r '.[0].description // empty' | mdq "# /(?i)^${pattern}$/" 2>/dev/null || true

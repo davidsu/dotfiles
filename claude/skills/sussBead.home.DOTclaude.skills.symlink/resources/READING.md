@@ -42,6 +42,55 @@ apper-research-fe-audit-v2#frontend-8-real-risks -> found InviteUserModal (misse
 
 The synthesizer tells you *what* (8 risks). If you need *which files and why*, follow the reference to get the detailed audit.
 
+## Selective Reading with bd-section
+
+Full `bd show <id>` dumps the entire description — often 5-10K+ characters. For large hierarchies (20+ beads), this blows the context window. Use selective loading instead.
+
+The scripts live in the sussBead skill directory. Use full paths:
+
+```bash
+BD_SCRIPTS=~/.claude/skills/sussBead/scripts
+```
+
+### Summary-only skimming
+
+```bash
+# Get just the ## Summary section (default when no slug given)
+$BD_SCRIPTS/bd-section <bead-id>
+
+# Explore a full tree with summaries only (~2-5K instead of ~100K)
+$BD_SCRIPTS/bd-explore <bead-id>
+```
+
+**Always start with `bd-explore`** when entering a bead hierarchy. This gives you the full tree structure with summaries — enough to understand scope and find the specific beads you need.
+
+### Section-level fetch
+
+When a bead reference includes a `#section-slug`:
+
+```
+apper-research-fe-audit-v2#frontend-8-real-risks -> found InviteUserModal
+```
+
+Instead of loading the full bead, extract just that section:
+
+```bash
+$BD_SCRIPTS/bd-section apper-research-fe-audit-v2 frontend-8-real-risks
+```
+
+This returns only the `## Frontend — 8 REAL Risks` section content.
+
+### When to use full bd show
+
+Only use `bd show <id>` when you genuinely need the complete description — e.g., implementing from a detailed design bead, or when the summary is insufficient and you need all sections.
+
+### Reading flow
+
+1. `$BD_SCRIPTS/bd-explore <epic-id>` — get the tree with summaries
+2. Identify which beads are relevant to your task
+3. `$BD_SCRIPTS/bd-section <id> <slug>` — pull specific sections you need
+4. `bd show <id>` — only if you need the full description
+
 ## Contradiction Escalation — CRITICAL
 
 **If you find contradicting or inconsistent information between beads: STOP IMMEDIATELY.**

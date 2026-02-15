@@ -48,6 +48,30 @@ bd create "Title here" --id myapp-research-auth --type epic --deps parent-child:
 - `--type` sets task|bug|feature|epic|chore (default: task)
 - Always combine `--id`, `--deps`, `--type`, etc. in one call
 
+## Summary Section (Required)
+
+Every bead description MUST start with a `## Summary` section — 1-3 sentences explaining the bead's purpose and key outcome. This enables selective context loading: explorers and readers can skim summaries without loading full descriptions.
+
+**Rules:**
+
+1. **MUST be the first `##` section** in the description
+2. **1-3 sentences max** — what this bead is about and what it concluded/decided
+3. **No code blocks, tables, or references** in the summary — plain text only
+4. **For epics**: describe the goal and scope
+5. **For research**: state the question and the answer
+6. **For impl**: describe what was built and why
+
+**Example:**
+
+```markdown
+## Summary
+
+Add selective context loading to the sussBead skill so LLMs can skim bead hierarchies via summaries instead of loading full descriptions. Introduces bd-section and bd-explore scripts.
+
+## Detailed Design
+...
+```
+
 ## Bead ID Naming
 
 Use semantic IDs with the project prefix: `<prefix>-<category>-<descriptive-name>`

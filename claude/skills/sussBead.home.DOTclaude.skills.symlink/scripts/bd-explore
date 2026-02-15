@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+"""bd-explore — recursive summary explorer for bead hierarchies.
+
+Usage:
+    bd-explore <bead-id>
+
+Shows the full bead tree (parents up to root + target + children,
+recursively) with only the ## Summary section for each bead.
+Gives hierarchy context in ~2-5K instead of ~100K.
+
+Prerequisites: mdq, bd
+"""
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+
+def run(cmd: list[str], stdin: str = "") -> str:
+    result = subprocess.run(cmd, input=stdin or None, capture_output=True, text=True)
+    return result.stdout.strip()
+
+
+def bd_show_json(bead_id: str) -> dict | None:
+    raw = run(["bd", "show", bead_id, "--json"])
+    if not raw:
+        return None
+    data = json.loads(raw)
+    return data[0] if isinstance(data, list) and data else None
+
+
+def extract_summary(bead_id: str) -> str:
+    """Extract ## Summary via bd-section. Returns content without the heading."""
+    script = str(Path(__file__).parent / "bd-section")
+    text = run([script, bead_id])
+    lines = [l for l in text.splitlines() if not l.startswith("## ")]
+    return "\n".join(lines).strip()
+
+
+def find_parent_id(bead: dict) -> str | None:
+    """Find parent bead ID from dependencies. Key is 'id' (inlined bead object)."""
+    for dep in bead.get("dependencies", []):
+        if dep.get("dependency_type") == "parent-child":
+            return dep["id"]
+    return None
+
+
+def collect_parents(bead_id: str) -> list[str]:
+    """Walk parent-child dependencies upward to root. Returns root-first."""
+    parents = []
+    current = bead_id
+    while True:
+        bead = bd_show_json(current)
+        if not bead:
+            break
+        parent = find_parent_id(bead)
+        if not parent:
+            break
+        parents.append(parent)
+        current = parent
+    parents.reverse()
+    return parents
+
+
+def collect_children(bead_id: str) -> list[str]:
+    """Get direct child IDs via bd show --children --json."""
+    raw = run(["bd", "show", bead_id, "--children", "--json"])
+    if not raw:
+        return []
+    data = json.loads(raw)
+    if isinstance(data, dict):
+        return [child["id"] for children in data.values() for child in children]
+    return []
+
+
+def print_bead(bead_id: str, indent: int):
+    bead = bd_show_json(bead_id)
+    if not bead:
+        print(f"{'  ' * indent}{bead_id}  [?]  (not found)")
+        return
+
+    prefix = "  " * indent
+    title = bead.get("title", "?")
+    status = bead.get("status", "?")
+    issue_type = bead.get("issue_type", "?")
+    summary = extract_summary(bead_id)
+
+    print(f"{prefix}{bead_id}  [{status}] [{issue_type}]  {title}")
+    if summary:
+        print(f"{prefix}  {summary}")
+    print()
+
+
+def print_tree(bead_id: str, depth: int, visited: set):
+    """Recursively print bead and all descendants."""
+    if bead_id in visited:
+        return
+    visited.add(bead_id)
+
+    print_bead(bead_id, depth)
+    for child_id in collect_children(bead_id):
+        print_tree(child_id, depth + 1, visited)
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: bd-explore <bead-id>", file=sys.stderr)
+        sys.exit(1)
+
+    target_id = sys.argv[1]
+    parents = collect_parents(target_id)
+
+    depth = 0
+    for parent_id in parents:
+        print_bead(parent_id, depth)
+        depth += 1
+
+    visited = set(parents)
+    print_tree(target_id, depth, visited)
+
+
+if __name__ == "__main__":
+    main()

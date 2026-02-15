@@ -17,8 +17,32 @@ Load this skill before any `bd create`, `bd update`, or when reading beads for c
 - **Reading beads for context** (planning, research): Read [READING.md](resources/READING.md) first. Never consume beads without it.
 - **Exporting beads** (`/sussBead export <id>`): Read [EXPORT.md](resources/EXPORT.md) first. Follow its algorithm exactly.
 
-| Resource                                 | When to use                                          |
-|------------------------------------------|------------------------------------------------------|
-| [WRITING.md](resources/WRITING.md)       | Before any `bd create` or `bd update` call           |
-| [READING.md](resources/READING.md)       | When consuming beads for context (planning, research) |
-| [EXPORT.md](resources/EXPORT.md)         | `/sussBead export <bead-id>` — export to markdown    |
+| Resource                                 | When to use                                           |
+|------------------------------------------|-------------------------------------------------------|
+| [WRITING.md](resources/WRITING.md)       | Before any `bd create` or `bd update` call            |
+| [READING.md](resources/READING.md)       | When consuming beads for context (planning, research)  |
+| [EXPORT.md](resources/EXPORT.md)         | `/sussBead export <bead-id>` — export to markdown     |
+| [scripts/bd-section](scripts/bd-section) | Extract a specific section from a bead by slug         |
+| [scripts/bd-explore](scripts/bd-explore) | Recursive summary tree — skim a full hierarchy         |
+
+## Scripts
+
+Two shell scripts in `scripts/` for selective context loading. Use full paths when invoking:
+
+```bash
+# Extract a section by slug (defaults to Summary)
+~/.claude/skills/sussBead/scripts/bd-section <bead-id> [section-slug]
+
+# Explore a full bead tree with summaries only
+~/.claude/skills/sussBead/scripts/bd-explore <bead-id>
+```
+
+## Invocations
+
+### `/sussBead explore <bead-id>`
+
+Explore a bead hierarchy with summaries only. Shows the full parent chain, target bead, and children — each with just their `## Summary` section. Use this to get oriented in a large bead tree without blowing the context window.
+
+```bash
+~/.claude/skills/sussBead/scripts/bd-explore $1
+```
