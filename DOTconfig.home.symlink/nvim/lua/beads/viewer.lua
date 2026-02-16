@@ -89,81 +89,15 @@ local function statusFlag()
   return ""
 end
 
--- Fast SQLite query for parentless beads (avoids loading all beads + filtering in Lua)
-local function fetchParentlessBeadsSQL()
-  local cwd = state.cwd or vim.fn.getcwd()
-  local db_path = cwd .. "/.beads/beads.db"
-
-  -- Check if database exists
-  if vim.fn.filereadable(db_path) ~= 1 then
-    return nil, "No beads database found"
-  end
-
-  -- Build status filter for SQL
-  local status_filter = ""
-  if state.status_filter == "closed" then
-    status_filter = "AND i.status = 'closed'"
-  elseif state.status_filter ~= "all" then
-    status_filter = "AND i.status IN ('open', 'in_progress', 'blocked', 'deferred')"
-  end
-
-  -- Query for parentless beads (excludes children in dependencies table + dotted IDs)
-  local sql = string.format([[
-    SELECT id FROM issues i
-    WHERE i.deleted_at IS NULL
-      %s
-      AND i.id NOT IN (SELECT issue_id FROM dependencies WHERE type = 'parent-child')
-      AND i.id NOT GLOB '*.[0-9]*'
-    ORDER BY i.priority ASC, i.title ASC
-    LIMIT 200
-  ]], status_filter)
-
-  local cmd = string.format("sqlite3 -json %s %s 2>/dev/null",
-    vim.fn.shellescape(db_path),
-    vim.fn.shellescape(sql))
-  local output = vim.fn.system(cmd)
-
-  if vim.v.shell_error ~= 0 then
-    return nil, "SQLite query failed"
-  end
-
-  local id_rows = parseJson(output)
-  if not id_rows or #id_rows == 0 then
-    return {}
-  end
-
-  -- Extract IDs and fetch full details via bd (with status filter to match SQL query)
-  local ids = {}
-  for _, row in ipairs(id_rows) do
-    table.insert(ids, row.id)
-  end
-
-  local id_list = table.concat(vim.tbl_map(vim.fn.shellescape, ids), ",")
-  local beads_output = runBd("list --json --id=" .. id_list .. statusFlag())
-  if not beads_output then
-    return nil, "Failed to fetch bead details"
-  end
-
-  return parseJson(beads_output)
-end
-
 local function fetchBeads()
   local cwd = state.cwd or vim.fn.getcwd()
 
-  -- Try fast SQLite approach first (only for parentless beads view)
-  if not state.scoped_epic then
-    local beads, err = fetchParentlessBeadsSQL()
-    if beads then
-      return beads
-    end
-    -- Fall back to old approach if SQLite fails (silent fallback for tests)
-  end
-
-  -- Fallback: original slow approach
-  if state.status_filter == "all" then
+  if state.scoped_epic then
     return merger.fetchAllBeads(cwd)
   end
-  local output = runBd("list --json --limit 0" .. statusFlag())
+
+  -- Top-level view: use --no-parent to exclude child issues
+  local output = runBd("list --json --no-parent --limit 0" .. statusFlag())
   if not output then return nil, "Failed to run bd list" end
   local beads = parseJson(output)
   if not beads then return nil, "Failed to parse JSON" end
@@ -193,23 +127,13 @@ local function isEpic(bead)
   return bead.issue_type == "epic"
 end
 
-local function hasParent(bead)
-  for _, dep in ipairs(bead.dependencies or {}) do
-    if dep.type == "parent-child" and dep.depends_on_id ~= bead.id then
-      return true
-    end
-  end
-  return false
-end
-
 local function buildFlatList(beads)
   local epics, tasks = {}, {}
 
-  local show_all = state.scoped_epic ~= nil
   for _, bead in ipairs(beads) do
-    if isEpic(bead) and (show_all or not hasParent(bead)) then
+    if isEpic(bead) then
       table.insert(epics, bead)
-    elseif not isEpic(bead) and (show_all or not hasParent(bead)) then
+    else
       table.insert(tasks, bead)
     end
   end
