@@ -316,6 +316,43 @@ Use mermaid diagrams in bead descriptions when they clarify context or intention
 - The diagram would have fewer than 3 nodes
 - The relationship is purely linear with no branching
 
+### MUST: Validate Before Writing
+
+**Every mermaid block MUST be validated before writing it into a bead.** Use the `bd-validate-mermaid` script:
+
+```bash
+# Validate a single diagram string
+~/.claude/skills/sussBead/scripts/bd-validate-mermaid --string 'graph LR
+    A --> B --> C'
+
+# Validate all mermaid blocks in the body-file before bd create/update
+~/.claude/skills/sussBead/scripts/bd-validate-mermaid /tmp/bead-desc.md
+```
+
+If validation fails, fix the syntax before writing. Never write a bead with an unvalidated mermaid block.
+
+### Common Syntax Pitfalls
+
+**Colons in labels** — The `#1` cause of mermaid failures. In `stateDiagram-v2`, `flowchart`, and `sequenceDiagram`, the `:` character is a label delimiter. A colon inside your label text (e.g., `file.js:42`) is parsed as a second delimiter, breaking the diagram.
+
+```
+BAD:  A --> B: AppContext.js:28 stores raw appId     ← :28 parsed as second label
+GOOD: A --> B: AppContext.js line 28 stores raw appId ← no ambiguous colon
+GOOD: A --> B: "AppContext.js:28 stores raw appId"    ← quoted (flowchart/sequence only)
+```
+
+**Special characters in labels** — These characters cause parse errors in various diagram types:
+
+| Character           | Problem                        | Fix                          |
+|---------------------|--------------------------------|------------------------------|
+| `:` (colon)         | Label delimiter collision      | Remove or rephrase           |
+| `${}` (template)    | Parsed as variable syntax      | Use plain text description   |
+| `//` (double slash)  | Comment-like in some contexts  | Spell out "protocol-relative"|
+| `<` `>` (angles)    | HTML/tag parsing               | Use `&lt;` `&gt;` or remove |
+| `()` in node names  | Parsed as node shape           | Use `[]` or avoid in IDs     |
+
+**Rule of thumb:** Keep mermaid labels to plain English. Move technical details (file paths, code snippets, URL patterns) into a table or bullet list outside the diagram.
+
 ### Example
 
 ````markdown

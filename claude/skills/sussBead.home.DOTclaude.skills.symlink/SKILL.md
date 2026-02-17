@@ -22,12 +22,13 @@ Load this skill before any `bd create`, `bd update`, or when reading beads for c
 | [WRITING.md](resources/WRITING.md)       | Before any `bd create` or `bd update` call            |
 | [READING.md](resources/READING.md)       | When consuming beads for context (planning, research)  |
 | [EXPORT.md](resources/EXPORT.md)         | `/sussBead export <bead-id>` — export to markdown     |
-| [scripts/bd-section](scripts/bd-section) | Extract a specific section from a bead by slug         |
-| [scripts/bd-explore](scripts/bd-explore) | Recursive summary tree — skim a full hierarchy         |
+| [scripts/bd-section](scripts/bd-section)                 | Extract a specific section from a bead by slug         |
+| [scripts/bd-explore](scripts/bd-explore)                 | Recursive summary tree — skim a full hierarchy         |
+| [scripts/bd-validate-mermaid](scripts/bd-validate-mermaid) | Validate mermaid blocks before writing beads           |
 
 ## Scripts
 
-Two shell scripts in `scripts/` for selective context loading. Use full paths when invoking:
+Shell scripts in `scripts/` for selective context loading and validation. Use full paths when invoking:
 
 ```bash
 # Extract a section by slug (defaults to Summary)
@@ -35,6 +36,10 @@ Two shell scripts in `scripts/` for selective context loading. Use full paths wh
 
 # Explore a full bead tree with summaries only
 ~/.claude/skills/sussBead/scripts/bd-explore <bead-id>
+
+# Validate mermaid diagrams before writing (REQUIRED for any bead with mermaid)
+~/.claude/skills/sussBead/scripts/bd-validate-mermaid /tmp/bead-desc.md
+~/.claude/skills/sussBead/scripts/bd-validate-mermaid --string 'graph LR; A --> B'
 ```
 
 ## Invocations

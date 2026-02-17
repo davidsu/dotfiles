@@ -1,0 +1,90 @@
+#!/usr/bin/env bash
+# bd-validate-mermaid — validate mermaid blocks in a markdown file or string
+#
+# Usage:
+#   bd-validate-mermaid <file.md>           Validate all mermaid blocks in a markdown file
+#   bd-validate-mermaid --string '...'      Validate a single mermaid diagram string
+#
+# Exit code: 0 if all valid, 1 if any invalid
+# Prerequisites: mmdc (npm install -g @mermaid-js/mermaid-cli)
+
+set -uo pipefail
+
+if ! command -v mmdc &>/dev/null; then
+  echo "ERROR: mmdc not found. Install with: npm install -g @mermaid-js/mermaid-cli" >&2
+  exit 1
+fi
+
+validate_block() {
+  local block="$1"
+  local label="$2"
+  local tmpfile
+  tmpfile="$(mktemp /tmp/mermaid-validate-XXXXXX.mmd)"
+  echo "$block" > "$tmpfile"
+
+  local tmpout="${tmpfile%.mmd}.svg"
+  if mmdc -i "$tmpfile" -o "$tmpout" 2>/tmp/mermaid-validate-err.log; then
+    echo "OK: $label"
+    rm -f "$tmpfile" "$tmpout"
+    return 0
+  else
+    echo "FAIL: $label"
+    # Extract the meaningful error line (Parse error)
+    grep -m1 'Error:' /tmp/mermaid-validate-err.log 2>/dev/null || head -3 /tmp/mermaid-validate-err.log
+    rm -f "$tmpfile" "$tmpout"
+    return 1
+  fi
+}
+
+if [[ "${1:-}" == "--string" ]]; then
+  shift
+  validate_block "$1" "inline"
+  exit $?
+fi
+
+file="$1"
+if [[ ! -f "$file" ]]; then
+  echo "ERROR: File not found: $file" >&2
+  exit 1
+fi
+
+# Extract mermaid blocks: content between ```mermaid and ```
+blocks=()
+labels=()
+in_block=false
+block=""
+line_num=0
+block_start=0
+
+while IFS= read -r line; do
+  line_num=$((line_num + 1))
+  if [[ "$in_block" == false ]] && [[ "$line" =~ ^\`\`\`mermaid ]]; then
+    in_block=true
+    block=""
+    block_start=$line_num
+  elif [[ "$in_block" == true ]] && [[ "$line" =~ ^\`\`\` ]]; then
+    in_block=false
+    blocks+=("$block")
+    labels+=("line $block_start")
+  elif [[ "$in_block" == true ]]; then
+    if [[ -n "$block" ]]; then
+      block="$block"$'\n'"$line"
+    else
+      block="$line"
+    fi
+  fi
+done < "$file"
+
+if [[ ${#blocks[@]} -eq 0 ]]; then
+  echo "No mermaid blocks found in $file"
+  exit 0
+fi
+
+fail=0
+for i in "${!blocks[@]}"; do
+  if ! validate_block "${blocks[$i]}" "${labels[$i]}"; then
+    fail=1
+  fi
+done
+
+exit $fail
