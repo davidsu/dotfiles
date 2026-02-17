@@ -7,7 +7,9 @@
 -- Tab-scoped: Each tab maintains independent pane state
 -- Uses vim.t.pane_list_win and vim.t.pane_detail_wins
 
-local LIST_HEIGHT = 12
+local function list_height()
+  return math.floor(vim.o.lines * 0.35)
+end
 
 -- Vim split commands
 local TOP_SPLIT = 'topleft split'
@@ -68,10 +70,12 @@ local function close_all_details()
 end
 
 local function save_list_state(list_win)
+  list_win = list_win or get_list_window()
   if not list_win then return nil end
   local current_win = vim.api.nvim_get_current_win()
   vim.api.nvim_set_current_win(list_win)
   local state = {
+    win = list_win,
     view = vim.fn.winsaveview(),
     height = vim.api.nvim_win_get_height(list_win),
   }
@@ -79,11 +83,17 @@ local function save_list_state(list_win)
   return state
 end
 
-local function restore_list_state(list_win, state)
-  if not list_win or not state then return end
-  vim.api.nvim_win_set_height(list_win, state.height)
+local function restore_list_state(list_win_or_state, state)
+  -- Support both (state) and (win, state) calling conventions
+  if state == nil then
+    state = list_win_or_state
+    list_win_or_state = state and state.win or nil
+  end
+  if not list_win_or_state or not state then return end
+  if not vim.api.nvim_win_is_valid(list_win_or_state) then return end
+  vim.api.nvim_win_set_height(list_win_or_state, state.height)
   local current_win = vim.api.nvim_get_current_win()
-  vim.api.nvim_set_current_win(list_win)
+  vim.api.nvim_set_current_win(list_win_or_state)
   vim.fn.winrestview(state.view)
   vim.api.nvim_set_current_win(current_win)
 end
@@ -157,7 +167,7 @@ local function setup_list_window(bufnr, use_current_window)
   else
     vim.cmd(TOP_SPLIT)
     vim.t.pane_list_win = vim.api.nvim_get_current_win()
-    vim.api.nvim_win_set_height(vim.t.pane_list_win, LIST_HEIGHT)
+    vim.api.nvim_win_set_height(vim.t.pane_list_win, list_height())
     vim.api.nvim_win_set_buf(vim.t.pane_list_win, bufnr)
   end
 end
@@ -221,5 +231,7 @@ return {
   close_all_except_list = close_all_except_list,
   close_list_window = close_list_window,
   focus_list_window = focus_list_window,
+  save_list_state = save_list_state,
+  restore_list_state = restore_list_state,
   toggle_fullscreen = toggle_fullscreen,
 }

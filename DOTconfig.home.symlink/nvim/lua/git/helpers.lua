@@ -91,17 +91,20 @@ end
 
 local function show_file_in_pane(commit, filepath)
   local panes = require('panes')
+  local list_state = panes.save_list_state()
   panes.close_all_except_list()
   panes.focus_list_window()
 
   vim.cmd("below split")
   vim.cmd("Gedit " .. commit .. ":" .. filepath)
 
+  panes.restore_list_state(list_state)
   panes.focus_list_window()
 end
 
 local function show_diff(commit, parent, filepath)
   local panes = require('panes')
+  local list_state = panes.save_list_state()
   panes.close_all_except_list()
   panes.focus_list_window()
 
@@ -112,17 +115,21 @@ local function show_diff(commit, parent, filepath)
     vim.cmd("silent! Gvdiffsplit " .. parent .. ":" .. filepath)
   end
 
+  panes.restore_list_state(list_state)
   -- Leave focus in detail pane (consistent with Fugitive behavior)
 end
 
 local function show_worktree_diff(commit, filepath)
   local panes = require('panes')
+  local list_state = panes.save_list_state()
   panes.close_all_except_list()
   panes.focus_list_window()
 
   vim.cmd("below split")
   vim.cmd("edit " .. filepath)
   vim.cmd("Gvdiffsplit " .. commit .. ":" .. filepath)
+
+  panes.restore_list_state(list_state)
 end
 
 return {
