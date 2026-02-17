@@ -1,5 +1,7 @@
 # TypeScript Type Best Practices
 
+> **Prerequisite**: Also load [javascript.md](javascript.md) — TypeScript shares all JavaScript conventions. This file covers **types only**.
+
 ## 1. Prefer Inference Over Explicit Types
 
 Remove return type annotations and variable types when TypeScript can infer them:

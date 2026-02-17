@@ -15,7 +15,8 @@ description: Refactor/clean/simplify code - eliminate duplication, small functio
 
 | Language   | Resource                                 |
 |------------|------------------------------------------|
-| TypeScript | [typescript.md](resources/typescript.md) |
+| JavaScript | [javascript.md](resources/javascript.md) |
+| TypeScript | [javascript.md](resources/javascript.md) + [typescript.md](resources/typescript.md) |
 | Bash/Shell | [bash.md](resources/bash.md)             |
 | Python     | [python.md](resources/python.md)         |
 | Neovim/Lua | [neovim.md](resources/neovim.md)         |
@@ -24,29 +25,117 @@ description: Refactor/clean/simplify code - eliminate duplication, small functio
 
 - **Understand before changing** - Read existing code before making modifications
 - **Ask for clarity** - When requirements are ambiguous, ask rather than guess
-- **Minimize scope** - Only change what's directly requested or clearly necessary
-- **Prefer clarity** - Clear code over clever code
 - **Skill rules override existing code** - The codebase is inherited and may contain legacy patterns that violate these guidelines. All **new and modified** code must follow the rules here, even if surrounding code doesn't
 
-## 1. Small Functions, Clear Names
+## KISS: Simplicity Takes Extra Effort
 
-**Target: 3-15 lines per function.** Name describes exactly what it does.
+*"I would have written a shorter letter, but I did not have the time."* — Blaise Pascal
 
-```typescript
-// Bad: Generic name, does multiple things (40 lines)
-function process(filename) { ... }
+Your first solution works. Now make it simpler. This isn't optional — it's the actual work. Anyone can solve a problem with enough code; the skill is solving it with less. After you get something working, step back and ask: can I remove a layer? Collapse two steps into one? Replace a mechanism with a plain value? The goal isn't cleverness or minimalism — it's the version where the next reader thinks "of course, what else would you do?"
 
-// Good: Small functions with precise names
-const extractExtension = (filename) => filename.replace(/.*symlink/, '')
-const removeSymlinkAndExtension = (filename) => filename.replace(/\.symlink.*$/, '')
-const replaceDOTWithDot = (str) => str.replace(/DOT/g, '.')
+```javascript
+// First pass: works, but mechanical
+function getDisplayName(user) {
+  const parts = []
+  if (user.firstName) parts.push(user.firstName)
+  if (user.lastName) parts.push(user.lastName)
+  if (parts.length === 0) return user.email
+  return parts.join(' ')
+}
+
+// After thinking it through: same behavior, obvious
+const getDisplayName = (user) =>
+  [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email
 ```
 
-**Naming rules:**
+This applies at every scale — a function, a module, an architecture. If your solution needs a diagram to explain, keep simplifying until it doesn't.
+
+**YAGNI: You Aren't Gonna Need It.** Don't build for hypothetical futures. No "just in case" branches, no normalizing inputs that are already normalized, no extra layers of protection when one layer already covers it. Before adding code, ask: does this solve a problem that *actually exists right now*? If you can't point to a real caller or a real input that triggers this path — delete it.
+
+Real example — fixing an IDOR where the frontend leaked auth tokens to a third-party server:
+- **What was needed**: check the URL before attaching auth headers. One guard, one place.
+- **What got built instead**: handling `http://` and `ws://` (system only uses `https`/`wss`), URL normalization for bare hostnames (callers always pass full URLs with `baseURL`), defensive try/catch layers that returned the same value as the catch block, and `isValidAppId` checks across 7 files (pointless — guarding the API call was already sufficient).
+- **Result**: 4 layers of protection for cases that can't happen, in a fix that needed one.
+
+We'll make the hole when we need the air conditioner — not before.
+
+**Ask:** "This works. Can I make it simpler? What would I remove if I had to?"
+
+## KISS: Guidelines
+
+- **Minimize scope** — Only change what's directly requested or clearly necessary
+- **Prefer clarity** — Clear code over clever code
+
+## KISS: Directness
+
+```typescript
+// Bad: Verbose
+function executeSymlinkPlan(plan: SymlinkPlan[]): LinkResult[] {
+  const results: LinkResult[] = []
+  for (const { from, to } of plan) {
+    results.push(safeLink(from, to))
+  }
+  return results
+}
+
+// Good: Concise
+const executeSymlinkPlan = (plan: SymlinkPlan[]) =>
+  plan.map(({ from, to }) => safeLink(from, to))
+```
+
+**Note side effects:** Add comment if `.map()` has side effects (creates files, mutates state).
+
+- Reduce unnecessary ceremony — use idiomatic language features (return early, compact conditionals, arrow functions)
+- Don't add comments to obviously simple code
+- Add parameters instead of creating higher-order functions or closures
+- Explicit parameters over captured variables
+- Avoid over-nesting functions, objects, or data structures
+- Clear data flow (inputs → function → outputs)
+
+## KISS: Don't Code for Ghosts
+
+Before adding a fallback, guard, or normalization — verify the input can actually take that form. Read the callers. If every caller passes a full URL, don't handle bare hostnames. If the config always returns `https://`, don't branch on `http://`. Dead branches aren't "defensive" — they're noise that misleads readers into thinking those cases are real.
+
+```javascript
+// Bad: getAPIUrl() always returns "https://...", bare hostname can't happen
+const parsed = /^https?:\/\//.test(url)
+  ? new URL(url)
+  : new URL(`https://${url}`);
+
+// Good: trust the contract, catch handles actual errors
+try {
+  return new URL(url).origin;
+} catch {
+  return null;
+}
+```
+
+**Ask:** "Can this input actually take the form I'm guarding against? Have I checked?"
+
+## KISS: Eliminate Special Cases
+
+Every special case must justify its existence. Default to uniform handling.
+
+```javascript
+// Bad: Unnecessary special case
+if (files.length === 1) {
+  return handleSingleFile(files[0])
+} else {
+  return handleMultipleFiles(files)
+}
+
+// Good: Unified handling (works for n=1 too)
+return files.map(handleFile)
+```
+
+**Ask:** "What if I handle both cases uniformly?"
+
+## Functions: Naming
+
 - Verbs for actions: `createLink()`, `handleExistingFile()`
 - Booleans: `isSymlink()`, `hasExtension()`, `canWrite()`
 - No generic names: `process()`, `handle()`, `do()` → What specifically?
-- Names should express intent - make the code self-documenting
+- Names should express intent — make the code self-documenting
 
 **Name for the reader at the call site.** Before naming a function, consider who reads the code that *calls* it. Would they understand why this function is being called? A good name makes surrounding code read like prose — the reader shouldn't need to open the function body to understand the flow.
 
@@ -66,7 +155,50 @@ if (!isSafeForAuthHeaders(config.url, config.baseURL)) {
 
 Note: this applies to functions at **decision points** — guards, predicates, business logic. Low-level utilities and pure transformations (`toHttpOrigin`, `parseJSON`, `normalizeUrl`) are fine named for their mechanism, because callers already know *why* they're calling them.
 
-## 2. No Duplication
+## Functions: Body
+
+**Target: 3-15 lines.** One function, one job. Extract helpers aggressively.
+
+**Use oneliners when the function name serves as documentation:**
+
+```typescript
+const extractExtension = (filename) => filename.replace(/.*symlink/, '')
+const removeSymlinkAndExtension = (filename) => filename.replace(/\.symlink.*$/, '')
+const replaceDOTWithDot = (str) => str.replace(/DOT/g, '.')
+```
+
+**Avoid deep nesting.** If you're 4+ indentation levels deep, extract to a well-named helper. Deep nesting hides logic and makes control flow hard to follow — a named function call is always clearer.
+
+```javascript
+// Bad: deeply nested, hard to follow
+function processUsers(users) {
+  return users.map(user => {
+    if (user.active) {
+      if (user.roles.length > 0) {
+        return user.roles.map(role => {
+          if (role.permissions) {
+            return { ...role, granted: true }
+          }
+          return role
+        })
+      }
+    }
+  })
+}
+
+// Good: flat, each step is a named concept
+const grantPermissions = (role) =>
+  role.permissions ? { ...role, granted: true } : role
+
+const resolveRoles = (user) =>
+  user.active && user.roles.length > 0
+    ? user.roles.map(grantPermissions)
+    : undefined
+
+const processUsers = (users) => users.map(resolveRoles)
+```
+
+## DRY: No Duplication
 
 If you copy-paste code, stop. Extract a function.
 
@@ -83,7 +215,15 @@ function renderEntry(json) {
 }
 ```
 
-## 3. Iterate the Source, Not Type Dispatch
+## DRY: Reuse What Exists
+
+Before implementing, search the codebase. Does this already exist? Is there something 80% similar? If so, extract the common logic and share it. Don't build a second version of something that's already there — refactor the existing one to serve both needs.
+
+This isn't just about literal copy-paste. Two functions that fetch-then-transform-then-cache with slightly different configs are the same function waiting to be extracted. Two modules that both build a sidebar with different content are one module with a parameter.
+
+**Don't shy away from refactoring to share logic.** If the existing code needs to change shape to accommodate reuse — change it. A small refactor now beats two diverging copies forever.
+
+## Iterate the Source, Not Type Dispatch
 
 **Red flag:** Multiple `extractTypeA()`, `extractTypeB()`, `extractTypeC()` functions.
 
@@ -113,7 +253,7 @@ const extractFields = (json) =>
 
 **Key insight:** Don't ask "what type is this?" Ask "what data exists?"
 
-## 4. Module Splitting: ~250 Lines
+## Module Splitting: ~250 Lines
 
 When a file exceeds 250 lines, look for natural module boundaries.
 
@@ -142,55 +282,7 @@ When a file exceeds 250 lines, look for natural module boundaries.
 - Only expose what's necessary
 - Internal helpers should be separate from public functions
 
-## 5. Fluent APIs for Sequential Operations
-
-Chain methods to describe operations in natural language.
-
-```typescript
-// Bad: Imperative control flow, needs comments
-function safeLink(src: string, dest: string | null) {
-  // Handle unparseable destination
-  if (!dest) return { ... }
-
-  // Handle existing symlink
-  if (isSymlink(dest)) { ... }
-
-  // Handle existing file
-  if (fileExists(dest)) { ... }
-
-  // Create symlink
-  fs.mkdirSync(...)
-  return createLink(src, dest)
-}
-
-// Good: Reads like English, no comments needed
-const safeLink = (src: string, dest: string | null) =>
-  new SymlinkOperation(src, dest)
-    .handleNullDestination()
-    .handleSymlink()
-    .handleExistingFile()
-    .createSymlink()
-    .result()
-```
-
-**Implementation pattern:**
-```typescript
-class Operation {
-  private result: Result | null = null
-
-  step1() {
-    if (this.result) return this  // Short-circuit if done
-    // Check condition, maybe set this.result
-    return this
-  }
-
-  result() { return this.result! }
-}
-```
-
-**When to use:** Sequential operations with decision points, each step is a clear named concern.
-
-## 6. Explicit Failures Over Silent Filtering
+## Explicit Failures Over Silent Filtering
 
 Make failures visible with error results, don't silently skip.
 
@@ -218,114 +310,23 @@ function safeLink(src: string, dest: string | null) {
 // Now: results.filter(r => !r.success).length shows exactly what failed
 ```
 
-## 7. Eliminate Special Cases
 
-Every special case must justify its existence. Default to uniform handling.
-
-```javascript
-// Bad: Unnecessary special case
-if (files.length === 1) {
-  return handleSingleFile(files[0])
-} else {
-  return handleMultipleFiles(files)
-}
-
-// Good: Unified handling (works for n=1 too)
-return files.map(handleFile)
-```
-
-**Ask:** "What if I handle both cases uniformly?"
-
-## 8. Don't Code for Ghosts
-
-Before adding a fallback, guard, or normalization — verify the input can actually take that form. Read the callers. If every caller passes a full URL, don't handle bare hostnames. If the config always returns `https://`, don't branch on `http://`. Dead branches aren't "defensive" — they're noise that misleads readers into thinking those cases are real.
-
-```javascript
-// Bad: getAPIUrl() always returns "https://...", bare hostname can't happen
-const parsed = /^https?:\/\//.test(url)
-  ? new URL(url)
-  : new URL(`https://${url}`);
-
-// Good: trust the contract, catch handles actual errors
-try {
-  return new URL(url).origin;
-} catch {
-  return null;
-}
-```
-
-**Ask:** "Can this input actually take the form I'm guarding against? Have I checked?"
-
-## 9. KISS: Simplicity Takes Extra Effort
-
-*"I would have written a shorter letter, but I did not have the time."* — Blaise Pascal
-
-Your first solution works. Now make it simpler. This isn't optional — it's the actual work. Anyone can solve a problem with enough code; the skill is solving it with less. After you get something working, step back and ask: can I remove a layer? Collapse two steps into one? Replace a mechanism with a plain value? The goal isn't cleverness or minimalism — it's the version where the next reader thinks "of course, what else would you do?"
-
-```javascript
-// First pass: works, but mechanical
-function getDisplayName(user) {
-  const parts = []
-  if (user.firstName) parts.push(user.firstName)
-  if (user.lastName) parts.push(user.lastName)
-  if (parts.length === 0) return user.email
-  return parts.join(' ')
-}
-
-// After thinking it through: same behavior, obvious
-const getDisplayName = (user) =>
-  [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email
-```
-
-This applies at every scale — a function, a module, an architecture. If your solution needs a diagram to explain, keep simplifying until it doesn't.
-
-**Ask:** "This works. Can I make it simpler? What would I remove if I had to?"
-
-## 10. Arrow Functions for Simple Transformations
-
-```typescript
-// Bad: Verbose
-function executeSymlinkPlan(plan: SymlinkPlan[]): LinkResult[] {
-  const results: LinkResult[] = []
-  for (const { from, to } of plan) {
-    results.push(safeLink(from, to))
-  }
-  return results
-}
-
-// Good: Concise
-const executeSymlinkPlan = (plan: SymlinkPlan[]) =>
-  plan.map(({ from, to }) => safeLink(from, to))
-```
-
-**Note side effects:** Add comment if `.map()` has side effects (creates files, mutates state).
-
-**Minimize boilerplate:**
-- Reduce unnecessary ceremony
-- Use idiomatic language features (return early, compact conditionals, etc.)
-- Don't add comments to obviously simple code
-
-**Prefer directness:**
-- Add parameters instead of creating higher-order functions or closures
-- Explicit parameters over captured variables
-- Avoid over-nesting functions, objects, or data structures
-- Clear data flow (inputs → function → outputs)
 
 ## Refactoring Checklist
 
 Before code is "done":
 
-1. **Function names read like English?** Should describe exactly what they do
-2. **Any copy-pasted code?** Extract to function
-3. **Multiple extractType functions?** Replace with `Object.entries(source).map()`
-4. **Any function >20 lines?** Break into subfunctions
-5. **File >250 lines?** Look for natural module boundaries
-6. **Sequential operations with branches?** Consider fluent API
-7. **Silently filtering failures?** Make them explicit with error results
-8. **Special cases that can be unified?** Handle uniformly when possible
-9. **Can it be simpler?** Step back — remove a layer, collapse two steps, replace mechanism with value
-10. **Comments explain "why" not "what"?** Code should show what it does
-11. **Are implementation details hidden?** Only expose necessary APIs
+- **Function names read like English?** Should describe exactly what they do
+- **Any copy-pasted code?** Extract to function
+- **Multiple extractType functions?** Replace with `Object.entries(source).map()`
+- **Any function >20 lines?** Break into subfunctions
+- **File >250 lines?** Look for natural module boundaries
+- **Sequential operations with branches?** Consider fluent API
+- **Silently filtering failures?** Make them explicit with error results
+- **Special cases that can be unified?** Handle uniformly when possible
+- **Can it be simpler?** Step back — remove a layer, collapse two steps, replace mechanism with value
+- **Comments explain "why" not "what"?** Code should show what it does
+- **Are implementation details hidden?** Only expose necessary APIs
 
 ## Complexity Limits
 
@@ -397,3 +398,4 @@ function focusListWindow() {
 ```
 
 State storage is implementation detail. Can change without breaking clients.
+
