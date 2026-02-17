@@ -28,11 +28,11 @@ deleted = "[✗](red)"
 renamed = "[➦](blue)"
 conflicted = "[✂](magenta)"
 
-[custom.npm_linked]
-command = "ls -F node_modules | grep '@$' && echo '@'"
-detect_files = ["package.json"]
-style = "bold 13"
-format = "[$output]($style) "
+# [custom.npm_linked]
+# command = "ls -F node_modules | grep '@$' && echo '@'"
+# detect_files = ["package.json"]
+# style = "bold 13"
+# format = "[$output]($style) "
 
 # Disable language modules that cause the "via" text
 [lua]
