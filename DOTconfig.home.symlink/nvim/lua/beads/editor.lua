@@ -14,11 +14,19 @@ local function extractSection(lines, section_name)
   for _, line in ipairs(lines) do
     if line:match("^" .. section_name .. "$") then
       in_section = true
-    elseif line:match("^[A-Z][A-Z_]+$") then
+    elseif in_section and line:match("^[A-Z][A-Z_]+$") then
       in_section = false
-    elseif in_section and line ~= "" then
+    elseif in_section then
       table.insert(section_lines, line)
     end
+  end
+
+  -- trim leading/trailing empty lines (padding between header and content)
+  while #section_lines > 0 and section_lines[1] == "" do
+    table.remove(section_lines, 1)
+  end
+  while #section_lines > 0 and section_lines[#section_lines] == "" do
+    table.remove(section_lines)
   end
 
   return table.concat(section_lines, "\n")

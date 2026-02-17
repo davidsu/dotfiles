@@ -44,7 +44,8 @@ local help_keymaps = {
   { lhs = "<BS>",      desc = "collapse epic" },
   { lhs = "<C-]>",     desc = "drill into epic" },
   { lhs = "-",         desc = "drill up (back to all)" },
-  { lhs = "<space>c",  desc = "close bead (mark done)" },
+  { lhs = "gy",        desc = "copy bead ID to clipboard" },
+  { lhs = "<space>c",  desc = "close bead (epic: +children)" },
   { lhs = "<space>o",  desc = "(re)open bead" },
   { lhs = "<space>i",  desc = "mark in progress" },
   { lhs = "<space>d",  desc = "delete bead (epic: +children)" },
@@ -670,6 +671,55 @@ local function setFilter(filter)
   end
 end
 
+local function copyBeadId()
+  local item = getItemAtCursor()
+  if not item or not item.bead then return end
+  vim.fn.setreg("+", item.bead.id)
+  vim.notify("Copied: " .. item.bead.id, vim.log.levels.INFO)
+end
+
+local function collectDescendantIds(parentId)
+  local children = fetchChildren(parentId)
+  if not children then return {} end
+  local ids = {}
+  for _, child in ipairs(children) do
+    table.insert(ids, child.id)
+    if isEpic(child) then
+      vim.list_extend(ids, collectDescendantIds(child.id))
+    end
+  end
+  return ids
+end
+
+local function closeBeadRecursive()
+  local item = getItemAtCursor()
+  if not item or not item.bead then return end
+
+  local id = item.bead.id
+  local title = item.bead.title or id
+  local current_bead_id = id
+
+  local ids_to_close = { id }
+  if item.is_epic then
+    vim.list_extend(ids_to_close, collectDescendantIds(id))
+  end
+
+  local shell_args = table.concat(vim.tbl_map(vim.fn.shellescape, ids_to_close), " ")
+  local result = runBd("close " .. shell_args)
+  if result then
+    local count = #ids_to_close
+    local msg = count > 1
+      and string.format("closed %d beads (%s + descendants)", count, title)
+      or string.format("closed: %s", title)
+    vim.notify(msg, vim.log.levels.INFO)
+    if reloadBeads() then
+      restoreCursorTo(current_bead_id)
+    end
+  else
+    vim.notify(string.format("Failed to close %s", title), vim.log.levels.ERROR)
+  end
+end
+
 local function updateBeadStatus(status)
   local item = getItemAtCursor()
   if not item or not item.bead then return end
@@ -755,7 +805,8 @@ local function setupKeymaps(buf)
   vim.keymap.set("n", "<C-a>", function() setFilter("all") end, opts)
   vim.keymap.set("n", "<C-o>", function() setFilter("open") end, opts)
   vim.keymap.set("n", "<C-c>", function() setFilter("closed") end, opts)
-  vim.keymap.set("n", "<space>c", function() updateBeadStatus("closed") end, opts)
+  vim.keymap.set("n", "gy", copyBeadId, opts)
+  vim.keymap.set("n", "<space>c", closeBeadRecursive, opts)
   vim.keymap.set("n", "<space>o", function() updateBeadStatus("open") end, opts)
   vim.keymap.set("n", "<space>i", function() updateBeadStatus("in_progress") end, opts)
   vim.keymap.set("n", "<space>d", deleteBead, opts)
