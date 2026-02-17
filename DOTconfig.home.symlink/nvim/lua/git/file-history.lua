@@ -8,7 +8,10 @@ local panes = require("panes")
 
 local function get_file_log(filepath, limit)
   limit = limit or 100
-  local output, ok = git.run(string.format("log -n %d --oneline --follow -- %s", limit, vim.fn.shellescape(filepath)))
+  local cmd = "log -n " .. limit
+    .. " --pretty=format:'%h%d %s  %cd  (%an)' --date=short --follow -- "
+    .. vim.fn.shellescape(filepath)
+  local output, ok = git.run(cmd)
   if not ok then return nil end
   return output
 end
@@ -20,11 +23,13 @@ local function setup_syntax(bufnr)
     vim.cmd([[
       if exists("b:current_syntax") | finish | endif
 
-      syn match gfhSha /^[a-f0-9]\{7,\}/ nextgroup=gfhMessage
-      syn match gfhMessage / .*$/ contained
+      syn match gfhSha /^[a-f0-9]\{7,\}/
+      syn match gfhDate /\d\{4\}-\d\{2\}-\d\{2\}/
+      syn match gfhAuthor /([^()]\+)$/
 
       hi def link gfhSha Type
-      hi def link gfhMessage Normal
+      hi def link gfhDate Comment
+      hi def link gfhAuthor String
 
       let b:current_syntax = "gfh"
     ]])
@@ -128,28 +133,20 @@ local function open_file_at_commit(sha, filepath)
 end
 
 local function parse_commit_file_line(line)
-  -- Parse lines like "M\tpath/to/file" or "R100\told\tnew"
-  local status, path = line:match("^(%a+)%s+(.+)$")
+  local status, path = line:match("^([MADRCU]%d*)\t(.+)$")
   return status, path
 end
 
-local function get_commit_file_list(sha)
-  -- Get just the file changes (skip commit metadata)
-  local details, ok = git.run(string.format("show --name-status --pretty=format: %s", sha))
-  if not ok or not details then
-    return nil
-  end
+local function get_commit_details(sha)
+  local cmd = "show --name-status --format='commit %h%nAuthor: %an <%ae>%nDate:   %cd%n%n    %s%n' --date=short " .. sha
+  local details, ok = git.run(cmd)
+  if not ok or not details then return nil end
 
   local lines = vim.split(details, "\n", { plain = true })
-  -- Remove empty lines
-  local file_lines = {}
-  for _, line in ipairs(lines) do
-    if line ~= "" then
-      table.insert(file_lines, line)
-    end
+  while #lines > 0 and lines[#lines] == "" do
+    table.remove(lines)
   end
-
-  return file_lines
+  return lines
 end
 
 local function show_commit_details_in_new_tab(sha)
@@ -157,9 +154,9 @@ local function show_commit_details_in_new_tab(sha)
     return vim.notify("No commit at cursor", vim.log.levels.WARN)
   end
 
-  local file_lines = get_commit_file_list(sha)
-  if not file_lines or #file_lines == 0 then
-    return vim.notify("No files changed in commit", vim.log.levels.WARN)
+  local detail_lines = get_commit_details(sha)
+  if not detail_lines then
+    return vim.notify("Failed to get commit details", vim.log.levels.WARN)
   end
 
   -- Expand short SHA to full SHA
@@ -172,7 +169,7 @@ local function show_commit_details_in_new_tab(sha)
   vim.cmd("tabnew")
 
   panes.show_list({
-    lines = file_lines,
+    lines = detail_lines,
     name = "commit://" .. sha,
     syntax = setup_commit_viewer_syntax,
     cursor = { 1, 0 },
