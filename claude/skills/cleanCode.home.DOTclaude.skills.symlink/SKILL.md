@@ -48,6 +48,24 @@ const replaceDOTWithDot = (str) => str.replace(/DOT/g, '.')
 - No generic names: `process()`, `handle()`, `do()` → What specifically?
 - Names should express intent - make the code self-documenting
 
+**Name for the reader at the call site.** Before naming a function, consider who reads the code that *calls* it. Would they understand why this function is being called? A good name makes surrounding code read like prose — the reader shouldn't need to open the function body to understand the flow.
+
+```javascript
+// Bad: named for the mechanism (checks an origin allowlist)
+// Reader at call site must open the function to understand WHY
+if (!isAllowedOrigin(config.url, config.baseURL)) {
+    delete config.headers['Authorization'];
+}
+
+// Good: named for the decision (is it safe to send credentials here?)
+// Call site is self-documenting — you immediately understand the intent
+if (!isSafeForAuthHeaders(config.url, config.baseURL)) {
+    delete config.headers['Authorization'];
+}
+```
+
+Note: this applies to functions at **decision points** — guards, predicates, business logic. Low-level utilities and pure transformations (`toHttpOrigin`, `parseJSON`, `normalizeUrl`) are fine named for their mechanism, because callers already know *why* they're calling them.
+
 ## 2. No Duplication
 
 If you copy-paste code, stop. Extract a function.
@@ -218,7 +236,52 @@ return files.map(handleFile)
 
 **Ask:** "What if I handle both cases uniformly?"
 
-## 8. Arrow Functions for Simple Transformations
+## 8. Don't Code for Ghosts
+
+Before adding a fallback, guard, or normalization — verify the input can actually take that form. Read the callers. If every caller passes a full URL, don't handle bare hostnames. If the config always returns `https://`, don't branch on `http://`. Dead branches aren't "defensive" — they're noise that misleads readers into thinking those cases are real.
+
+```javascript
+// Bad: getAPIUrl() always returns "https://...", bare hostname can't happen
+const parsed = /^https?:\/\//.test(url)
+  ? new URL(url)
+  : new URL(`https://${url}`);
+
+// Good: trust the contract, catch handles actual errors
+try {
+  return new URL(url).origin;
+} catch {
+  return null;
+}
+```
+
+**Ask:** "Can this input actually take the form I'm guarding against? Have I checked?"
+
+## 9. KISS: Simplicity Takes Extra Effort
+
+*"I would have written a shorter letter, but I did not have the time."* — Blaise Pascal
+
+Your first solution works. Now make it simpler. This isn't optional — it's the actual work. Anyone can solve a problem with enough code; the skill is solving it with less. After you get something working, step back and ask: can I remove a layer? Collapse two steps into one? Replace a mechanism with a plain value? The goal isn't cleverness or minimalism — it's the version where the next reader thinks "of course, what else would you do?"
+
+```javascript
+// First pass: works, but mechanical
+function getDisplayName(user) {
+  const parts = []
+  if (user.firstName) parts.push(user.firstName)
+  if (user.lastName) parts.push(user.lastName)
+  if (parts.length === 0) return user.email
+  return parts.join(' ')
+}
+
+// After thinking it through: same behavior, obvious
+const getDisplayName = (user) =>
+  [user.firstName, user.lastName].filter(Boolean).join(' ') || user.email
+```
+
+This applies at every scale — a function, a module, an architecture. If your solution needs a diagram to explain, keep simplifying until it doesn't.
+
+**Ask:** "This works. Can I make it simpler? What would I remove if I had to?"
+
+## 10. Arrow Functions for Simple Transformations
 
 ```typescript
 // Bad: Verbose
@@ -260,8 +323,9 @@ Before code is "done":
 6. **Sequential operations with branches?** Consider fluent API
 7. **Silently filtering failures?** Make them explicit with error results
 8. **Special cases that can be unified?** Handle uniformly when possible
-9. **Comments explain "why" not "what"?** Code should show what it does
-10. **Are implementation details hidden?** Only expose necessary APIs
+9. **Can it be simpler?** Step back — remove a layer, collapse two steps, replace mechanism with value
+10. **Comments explain "why" not "what"?** Code should show what it does
+11. **Are implementation details hidden?** Only expose necessary APIs
 
 ## Complexity Limits
 
@@ -269,7 +333,7 @@ Before code is "done":
 - File >250 lines → Consider splitting by responsibility
 - Nested blocks >2 deep → Extract function
 
-**Self-prompt:** "Do I have extractTypeA/B/C functions? Can I iterate the source instead? Would a fluent API make this read better? Are failures explicit? Does the code read like English?"
+**Self-prompt:** "Do I have extractTypeA/B/C functions? Can I iterate the source instead? Would a fluent API make this read better? Are failures explicit? Does the code read like English? This works — can I make it simpler?"
 
 ## Descriptive Names Over Abbreviations
 
