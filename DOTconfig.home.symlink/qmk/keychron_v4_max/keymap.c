@@ -25,13 +25,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
      * ├────┬───┴┬──┴─┬─┴───┴───┴───┴───┴───┴──┬┴───┼───┴┬────┬────┤
      * │L_Vm│ Opt│ Cmd│        Space           │ ← │ ↓  │ →  │RCt*│
      * └────┴────┴────┴────────────────────────┴────┴────┴────┴────┘
+     * ` = Backtick when tapped, VIM layer when held
      * L_Vm = Left Ctrl activates VIM layer
      * Esc/Ct = Caps Lock → Esc when tapped, Ctrl when held
      * Ent/Ct = Enter → Enter when tapped, Ctrl when held
      * RCt* = Right Ctrl (RCtrl + / = Up arrow)
      */
     [_BASE] = LAYOUT_ansi_61(
-        KC_GRV,  KC_1,    KC_2,    KC_3,    KC_4,    KC_5,    KC_6,    KC_7,    KC_8,    KC_9,    KC_0,    KC_MINS, KC_EQL,  KC_BSPC,
+        LT(_VIM, KC_GRV), KC_1, KC_2, KC_3, KC_4, KC_5, KC_6, KC_7, KC_8, KC_9, KC_0, KC_MINS, KC_EQL, KC_BSPC,
         KC_TAB,  KC_Q,    KC_W,    KC_E,    KC_R,    KC_T,    KC_Y,    KC_U,    KC_I,    KC_O,    KC_P,    KC_LBRC, KC_RBRC, KC_BSLS,
         MT(MOD_LCTL, KC_ESC), KC_A, KC_S, KC_D, KC_F, KC_G, KC_H, KC_J, KC_K, KC_L, KC_SCLN, KC_QUOT, MT(MOD_RCTL, KC_ENT),
         KC_LSFT, KC_Z,    KC_X,    KC_C,    KC_V,    KC_B,    KC_N,    KC_M,    KC_COMM, KC_DOT,  KC_SLSH, KC_RSFT,
@@ -121,8 +122,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // State tracking for Ctrl keys and RGB toggle
 static bool lctrl_pressed = false;  // Physical left ctrl
 static bool rctrl_pressed = false;  // Physical right ctrl
-static bool base_rgb_enabled = true;  // Toggle for base layer RGB
-
+static bool base_rgb_enabled = true;   // Toggle for base layer RGB
 // Handle Ctrl + combinations and numpad layer special keys
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
@@ -135,8 +135,8 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             rctrl_pressed = record->event.pressed;
             return true;
 
-        case KC_GRV:
-            // Ctrl + ` (physical Escape key) = Switch to Bluetooth layer
+        case LT(_VIM, KC_GRV):
+            // Ctrl + ` = Switch to Bluetooth layer
             if ((lctrl_pressed || rctrl_pressed) && record->event.pressed) {
                 layer_clear();
                 layer_on(_BLUETOOTH);
