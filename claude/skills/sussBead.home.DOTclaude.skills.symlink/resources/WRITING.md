@@ -452,7 +452,70 @@ bd create "Title" --description='```mermaid ...\`\`\`'
 2. **Double quotes work** but require `\`` for each backtick
 3. **Never use `\`` inside single quotes** — the `\` is stored literally
 
-## Other Bead Formatting
+## Writing Style — Make It Pleasurable to Read
+
+Beads are read by humans and agents alike. A wall of plain text is hard to scan and tiring to read. Make bead descriptions **visually inviting** — use formatting as a tool to guide the reader's eye.
+
+### Use Emojis as Visual Anchors
+
+Prefix section headers and key list items with relevant emojis. They break up monotony and let readers scan for topics at a glance:
+
+```markdown
+## 🔍 Key Findings
+
+- ✅ Runtime store handles null slugs correctly
+- ⚠️ Frontend has 8 unguarded `.slug` references
+- 🚫 No migration needed for existing data
+```
+
+**Don't overdo it** — one emoji per header or key item. Not every bullet needs one. Use them for section headers, status indicators, and items you want to pop visually.
+
+### Create Breathing Room
+
+Dense paragraphs are hard to parse. Break content into scannable chunks:
+
+- **Short paragraphs** — 2-3 sentences max, then a blank line
+- **Bullet lists** over run-on sentences — if you're listing 3+ things, use bullets
+- **Tables** for structured comparisons — don't describe in prose what a table shows at a glance
+- **Horizontal rules** (`---`) to separate major content blocks
+- **Headers liberally** — a `###` subsection costs nothing and aids navigation
+
+### Bad — Wall of Text
+
+```markdown
+## Findings
+
+The runtime store was analyzed and it handles null slugs correctly because the APP entry is
+written regardless of slug presence and the DOMAIN entry is only created when a slug exists.
+The frontend however has 8 unguarded references to .slug across 4 files including domains.ts
+which has 3 URL functions that produce undefined paths and AppDomains.js where the SlugEditor
+shows a broken URL. No database migration is needed since existing records already have slugs.
+```
+
+### Good — Scannable and Inviting
+
+```markdown
+## 🔍 Findings
+
+### ✅ Runtime Store — No Changes Needed
+
+Handles null slugs by design. `APP#{app_id}` is written regardless; `DOMAIN#{slug}` only when a slug exists.
+
+### ⚠️ Frontend — 8 Unguarded References
+
+Fresh audit of all 68 `.slug` references found 8 risks across 4 files:
+
+| File              | Risk     | What Breaks                       |
+|-------------------|----------|-----------------------------------|
+| domains.ts        | CRITICAL | 3 URL functions produce undefined |
+| AppDomains.js     | HIGH     | SlugEditor shows broken URL       |
+
+### 📦 Database — No Migration Needed
+
+Existing records already have slugs populated. New null-slug records are handled by the store logic above.
+```
+
+### Formatting Mechanics
 
 - Use `##` headers to separate major sections
 - Use `###` for subsections within findings
