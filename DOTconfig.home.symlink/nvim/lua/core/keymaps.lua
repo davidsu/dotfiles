@@ -75,6 +75,17 @@ map('n', 'gj', function() win_utils.win_move('j') end, { desc = 'Move/split down
 map('n', 'gk', function() win_utils.win_move('k') end, { desc = 'Move/split up', silent = true })
 map('n', 'gl', function() win_utils.win_move('l') end, { desc = 'Move/split right', silent = true })
 
+-- Zoom toggle (tab split / tabclose)
+map('n', '\\z', function()
+  if vim.fn.winnr('$') > 1 then
+    vim.cmd('tab split')
+  elseif #vim.fn.filter(vim.fn.map(vim.fn.range(vim.fn.tabpagenr('$')),
+    function(_, v) return vim.fn.tabpagebuflist(v + 1) end),
+    function(_, v) return vim.fn.index(v, vim.fn.bufnr('')) >= 0 end) > 1 then
+    vim.cmd('tabclose')
+  end
+end, { desc = 'Zoom toggle', silent = true })
+
 -- Close window
 map('n', '\\w', '<cmd>wincmd q<cr>', { desc = 'Close window' })
 map('n', '\\q', '<cmd>q<cr>', { desc = 'Quit' })

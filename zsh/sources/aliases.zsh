@@ -39,4 +39,4 @@ alias mdview='nvim --headless -c "MarkdownPreview"'
 
 # Beads vim viewer
 alias bvim='nvim -c "Beads"'
-alias vbeads='nvim -c "Beads"'
+function vbeads { nvim -c "Beads $1" }

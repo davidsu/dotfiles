@@ -899,8 +899,15 @@ end
 
 local function setup()
   vim.api.nvim_create_user_command("Beads", function(cmd)
-    toggle({ cwd = cmd.args ~= "" and cmd.args or nil })
-  end, { nargs = "?", desc = "Toggle Beads viewer" })
+    local arg = cmd.args and vim.trim(cmd.args) or ""
+    arg = arg ~= "" and arg or nil
+    if arg and not arg:find("/") then
+      open()
+      openBeadById(arg)
+    else
+      toggle({ cwd = arg })
+    end
+  end, { nargs = "?", desc = "Toggle Beads viewer or open a bead by ID" })
 
   vim.api.nvim_create_user_command("BeadsRefresh", refresh, { desc = "Refresh Beads viewer" })
   vim.api.nvim_create_user_command("BeadsFind", findCurrentBead, { desc = "Find current bead in viewer" })
