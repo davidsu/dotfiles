@@ -13,6 +13,39 @@ local IGNORED_PATTERNS = {
   '/tmp/beads/'
 }
 
+local git_cache = {}
+
+-- For worktree files, returns the equivalent path in the main repo (or nil)
+local function main_repo_path(filepath)
+  local dir = vim.fn.fnamemodify(filepath, ':h')
+
+  if git_cache[dir] ~= nil then
+    if not git_cache[dir] then return nil end
+    local info = git_cache[dir]
+    local relpath = filepath:sub(#info.toplevel + 2)
+    local main = info.repo_root .. '/' .. relpath
+    return main ~= filepath and main or nil
+  end
+
+  local result = vim.fn.systemlist({ 'git', '-C', dir, 'rev-parse', '--git-common-dir', '--show-toplevel' })
+  if vim.v.shell_error ~= 0 or #result < 2 then
+    git_cache[dir] = false
+    return nil
+  end
+
+  local git_common_dir, toplevel = result[1], result[2]
+  if not git_common_dir:match('^/') then
+    git_common_dir = vim.fn.fnamemodify(toplevel .. '/' .. git_common_dir, ':p'):gsub('/$', '')
+  end
+
+  local repo_root = vim.fn.fnamemodify(git_common_dir, ':h')
+  git_cache[dir] = { repo_root = repo_root, toplevel = toplevel }
+
+  local relpath = filepath:sub(#toplevel + 2)
+  local main = repo_root .. '/' .. relpath
+  return main ~= filepath and main or nil
+end
+
 local function should_ignore(filepath)
   if not filepath or filepath == '' or vim.fn.filereadable(filepath) ~= 1 then
     return true
@@ -38,7 +71,7 @@ local function read_mru_entries(target_path)
   if vim.fn.filereadable(mru_file) == 1 then
     pcall(function()
       for line in io.lines(mru_file) do
-        local path = line:match('^([^:]+):')
+        local path = line:match('^(.+):%d+:%d+$')
         if path then
           if path == target_path then
             existing_entry = line
@@ -57,7 +90,7 @@ local function write_mru_entries(entries)
   pcall(function()
     local file = io.open(mru_file, 'w')
     if file then
-      for i = 1, math.min(#entries, 100) do
+      for i = 1, math.min(#entries, 600) do
         file:write(entries[i] .. '\n')
       end
       file:close()
@@ -95,6 +128,15 @@ local function save_mru(bufnr, force_update)
   end
 
   table.insert(entries, 1, entry_to_save)
+
+  local main = main_repo_path(filepath)
+  if main then
+    local line, col = entry_to_save:match(':(%d+):(%d+)$')
+    if line then
+      table.insert(entries, 2, string.format('%s:%s:%s', main, line, col))
+    end
+  end
+
   write_mru_entries(entries)
 end
 
