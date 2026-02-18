@@ -1,6 +1,6 @@
 ---
 name: cleanCode
-description: Refactor/clean/simplify code - eliminate duplication, small functions, readable names. USE WHEN user says "clean", "simplify", "refactor", "readable", "messy", "complex", or code has >15 line functions or copy-paste.
+description: Coding standards for ALL code changes. MUST load before writing, modifying, or reviewing any code — features, bug fixes, refactors, tests, scripts, anything. Not optional. Not just for cleanup. Every line of code you write should follow these rules.
 ---
 
 # Code Simplification
@@ -68,8 +68,15 @@ We'll make the hole when we need the air conditioner — not before.
 
 ## KISS: Directness
 
+Say what you mean. No wrappers, no indirection, no ceremony.
+
+- Explicit parameters over captured variables or closures
+- Clear data flow: inputs → function → outputs
+- Return early, use compact conditionals, prefer expressions over statements
+- Don't add comments to obviously simple code
+
 ```typescript
-// Bad: Verbose
+// Bad: ceremony hiding a simple operation
 function executeSymlinkPlan(plan: SymlinkPlan[]): LinkResult[] {
   const results: LinkResult[] = []
   for (const { from, to } of plan) {
@@ -78,23 +85,16 @@ function executeSymlinkPlan(plan: SymlinkPlan[]): LinkResult[] {
   return results
 }
 
-// Good: Concise
+// Good: the code is the intent
 const executeSymlinkPlan = (plan: SymlinkPlan[]) =>
   plan.map(({ from, to }) => safeLink(from, to))
 ```
 
 **Note side effects:** Add comment if `.map()` has side effects (creates files, mutates state).
 
-- Reduce unnecessary ceremony — use idiomatic language features (return early, compact conditionals, arrow functions)
-- Don't add comments to obviously simple code
-- Add parameters instead of creating higher-order functions or closures
-- Explicit parameters over captured variables
-- Avoid over-nesting functions, objects, or data structures
-- Clear data flow (inputs → function → outputs)
-
 ## KISS: Don't Code for Ghosts
 
-Before adding a fallback, guard, or normalization — verify the input can actually take that form. Read the callers. If every caller passes a full URL, don't handle bare hostnames. If the config always returns `https://`, don't branch on `http://`. Dead branches aren't "defensive" — they're noise that misleads readers into thinking those cases are real.
+YAGNI says don't build features you don't need. This rule is sharper: don't guard against inputs that *can't arrive*. Before adding a fallback, guard, or normalization — read the callers. If every caller passes a full URL, don't handle bare hostnames. If the config always returns `https://`, don't branch on `http://`. Dead branches aren't "defensive" — they're noise that misleads readers into thinking those cases are real.
 
 ```javascript
 // Bad: getAPIUrl() always returns "https://...", bare hostname can't happen
@@ -136,6 +136,7 @@ return files.map(handleFile)
 - Booleans: `isSymlink()`, `hasExtension()`, `canWrite()`
 - No generic names: `process()`, `handle()`, `do()` → What specifically?
 - Names should express intent — make the code self-documenting
+- Full words over abbreviations. Only abbreviate if universally understood: `i`, `idx`, `err`, `ctx`, `buf`
 
 **Name for the reader at the call site.** Before naming a function, consider who reads the code that *calls* it. Would they understand why this function is being called? A good name makes surrounding code read like prose — the reader shouldn't need to open the function body to understand the flow.
 
@@ -198,6 +199,40 @@ const resolveRoles = (user) =>
 const processUsers = (users) => users.map(resolveRoles)
 ```
 
+## Functions: Parameters
+
+When function takes >3 parameters, use a config object.
+
+```typescript
+// Bad: Hard to read, rigid order
+showList(lines, name, syntax, cursor, keymaps, onSelect)
+
+// Good: Self-documenting, optional fields clear
+showList({
+  lines,
+  name,
+  syntax,
+  cursor: [4, 0],      // optional
+  onSelect: handler,   // optional
+})
+```
+
+## Functions: Encapsulation
+
+Hide storage mechanism. Expose operations, not variables.
+
+```typescript
+// Bad: Leaking implementation
+if (this.windowId && isValid(this.windowId)) {
+  focusWindow(this.windowId)
+}
+
+// Good: Operation hides state
+panes.focusListWindow()
+```
+
+State storage is an implementation detail. Can change without breaking callers.
+
 ## DRY: No Duplication
 
 If you copy-paste code, stop. Extract a function.
@@ -223,7 +258,7 @@ This isn't just about literal copy-paste. Two functions that fetch-then-transfor
 
 **Don't shy away from refactoring to share logic.** If the existing code needs to change shape to accommodate reuse — change it. A small refactor now beats two diverging copies forever.
 
-## Iterate the Source, Not Type Dispatch
+## DRY: Iterate the Source, Not Type Dispatch
 
 **Red flag:** Multiple `extractTypeA()`, `extractTypeB()`, `extractTypeC()` functions.
 
@@ -274,7 +309,6 @@ When a file exceeds 250 lines, look for natural module boundaries.
 - Define functions and configuration logic before return/export statements
 - Keep return/export blocks clean by referencing named functions rather than inline definitions
 - Separate declaration (function definitions) from usage (return/export statements)
-- Extract inline configuration functions into named functions defined above the return/export
 - This improves readability and makes the module's public interface immediately clear
 
 **Clear APIs:**
@@ -298,10 +332,6 @@ function buildPlan() {
   return files.map(file => ({ from: file, to: transformPath(file) }))
 }
 
-function executePlan(plan: Array<{from: string, to: string | null}>) {
-  return plan.map(({ from, to }) => safeLink(from, to))
-}
-
 function safeLink(src: string, dest: string | null) {
   if (!dest) return { from: src, to: '<unparseable>', success: false }
   // ... continue
@@ -310,92 +340,19 @@ function safeLink(src: string, dest: string | null) {
 // Now: results.filter(r => !r.success).length shows exactly what failed
 ```
 
-
-
 ## Refactoring Checklist
 
 Before code is "done":
 
 - **Function names read like English?** Should describe exactly what they do
 - **Any copy-pasted code?** Extract to function
-- **Multiple extractType functions?** Replace with `Object.entries(source).map()`
+- **Does this already exist in the codebase?** Search before building
+- **Multiple extractType functions?** Iterate the source instead
 - **Any function >20 lines?** Break into subfunctions
+- **4+ levels of nesting?** Extract to named helpers
 - **File >250 lines?** Look for natural module boundaries
-- **Sequential operations with branches?** Consider fluent API
 - **Silently filtering failures?** Make them explicit with error results
-- **Special cases that can be unified?** Handle uniformly when possible
-- **Can it be simpler?** Step back — remove a layer, collapse two steps, replace mechanism with value
-- **Comments explain "why" not "what"?** Code should show what it does
+- **Special cases that can be unified?** Handle uniformly
+- **Can it be simpler?** Remove a layer, collapse two steps, delete dead branches
+- **Guarding against impossible inputs?** Read the callers — delete ghost code
 - **Are implementation details hidden?** Only expose necessary APIs
-
-## Complexity Limits
-
-- Function >25 lines → Extract subfunctions
-- File >250 lines → Consider splitting by responsibility
-- Nested blocks >2 deep → Extract function
-
-**Self-prompt:** "Do I have extractTypeA/B/C functions? Can I iterate the source instead? Would a fluent API make this read better? Are failures explicit? Does the code read like English? This works — can I make it simpler?"
-
-## Descriptive Names Over Abbreviations
-
-Only abbreviate if universally understood: `i`, `idx`, `err`, `ctx`, `buf`.
-Otherwise use full words.
-
-```typescript
-// Bad
-const c1, c2 = parseArgs(args)
-const cfg = getConfig()
-
-// Good
-const firstCommit, secondCommit = parseCommits(args)
-const config = getConfig()
-```
-
-**Exception:** Loop counters (`i`, `j`), error (`err`), buffer (`buf`).
-
-## Configuration Objects Over Positional Parameters
-
-When function takes >3 parameters, use config object.
-
-```typescript
-// Bad: Hard to read, rigid order
-showList(lines, name, syntax, cursor, keymaps, onSelect)
-
-// Good: Self-documenting, optional fields clear
-showList({
-  lines,
-  name,
-  syntax,
-  cursor: [4, 0],      // optional
-  onSelect: handler,   // optional
-})
-```
-
-**Benefits:** Named parameters, optional fields obvious, easy to extend.
-
-## Encapsulation of State
-
-Hide storage mechanism. Expose operations, not variables.
-
-```typescript
-// Bad: Leaking implementation
-if (this.windowId && isValid(this.windowId)) {
-  focusWindow(this.windowId)
-}
-
-// Good: Operation hides state
-panes.focusListWindow()
-```
-
-**Inside module:**
-```typescript
-function focusListWindow() {
-  const win = this.windowId  // Internal only
-  if (win && isValid(win)) {
-    focusWindow(win)
-  }
-}
-```
-
-State storage is implementation detail. Can change without breaking clients.
-
