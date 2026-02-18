@@ -449,6 +449,10 @@ local function openBeadById(id, line_nr, section_slug)
   local tmp_dir = "/tmp/beads"
   vim.fn.mkdir(tmp_dir, "p")
   local tmp_file = tmp_dir .. "/" .. id .. ".md"
+  if vim.fn.filereadable(tmp_file) == 1 then
+    local timestamp = os.date("%Y-%m-%d-%H-%M-%S")
+    vim.fn.rename(tmp_file, (tmp_file:gsub("%.md$", "-" .. timestamp .. ".bak.md")))
+  end
   vim.fn.writefile(lines, tmp_file)
 
   -- Resolve section slug to line number

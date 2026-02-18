@@ -78,26 +78,6 @@ local function diffFields(before, after)
   return changes
 end
 
-local function formatDiff(changes)
-  local lines = { "Changes to apply:", "" }
-
-  for _, change in ipairs(changes) do
-    table.insert(lines, "Field: " .. change.field)
-    table.insert(lines, "Before:")
-    table.insert(lines, "  " .. (change.before == "" and "(empty)" or vim.split(change.before, "\n")[1]:sub(1, 60) .. "..."))
-    table.insert(lines, "After:")
-    table.insert(lines, "  " .. (change.after == "" and "(empty)" or vim.split(change.after, "\n")[1]:sub(1, 60) .. "..."))
-    table.insert(lines, "")
-  end
-
-  return table.concat(lines, "\n")
-end
-
-local function showConfirmDialog(diff_text, on_confirm)
-  local ok = vim.fn.confirm(diff_text .. "\n\nApply changes?", "&Yes\n&No", 2)
-  if ok == 1 then on_confirm() end
-end
-
 local function applyUpdate(cwd, id, changes)
   for _, change in ipairs(changes) do
     local flag = change.field == "title" and "--title"
@@ -124,13 +104,9 @@ local function saveBeadBuffer(buf, cwd, bead_id, original_text)
     return
   end
 
-  local diff_text = formatDiff(changes)
-
-  showConfirmDialog(diff_text, function()
-    applyUpdate(cwd, bead_id, changes)
-    vim.notify("Bead updated: " .. bead_id, vim.log.levels.INFO)
-    vim.bo[buf].modified = false
-  end)
+  applyUpdate(cwd, bead_id, changes)
+  vim.notify("Bead updated: " .. bead_id, vim.log.levels.INFO)
+  vim.bo[buf].modified = false
 end
 
 local function setupEditableBuffer(buf, cwd, bead_id, original_text)
@@ -141,9 +117,10 @@ local function setupEditableBuffer(buf, cwd, bead_id, original_text)
   end
   vim.fn.matchadd("BeadsCloseReason", "^Close reason:.*$")
 
-  vim.api.nvim_buf_create_user_command(buf, "BeadUpdate", function()
-    saveBeadBuffer(buf, cwd, bead_id, original_text)
-  end, {})
+  vim.api.nvim_create_autocmd("BufWritePost", {
+    buffer = buf,
+    callback = function() saveBeadBuffer(buf, cwd, bead_id, original_text) end,
+  })
 end
 
 return {
