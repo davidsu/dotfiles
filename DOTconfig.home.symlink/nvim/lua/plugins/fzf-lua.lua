@@ -46,7 +46,7 @@ return {
         if opts.args == '' then
           require('fzf-lua').live_grep()
         else
-          require('fzf-lua').live_grep({ search = opts.args, no_esc = true })
+          require('fzf-lua').grep({ search = opts.args, no_esc = true })
         end
       end, { nargs = '*' })
       vim.api.nvim_create_user_command('History', function() require('fzf-lua').oldfiles() end, {})
