@@ -120,6 +120,12 @@ map('n', '–', function() win_utils.win_size('-') end, { desc = 'Decrease windo
 -- Toggle resize mode (horizontal vs vertical)
 map('n', '<space>v', win_utils.toggle_force_horizontal_resize, { desc = 'Toggle resize mode', silent = true })
 
+-- Open URL/path under cursor in browser/system handler
+map('n', '\\o', function()
+  local word = vim.fn.expand('<cWORD>')
+  vim.fn.system({ 'open', word })
+end, { desc = 'Open under cursor with macOS open' })
+
 -- Filetype detection
 map('n', '<space>fd', '<cmd>filetype detect<cr>', { desc = 'Detect filetype' })
 
