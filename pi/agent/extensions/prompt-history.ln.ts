@@ -10,6 +10,7 @@ import { DynamicBorder } from "@mariozechner/pi-coding-agent"
 import {
 	Container, Input, type SelectItem, SelectList, Text,
 	matchesKey, Key, type Component, type Focusable,
+	fuzzyFilter,
 } from "@mariozechner/pi-tui"
 import { readdir, readFile } from "node:fs/promises"
 import { join } from "node:path"
@@ -86,10 +87,6 @@ async function loadAllPrompts() {
 	return [...seen.values()].sort((a, b) => b.timestamp.localeCompare(a.timestamp))
 }
 
-/** Case-insensitive substring match on the prompt text */
-const matchesFilter = (prompt: PromptEntry, filter: string) =>
-	prompt.text.toLowerCase().includes(filter.toLowerCase())
-
 /**
  * Build SelectItems with metadata in label (capped at 30 by SelectList)
  * and prompt text in description (gets remaining terminal width).
@@ -163,7 +160,7 @@ async function showHistorySearch(ctx: ExtensionContext) {
 
 		const rebuildList = (filter: string) => {
 			currentPrompts = filter
-				? prompts.filter((p) => matchesFilter(p, filter))
+				? fuzzyFilter(prompts, filter, (p) => p.text)
 				: prompts
 			selectList = new SelectList(
 				toSelectItems(currentPrompts),

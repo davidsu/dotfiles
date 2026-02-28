@@ -45,6 +45,9 @@
 "pi/agent/extensions/session-banner.ln.ts" = [
   "~/.pi/agent/extensions/session-banner.ts",
 ]
+"pi/agent/extensions/prompt-history.ln.ts" = [
+  "~/.pi/agent/extensions/prompt-history.ts",
+]
 
 # dotconfig (whole directory)
 "config.ln" = [

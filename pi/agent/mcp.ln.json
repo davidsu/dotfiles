@@ -5,6 +5,12 @@
       "args": [],
       "lifecycle": "lazy"
     },
+    "chrome": {
+      "command": "playwright-mcp",
+      "args": ["--extension"],
+      "env": { "PLAYWRIGHT_MCP_EXTENSION_TOKEN": "uHxLSmeL6_lRkwVOsKxxls2DYlaGnwWBahFGeVJMlFQ" },
+      "lifecycle": "lazy"
+    },
     "neovim": {
       "command": "mcp-neovim-server",
       "args": ["--socket", "/tmp/nvim"],
