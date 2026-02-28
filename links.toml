@@ -48,6 +48,9 @@
 "pi/agent/extensions/prompt-history.ln.ts" = [
   "~/.pi/agent/extensions/prompt-history.ts",
 ]
+"pi/agent/extensions/mru.ln.ts" = [
+  "~/.pi/agent/extensions/mru.ts",
+]
 
 # dotconfig (whole directory)
 "config.ln" = [

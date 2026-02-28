@@ -25,15 +25,19 @@ function mru() {
         IFS=: read -r filepath linenum column <<< "$fzfresult"
 
         if [[ -f "$filepath" ]]; then
-            # Change to git root if in a git repo
-            local filedir=$(dirname "$filepath")
-            cd "$filedir"
-            if git rev-parse --show-toplevel > /dev/null 2>&1; then
-                cd $(git rev-parse --show-toplevel)
-            fi
+            if [[ "$1" == "--print-path" ]]; then
+                echo "$filepath"
+            else
+                # Change to git root if in a git repo
+                local filedir=$(dirname "$filepath")
+                cd "$filedir"
+                if git rev-parse --show-toplevel > /dev/null 2>&1; then
+                    cd $(git rev-parse --show-toplevel)
+                fi
 
-            # Open file at saved position
-            nvim "+call cursor($linenum, $column)" "$filepath"
+                # Open file at saved position
+                nvim "+call cursor($linenum, $column)" "$filepath"
+            fi
         fi
     fi
 }
