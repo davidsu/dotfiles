@@ -1,6 +1,6 @@
 # Chrome browser integration with fzf
-# Note: Chrome with sync stores bookmarks in Google Account, not locally.
-# Use `chromeExportBookmarks` to export, then `chromebookmarks` to browse.
+# Local bookmarks (Bookmarks Bar) are read directly from Chrome's Bookmarks file.
+# Synced bookmarks require `chromeExportBookmarks` to export via Chrome API.
 
 CHROME_BOOKMARKS_DIR="$HOME/.bookmarks"
 CHROME_BOOKMARKS_FILE="$CHROME_BOOKMARKS_DIR/chrome.json"
@@ -68,19 +68,25 @@ function chromehistory() {
 }
 
 # chromebookmarks - Browse Chrome bookmarks with fzf
-# Uses exported JSON from chromeExportBookmarks (for synced bookmarks)
+# Merges local Bookmarks file (always fresh) with exported synced bookmarks
 function chromebookmarks() {
     require_command jq || return 1
 
     local cols=$(( COLUMNS / 2 ))
+    local local_file
+    local_file=$(find_chrome_profile_file "Bookmarks" 2>/dev/null)
 
-    if [[ ! -f "$CHROME_BOOKMARKS_FILE" ]]; then
-        echo "No bookmarks found. Run 'chromeExportBookmarks' first." >&2
+    if [[ -z "$local_file" && ! -f "$CHROME_BOOKMARKS_FILE" ]]; then
+        echo "No bookmarks found. Run 'chromeExportBookmarks' for synced bookmarks." >&2
         return 1
     fi
 
-    # Parse exported JSON: [{path: '...', url: '...'}, ...]
-    jq -r '.[] | "\(.path)\t\u001b[36m\(.url)\u001b[0m"' "$CHROME_BOOKMARKS_FILE" | \
+    # Merge local Chrome bookmarks + exported synced bookmarks
+    {
+        [[ -f "$local_file" ]] && parse_chromium_bookmarks "$local_file" "$cols"
+        [[ -f "$CHROME_BOOKMARKS_FILE" ]] && \
+            jq -r '.[] | "\(.path)\t\u001b[36m\(.url)\u001b[0m"' "$CHROME_BOOKMARKS_FILE"
+    } | \
         fzf_browser_bookmarks \
             --header 'CTRL-o: open in browser | CTRL-s: toggle sort' | \
         awk -F'\t' '{print $2}' | \
