@@ -498,9 +498,9 @@ export PATH="/opt/homebrew/opt/arm-none-eabi-gcc@8/bin:/opt/homebrew/opt/arm-non
 mkdir -p ~/keychron_qmk_firmware/keyboards/keychron/v4_max/ansi/keymaps/custom
 
 # Copy custom keymap files from dotfiles
-# NOTE: Config files are in ~/.dotfiles/DOTconfig.home.symlink/qmk/keychron_v4_max/
+# NOTE: Config files are in ~/.dotfiles/config.ln/qmk/keychron_v4_max/
 #       (symlinked to ~/.config/qmk/keychron_v4_max/)
-cp ~/.dotfiles/DOTconfig.home.symlink/qmk/keychron_v4_max/{keymap.c,config.h,rules.mk} \
+cp ~/.dotfiles/config.ln/qmk/keychron_v4_max/{keymap.c,config.h,rules.mk} \
    ~/keychron_qmk_firmware/keyboards/keychron/v4_max/ansi/keymaps/custom/
 
 # Compile the keymap for V4 MAX (not V4!)
@@ -511,18 +511,18 @@ qmk compile -kb keychron/v4_max/ansi -km custom
 
 # Copy compiled firmware back to dotfiles for safekeeping
 cp ~/keychron_qmk_firmware/.build/keychron_v4_max_ansi_custom.bin \
-   ~/.dotfiles/DOTconfig.home.symlink/qmk/keychron_v4_max/
+   ~/.dotfiles/config.ln/qmk/keychron_v4_max/
 ```
 
 ### One-Liner for Recompilation (after initial setup)
 
 ```bash
 export PATH="/opt/homebrew/opt/arm-none-eabi-gcc@8/bin:$HOME/.local/bin:$PATH" && \
-cp ~/.dotfiles/DOTconfig.home.symlink/qmk/keychron_v4_max/{keymap.c,config.h,rules.mk} \
+cp ~/.dotfiles/config.ln/qmk/keychron_v4_max/{keymap.c,config.h,rules.mk} \
    ~/keychron_qmk_firmware/keyboards/keychron/v4_max/ansi/keymaps/custom/ && \
 cd ~/keychron_qmk_firmware && \
 qmk compile -kb keychron/v4_max/ansi -km custom && \
-cp .build/keychron_v4_max_ansi_custom.bin ~/.dotfiles/DOTconfig.home.symlink/qmk/keychron_v4_max/
+cp .build/keychron_v4_max_ansi_custom.bin ~/.dotfiles/config.ln/qmk/keychron_v4_max/
 ```
 
 ## How to Flash Firmware

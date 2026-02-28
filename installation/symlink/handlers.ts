@@ -5,7 +5,7 @@ import { backupFile } from './file-ops'
 export function handleExistingSymlink(src: string, dest: string) {
   const currentLink = fs.readlinkSync(dest)
   if (currentLink === src) {
-    log.success(`Link already exists: ${dest} -> ${src}`)
+    log.info(`Link already exists: ${dest} -> ${src}`)
     return true
   }
 

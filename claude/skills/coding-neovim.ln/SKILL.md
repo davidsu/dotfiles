@@ -1,5 +1,5 @@
 ---
-name: coding:neovim
+name: coding-neovim
 description: Development workflow for Neovim Lua code. Always load when writing or modifying Lua code that runs in Neovim, including tests.
 ---
 

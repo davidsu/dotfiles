@@ -78,4 +78,4 @@ Don't guess - get data first.
 
 When updating documentation for Neovim changes:
 
-- **Neovim docs**: `~/.dotfiles/config.home.symlink/nvim/*.md`
+- **Neovim docs**: `~/.dotfiles/config.ln/nvim/*.md`

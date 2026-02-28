@@ -4,13 +4,13 @@
 
 ### Coding Context
 
-**CRITICAL REQUIREMENT**: Before writing or modifying code, you MUST load `/cleanCode` if you haven't already loaded it in this conversation.
+**CRITICAL REQUIREMENT**: Before writing or modifying code, you MUST load `/clean-code` if you haven't already loaded it in this conversation.
 
 This ensures you follow clean code principles and coding standards automatically.
 
 ### Bead Context
 
-**CRITICAL REQUIREMENT**: Before any `bd create`, `bd update`, or when reading beads for context, you MUST load `/sussBead` if you haven't already loaded it in this conversation.
+**CRITICAL REQUIREMENT**: Before any `bd create`, `bd update`, or when reading beads for context, you MUST load `/suss-bead` if you haven't already loaded it in this conversation.
 
 This ensures correct bead writing conventions (ID naming, inline source attribution with `#section-slug`, table alignment) and reading protocol (parent traversal, contradiction escalation).
 

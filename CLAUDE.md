@@ -28,7 +28,7 @@ Modern dotfiles configuration:
 
 ## Running Tests
 
-Run all Neovim tests: `cd ~/.dotfiles/DOTconfig.home.symlink/nvim && nvim --headless -c "PlenaryBustedDirectory lua" -c "qa"`
+Run all Neovim tests: `cd ~/.dotfiles/config.ln/nvim && nvim --headless -c "PlenaryBustedDirectory lua" -c "qa"`
 
 ## Critical Rules
 
@@ -58,7 +58,7 @@ Before suggesting GitHub repos, npm packages, or external resources:
 **Installation** - Keep installation script in sync:
 
 - When adding a tool via Homebrew: Add to `installation/tools.yaml`
-- When creating files that need symlinking to home directory: Use `*.symlink` naming convention (handled automatically by installation script)
+- When creating files that need symlinking to home directory: Add an entry to `links.toml` and use the `.ln` naming convention (e.g., `foo.ln.json`)
 
 **Why this matters**:
 

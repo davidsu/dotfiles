@@ -1,0 +1,83 @@
+# Symlink map: repo-relative path → target location(s)
+# ~ expands to $HOME at runtime
+
+[links]
+
+# claude
+"claude/CLAUDE.ln.md" = [
+  "~/.claude/CLAUDE.md",
+]
+"claude/hooks/pre_tool_use.ln.py" = [
+  "~/.claude/hooks/pre_tool_use.py",
+]
+"claude/skills/clean-code.ln" = [
+  "~/.claude/skills/clean-code",
+]
+"claude/skills/coding-neovim.ln" = [
+  "~/.claude/skills/coding-neovim",
+]
+"claude/skills/excalidraw.ln" = [
+  "~/.claude/skills/excalidraw",
+]
+"claude/skills/prdiff.ln" = [
+  "~/.claude/skills/prdiff",
+]
+"claude/skills/suss-bead.ln" = [
+  "~/.claude/skills/suss-bead",
+]
+"claude/statusline.ln.sh" = [
+  "~/.claude/statusline.sh",
+]
+
+# pi
+"pi/agent/AGENTS.ln.md" = [
+  "~/.pi/agent/AGENTS.md",
+]
+"pi/agent/settings.ln.json" = [
+  "~/.pi/agent/settings.json",
+]
+"pi/agent/mcp.ln.json" = [
+  "~/.pi/agent/mcp.json",
+]
+"pi/agent/extensions/claude-code-footer.ln.ts" = [
+  "~/.pi/agent/extensions/claude-code-footer.ts",
+]
+
+# dotconfig (whole directory)
+"config.ln" = [
+  "~/.config",
+]
+
+# dotfiles that live inside config/ but also symlink to ~
+"config.ln/hammerspoon.ln" = [
+  "~/.hammerspoon",
+]
+"config.ln/prettierrc.ln.json" = [
+  "~/.prettierrc.json",
+]
+"config.ln/tmux.ln.conf" = [
+  "~/.tmux.conf",
+]
+"config.ln/ripgrep/rgignore.ln" = [
+  "~/.rgignore",
+]
+"config.ln/tsconfig.ln.json" = [
+  "~/tsconfig.json",
+]
+
+# zsh
+"zsh/zshrc.ln" = [
+  "~/.zshrc",
+]
+"zsh/zprofile.ln" = [
+  "~/.zprofile",
+]
+"zsh/zlogin.ln" = [
+  "~/.zlogin",
+]
+"zsh/zshenv.ln" = [
+  "~/.zshenv",
+]
+"zsh/hushlogin.ln" = [
+  "~/.hushlogin",
+]

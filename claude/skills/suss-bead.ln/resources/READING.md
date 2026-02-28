@@ -46,10 +46,10 @@ The synthesizer tells you *what* (8 risks). If you need *which files and why*, f
 
 Full `bd show <id>` dumps the entire description — often 5-10K+ characters. For large hierarchies (20+ beads), this blows the context window. Use selective loading instead.
 
-The scripts live in the sussBead skill directory. Use full paths:
+The scripts live in the suss-bead skill directory. Use full paths:
 
 ```bash
-BD_SCRIPTS=~/.claude/skills/sussBead/scripts
+BD_SCRIPTS=~/.claude/skills/suss-bead/scripts
 ```
 
 ### Summary-only skimming

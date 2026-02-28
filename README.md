@@ -166,28 +166,25 @@ Because the installer clears the Dock:
 
 | Directory | Purpose |
 |-----------|---------|
-| `installation/` | Bootstrap scripts, `tools.yaml` (packages), `links.ts` (symlinks) |
+| `installation/` | Bootstrap scripts, `tools.yaml` (packages), `links.ts` (symlink runner) |
+| `links.toml` | Symlink map: repo paths → target locations |
 | `zsh/` | Modular Zsh config (`env.zsh`, `aliases.zsh`, etc.) |
-| `DOTconfig.home.symlink/` | Tool configs → `~/.config` |
+| `config.ln/` | Tool configs → `~/.config` |
 
-### 🔗 Symlink Naming Convention
+### 🔗 Symlink Convention
 
-Files use a **self-documenting** naming pattern: `{name}.home[.{path}].symlink[.{extension}]`
+Symlink mappings are defined in **`links.toml`** at the repo root. Each entry maps a repo-relative path to one or more target locations.
 
-**Examples:**
+Files that are symlinked use a `.ln` marker in their name (e.g., `zshrc.ln`, `CLAUDE.ln.md`, `tmux.ln.conf`) to make it visually clear when browsing the repo.
+
+**Examples from `links.toml`:**
+```toml
+"zsh/zshrc.ln" = ["~/.zshrc"]
+"claude/CLAUDE.ln.md" = ["~/.claude/CLAUDE.md"]
+"config.ln" = ["~/.config"]
 ```
-DOTzshrc.home.symlink           → ~/.zshrc
-CLAUDE.home.DOTclaude.symlink.md → ~/.claude/CLAUDE.md
-DOTconfig.home.symlink/          → ~/.config/
-```
 
-**Pattern Rules:**
-- 📍 `DOT` = literal `.` for hidden files/directories
-- 📂 Dots between path components = `/` slashes
-- 🎯 Repository organization = ignored (only filename matters!)
-- 🤖 `links.ts` parses filenames → destinations (via its internal symlink path transformer)
-
-> 💡 This convention lets you organize by topic in the repo while encoding destination paths in filenames.
+> 💡 The TOML file is the source of truth. The `.ln` in filenames is just a visual hint.
 
 ---
 

@@ -1,5 +1,5 @@
 ---
-name: cleanCode
+name: clean-code
 description: Coding standards for ALL code changes. MUST load before writing, modifying, or reviewing any code — features, bug fixes, refactors, tests, scripts, anything. Not optional. Not just for cleanup. Every line of code you write should follow these rules.
 ---
 

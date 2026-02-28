@@ -5,7 +5,7 @@ Export a bead and all its referenced beads as a directory of `.md` files with pr
 ## Invocation
 
 ```
-/sussBead export <bead-id>
+/suss-bead export <bead-id>
 ```
 
 ## Output

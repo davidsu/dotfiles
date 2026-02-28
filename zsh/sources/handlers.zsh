@@ -3,7 +3,7 @@
 # ZSH Preexec Hook: Open Files in Neovim
 # Documentation: man zshmisc (search for "add-zsh-hook")
 # This hook is called BEFORE any command is executed
-# Allows typing a filename directly to edit it (even with paths like config.home.symlink/ghostty/config)
+# Allows typing a filename directly to edit it (even with paths like config.ln/ghostty/config)
 
 autoload -Uz add-zsh-hook
 

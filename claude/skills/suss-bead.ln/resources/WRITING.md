@@ -66,7 +66,7 @@ Every bead description MUST start with a `## Summary` section — 1-3 sentences 
 ```markdown
 ## Summary
 
-Add selective context loading to the sussBead skill so LLMs can skim bead hierarchies via summaries instead of loading full descriptions. Introduces bd-section and bd-explore scripts.
+Add selective context loading to the suss-bead skill so LLMs can skim bead hierarchies via summaries instead of loading full descriptions. Introduces bd-section and bd-explore scripts.
 
 ## Detailed Design
 ...
@@ -322,11 +322,11 @@ Use mermaid diagrams in bead descriptions when they clarify context or intention
 
 ```bash
 # Validate a single diagram string
-~/.claude/skills/sussBead/scripts/bd-validate-mermaid --string 'graph LR
+~/.claude/skills/suss-bead/scripts/bd-validate-mermaid --string 'graph LR
     A --> B --> C'
 
 # Validate all mermaid blocks in the body-file before bd create/update
-~/.claude/skills/sussBead/scripts/bd-validate-mermaid /tmp/bead-desc.md
+~/.claude/skills/suss-bead/scripts/bd-validate-mermaid /tmp/bead-desc.md
 ```
 
 If validation fails, fix the syntax before writing. Never write a bead with an unvalidated mermaid block.
