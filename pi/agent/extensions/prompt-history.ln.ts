@@ -1,17 +1,12 @@
 /**
  * Global prompt history search extension.
  *
- * `/history` opens a search overlay across ALL pi sessions.
+ * `/history` opens fzf with all prompts from all pi sessions.
  * Selecting a prompt pastes it into the editor.
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent"
-import { DynamicBorder } from "@mariozechner/pi-coding-agent"
-import {
-	Container, Input, type SelectItem, SelectList, Text,
-	matchesKey, Key, type Component, type Focusable,
-	fuzzyFilter,
-} from "@mariozechner/pi-tui"
+import { spawnSync } from "node:child_process"
 import { readdir, readFile } from "node:fs/promises"
 import { join } from "node:path"
 
@@ -34,7 +29,7 @@ const formatTimestamp = (ts: string) => {
 }
 
 const toOneLiner = (text: string) =>
-	text.replace(/\n/g, " ↵ ")
+	text.replace(/\n/g, " ↵ ").replace(/\t/g, " ")
 
 async function extractUserPrompts(filePath: string, project: string) {
 	const content = await readFile(filePath, "utf-8")
@@ -87,16 +82,9 @@ async function loadAllPrompts() {
 	return [...seen.values()].sort((a, b) => b.timestamp.localeCompare(a.timestamp))
 }
 
-/**
- * Build SelectItems with metadata in label (capped at 30 by SelectList)
- * and prompt text in description (gets remaining terminal width).
- */
-const toSelectItems = (prompts: PromptEntry[]): SelectItem[] =>
-	prompts.map((p) => ({
-		value: p.text,
-		label: `${formatTimestamp(p.timestamp)}  ${p.project}`,
-		description: toOneLiner(p.text),
-	}))
+/** NUL-separated line for fzf: "timestamp\tprompt_oneliner" */
+const toFzfLine = (p: PromptEntry) =>
+	`${formatTimestamp(p.timestamp)}\t${toOneLiner(p.text)}`
 
 async function showHistorySearch(ctx: ExtensionContext) {
 	if (!ctx.hasUI) {
@@ -110,105 +98,68 @@ async function showHistorySearch(ctx: ExtensionContext) {
 		return
 	}
 
-	const selectListTheme = {
-		selectedPrefix: (t: string) => t,
-		selectedText: (t: string) => t,
-		description: (t: string) => t,
-		scrollInfo: (t: string) => t,
-		noMatch: (t: string) => t,
+	// Build fzf input: NUL-delimited so newlines in prompts don't break it
+	const fzfInput = prompts.map(toFzfLine).join("\n")
+
+	// Build a lookup from fzf display line → original prompt text
+	const lineToPrompt = new Map<string, PromptEntry>()
+	for (const p of prompts) {
+		lineToPrompt.set(toFzfLine(p), p)
 	}
 
-	const result = await ctx.ui.custom<string | null>((tui, theme, _kb, done) => {
-		const container = new Container()
+	const selected = await ctx.ui.custom<string | null>((tui, _theme, _kb, done) => {
+		// We'll stop the TUI, run fzf, then restart
+		// Return a dummy component; the real work happens in setTimeout(0) to let custom() set up
+		setTimeout(() => {
+			tui.stop()
 
-		container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)))
-		container.addChild(new Text(
-			theme.fg("accent", theme.bold(" Prompt History")) +
-			theme.fg("dim", `  (${prompts.length} prompts)`), 1, 0,
-		))
+			const result = spawnSync("fzf", [
+				"--scheme=history",
+				"--no-sort",
+				"--ansi",
+				"--height=100%",
+				"--layout=reverse",
+				"--prompt=Search: ",
+				"--preview-window=up:40%:wrap",
+				"--preview=echo {2..}",
+				"--delimiter=\t",
+				"--with-nth=1..",
+				"--nth=2..",
+				"--header=Prompt History",
+				"--color=header:bold",
+			], {
+				input: fzfInput,
+				stdio: ["pipe", "pipe", "inherit"],
+				encoding: "utf-8",
+				env: { ...process.env, FZF_DEFAULT_OPTS: "" },
+			})
 
-		const searchInput = new Input()
-		const inputWrapper = new Container()
-		inputWrapper.addChild(new Text(theme.fg("dim", " Search:"), 1, 0))
-		inputWrapper.addChild(searchInput)
-		container.addChild(inputWrapper)
+			// Restart TUI
+			tui.start()
+			tui.terminal.clearScreen()
+			tui.requestRender(true)
 
-		// Theming applied via wrapper since we rebuild SelectList on filter
-		selectListTheme.selectedPrefix = (t: string) => theme.fg("accent", t)
-		selectListTheme.selectedText = (t: string) => theme.fg("accent", t)
-		selectListTheme.description = (t: string) => theme.fg("muted", t)
-		selectListTheme.scrollInfo = (t: string) => theme.fg("dim", t)
-		selectListTheme.noMatch = (t: string) => theme.fg("warning", t)
+			const output = (result.stdout ?? "").trim()
+			if (result.status !== 0 || !output) {
+				done(null)
+				return
+			}
 
-		let currentPrompts = prompts
-		let selectList = new SelectList(
-			toSelectItems(currentPrompts),
-			Math.min(currentPrompts.length, 20),
-			selectListTheme,
-		)
-		selectList.onSelect = (item) => done(item.value)
-		selectList.onCancel = () => done(null)
+			// Match selected line back to prompt
+			const match = lineToPrompt.get(output)
+			done(match?.text ?? null)
+		}, 0)
 
-		const selectListContainer = new Container()
-		selectListContainer.addChild(selectList)
-		container.addChild(selectListContainer)
-
-		container.addChild(new Text(
-			theme.fg("dim", " ↑↓ navigate • enter select • esc cancel • type to filter"), 1, 0,
-		))
-		container.addChild(new DynamicBorder((s: string) => theme.fg("accent", s)))
-
-		const rebuildList = (filter: string) => {
-			currentPrompts = filter
-				? fuzzyFilter(prompts, filter, (p) => p.text)
-				: prompts
-			selectList = new SelectList(
-				toSelectItems(currentPrompts),
-				Math.min(currentPrompts.length, 20),
-				selectListTheme,
-			)
-			selectList.onSelect = (item) => done(item.value)
-			selectList.onCancel = () => done(null)
-			selectListContainer.clear()
-			selectListContainer.addChild(selectList)
+		// Dummy component that renders nothing while fzf runs
+		return {
+			render: () => [],
+			invalidate: () => {},
+			handleInput: () => {},
 		}
-
-		const isNavKey = (data: string) =>
-			matchesKey(data, Key.up) || matchesKey(data, Key.down) ||
-			matchesKey(data, Key.ctrl("n")) || matchesKey(data, Key.ctrl("p"))
-
-		const comp: Component & Focusable = {
-			focused: false,
-
-			render(width) {
-				searchInput.focused = this.focused
-				return container.render(width)
-			},
-
-			invalidate: () => container.invalidate(),
-
-			handleInput(data) {
-				if (matchesKey(data, Key.escape)) { done(null); return }
-				if (matchesKey(data, Key.enter)) {
-					const selected = selectList.getSelectedItem()
-					if (selected) done(selected.value)
-					return
-				}
-				if (isNavKey(data)) {
-					selectList.handleInput(data)
-				} else {
-					searchInput.handleInput(data)
-					rebuildList(searchInput.getValue())
-				}
-				tui.requestRender()
-			},
-		}
-
-		return comp
 	})
 
-	if (result === null) return
-	ctx.ui.setEditorText(result)
+	if (selected === null) return
+	ctx.ui.setEditorText(selected)
 }
 
 export default function (pi: ExtensionAPI) {

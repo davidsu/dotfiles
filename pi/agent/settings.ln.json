@@ -10,5 +10,6 @@
   ],
   "defaultProvider": "anthropic",
   "defaultModel": "claude-opus-4-6",
-  "defaultThinkingLevel": "off"
+  "defaultThinkingLevel": "off",
+  "hideThinkingBlock": false
 }
