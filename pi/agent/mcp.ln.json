@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "playwright-mcp",
+      "args": [],
+      "lifecycle": "lazy"
+    },
+    "neovim": {
+      "command": "mcp-neovim-server",
+      "args": ["--socket", "/tmp/nvim"],
+      "lifecycle": "lazy"
+    },
+    "tavily": {
+      "command": "tavily-mcp",
+      "args": [],
+      "env": {
+        "TAVILY_API_KEY": "${TAVILY_API_KEY}"
+      },
+      "lifecycle": "lazy"
+    },
+    "slack": {
+      "command": "/Users/davidsu/.claude/scripts/slack-mcp.sh",
+      "args": [],
+      "lifecycle": "lazy"
+    }
+  }
+}
