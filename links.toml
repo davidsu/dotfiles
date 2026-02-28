@@ -42,6 +42,9 @@
 "pi/agent/extensions/claude-code-footer.ln.ts" = [
   "~/.pi/agent/extensions/claude-code-footer.ts",
 ]
+"pi/agent/extensions/session-banner.ln.ts" = [
+  "~/.pi/agent/extensions/session-banner.ts",
+]
 
 # dotconfig (whole directory)
 "config.ln" = [
