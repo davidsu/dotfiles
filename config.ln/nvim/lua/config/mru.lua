@@ -75,6 +75,7 @@ local function read_mru_entries(target_path)
         if path then
           if path == target_path then
             existing_entry = line
+            seen[path] = true
           elseif not seen[path] then
             table.insert(entries, line)
             seen[path] = true
@@ -102,7 +103,17 @@ local function get_buffer_info(bufnr)
   if bufnr and not vim.api.nvim_buf_is_valid(bufnr) then return nil end
   local path = bufnr and vim.api.nvim_buf_get_name(bufnr) or vim.fn.expand('%:p')
   if path == '' then return nil end
-  return vim.fn.fnamemodify(path, ':p')
+  
+  -- Resolve path to absolute (handle relative paths starting with //)
+  path = vim.fn.fnamemodify(path, ':p')
+  
+  -- If path still starts with //, it's malformed - try to resolve from cwd
+  if path:match('^//') then
+    path = vim.fn.getcwd() .. '/' .. path:gsub('^/+', '')
+    path = vim.fn.fnamemodify(path, ':p')
+  end
+  
+  return path
 end
 
 local function get_cursor_pos(bufnr)
@@ -206,6 +217,7 @@ local function setup()
   })
 
   vim.keymap.set('n', '1m', show_mru, { desc = 'MRU files', noremap = true, silent = true })
+  vim.keymap.set('n', '<C-;>', show_mru, { desc = 'MRU files', noremap = true, silent = true })
 end
 
 return {
