@@ -32,6 +32,7 @@ goto() {
 alias cyolo='claude --dangerously-skip-permissions'
 alias cy='claude --dangerously-skip-permissions'
 alias cyp='claude --dangerously-skip-permissions --mcp-config '\''{"mcpServers":{"playwright":{"command":"mcp-server-playwright"}}}'\'''
+alias cyc='claude --dangerously-skip-permissions --mcp-config '\''{"mcpServers":{"playwright":{"command":"playwright-mcp","args":["--extension"],"env":{"PLAYWRIGHT_MCP_EXTENSION_TOKEN":"'"$PLAYWRIGHT_MCP_EXTENSION_TOKEN"'"}}}}'\'''
 alias cvim='nvim -c "ClaudeConnect"'
 
 # Markdown viewer

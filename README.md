@@ -333,13 +333,18 @@ Installation logs:
 
 ### 🔑 API Key Setup (One-time)
 
-Store your Tavily API key in macOS Keychain:
+Store your API keys in macOS Keychain:
 
 ```bash
-security add-generic-password -a "$USER" -s "TAVILY_API_KEY" -w "your-api-key" -T /usr/bin/security
+# Tavily API key (for web search)
+security add-generic-password -a "$USER" -s "TAVILY_API_KEY" -w "your-tavily-key" -T /usr/bin/security
+
+# Playwright MCP extension token (for Chrome browser control)
+security add-generic-password -a "$USER" -s "PLAYWRIGHT_MCP_EXTENSION_TOKEN" -w "your-playwright-token" -T /usr/bin/security
 ```
 
-Get your key at: **https://tavily.com**
+- Get Tavily key at: **https://tavily.com**
+- Get Playwright token from the Playwright MCP Bridge extension in Chrome
 
 ### ⚙️ How It Works
 
@@ -350,8 +355,15 @@ Get your key at: **https://tavily.com**
 ### ✅ Verify Setup
 
 ```bash
-echo $TAVILY_API_KEY  # Should show your key after new shell
+echo $TAVILY_API_KEY                    # Should show your Tavily key
+echo $PLAYWRIGHT_MCP_EXTENSION_TOKEN    # Should show your Playwright token
 ```
+
+### 🌐 Browser Control Aliases
+
+- `cy` / `cyolo` - Claude Code without permission prompts
+- `cyp` - Claude Code with isolated Playwright browser
+- `cyc` - Claude Code with Playwright controlling your Chrome (faster than `--chrome`, no daily logout!)
 
 ---
 

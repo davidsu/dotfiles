@@ -1,5 +1,9 @@
 # Global Agent Instructions
 
+## Response Format
+
+**CRITICAL**: DO NOT write summary documents at the end of your responses. No "Summary" sections, no markdown documents explaining what you did. Just do the work and respond concisely about what you did.
+
 ## Auto-Load Skills
 
 **CRITICAL**: Before writing or modifying ANY code, you MUST load `/skill:clean-code` if you haven't already loaded it in this conversation.
@@ -8,7 +12,7 @@ Before any `bd create`, `bd update`, or when reading beads for context, you MUST
 
 ## Symlinks
 
-- When reading a file that is a symlink, always follow it to the real path. Use `readlink` to resolve.
+- when fileA references fileB by relative path and fileB can't be resolved: check if fileA is a symlink, if so follow it ( use `readlink` )
 
 ## Search & File Discovery
 
@@ -18,6 +22,23 @@ Before any `bd create`, `bd update`, or when reading beads for context, you MUST
 ## Tools
 
 - jq is available in the filesystem. prefer using jq to python for working with json
+
+## Environment Variables for Interactive Commands
+
+- **Git rebase**: Always set `GIT_EDITOR=true` when running `git rebase --continue` to avoid getting stuck in an interactive editor
+  ```bash
+  GIT_EDITOR=true git rebase --continue
+  ```
+
+- **Man pages**: Always set `MANPAGER=cat` when reading man pages to avoid interactive pager issues
+  ```bash
+  MANPAGER=cat man <command>
+  ```
+
+## GitHub Operations
+
+- Prefer `gh` CLI for GitHub operations (PRs, issues, repos, etc.) over direct API calls or web scraping
+- For discussions: use `gh` extensions or provide manual steps if interactive input required
 
 ## Browser Automation
 

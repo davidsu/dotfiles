@@ -8,7 +8,7 @@
     "chrome": {
       "command": "playwright-mcp",
       "args": ["--extension"],
-      "env": { "PLAYWRIGHT_MCP_EXTENSION_TOKEN": "uHxLSmeL6_lRkwVOsKxxls2DYlaGnwWBahFGeVJMlFQ" },
+      "env": { "PLAYWRIGHT_MCP_EXTENSION_TOKEN": "${PLAYWRIGHT_MCP_EXTENSION_TOKEN}" },
       "lifecycle": "lazy"
     },
     "neovim": {

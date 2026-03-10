@@ -7,4 +7,5 @@ export RIPGREP_CONFIG_PATH="$HOME/.config/ripgrep/config"
 # Add keys with: security add-generic-password -a "$USER" -s "TAVILY_API_KEY" -w "your-key" -T /usr/bin/security
 if command -v security &> /dev/null; then
   export TAVILY_API_KEY=$(security find-generic-password -a "$USER" -s "TAVILY_API_KEY" -w 2>/dev/null)
+  export PLAYWRIGHT_MCP_EXTENSION_TOKEN=$(security find-generic-password -a "$USER" -s "PLAYWRIGHT_MCP_EXTENSION_TOKEN" -w 2>/dev/null)
 fi
