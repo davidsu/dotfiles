@@ -34,21 +34,11 @@ gsv() {
 alias gsva='gsv'
 
 # gdc - Git Diff Commits (Fugitive-style UI via :Gdc)
-# Usage: gdc <commit1> <commit2>  or  gdc <commit1>..<commit2>
-gdc() {
+# Usage: gdc <commit1> <commit2> 
+gdiffbranch() {
   _require_git_repo gdc || return 1
 
-  [[ -z "$1" ]] && { echo "Usage: gdc <commit1>..<commit2>" >&2; return 1; }
-  nvim -c "Gdc $*"
+  [[ -z "$1" ]] && { echo "Usage: gdc <commit1> <commit2>" >&2; return 1; }
+  nvim -c "GDiffBranch $*"
 }
-
-# gdiffbranch - Git Diff Branch (compare HEAD with branch)
-# Usage: gdiffbranch <branch>
-# NOTE: Compares commits only (HEAD vs branch tip), not working tree.
-# For working tree comparison, see .dotfiles-543
-gdiffbranch() {
-  _require_git_repo gdiffbranch || return 1
-
-  [[ -z "$1" ]] && { echo "Usage: gdiffbranch <branch>" >&2; return 1; }
-  nvim -c "GDiffBranch $1"
-}
+alias gdc='gdiffbranch'
