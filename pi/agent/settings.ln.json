@@ -9,7 +9,7 @@
     "../../Developer/pi-agent-teams"
   ],
   "defaultProvider": "anthropic",
-  "defaultModel": "claude-opus-4-6",
+  "defaultModel": "claude-sonnet-4-5-20250929",
   "defaultThinkingLevel": "off",
-  "hideThinkingBlock": true
+  "hideThinkingBlock": false
 }

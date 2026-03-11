@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Patches pi's @ autocomplete to support absolute paths and ~/
+# Re-run after pi upgrades until PR #1696 is merged.
+# https://github.com/badlogic/pi-mono/pull/1696
+set -euo pipefail
+
+pi_bin="$(which pi)"
+pi_real="$(readlink -f "$pi_bin")"
+pi_tui="$(dirname "$pi_real")/../node_modules/@mariozechner/pi-tui/dist"
+
+if [[ ! -d "$pi_tui" ]]; then
+	echo "error: pi-tui not found at $pi_tui" >&2
+	exit 1
+fi
+
+autocomplete="$pi_tui/autocomplete.js"
+editor="$pi_tui/components/editor.js"
+
+# Patch 1: resolveScopedFuzzyQuery - handle bare ~
+marker='// Bare ~ without slash - treat as home directory listing'
+if grep -qF "$marker" "$autocomplete"; then
+	echo "autocomplete.js: already patched"
+else
+	sed -i '' '/resolveScopedFuzzyQuery(rawQuery) {/a\
+\        // Bare ~ without slash - treat as home directory listing\
+\        if (rawQuery === "~") {\
+\            return { baseDir: homedir(), query: "", displayBase: "~/" };\
+\        }
+' "$autocomplete"
+	echo "autocomplete.js: patched"
+fi
+
+# Patch 2: editor.js - add ~/ to re-trigger regex
+if grep -q '\[a-zA-Z0-9\\.\\-_~\/\]' "$editor"; then
+	echo "editor.js: already patched"
+else
+	sed -i '' 's|/\[a-zA-Z0-9\\.\\-_\]/|/[a-zA-Z0-9.\\-_~/]/|' "$editor"
+	echo "editor.js: patched"
+fi
+
+echo "done - restart pi to apply"

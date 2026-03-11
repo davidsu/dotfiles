@@ -3,4 +3,4 @@
 # Font
 font-size = 16
 confirm-close-surface = false
-
+clipboard-paste-protection = false

@@ -44,6 +44,9 @@ function mru() {
 
 alias 1m='mru'
 
+# Ctrl+; opens MRU picker
+bindkey -s $'\e[59;5u' 'mru\n'
+
 # mru-clean - Remove invalid/deleted file entries from MRU
 # Usage: mru-clean
 function mru-clean() {

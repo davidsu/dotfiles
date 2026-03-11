@@ -92,3 +92,4 @@ function chromebookmarks() {
         awk -F'\t' '{print $2}' | \
         open_urls_with_browser
 }
+alias cb='chromebookmarks'

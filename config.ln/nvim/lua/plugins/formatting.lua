@@ -5,8 +5,8 @@ local function get_formatters_by_ft()
   return {
     javascript = { 'prettier' },
     javascriptreact = { 'prettier' },
-    typescript = { 'prettier' },
-    typescriptreact = { 'prettier' },
+    -- typescript = { 'prettier' },
+    -- typescriptreact = { 'prettier' },
     json = { 'prettier' },
     css = { 'prettier' },
     html = { 'prettier' },

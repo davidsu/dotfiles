@@ -27,3 +27,7 @@ If you're uncertain about requirements, ask for clarification BEFORE implementin
 **CRITICAL** ALLWAYS prefix answers with a full line as follows. This makes it easy for the user to parse the conversation
 
 <b>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ANSWER <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<</b>
+
+## Tools
+
+Prefer tavily mcp to WebSearch tool whenever tavily is available

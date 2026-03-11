@@ -49,5 +49,4 @@ function bravebookmarks() {
 }
 
 # Aliases
-alias cb='bravebookmarks'
 alias bookmarks='bravebookmarks'

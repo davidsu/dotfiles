@@ -49,6 +49,26 @@ local function config()
           ['ia'] = '@parameter.inner',
         },
       },
+      move = {
+        enable = true,
+        set_jumps = true,     -- Add jumps to jumplist
+        goto_next_start = {
+          [']m'] = '@function.outer',
+          [']]'] = '@class.outer',
+        },
+        goto_next_end = {
+          [']M'] = '@function.outer',
+          [']['] = '@class.outer',
+        },
+        goto_previous_start = {
+          ['[m'] = '@function.outer',
+          ['[['] = '@class.outer',
+        },
+        goto_previous_end = {
+          ['[M'] = '@function.outer',
+          ['[]'] = '@class.outer',
+        },
+      },
     },
   })
 end

@@ -1,0 +1,31 @@
+#!/bin/bash
+# Set or clear a per-instance Claude Code session banner.
+# Usage: banner <text>   (set)
+#        banner           (clear)
+#
+# Finds the ancestor `claude` process and keys the banner file on its PID,
+# so each Claude Code instance gets its own banner.
+
+# Walk up process tree to find the `claude` ancestor
+pid=$PPID
+while (( pid > 1 )); do
+  comm=$(ps -o comm= -p "$pid" 2>/dev/null)
+  [[ "$comm" == *claude* ]] && break
+  pid=$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ')
+done
+
+if (( pid <= 1 )); then
+  echo "Error: not running inside Claude Code" >&2
+  exit 1
+fi
+
+dir="/tmp/claude-banners"
+mkdir -p "$dir"
+
+if [[ $# -eq 0 || -z "$*" ]]; then
+  rm -f "$dir/$pid.txt"
+  echo "Banner cleared"
+else
+  echo "$*" > "$dir/$pid.txt"
+  echo "Banner set: $*"
+fi

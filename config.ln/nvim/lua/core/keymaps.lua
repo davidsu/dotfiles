@@ -12,6 +12,11 @@ map('v', '<space><space>', '<cmd>update<cr>', { desc = 'Save file', silent = tru
 map('n', 'j', 'gj', { silent = true })
 map('n', 'k', 'gk', { silent = true })
 
+-- Indent-based navigation (jump to parent indent level)
+local indent_nav = require('utils.indent')
+map('n', 'gK', indent_nav.jump_up_indent, { desc = 'Jump up one indent level', silent = true })
+map('n', 'gJ', indent_nav.jump_down_indent, { desc = 'Jump down one indent level', silent = true })
+
 -- Search (visual mode with very magic)
 map('v', '/', '/\\v', { desc = 'Search very magic' })
 map('v', '?', '?\\v', { desc = 'Search backward very magic' })
