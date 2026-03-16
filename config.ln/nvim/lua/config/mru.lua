@@ -63,28 +63,28 @@ local function should_ignore(filepath)
   return false
 end
 
-local function read_mru_entries(target_path)
+local function read_mru_entries()
+  if vim.fn.filereadable(mru_file) ~= 1 then return {} end
   local entries = {}
-  local seen = {}
-  local existing_entry = nil
-
-  if vim.fn.filereadable(mru_file) == 1 then
-    pcall(function()
-      for line in io.lines(mru_file) do
-        local path = line:match('^(.+):%d+:%d+$')
-        if path then
-          if path == target_path then
-            existing_entry = line
-            seen[path] = true
-          elseif not seen[path] then
-            table.insert(entries, line)
-            seen[path] = true
-          end
-        end
+  pcall(function()
+    for line in io.lines(mru_file) do
+      if line:match('^.+:%d+:%d+$') then
+        entries[#entries + 1] = line
       end
-    end)
+    end
+  end)
+  return entries
+end
+
+local function prepend_entry(path, line, col, entries)
+  local filtered = {}
+  for _, e in ipairs(entries) do
+    if not vim.startswith(e, path .. ':') then
+      filtered[#filtered + 1] = e
+    end
   end
-  return entries, existing_entry
+  table.insert(filtered, 1, string.format('%s:%d:%d', path, line, col))
+  return filtered
 end
 
 local function write_mru_entries(entries)
@@ -127,26 +127,24 @@ local function save_mru(bufnr, force_update)
   local filepath = get_buffer_info(bufnr)
   if not filepath or should_ignore(filepath) then return end
 
-  local entries, existing_entry = read_mru_entries(filepath)
-  local entry_to_save
+  local entries = read_mru_entries()
 
-  if existing_entry and not force_update then
-    entry_to_save = existing_entry
-  else
-    local line, col = get_cursor_pos(bufnr)
-    if not line then return end
-    entry_to_save = string.format('%s:%d:%d', filepath, line, col)
-  end
-
-  table.insert(entries, 1, entry_to_save)
-
-  local main = main_repo_path(filepath)
-  if main then
-    local line, col = entry_to_save:match(':(%d+):(%d+)$')
-    if line then
-      table.insert(entries, 2, string.format('%s:%s:%s', main, line, col))
+  local line, col
+  if not force_update then
+    for _, e in ipairs(entries) do
+      local p, l, c = e:match('^(.+):(%d+):(%d+)$')
+      if p == filepath then line, col = tonumber(l), tonumber(c); break end
     end
   end
+  if not line then
+    line, col = get_cursor_pos(bufnr)
+    if not line then return end
+  end
+
+  entries = prepend_entry(filepath, line, col, entries)
+
+  local main = main_repo_path(filepath)
+  if main then entries = prepend_entry(main, line, col, entries) end
 
   write_mru_entries(entries)
 end
@@ -175,6 +173,7 @@ local function show_mru_with_fzf_lua()
 
   fzf_lua.fzf_exec('cat ' .. mru_file, {
     prompt = 'MRU> ',
+    fzf_opts = { ['--no-sort'] = '' },
     winopts = { fullscreen = true, preview = { layout = 'vertical', vertical = 'up:50%' } },
     previewer = 'builtin',
     actions = {

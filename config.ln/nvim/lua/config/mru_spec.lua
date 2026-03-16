@@ -37,6 +37,16 @@ local function entry_path(entry)
   return entry:match('^(.+):%d+:%d+$')
 end
 
+local function commit_file(repo, relpath)
+  create_file(repo .. '/' .. relpath)
+  vim.fn.system('git -C ' .. repo .. ' add ' .. relpath)
+  vim.fn.system('git -C ' .. repo .. ' commit -qm "add ' .. relpath .. '"')
+end
+
+local function create_worktree(main_repo, worktree_path)
+  vim.fn.system('git -C ' .. main_repo .. ' worktree add -q ' .. worktree_path)
+end
+
 local test_dir
 
 describe('mru', function()
@@ -61,5 +71,29 @@ describe('mru', function()
     assert.equals(1, #new)
     local path = entry_path(new[1])
     assert.equals(1, vim.fn.filereadable(path), 'path does not exist on disk: ' .. tostring(path))
+  end)
+
+  it('does not accumulate duplicate main-repo entries when a worktree file is saved multiple times', function()
+    local worktree = test_dir .. '_wt'
+    commit_file(test_dir, 'src/deep/service.lua')
+    create_worktree(test_dir, worktree)
+
+    local wt_filepath = worktree .. '/src/deep/service.lua'
+    local mru = require('config.mru')
+
+    local marker = first_mru_entry()
+    vim.cmd('edit ' .. vim.fn.fnameescape(wt_filepath))
+    mru.save_mru(vim.api.nvim_get_current_buf(), true)  -- simulate a second save (e.g. BufLeave)
+
+    local new = new_mru_entries(marker)
+
+    -- should have exactly 2: worktree path + main-repo path, no duplicates
+    assert.equals(2, #new)
+    for _, entry in ipairs(new) do
+      local path = entry_path(entry)
+      assert.equals(1, vim.fn.filereadable(path), 'path does not exist on disk: ' .. tostring(path))
+    end
+
+    vim.fn.delete(worktree, 'rf')
   end)
 end)
