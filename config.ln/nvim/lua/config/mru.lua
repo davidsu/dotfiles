@@ -35,7 +35,7 @@ local function main_repo_path(filepath)
 
   local git_common_dir, toplevel = result[1], result[2]
   if not git_common_dir:match('^/') then
-    git_common_dir = vim.fn.fnamemodify(toplevel .. '/' .. git_common_dir, ':p'):gsub('/$', '')
+    git_common_dir = vim.fn.fnamemodify(dir .. '/' .. git_common_dir, ':p'):gsub('/$', '')
   end
 
   local repo_root = vim.fn.fnamemodify(git_common_dir, ':h')
