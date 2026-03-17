@@ -157,13 +157,29 @@ local function parse_mru_entry(entry)
   return nil, nil, nil
 end
 
+local function mru_entries_to_qf(selected)
+  local items = {}
+  for _, entry in ipairs(selected) do
+    local filepath, line, col = parse_mru_entry(entry)
+    if filepath then
+      items[#items + 1] = { filename = filepath, lnum = line, col = col }
+    end
+  end
+  vim.fn.setqflist({}, ' ', { nr = '$', items = items, title = '[MRU]' })
+  vim.cmd('botright copen')
+end
+
 local function open_mru_file(selected)
   if not selected or #selected == 0 then return end
   local filepath, line, col = parse_mru_entry(selected[1])
   if filepath then
     vim.cmd('edit ' .. filepath)
-    vim.api.nvim_win_set_cursor(0, {line, col - 1})
+    vim.api.nvim_win_set_cursor(0, { line, col - 1 })
     vim.cmd('normal! zz')
+  end
+  if #selected > 1 then
+    mru_entries_to_qf(selected)
+    vim.cmd('wincmd p')
   end
 end
 
@@ -173,7 +189,7 @@ local function show_mru_with_fzf_lua()
 
   fzf_lua.fzf_exec('cat ' .. mru_file, {
     prompt = 'MRU> ',
-    fzf_opts = { ['--no-sort'] = '' },
+    fzf_opts = { ['--no-sort'] = '', ['--multi'] = '' },
     winopts = { fullscreen = true, preview = { layout = 'vertical', vertical = 'up:50%' } },
     previewer = 'builtin',
     actions = {

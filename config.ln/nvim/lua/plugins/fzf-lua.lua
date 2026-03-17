@@ -23,10 +23,34 @@ local function grep_word_under_cursor()
   require('fzf-lua').grep_cword()
 end
 
+local function file_edit_and_qf(selected, opts)
+  local actions = require('fzf-lua.actions')
+  if #selected > 1 then
+    actions.file_edit({ selected[1] }, opts)
+    actions.file_sel_to_qf(selected, opts)
+    vim.cmd('wincmd p')
+  else
+    actions.file_edit(selected, opts)
+  end
+end
+
 local function config()
   require('fzf-lua').setup({
     winopts = get_winopts(),
     lsp = get_lsp_opts(),
+    fzf_opts = { ['--multi'] = '' },
+    keymap = {
+      fzf = {
+        ['ctrl-a'] = 'select-all',
+        ['tab'] = 'toggle+down',
+        ['shift-tab'] = 'toggle+up',
+      },
+    },
+    actions = {
+      files = {
+        ['enter'] = file_edit_and_qf,
+      },
+    },
     keymaps = {
       previewer = false, -- Disable preview for keymaps (source path often incorrect)
     },
