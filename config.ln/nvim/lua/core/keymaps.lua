@@ -14,8 +14,10 @@ map('n', 'k', 'gk', { silent = true })
 
 -- Indent-based navigation (jump to parent indent level)
 local indent_nav = require('utils.indent')
-map('n', 'gK', indent_nav.jump_up_indent, { desc = 'Jump up one indent level', silent = true })
-map('n', 'gJ', indent_nav.jump_down_indent, { desc = 'Jump down one indent level', silent = true })
+map('n', '[i', indent_nav.jump_up, { desc = 'Jump to parent indent (up)', silent = true })
+map('n', ']i', indent_nav.jump_down, { desc = 'Jump to parent indent (down)', silent = true })
+map('n', 'gK', indent_nav.jump_up, { desc = 'Jump to parent indent (up)', silent = true })
+map('n', 'gJ', indent_nav.jump_down, { desc = 'Jump to parent indent (down)', silent = true })
 
 -- Search (visual mode with very magic)
 map('v', '/', '/\\v', { desc = 'Search very magic' })
