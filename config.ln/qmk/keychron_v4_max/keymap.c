@@ -123,6 +123,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 static bool lctrl_pressed = false;  // Physical left ctrl
 static bool rctrl_pressed = false;  // Physical right ctrl
 static bool base_rgb_enabled = true;   // Toggle for base layer RGB
+static uint8_t rgb_brightness = 255;   // Base layer brightness (0-255, adjustable with RCtrl+[/])
 // Handle Ctrl + combinations and numpad layer special keys
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
@@ -176,6 +177,24 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             if ((lctrl_pressed || rctrl_pressed) && record->event.pressed &&
                 get_highest_layer(layer_state) != _NUMPAD) {
                 tap_code(KC_UP);
+                return false;
+            }
+            return true;
+
+        case KC_LBRC:
+            // RCtrl + [ = RGB brightness down
+            if ((lctrl_pressed || rctrl_pressed) && record->event.pressed) {
+                if (rgb_brightness >= 50) rgb_brightness -= 50;
+                else rgb_brightness = 0;
+                return false;
+            }
+            return true;
+
+        case KC_RBRC:
+            // RCtrl + ] = RGB brightness up
+            if ((lctrl_pressed || rctrl_pressed) && record->event.pressed) {
+                if (rgb_brightness <= 205) rgb_brightness += 50;
+                else rgb_brightness = 255;
                 return false;
             }
             return true;
@@ -294,9 +313,9 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     } else {
         // Base layer: check if RGB is enabled
         if (base_rgb_enabled) {
-            // Solid white - explicitly set all LEDs to clear VIM layer colors
+            // Solid white at current brightness (RCtrl+[ / RCtrl+] to adjust)
             for (uint8_t i = led_min; i < led_max; i++) {
-                rgb_matrix_set_color(i, 255, 255, 255);  // White
+                rgb_matrix_set_color(i, rgb_brightness, rgb_brightness, rgb_brightness);
             }
         } else {
             // RGB disabled - turn off all LEDs
