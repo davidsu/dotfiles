@@ -133,7 +133,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
 
         case KC_RCTL:
             rctrl_pressed = record->event.pressed;
-            return true;
+            return false;  // Don't send to OS - only used for custom combos (arrows, layer switching)
 
         case LT(_VIM, KC_GRV):
             // Ctrl + ` = Switch to Bluetooth layer

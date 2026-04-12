@@ -517,7 +517,7 @@ cp ~/keychron_qmk_firmware/.build/keychron_v4_max_ansi_custom.bin \
 ### One-Liner for Recompilation (after initial setup)
 
 ```bash
-export PATH="/opt/homebrew/opt/arm-none-eabi-gcc@8/bin:$HOME/.local/bin:$PATH" && \
+export PATH="/opt/homebrew/opt/arm-none-eabi-gcc@8/bin:/opt/homebrew/opt/arm-none-eabi-binutils/bin:$HOME/.local/bin:$PATH" && \
 cp ~/.dotfiles/config.ln/qmk/keychron_v4_max/{keymap.c,config.h,rules.mk} \
    ~/keychron_qmk_firmware/keyboards/keychron/v4_max/ansi/keymaps/custom/ && \
 cd ~/keychron_qmk_firmware && \

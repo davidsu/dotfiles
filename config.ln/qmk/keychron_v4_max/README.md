@@ -1,5 +1,7 @@
 # Keychron V4 Max Custom QMK Keymap
 
+> **AGENTS: You MUST read [AGENT_INSTRUCTIONS.md](AGENT_INSTRUCTIONS.md) before making any changes.** It contains critical build setup, known pitfalls (V4 vs V4 Max firmware, Keychron's QMK fork requirement, toolchain PATH), and the correct compile/flash workflow.
+
 This keymap replicates your Karabiner configuration and GK6X keyboard settings for the Keychron V4 Max.
 
 ## Features Implemented
