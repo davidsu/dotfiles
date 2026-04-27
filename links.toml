@@ -22,11 +22,11 @@
 "claude/skills/prdiff.ln" = [
   "~/.claude/skills/prdiff",
 ]
-"claude/skills/suss-bead.ln" = [
-  "~/.claude/skills/suss-bead",
-]
 "claude/statusline.ln.sh" = [
   "~/.claude/statusline.sh",
+]
+"claude/skills/suss-tasks.ln/SKILL.md" = [
+  "~/.claude/skills/suss-tasks",
 ]
 
 # pi
