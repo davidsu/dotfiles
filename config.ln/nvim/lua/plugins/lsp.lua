@@ -148,6 +148,7 @@ local function config()
   setup_lsp('lua_ls', { capabilities = capabilities, settings = lua_settings })
   setup_lsp('bashls', { capabilities = capabilities, filetypes = bashls_filetypes })
   setup_lsp('pyright', { capabilities = capabilities, settings = pyright_settings })
+  setup_lsp('marksman', { capabilities = capabilities })
 end
 
 local lspconfig = {

@@ -108,6 +108,10 @@ tools:
     cmd: bd
     description: Git-backed task management for coding agents
 
+  marksman:
+    brew_type: formula
+    description: Markdown LSP server (go-to-definition on links, completions)
+
   # Python tooling
   uv:
     brew_type: formula
