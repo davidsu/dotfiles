@@ -1,6 +1,6 @@
 # Ghostty Terminal Configuration
 
 # Font
-font-size = 16
+font-size = 21
 confirm-close-surface = false
 clipboard-paste-protection = false

@@ -9,7 +9,11 @@ alias -g V=' > /tmp/t && nvim /tmp/t -c '\''nmap q :q!<cr>'\'''
 alias -g PJ='package.json'
 alias -g IB='--inspect-brk'
 alias -g NO='--name-only'
+alias -g ME='--author="David Susskind"'
 alias -g NS='--name-status'
+
+# git Aliases
+alias gbr='git branch'
 
 # ls (BSD/macOS): colorized output + classify + one entry per line
 alias ls='ls -GF1'

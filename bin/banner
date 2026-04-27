@@ -26,6 +26,7 @@ if [[ $# -eq 0 || -z "$*" ]]; then
   rm -f "$dir/$pid.txt"
   echo "Banner cleared"
 else
-  echo "$*" > "$dir/$pid.txt"
-  echo "Banner set: $*"
+  upper=$(echo "$*" | tr '[:lower:]' '[:upper:]')
+  echo "$upper" > "$dir/$pid.txt"
+  echo "Banner set: $upper"
 fi
