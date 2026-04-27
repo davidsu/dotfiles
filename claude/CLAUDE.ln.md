@@ -31,3 +31,13 @@ If you're uncertain about requirements, ask for clarification BEFORE implementin
 ## Tools
 
 Prefer tavily mcp to WebSearch tool whenever tavily is available
+
+# Apper
+
+## claude.md
+
+if pwd is worktree of ~/projects/apper then you must read ~/projects/apper/CLAUDE.local.md
+
+## suss-tasks
+
+every worktree of ~/projects/apper should handle its tasks in ~/projects/apper/suss-tasks, not in subdirectory of the worktree
