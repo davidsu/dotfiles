@@ -41,7 +41,7 @@ local function config()
     fzf_opts = { ['--multi'] = '' },
     keymap = {
       fzf = {
-        ['ctrl-a'] = 'select-all',
+        ['ctrl-l'] = 'select-all',
         ['tab'] = 'toggle+down',
         ['shift-tab'] = 'toggle+up',
       },
@@ -90,7 +90,7 @@ return {
       -- Search
       { '<space>fw', grep_word_under_cursor,            desc = 'Grep word under cursor' },
       { '<space>bl', '<cmd>FzfLua blines<cr>',          desc = 'Search lines in buffer' },
-      { '\\r',       ':Rg ',                             desc = 'Ripgrep with query' },
+      { '\\r',       ':Rg ',                            desc = 'Ripgrep with query' },
 
       -- History
       { '<space>fh', '<cmd>FzfLua command_history<cr>', desc = 'Command history' },
