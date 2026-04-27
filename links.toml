@@ -25,7 +25,7 @@
 "claude/statusline.ln.sh" = [
   "~/.claude/statusline.sh",
 ]
-"claude/skills/suss-tasks.ln/SKILL.md" = [
+"claude/skills/suss-tasks.ln" = [
   "~/.claude/skills/suss-tasks",
 ]
 
