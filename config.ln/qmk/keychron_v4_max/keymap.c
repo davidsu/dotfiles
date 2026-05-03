@@ -119,6 +119,13 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     )
 };
 
+// Force default layer to BASE on boot. Without this, a stale default_layer_state
+// in EEPROM (e.g. set to _VIM) causes keystrokes to resolve through VIM even
+// though layer_state shows BASE — symptom: RGB looks like base, keys behave like VIM.
+void keyboard_post_init_user(void) {
+    default_layer_set((layer_state_t)1 << _BASE);
+}
+
 // State tracking for Ctrl keys and RGB toggle
 static bool lctrl_pressed = false;  // Physical left ctrl
 static bool rctrl_pressed = false;  // Physical right ctrl

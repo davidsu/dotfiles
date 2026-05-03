@@ -8,12 +8,6 @@
 
 This ensures you follow clean code principles and coding standards automatically.
 
-### Bead Context
-
-**CRITICAL REQUIREMENT**: Before any `bd create`, `bd update`, or when reading beads for context, you MUST load `/suss-bead` if you haven't already loaded it in this conversation.
-
-This ensures correct bead writing conventions (ID naming, inline source attribution with `#section-slug`, table alignment) and reading protocol (parent traversal, contradiction escalation).
-
 ## NEVER Guess
 
 **CRITICAL**: NEVER guess. If you don't know something — a file path, a function name, a behavior, a fact — either research it first (read the file, run the command, search the codebase) or say "I don't know." Ask the user to clarify if needed. Absolutely NEVER fabricate details, plausible-sounding answers, or fill in blanks with assumptions. Wrong information is worse than no information.
