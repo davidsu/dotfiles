@@ -138,6 +138,11 @@ return files.map(handleFile)
 - Names should express intent — make the code self-documenting
 - Full words over abbreviations. Only abbreviate if universally understood: `i`, `idx`, `err`, `ctx`, `buf`
 
+## Variables: Naming
+
+**No single-letter names** outside the abbreviations above (`i`, `idx`, `err`, `ctx`, `buf`).
+Spell out arrow-function params too: `draft` not `d`, `state` not `s` — including in zustand selectors, immer producers, and array callbacks.
+
 **Name for the reader at the call site.** Before naming a function, consider who reads the code that *calls* it. Would they understand why this function is being called? A good name makes surrounding code read like prose — the reader shouldn't need to open the function body to understand the flow.
 
 ```javascript
