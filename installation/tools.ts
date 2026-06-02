@@ -48,6 +48,16 @@ function isInstalled(name: string, brewType: BrewType) {
   }
 }
 
+function listInstalled(brewType: BrewType) {
+  try {
+    const flag = brewType === 'cask' ? '--cask' : '--formula'
+    const output: string = execSync(`brew list ${flag}`, { encoding: 'utf-8' })
+    return new Set(output.split('\n').map((line) => line.trim()).filter(Boolean))
+  } catch {
+    return new Set<string>()
+  }
+}
+
 function isTapInstalled(tap: string) {
   try {
     const taps = execSync('brew tap', { encoding: 'utf-8' })
@@ -245,13 +255,26 @@ function fetchPackage(pkg: string, brewType: BrewType): Promise<void> {
 async function batchInstall(packages: string[], brewType: BrewType) {
   if (packages.length === 0) return
 
+  const installed = listInstalled(brewType)
+  const toInstall = packages.filter((pkg) => !installed.has(pkg))
+  const skipped = packages.length - toInstall.length
+
+  if (skipped > 0) {
+    log.info(`Skipping ${skipped} already-installed ${brewType}(s)`)
+  }
+
+  if (toInstall.length === 0) {
+    log.success(`All ${brewType}s already installed`)
+    return
+  }
+
   const flag = brewType === 'cask' ? '--cask ' : ''
-  const packageList = packages.join(' ')
+  const packageList = toInstall.join(' ')
 
-  log.info(`Fetching ${packages.length} ${brewType}s in parallel...`)
-  await Promise.all(packages.map((pkg) => fetchPackage(pkg, brewType)))
+  log.info(`Fetching ${toInstall.length} ${brewType}s in parallel...`)
+  await Promise.all(toInstall.map((pkg) => fetchPackage(pkg, brewType)))
 
-  log.info(`Installing ${packages.length} ${brewType}s from cache...`)
+  log.info(`Installing ${toInstall.length} ${brewType}s from cache...`)
   try {
     execSync(`brew install ${flag}${packageList} < /dev/null`, { stdio: 'inherit' })
     log.success(`Batch install complete`)
@@ -260,7 +283,7 @@ async function batchInstall(packages: string[], brewType: BrewType) {
   }
 
   if (brewType === 'cask') {
-    for (const pkg of packages) {
+    for (const pkg of toInstall) {
       removeQuarantineFromCask(pkg)
     }
   }
