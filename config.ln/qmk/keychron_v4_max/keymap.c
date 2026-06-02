@@ -124,6 +124,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
 // though layer_state shows BASE — symptom: RGB looks like base, keys behave like VIM.
 void keyboard_post_init_user(void) {
     default_layer_set((layer_state_t)1 << _BASE);
+    layer_clear();
 }
 
 // State tracking for Ctrl keys and RGB toggle
