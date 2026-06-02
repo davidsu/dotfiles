@@ -189,14 +189,45 @@ the viewport — the same link works in Neovim and on GitHub.
 
 ## Markdown Table Alignment
 
-All tables MUST have columns padded to consistent widths:
+All markdown tables MUST have columns padded to consistent widths. This is critical for readability in neovim and terminal viewers that render markdown as-is.
+
+### Bad (unaligned)
 
 ```
-| File              | Risk     | What Breaks                       |
-|-------------------|----------|-----------------------------------|
-| domains.ts        | CRITICAL | 3 URL functions produce undefined |
-| AppDomains.js     | HIGH     | SlugEditor shows broken URL       |
+| Caller | File:Line | Status |
+|--------|-----------|--------|
+| Password reset | runtime_api.py:714 | THEORETICAL |
+| WhatsApp redirect | app_agents/runtime_api.py:246 | THEORETICAL |
 ```
+
+### Good (aligned)
+
+```
+| Caller            | File:Line                     | Status      |
+|-------------------|-------------------------------|-------------|
+| Password reset    | runtime_api.py:714            | THEORETICAL |
+| WhatsApp redirect | app_agents/runtime_api.py:246 | THEORETICAL |
+```
+
+### Rules
+
+1. **Pad every cell** to the width of the longest value in that column
+2. **Pad the separator row** (`|---|`) to match column widths
+3. **Use trailing spaces** to align the closing `|` on every row
+4. **Left-align** all content (no centering with `:---:`)
+5. **Keep header text short** — if a header is longer than most values, consider abbreviating
+
+### How to Apply
+
+Don't eyeball it — compute the widths:
+
+1. Collect all rows first (header + body)
+2. Calculate the max width per column across every row
+3. Pad each cell with trailing spaces to that column's max width
+4. Build the separator row with dashes filling each column's width
+5. Then write the final table
+
+If a column holds very long values (e.g. full markdown links), it's fine for that column to be wide — but every row's cell in that column MUST still be padded to the same width so the closing `|` lines up.
 
 ## Writing Style
 
