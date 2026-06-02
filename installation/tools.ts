@@ -150,7 +150,10 @@ function handlePostInstall(caskName: string, postInstallMessage: string, explici
 function installPackage(name: string, brewType: BrewType): boolean {
   try {
     const flag = brewType === 'cask' ? '--cask' : ''
-    execSync(`brew install ${flag} ${name} < /dev/null`, { stdio: 'inherit' })
+    execSync(`brew install ${flag} ${name} < /dev/null`, {
+      stdio: 'inherit',
+      env: { ...process.env, HOMEBREW_NO_AUTO_UPDATE: '1' }
+    })
 
     if (brewType === 'cask') {
       removeQuarantineFromCask(name)
@@ -246,7 +249,10 @@ function installAllTaps(taps: string[]) {
 function fetchPackage(pkg: string, brewType: BrewType): Promise<void> {
   return new Promise((resolve) => {
     const flag = brewType === 'cask' ? '--cask' : ''
-    const child = spawn('brew', ['fetch', flag, pkg].filter(Boolean), { stdio: 'inherit' })
+    const child = spawn('brew', ['fetch', flag, pkg].filter(Boolean), {
+      stdio: 'inherit',
+      env: { ...process.env, HOMEBREW_NO_AUTO_UPDATE: '1' }
+    })
     child.on('close', () => resolve())
     child.on('error', () => resolve())
   })
@@ -276,7 +282,10 @@ async function batchInstall(packages: string[], brewType: BrewType) {
 
   log.info(`Installing ${toInstall.length} ${brewType}s from cache...`)
   try {
-    execSync(`brew install ${flag}${packageList} < /dev/null`, { stdio: 'inherit' })
+    execSync(`brew install ${flag}${packageList} < /dev/null`, {
+      stdio: 'inherit',
+      env: { ...process.env, HOMEBREW_NO_AUTO_UPDATE: '1' }
+    })
     log.success(`Batch install complete`)
   } catch {
     log.warn(`Some packages may have failed - verification will check`)
