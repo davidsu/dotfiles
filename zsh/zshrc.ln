@@ -16,3 +16,5 @@ reload
 
 # Alias for manual reload
 alias a='reload'
+
+[ -f "$HOME/projects/work.sh" ] && source "$HOME/projects/work.sh"
