@@ -1,5 +1,10 @@
 # JavaScript Best Practices
 
+## Function Declaration Style
+
+- **Single-line helpers:** arrow const — `const isSymlink = (path) => fs.lstatSync(path).isSymbolicLink()`
+- **Multiline (needs `{}`):** named declaration — `function safeLink(src, dest) { ... }`
+
 ## Fluent APIs for Sequential Operations
 
 Chain methods to describe operations in natural language.
