@@ -162,21 +162,30 @@ suss-tasks/audit-slug-refs/backend-check.md#runtime-store -> confirms no backend
 
 **Place references after the content they support** — never in a footer section.
 
-## File Path References
+## Code References — Root-Relative Markdown Links
 
-Use **git-root-relative paths** with line numbers:
+Reference code with **GitHub-style markdown links whose path starts with `/`**. The
+leading `/` makes GitHub resolve the link from the **repository root**, so the link
+renders as a clickable, line-highlighted link for colleagues on GitHub **and** keeps
+working when the task file is moved (e.g. into `suss-tasks/done/`).
 
+```markdown
+[reduceSandboxSlot](/frontend/.../sandbox.reducer.ts#L90)          single line
+[recomputeStatus](/frontend/.../sandbox.reducer.ts#L10-L26)        line range
+[validate_final_state](/backend/.../background_validation.py#L86)  any source file
 ```
-config.ln/nvim/lua/beads/viewer.lua:142
-config.ln/nvim/lua/beads/viewer.lua:330-335
-```
+
+In editor (`gd` on the link) this opens the file, highlights the range, and centers
+the viewport — the same link works in Neovim and on GitHub.
 
 **Rules:**
 
-1. Git-root-relative — not filenames alone, not absolute paths
-2. Verify path exists before writing
-3. Verify line numbers are accurate
-4. Keep path and line together as `path:line` — never split into separate columns
+1. **Always start the path with `/`** — repo-root-relative, so it survives moving the `.md`
+2. **Line fragment is `#L<line>` or `#L<start>-L<end>`** (capital `L`, dash between)
+3. **No column anchors** — GitHub does not support `#L31C5`; line/range only
+4. **Linking to lines in another `.md`** needs `?plain=1`: `[x](/suss-tasks/foo.md?plain=1#L14)`
+5. **Multiple discrete lines** = multiple links (e.g. `#L31` and `#L71`), not `#L31,L71`
+6. Verify the path exists and the line numbers are accurate before writing
 
 ## Markdown Table Alignment
 
