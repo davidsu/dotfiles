@@ -23,6 +23,43 @@ local function grep_word_under_cursor()
   require('fzf-lua').grep_cword()
 end
 
+-- Grep-based "find definition / find usage" — regex heuristics that complement
+-- LSP (gd / gr). They catch what LSP can't: dynamic or untyped code, matches in
+-- comments and strings, and symbols the language server hasn't indexed. Ported
+-- from the old vim findFunction/findUsage; uses ripgrep PCRE2 for lookaround.
+-- A short prompt + descriptive title keep the picker consistent with the others
+-- (fzf-lua otherwise dumps the whole regex into the prompt and titles it "Grep").
+local function grep_pcre(pattern, title)
+  require('fzf-lua').grep({
+    search = pattern,
+    no_esc = true,
+    prompt = '> ',
+    winopts = { title = ' ' .. title .. ' ' },
+    rg_opts = '--pcre2 --column --line-number --no-heading --color=always --smart-case --max-columns=4096 -e',
+  })
+end
+
+-- Match a name being *defined* as a function across many syntaxes.
+local function find_function()
+  local name = vim.fn.expand('<cword>')
+  local definition_patterns = {
+    '(?<=function\\s)' .. name .. '(?=\\s*\\()',                          -- function NAME(
+    '\\b' .. name .. '\\s*:',                                             -- NAME: (object/requirejs)
+    '^[\\t ]*' .. name .. '\\([^)]*\\)\\s*\\{\\s*$',                       -- NAME(args) { (shorthand/class)
+    '(?<=prototype\\.)' .. name .. '(?=\\s*=\\s*function)',               -- prototype.NAME = function
+    '(var|let|const|this\\.)\\s*' .. name .. '(?=\\s*=\\s*(function|(\\([^)]*\\)|\\w+)\\s*=>)\\s*)', -- NAME = function|arrow
+    '(public|private)\\s+(async\\s+)?' .. name .. '\\(',                  -- TS class method
+    '^[\\t ]+async\\s+' .. name .. '\\(',                                 -- indented async method
+  }
+  grep_pcre(table.concat(definition_patterns, '|'), 'Find function')
+end
+
+-- Match a name being *called* — followed by '(' but not preceded by 'function'.
+local function find_usage()
+  local name = vim.fn.expand('<cword>')
+  grep_pcre('(?<!function\\s)\\b' .. name .. '(?=\\()', 'Find usage')
+end
+
 local function file_edit_and_qf(selected, opts)
   local actions = require('fzf-lua.actions')
   if #selected > 1 then
@@ -89,6 +126,7 @@ return {
 
       -- Search
       { '<space>fw', grep_word_under_cursor,            desc = 'Grep word under cursor' },
+      { '<space>ff', find_function,                     desc = 'Find function definition (grep)' },
       { '<space>bl', '<cmd>FzfLua blines<cr>',          desc = 'Search lines in buffer' },
       { '\\r',       ':Rg ',                            desc = 'Ripgrep with query' },
 
@@ -105,7 +143,7 @@ return {
       { '\\<tab>',   '<cmd>FzfLua keymaps<cr>',         mode = 'o',                           desc = 'Search keybindings' },
 
       -- LSP and quickfix
-      { '<space>fu', '<cmd>FzfLua lsp_references<cr>',  desc = 'Find usages (LSP references)' },
+      { '<space>fu', find_usage,                        desc = 'Find usages (grep call sites)' },
       { '<space>fq', '<cmd>FzfLua quickfix<cr>',        desc = 'FZF Quickfix' },
     },
     config = config,
