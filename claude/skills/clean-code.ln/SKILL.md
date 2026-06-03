@@ -73,7 +73,7 @@ Say what you mean. No wrappers, no indirection, no ceremony.
 - Explicit parameters over captured variables or closures
 - Clear data flow: inputs → function → outputs
 - Return early, use compact conditionals, prefer expressions over statements
-- Don't add comments to obviously simple code
+- Never write comments — encode the intent in a name instead (see **No Comments**)
 
 ```typescript
 // Bad: ceremony hiding a simple operation
@@ -90,7 +90,9 @@ const executeSymlinkPlan = (plan: SymlinkPlan[]) =>
   plan.map(({ from, to }) => safeLink(from, to))
 ```
 
-**Note side effects:** Add comment if `.map()` has side effects (creates files, mutates state).
+## No Comments
+
+**Never write comments — code must self-document.** Whatever you'd explain in a comment, put in a name instead: a named helper function, variable, or constant. A comment is a name you didn't write.
 
 ## KISS: Don't Code for Ghosts
 
@@ -350,6 +352,7 @@ function safeLink(src: string, dest: string | null) {
 Before code is "done":
 
 - **Function names read like English?** Should describe exactly what they do
+- **Any comments?** Delete them — encode the intent in a name instead
 - **Any copy-pasted code?** Extract to function
 - **Does this already exist in the codebase?** Search before building
 - **Multiple extractType functions?** Iterate the source instead
