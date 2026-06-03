@@ -8,6 +8,7 @@ local function get_winopts()
       default = 'bat',
       layout = 'vertical',
       vertical = 'up:50%',
+      wrap = true,
     },
   }
 end
@@ -23,41 +24,44 @@ local function grep_word_under_cursor()
   require('fzf-lua').grep_cword()
 end
 
--- Grep-based "find definition / find usage" — regex heuristics that complement
--- LSP (gd / gr). They catch what LSP can't: dynamic or untyped code, matches in
--- comments and strings, and symbols the language server hasn't indexed. Ported
--- from the old vim findFunction/findUsage; uses ripgrep PCRE2 for lookaround.
--- A short prompt + descriptive title keep the picker consistent with the others
--- (fzf-lua otherwise dumps the whole regex into the prompt and titles it "Grep").
-local function grep_pcre(pattern, title)
+local function grep_with_lookaround(pattern, title)
+  local lookaround_rg_opts =
+    '--pcre2 --column --line-number --no-heading --color=always --smart-case --max-columns=4096 -e'
   require('fzf-lua').grep({
     search = pattern,
     no_esc = true,
     prompt = '> ',
     winopts = { title = ' ' .. title .. ' ' },
-    rg_opts = '--pcre2 --column --line-number --no-heading --color=always --smart-case --max-columns=4096 -e',
+    rg_opts = lookaround_rg_opts,
   })
 end
 
--- Match a name being *defined* as a function across many syntaxes.
 local function find_function()
   local name = vim.fn.expand('<cword>')
+  local function_keyword = '(?<=function\\s)' .. name .. '(?=\\s*\\()'
+  local object_or_requirejs_method = '\\b' .. name .. '\\s*:'
+  local shorthand_or_class_method = '^[\\t ]*' .. name .. '\\([^)]*\\)\\s*\\{\\s*$'
+  local prototype_method = '(?<=prototype\\.)' .. name .. '(?=\\s*=\\s*function)'
+  local assigned_function_or_arrow =
+    '(var|let|const|this\\.)\\s*' .. name .. '(?=\\s*=\\s*(function|(\\([^)]*\\)|\\w+)\\s*=>)\\s*)'
+  local ts_class_method = '(public|private)\\s+(async\\s+)?' .. name .. '\\('
+  local indented_async_method = '^[\\t ]+async\\s+' .. name .. '\\('
   local definition_patterns = {
-    '(?<=function\\s)' .. name .. '(?=\\s*\\()',                          -- function NAME(
-    '\\b' .. name .. '\\s*:',                                             -- NAME: (object/requirejs)
-    '^[\\t ]*' .. name .. '\\([^)]*\\)\\s*\\{\\s*$',                       -- NAME(args) { (shorthand/class)
-    '(?<=prototype\\.)' .. name .. '(?=\\s*=\\s*function)',               -- prototype.NAME = function
-    '(var|let|const|this\\.)\\s*' .. name .. '(?=\\s*=\\s*(function|(\\([^)]*\\)|\\w+)\\s*=>)\\s*)', -- NAME = function|arrow
-    '(public|private)\\s+(async\\s+)?' .. name .. '\\(',                  -- TS class method
-    '^[\\t ]+async\\s+' .. name .. '\\(',                                 -- indented async method
+    function_keyword,
+    object_or_requirejs_method,
+    shorthand_or_class_method,
+    prototype_method,
+    assigned_function_or_arrow,
+    ts_class_method,
+    indented_async_method,
   }
-  grep_pcre(table.concat(definition_patterns, '|'), 'Find function')
+  grep_with_lookaround(table.concat(definition_patterns, '|'), 'Find function')
 end
 
--- Match a name being *called* — followed by '(' but not preceded by 'function'.
 local function find_usage()
   local name = vim.fn.expand('<cword>')
-  grep_pcre('(?<!function\\s)\\b' .. name .. '(?=\\()', 'Find usage')
+  local called_but_not_defined = '(?<!function\\s)\\b' .. name .. '(?=\\()'
+  grep_with_lookaround(called_but_not_defined, 'Find usage')
 end
 
 local function file_edit_and_qf(selected, opts)
@@ -72,23 +76,29 @@ local function file_edit_and_qf(selected, opts)
 end
 
 local function config()
+  local terminal_parity_bindings = {
+    ['ctrl-l'] = 'select-all',
+    ['tab'] = 'toggle+down',
+    ['shift-tab'] = 'toggle+up',
+    ['ctrl-/'] = 'toggle-preview',
+    ['ctrl-s'] = 'toggle-sort',
+  }
+  local grep_keybind_hints = '<ctrl-l> select-all  ·  <tab> toggle  ·  <ctrl-g> regex/fuzzy  ·  <ctrl-/> preview'
+  local normal_prompt_hl = 'FzfLuaFzfPrompt'
+  local split_horizontally = require('fzf-lua.actions').file_split
+
   require('fzf-lua').setup({
     winopts = get_winopts(),
     lsp = get_lsp_opts(),
     fzf_opts = { ['--multi'] = '' },
-    -- Use the normal (blue) prompt highlight for the live grep prompt too;
-    -- the default FzfLuaLivePrompt is pink (PaleVioletRed1).
-    hls = { live_prompt = 'FzfLuaFzfPrompt' },
-    keymap = {
-      fzf = {
-        ['ctrl-l'] = 'select-all',
-        ['tab'] = 'toggle+down',
-        ['shift-tab'] = 'toggle+up',
-      },
-    },
+    hls = { live_prompt = normal_prompt_hl },
+    grep = { header = grep_keybind_hints },
+    keymap = { fzf = terminal_parity_bindings },
     actions = {
       files = {
         ['enter'] = file_edit_and_qf,
+        ['ctrl-s'] = false,
+        ['ctrl-x'] = split_horizontally,
       },
     },
     keymaps = {
