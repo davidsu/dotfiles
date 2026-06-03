@@ -1,8 +1,11 @@
 -- suss-tasks code-link navigation
 --
--- Task files reference code with root-relative GitHub-style markdown links:
---   [label](/git-root-relative-path#L31)        single line
---   [label](/git-root-relative-path#L31-L71)    line range
+-- Task files reference code with root-relative GitHub-style markdown links,
+-- either inline or as reference links whose targets are collected at the
+-- bottom of the file (keeps wide table cells narrow):
+--   [label](/git-root-relative-path#L31)        inline, single line
+--   [label](/git-root-relative-path#L31-L71)    inline, line range
+--   [label][ref] … [ref]: /path#L31            reference link + definition
 --
 -- `gd` on such a link opens the target in the current window, highlights the
 -- range via interestingwords, and positions the viewport 1/4 from the top.
@@ -26,15 +29,46 @@ local function parseUrl(url)
   return path, line_start, line_end
 end
 
+-- "[ref]: /path#L31" definitions live anywhere in the buffer (we collect them
+-- at the bottom). Resolve a reference label to its URL.
+local function resolveReference(ref)
+  local pattern = '^%s*%[' .. vim.pesc(ref) .. '%]:%s*(%S+)'
+  for _, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+    local url = line:match(pattern)
+    if url then return url end
+  end
+end
+
 local function parseLinkUnderCursor()
   local line = vim.api.nvim_get_current_line()
   local col = vim.api.nvim_win_get_cursor(0)[2] + 1
 
-  for link_start, label, url in line:gmatch('()%[([^%]]*)%]%(([^%)]+)%)') do
-    local link_end = link_start + #label + #url + 4 - 1 -- []() adds 4 chars
-    if col >= link_start and col <= link_end then
+  local pos = 1
+  while true do
+    local open_bracket, close_bracket, label = line:find('%[([^%]]*)%]', pos)
+    if not open_bracket then return end
+
+    local after = line:sub(close_bracket + 1)
+    local inline_url = after:match('^%(([^%)]+)%)')
+    local ref = after:match('^%[([^%]]*)%]') -- full [label][ref] or collapsed [label][]
+
+    local span_end = close_bracket
+    if inline_url then
+      span_end = close_bracket + #inline_url + 2 -- (url)
+    elseif ref ~= nil then
+      span_end = close_bracket + #ref + 2 -- [ref]
+    end
+
+    if col >= open_bracket and col <= span_end then
+      if inline_url then return parseUrl(inline_url) end
+      -- reference link: use the explicit ref, else the label (collapsed/shortcut)
+      local key = (ref ~= nil and ref ~= '') and ref or label
+      local url = resolveReference(key)
+      if not url then return end
       return parseUrl(url)
     end
+
+    pos = close_bracket + 1
   end
 end
 
@@ -125,6 +159,7 @@ return {
   setup = setup,
   _test = {
     parseUrl = parseUrl,
+    resolveReference = resolveReference,
     parseLinkUnderCursor = parseLinkUnderCursor,
     highlightRange = highlightRange,
     positionViewport = positionViewport,

@@ -23,6 +23,13 @@ local function set_line_and_cursor(text, col)
   vim.api.nvim_win_set_cursor(0, { 1, col })
 end
 
+local function set_lines_and_cursor(lines, row, col)
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_set_current_buf(buf)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.api.nvim_win_set_cursor(0, { row, col })
+end
+
 describe('tasknav', function()
   describe('parseUrl', function()
     it('parses a single line ref', function()
@@ -62,6 +69,49 @@ describe('tasknav', function()
     it('returns nil when the cursor is outside any link', function()
       set_line_and_cursor('see [label](/src/app.tsx#L10) here', 1)
       assert.is_nil(nav.parseLinkUnderCursor())
+    end)
+
+    local refs = {
+      '| [reduceSandboxSlot][p1] does work |',
+      '',
+      '[p1]: /src/app.reducer.ts#L90-L99',
+    }
+
+    it('resolves a reference link from its label', function()
+      set_lines_and_cursor(refs, 1, 4) -- on [reduceSandboxSlot]
+      local path, line_start, line_end = nav.parseLinkUnderCursor()
+      eq('src/app.reducer.ts', path)
+      eq(90, line_start)
+      eq(99, line_end)
+    end)
+
+    it('resolves a reference link from its [ref] key', function()
+      set_lines_and_cursor(refs, 1, 23) -- on [p1]
+      local path, line_start = nav.parseLinkUnderCursor()
+      eq('src/app.reducer.ts', path)
+      eq(90, line_start)
+    end)
+
+    it('returns nil for a reference with no definition', function()
+      set_lines_and_cursor({ 'see [undefined][nope] here' }, 1, 6)
+      assert.is_nil(nav.parseLinkUnderCursor())
+    end)
+  end)
+
+  describe('resolveReference', function()
+    it('finds a definition anywhere in the buffer', function()
+      set_lines_and_cursor({ 'body', '[k]: /src/x.ts#L5' }, 1, 0)
+      eq('/src/x.ts#L5', nav.resolveReference('k'))
+    end)
+
+    it('escapes magic characters in the ref label', function()
+      set_lines_and_cursor({ '[a.b:c]: /src/x.ts#L5' }, 1, 0)
+      eq('/src/x.ts#L5', nav.resolveReference('a.b:c'))
+    end)
+
+    it('returns nil when the ref is undefined', function()
+      set_lines_and_cursor({ 'no defs here' }, 1, 0)
+      assert.is_nil(nav.resolveReference('missing'))
     end)
   end)
 
