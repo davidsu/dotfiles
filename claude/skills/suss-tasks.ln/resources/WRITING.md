@@ -187,6 +187,35 @@ the viewport — the same link works in Neovim and on GitHub.
 5. **Multiple discrete lines** = multiple links (e.g. `#L31` and `#L71`), not `#L31,L71`
 6. Verify the path exists and the line numbers are accurate before writing
 
+### Reference-style links — for table cells (keep the reading area narrow)
+
+Inline links are fine in prose. But inside **table cells** a full path is 200+ chars, which
+blows the column out and makes the table unreadable (see "Markdown Table Alignment"). Use a
+**reference-style link** instead: a short token in the cell, with the long path collected in a
+refs block at the **bottom of the file**.
+
+```markdown
+| #  | Primitive                       | What it does                          |
+|----|---------------------------------|---------------------------------------|
+| P1 | data-driven URL recompute       | [reduceSandboxSlot][p1] recomputes url |
+
+<!-- code refs -->
+[p1]: /frontend/.../appPreviewStore/sandbox.reducer.ts#L90
+```
+
+`gd` on `[reduceSandboxSlot][p1]` (cursor on either bracket) resolves the `[p1]:` definition and
+jumps to the file — same as an inline link. GitHub renders it as a normal clickable link, and the
+`[p1]: …` definition lines are invisible in the rendered view.
+
+**Rules:**
+
+1. **Cell holds a short token** — `[human label][key]`; the `key` is a terse slug (`p1`, `p2b`, `fe_audit`)
+2. **All definitions go in ONE block at the very bottom**, under a `<!-- code refs -->` comment, after the authorship footer
+3. **Definition format**: `[key]: /repo-root-relative-path#L<line>` — same path rules as inline links above
+4. **Keys are unique, lowercase, and use `_` not `-` as the separator** (`r_wtfa`, `g_sync_status`) — Vim's `iskeyword` excludes `-`, so `*`/`#`/`gd`-style word motions treat a `-`-joined token as several words; `_` keeps the whole key one word so `*` on it jumps between its uses
+5. Reuse one key if the same location is cited from multiple cells
+5. Verify each `[key]` has exactly one matching `[key]: …` definition
+
 ## Markdown Table Alignment
 
 All markdown tables MUST have columns padded to consistent widths. This is critical for readability in neovim and terminal viewers that render markdown as-is.
@@ -216,18 +245,25 @@ All markdown tables MUST have columns padded to consistent widths. This is criti
 3. **Use trailing spaces** to align the closing `|` on every row
 4. **Left-align** all content (no centering with `:---:`)
 5. **Keep header text short** — if a header is longer than most values, consider abbreviating
+6. **Keep cells short** — never put a full markdown link (200+ chars) in a cell. Use a
+   reference-style token instead (see "Reference-style links — for table cells"). A column whose
+   longest value is a code reference should hold a short `[label][key]` token, not the path.
 
 ### How to Apply
 
 Don't eyeball it — compute the widths:
 
 1. Collect all rows first (header + body)
-2. Calculate the max width per column across every row
+2. Calculate the max width per column across every row, **counting characters** (an emoji counts
+   as 1, even though it renders 2 columns wide — don't try to compensate; char-count keeps the
+   markdown source consistent and is what tooling expects)
 3. Pad each cell with trailing spaces to that column's max width
 4. Build the separator row with dashes filling each column's width
 5. Then write the final table
 
-If a column holds very long values (e.g. full markdown links), it's fine for that column to be wide — but every row's cell in that column MUST still be padded to the same width so the closing `|` lines up.
+Cells stay narrow because long code paths live in the bottom refs block, not in the cells — so no
+column should ever be more than ~40 chars wide. If one is, you almost certainly have a raw link in
+a cell that belongs in a reference.
 
 ## Writing Style
 
