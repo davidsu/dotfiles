@@ -76,6 +76,9 @@ local function config()
     winopts = get_winopts(),
     lsp = get_lsp_opts(),
     fzf_opts = { ['--multi'] = '' },
+    -- Use the normal (blue) prompt highlight for the live grep prompt too;
+    -- the default FzfLuaLivePrompt is pink (PaleVioletRed1).
+    hls = { live_prompt = 'FzfLuaFzfPrompt' },
     keymap = {
       fzf = {
         ['ctrl-l'] = 'select-all',
