@@ -26,6 +26,14 @@ If you're uncertain about requirements, ask for clarification BEFORE implementin
 
 Prefer tavily mcp to WebSearch tool whenever tavily is available
 
+### Search & Optimization
+
+- **Search Preference:** Never use `find | grep` or recursive `grep` in Bash.
+- **Ripgrep:** Always use `rg` (ripgrep) for searching patterns — even inside Bash commands. Prefer the dedicated Grep/Glob tools when they fit.
+- **File Listing:** Prefer `rg --files` over `find` for listing files (faster, respects .gitignore).
+- **Efficiency:** Use `rg` flags like `--vimgrep` or `-C` for context.
+- **Ignore Patterns:** Rely on `rg`'s default behavior of respecting `.gitignore` to avoid scanning `node_modules` or build artifacts.
+
 # Apper
 
 ## claude.md
