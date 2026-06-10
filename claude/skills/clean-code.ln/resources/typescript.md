@@ -88,7 +88,11 @@ function install(tool: Tool) {
 
 **Use when:** Variants have different required properties (Result = Success | Error, Response = Loading | Loaded | Failed)
 
-## 5. Only Export What's Used
+## 5. cmd+click Is a Type-Quality Test
+
+If cmd+click on a member doesn't jump to its real definition, the type is too loose — we are most certainly losing type safety and certainly hurting devx. Not acceptable.
+
+## 6. Only Export What's Used
 
 Export only functions/types actually imported by other modules. Check with `rg "import.*functionName"`.
 
