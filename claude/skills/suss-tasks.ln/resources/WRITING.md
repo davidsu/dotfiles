@@ -69,18 +69,18 @@ Tasks live under `suss-tasks/` at the project root. Epics are directories. Tasks
 
 ```
 suss-tasks/
-├── migrate-to-suss-tasks/          # directory with epic.md
+├── migrate_to_suss_tasks/          # directory with epic.md
 │   ├── epic.md                     # describes this group of tasks
-│   ├── create-skill.md             # task
-│   ├── create-nvim-plugin.md       # task
-│   └── remove-beads-wiring/        # sub-directory (nesting is fine)
+│   ├── create_skill.md             # task
+│   ├── create_nvim_plugin.md       # task
+│   └── remove_beads_wiring/        # sub-directory (nesting is fine)
 │       ├── epic.md
-│       ├── remove-hooks.md
-│       └── remove-nvim-plugin.md
-├── improve-statusline/
+│       ├── remove_hooks.md
+│       └── remove_nvim_plugin.md
+├── improve_statusline/
 │   ├── epic.md
-│   └── add-git-branch.md
-└── fix-mru-crash.md                # standalone task (no directory)
+│   └── add_git_branch.md
+└── fix_mru_crash.md                # standalone task (no directory)
 ```
 
 **Rules:**
@@ -89,7 +89,7 @@ suss-tasks/
 2. **Tasks are `.md` files** — the filename is the task name
 3. **Standalone tasks** go directly under `suss-tasks/`
 4. **Nesting is unlimited** — directories can contain directories
-5. **Kebab-case** for all filenames and directories
+5. **`snake_case` or `camelCase`** for filenames and directories — never kebab-case
 
 ## Creating Tasks
 
@@ -97,11 +97,11 @@ Just write the file. No CLI, no commands.
 
 ```bash
 # Standalone task
-Write suss-tasks/fix-mru-crash.md
+Write suss-tasks/fix_mru_crash.md
 
 # Task under an epic (create directory if needed)
-mkdir -p suss-tasks/migrate-to-suss-tasks
-Write suss-tasks/migrate-to-suss-tasks/create-skill.md
+mkdir -p suss-tasks/migrate_to_suss_tasks
+Write suss-tasks/migrate_to_suss_tasks/create_skill.md
 ```
 
 **When creating multiple tasks**, create them in parallel — they're just files.
@@ -176,7 +176,9 @@ working when the task file is moved (e.g. into `suss-tasks/done/`).
 ```
 
 In editor (`gd` on the link) this opens the file, highlights the range, and centers
-the viewport — the same link works in Neovim and on GitHub.
+the viewport — the same link works in Neovim and on GitHub. To read a doc in the
+browser, use `:TaskPreview` (not `:MarkdownPreview`): it previews a copy with these
+root-relative links rewritten to local `file://` paths, so they open instead of 404ing.
 
 **Rules:**
 

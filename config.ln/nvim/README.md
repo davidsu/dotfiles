@@ -18,7 +18,9 @@ nvim/
 │   │   └── lazy.lua           # Plugin manager bootstrap
 │   ├── config/                # Feature modules
 │   │   ├── claude.lua         # Claude AI integration settings
-│   │   └── mru.lua            # MRU (Most Recently Used) file tracking
+│   │   ├── mru.lua            # MRU (Most Recently Used) file tracking
+│   │   ├── tasknav.lua        # suss-tasks code-link navigation (gd on a link)
+│   │   └── taskpreview.lua    # :TaskPreview — browser preview with local file:// links
 │   ├── plugins/               # Plugin specifications
 │   │   ├── bufonly.lua        # Delete all buffers except current
 │   │   ├── colorizer.lua      # Color highlighting for hex/RGB codes
@@ -78,6 +80,11 @@ nvim/
 - `:CopyFileNameNoExtension` - ✂️ Copy file name without extension
 - `:CopyRelativeFilePath` - 📁 Copy relative file path to clipboard
 - `:Signs` - 👁️ Toggle sign column, gitsigns, and diagnostics
+
+### 📋 Task Docs (suss-tasks)
+Task docs reference code with root-relative links like `[label](/frontend/a.ts#L41)` (clickable on GitHub, survive moving the file).
+- `gd` on a link - 🎯 Open the target file in Neovim, highlight the line range, center the viewport (falls back to LSP definition off a link)
+- `:TaskPreview` - 🌐 Open a browser preview of the current doc with those root-relative links rewritten to local `file://` paths, so they open instead of 404ing. Source doc is untouched; close the preview split to stop it.
 
 ### ⌨️ Universal Keymaps (All Environments)
 - `<space><space>` - 💾 Save file
