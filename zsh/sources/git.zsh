@@ -42,3 +42,25 @@ gdiffbranch() {
   nvim -c "GDiffBranch $*"
 }
 alias gdc='gdiffbranch'
+
+# gco - Git CheckOut, worktree-aware:
+# check out a branch, or cd to the worktree that already has it
+gco() {
+  _require_git_repo gco || return 1
+
+  local branch=$1
+  [[ -z "$branch" ]] && { echo "Usage: gco <branch>" >&2; return 1; }
+
+  local wt
+  wt=$(git worktree list --porcelain | awk -v b="refs/heads/$branch" '
+    /^worktree / { path = $2 }
+    $0 == "branch " b { print path; exit }
+  ')
+
+  if [[ -n "$wt" ]]; then
+    cd "$wt"
+  else
+    git checkout "$branch"
+  fi
+}
+alias gitcheckout='gco'
