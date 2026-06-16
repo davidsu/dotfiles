@@ -1,9 +1,21 @@
 -- File Explorer
 
 local function find_file_in_tree()
-  local root = vim.fn.FugitiveWorkTree()
-  if root ~= '' then vim.fn.chdir(root) end
-  vim.cmd('NvimTreeFindFile')
+  local api = require('nvim-tree.api')
+  local file = vim.fn.expand('%:p')
+  if file == '' then
+    api.tree.open()
+    return
+  end
+
+  -- Root at the file's git worktree if it has one, else the file's directory.
+  -- FugitiveWorkTree() is wrong here: it reports the *cwd's* repo, not the file's.
+  local dir = vim.fn.fnamemodify(file, ':h')
+  local git_root = vim.fn.systemlist({ 'git', '-C', dir, 'rev-parse', '--show-toplevel' })[1]
+  local root = (vim.v.shell_error == 0 and git_root ~= '') and git_root or dir
+
+  api.tree.change_root(root)
+  api.tree.find_file({ buf = file, open = true, focus = true })
 end
 
 local keys = {
