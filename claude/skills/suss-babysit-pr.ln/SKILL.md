@@ -6,7 +6,6 @@ description: >
   fixing+resolving the reasonable ones and pushing back+resolving the wrong
   ones. Invoke manually with /suss-babysit-pr when you want an open PR shepherded
   toward merge without ruining a good PR over out-of-place bot nits.
-disable-model-invocation: true
 allowed-tools: Bash, Read, Edit, Grep, Glob
 ---
 
