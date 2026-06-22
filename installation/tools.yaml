@@ -133,6 +133,11 @@ tools:
     cmd: nvim
     description: Extensible text editor
 
+  # File watching
+  fswatch:
+    brew_type: formula
+    description: File-change watcher; lets suss-teamup wake idle agents without polling
+
   # Security
   rbw:
     brew_type: formula

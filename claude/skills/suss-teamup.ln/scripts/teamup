@@ -1,0 +1,217 @@
+#!/usr/bin/env bash
+# teamup — a tiny file-based message channel so two or more agents can coordinate.
+#
+# Storage (no daemon, no deps):
+#   $SUSS_TEAMUP_DIR/{subject}/
+#     channel.tsv          append-only log: ts \t from \t type \t body   (one line/msg)
+#     members/{handle}     presence file: pwd / doing / joined
+#     .cursor.{handle}     last line number this handle has read
+#
+# Identity is explicit and stateless: pass --as {handle} on every call.
+# Appends are atomic (O_APPEND); presence is one file per handle — no lock needed.
+#
+# KNOWN ISSUE — "agents forget they're on a channel" (2026-06-22)
+#   Symptom: an agent joins, goes heads-down on its own work, and never sees
+#   peers' later messages. Peer messages pile up unread; rosters go stale because
+#   agents stop without saying `bye`. Root cause is NOT the poll interval — it's
+#   the WAKE LIFECYCLE: the only listener is a `wait` an agent launches in the
+#   background, it used to die after 110s, and it had to be manually re-armed
+#   (which agents drop). A finished background command also only re-invokes the
+#   agent BETWEEN turns — it can't interrupt a turn in progress.
+#
+#   Script-only mitigation taken here (best-effort, may not fully solve it):
+#     - `wait --timeout 0` blocks indefinitely, so one armed background watcher
+#       survives a whole work-turn and reliably re-invokes the agent on the next
+#       real message instead of dying on a timer.
+#     - When `fswatch` is present it replaces the busy `sleep 2` poll, so a
+#       long-lived watcher costs nothing until the channel actually changes.
+#   If this STILL isn't enough (you're back here reading this): the durable fix
+#   is harness hooks, not this script — a `Stop` hook that runs `recv` for the
+#   session's channels and blocks the stop while peer messages are unread, plus
+#   a `SessionEnd` hook that auto-`leave`s. Those need `join` to persist a
+#   session_id->handle map and wiring in ~/.claude/settings.json.
+
+set -eo pipefail
+
+readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
+readonly DEFAULT_WAIT=110   # seconds; stays under the default 120s Bash budget
+
+die() { echo "teamup: $*" >&2; exit 1; }
+
+usage() {
+  cat >&2 <<'EOF'
+usage:
+  teamup join   <subject> --as <handle> [--pwd <path>] [--doing <text>]
+  teamup say    <subject> --as <handle> <message...>      (alias: send)
+  teamup recv   <subject> --as <handle>                   # new msgs from others, non-blocking
+  teamup wait   <subject> --as <handle> [--timeout <sec>] # block until someone speaks (default 110s; 0 = forever, for background idle waits)
+  teamup roster <subject>                                 # who is on the channel
+  teamup peek   <subject> [--last <n>]                    # show recent history (default 20)
+  teamup leave  <subject> --as <handle>
+  teamup leave  --all     --as <handle>                   # leave every channel this handle is on
+  teamup channels                                         # list active subjects
+EOF
+  exit 2
+}
+
+now()   { date -u +%Y-%m-%dT%H:%M:%SZ; }
+chan()  { printf '%s/%s/channel.tsv' "$BASE" "$1"; }
+mdir()  { printf '%s/%s/members' "$BASE" "$1"; }
+cursor(){ printf '%s/%s/.cursor.%s' "$BASE" "$1" "$2"; }
+
+# Collapse a message to a single safe TSV line (tabs/newlines -> spaces).
+oneline() { printf '%s' "$*" | tr '\t\n\r' '   '; }
+
+append() { # subject from type body
+  local subject=$1 from=$2 type=$3 body=$4
+  mkdir -p "$(dirname "$(chan "$subject")")"
+  printf '%s\t%s\t%s\t%s\n' "$(now)" "$from" "$type" "$(oneline "$body")" >> "$(chan "$subject")"
+}
+
+# Pretty-print TSV lines from stdin: "[time] handle (type) body"
+pretty() {
+  awk -F'\t' '{
+    split($1, a, "T"); t = substr(a[2], 1, 8)
+    printf "  [%s] %s (%s) %s\n", t, $2, $3, $4
+  }'
+}
+
+linecount() { [ -f "$1" ] && wc -l < "$1" | tr -d ' ' || echo 0; }
+
+# New lines (from others, not me) since this handle's cursor. Prints raw TSV; empty if none.
+fresh_lines() { # subject handle
+  local file cur
+  file="$(chan "$1")"
+  [ -f "$file" ] || return 0
+  cur="$(cat "$(cursor "$1" "$2")" 2>/dev/null || echo 0)"
+  awk -F'\t' -v c="$cur" -v me="$2" 'NR>c && $2!=me' "$file"
+}
+
+# Block until the channel changes, then return so the caller re-checks. fswatch
+# wakes only on a real change (free for an indefinite watcher); sleep is the
+# universal fallback and is fine for short bounded waits.
+block_for_change() { # channel-file
+  if [ -f "$1" ] && command -v fswatch >/dev/null 2>&1; then
+    fswatch -1 "$1" >/dev/null 2>&1 || sleep 2
+  else
+    sleep 2
+  fi
+}
+
+require_handle() { [ -n "${HANDLE:-}" ] || die "missing --as <handle>"; }
+
+# ---- arg parsing --------------------------------------------------------------
+CMD="${1:-}"; shift || usage
+SUBJECT=""; HANDLE=""; PWD_ARG="$PWD"; DOING=""; TIMEOUT="$DEFAULT_WAIT"; LAST=20; ALL=false
+MSG=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --as)      HANDLE="$2"; shift 2 ;;
+    --pwd)     PWD_ARG="$2"; shift 2 ;;
+    --doing)   DOING="$2"; shift 2 ;;
+    --timeout) TIMEOUT="$2"; shift 2 ;;
+    --last)    LAST="$2"; shift 2 ;;
+    --all)     ALL=true; shift ;;
+    --) shift; MSG+=("$@"); break ;;
+    -*) die "unknown flag: $1 (put free-form message text after -- )" ;;
+    *) if [ -z "$SUBJECT" ]; then SUBJECT="$1"; else MSG+=("$1"); fi; shift ;;
+  esac
+done
+
+# ---- commands -----------------------------------------------------------------
+case "$CMD" in
+  join)
+    [ -n "$SUBJECT" ] || usage; require_handle
+    mkdir -p "$(mdir "$SUBJECT")"
+    printf 'pwd=%s\ndoing=%s\njoined=%s\n' "$PWD_ARG" "$(oneline "$DOING")" "$(now)" \
+      > "$(mdir "$SUBJECT")/$HANDLE"
+    append "$SUBJECT" "$HANDLE" ping "joined — doing: ${DOING:-?} @ $PWD_ARG"
+    # Cursor to end so future recv only shows what comes next.
+    printf '%s' "$(linecount "$(chan "$SUBJECT")")" > "$(cursor "$SUBJECT" "$HANDLE")"
+    echo "joined '$SUBJECT' as '$HANDLE'."
+    echo "--- on channel now ---"
+    "$0" roster "$SUBJECT"
+    echo "--- recent ---"
+    "$0" peek "$SUBJECT" --last "$LAST"
+    ;;
+
+  say|send)
+    [ -n "$SUBJECT" ] || usage; require_handle
+    if [ ${#MSG[@]} -gt 0 ]; then text="${MSG[*]}"; else text="$(cat)"; fi
+    [ -n "$text" ] || die "nothing to say"
+    append "$SUBJECT" "$HANDLE" say "$text"
+    echo "sent."
+    ;;
+
+  recv)
+    [ -n "$SUBJECT" ] || usage; require_handle
+    fresh="$(fresh_lines "$SUBJECT" "$HANDLE")"
+    printf '%s' "$(linecount "$(chan "$SUBJECT")")" > "$(cursor "$SUBJECT" "$HANDLE")"
+    if [ -n "$fresh" ]; then printf '%s\n' "$fresh" | pretty; else echo "  (nothing new)"; fi
+    ;;
+
+  wait)
+    [ -n "$SUBJECT" ] || usage; require_handle
+    file="$(chan "$SUBJECT")"
+    [ "$TIMEOUT" -gt 0 ] && deadline=$(( $(date +%s) + TIMEOUT )) || deadline=0
+    while :; do
+      fresh="$(fresh_lines "$SUBJECT" "$HANDLE")"
+      if [ -n "$fresh" ]; then
+        printf '%s' "$(linecount "$file")" > "$(cursor "$SUBJECT" "$HANDLE")"
+        printf '%s\n' "$fresh" | pretty
+        exit 0
+      fi
+      [ "$deadline" -ne 0 ] && [ "$(date +%s)" -ge "$deadline" ] && { echo "  (timeout — no one spoke)"; exit 1; }
+      block_for_change "$file"
+    done
+    ;;
+
+  roster)
+    [ -n "$SUBJECT" ] || usage
+    d="$(mdir "$SUBJECT")"
+    [ -d "$d" ] && [ -n "$(ls -A "$d" 2>/dev/null)" ] || { echo "  (no members)"; exit 0; }
+    for f in "$d"/*; do
+      h="$(basename "$f")"
+      p="$(sed -n 's/^pwd=//p' "$f")"; do="$(sed -n 's/^doing=//p' "$f")"
+      printf '  %s — %s @ %s\n' "$h" "${do:-?}" "${p:-?}"
+    done
+    ;;
+
+  peek)
+    [ -n "$SUBJECT" ] || usage
+    file="$(chan "$SUBJECT")"
+    [ -f "$file" ] || { echo "  (channel empty)"; exit 0; }
+    tail -n "$LAST" "$file" | pretty
+    ;;
+
+  leave)
+    require_handle
+    if [ "$ALL" = true ]; then
+      [ -d "$BASE" ] || { echo "no channels."; exit 0; }
+      for sd in "$BASE"/*/; do
+        s="$(basename "$sd")"
+        [ -f "$(mdir "$s")/$HANDLE" ] || continue
+        append "$s" "$HANDLE" bye "left the channel"
+        rm -f "$(mdir "$s")/$HANDLE" "$(cursor "$s" "$HANDLE")"
+        echo "left '$s'."
+      done
+    else
+      [ -n "$SUBJECT" ] || usage
+      append "$SUBJECT" "$HANDLE" bye "left the channel"
+      rm -f "$(mdir "$SUBJECT")/$HANDLE" "$(cursor "$SUBJECT" "$HANDLE")"
+      echo "left '$SUBJECT'."
+    fi
+    ;;
+
+  channels)
+    [ -d "$BASE" ] || { echo "  (none)"; exit 0; }
+    for sd in "$BASE"/*/; do
+      [ -d "$sd" ] || continue
+      s="$(basename "$sd")"
+      n="$(ls -A "$(mdir "$s")" 2>/dev/null | wc -l | tr -d ' ')"
+      printf '  %s — %s member(s)\n' "$s" "$n"
+    done
+    ;;
+
+  *) usage ;;
+esac

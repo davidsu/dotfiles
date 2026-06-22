@@ -34,6 +34,9 @@
 "claude/skills/suss-tasks.ln" = [
   "~/.claude/skills/suss-tasks",
 ]
+"claude/skills/suss-teamup.ln" = [
+  "~/.claude/skills/suss-teamup",
+]
 
 # pi
 "pi/agent/AGENTS.ln.md" = [
