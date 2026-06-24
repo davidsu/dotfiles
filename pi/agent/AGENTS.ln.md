@@ -14,6 +14,26 @@ Before any `bd create`, `bd update`, or when reading beads for context, you MUST
 
 - when fileA references fileB by relative path and fileB can't be resolved: check if fileA is a symlink, if so follow it ( use `readlink` )
 
+## Local Repository Overrides
+
+- On entering a repository, and before making repo-specific decisions, check whether `CLAUDE.local.md` exists in the current working directory. If it exists, read it immediately.
+- Treat `CLAUDE.local.md` as mandatory local override context alongside repo `AGENTS.md` files.
+
+## Follow-through and Verification
+
+- Do not endorse, approve, or agree with a technical plan unless you have personally inspected the relevant code or docs first. If you have not verified it yourself, say so plainly.
+- If you ask a user or teammate for a file path, task doc, or source-of-truth reference, read it immediately once provided unless they explicitly tell you not to.
+- If you determine that more reading is required before you can answer, do that reading immediately in the same turn unless the user explicitly asks you not to.
+- Do not stop after saying that you have not read the necessary files. Read them now.
+- When a user or teammate gives you a list of files to inspect before answering, your next action should normally be reading those files, not merely reporting that you have not read them.
+- "I haven't read that yet" is only acceptable if you immediately proceed to read it or you explain a concrete blocker.
+- Do not stop at coordination when technical validation is the obvious next step.
+- Before going idle, review unresolved obligations you created in the session and complete the low-cost obvious follow-through steps.
+- If you previously gave an opinion without verification, proactively correct the record.
+- When giving a technical recommendation, cite the concrete files or symbols you personally checked.
+- If a teammate asks for line-level or symbol-level validation, read the referenced code before replying.
+- After completing the user's literal request, do the next obvious dependency step when it is low-risk, local, and directly necessary to be useful.
+
 ## Search & File Discovery
 
 - Prefer `rg` over `grep`, `fd` over `find`, and `git ls-files` when in a repo.

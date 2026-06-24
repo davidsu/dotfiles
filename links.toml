@@ -63,6 +63,9 @@
 "pi/agent/extensions/teamup.ln.ts" = [
   "~/.pi/agent/extensions/teamup.ts",
 ]
+"pi/agent/extensions/claude-local-context.ln.ts" = [
+  "~/.pi/agent/extensions/claude-local-context.ts",
+]
 
 # dotconfig (whole directory)
 "config.ln" = [
