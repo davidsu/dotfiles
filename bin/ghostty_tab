@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# ghostty_tab — control the current Ghostty tab on macOS.
+#   ghostty_tab rename [NAME]    rename current tab (prompts if NAME omitted)
+#   ghostty_tab color            give current tab a random color
+#   ghostty_tab style            prompt for a name, then apply a random color
+# An all-lowercase name is upcased.
+set -euo pipefail
+
+mode="${1:-style}"
+arg="${2:-}"
+
+osascript - "$mode" "$arg" <<'APPLESCRIPT'
+on run argv
+	set mode to item 1 of argv
+	set theArg to ""
+	if (count of argv) > 1 then set theArg to item 2 of argv
+
+	try
+		if mode is "color" then
+			colorTabRandomly()
+		else
+			set theName to theArg
+			if theName is "" then set theName to promptName()
+			if theName is not "" then renameTab(theName)
+			if mode is "style" then colorTabRandomly()
+		end if
+	on error errMsg number errNum
+		if errNum is -128 then return -- user cancelled the dialog
+		error errMsg number errNum
+	end try
+end run
+
+on promptName()
+	tell application "Ghostty" to activate
+	set answer to display dialog "Tab name:" default answer "" with title "Rename Ghostty Tab" buttons {"Cancel", "OK"} default button "OK"
+	return text returned of answer
+end promptName
+
+on upperIfAllLower(theName)
+	set loweredName to do shell script "printf '%s' " & quoted form of theName & " | tr '[:upper:]' '[:lower:]'"
+	considering case
+		if theName is loweredName then return do shell script "printf '%s' " & quoted form of theName & " | tr '[:lower:]' '[:upper:]'"
+	end considering
+	return theName
+end upperIfAllLower
+
+on renameTab(theName)
+	set finalName to upperIfAllLower(theName)
+	tell application "Ghostty"
+		set term to focused terminal of selected tab of front window
+		perform action ("set_tab_title:" & finalName) on term
+	end tell
+end renameTab
+
+-- Ghostty's tab context menu puts a custom color-swatch grid at menu item 8;
+-- its buttons realize lazily, so poll until they appear. Button 1 is "None".
+on colorTabRandomly()
+	tell application "Ghostty" to activate
+	delay 0.2
+	tell application "System Events" to tell process "Ghostty"
+		set theTab to missing value
+		repeat with tabButton in (radio buttons of tab group 1 of window 1)
+			if (value of tabButton) is true then
+				set theTab to tabButton
+				exit repeat
+			end if
+		end repeat
+		if theTab is missing value then error "no selected Ghostty tab"
+
+		perform action "AXShowMenu" of theTab
+		repeat 20 times
+			delay 0.15
+			set swatches to {}
+			try
+				set colorMenuItem to menu item 8 of menu 1 of theTab
+				set itemContents to entire contents of colorMenuItem
+				repeat with candidate in itemContents
+					try
+						if (role of candidate) is "AXButton" then set end of swatches to candidate
+					end try
+				end repeat
+			end try
+			if (count of swatches) > 1 then
+				perform action "AXPress" of (some item of (items 2 thru -1 of swatches))
+				delay 0.1
+				key code 53 -- dismiss the menu after picking
+				return
+			end if
+		end repeat
+		key code 53 -- dismiss menu
+		error "color swatches not found"
+	end tell
+end colorTabRandomly
+APPLESCRIPT

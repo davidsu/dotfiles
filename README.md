@@ -280,6 +280,14 @@ Caps Lock → Tap: Escape | Hold: Left Control
 Return    → Tap: Return | Hold: Right Control
 ```
 
+### 🖥️ Ghostty Tabs
+```
+Cmd+Ctrl+R → Rename current tab (prompts) + random tab color
+```
+> Runs `bin/ghostty_tab` via AppleScript; active only when Ghostty is frontmost.
+> An all-lowercase name is upper-cased; mixed-case is kept as typed.
+> Requires Accessibility permission for Karabiner-Elements (see first-run setup).
+
 ### 🎹 Function Keys
 ```
 F1/F2       → Brightness

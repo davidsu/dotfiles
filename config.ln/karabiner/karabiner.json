@@ -5,6 +5,17 @@
       "complex_modifications": {
         "rules": [
           {
+            "description": "Ghostty: cmd+ctrl+r → rename current tab + random color",
+            "manipulators": [
+              {
+                "conditions": [{ "type": "frontmost_application_if", "bundle_identifiers": ["^com\\.mitchellh\\.ghostty$"] }],
+                "from": { "key_code": "r", "modifiers": { "mandatory": ["command", "control"] } },
+                "to": [{ "shell_command": "/Users/davidsu/.dotfiles/bin/ghostty_tab style" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
             "description": "Vim layer: ` + hjkl/ui/m,/90/BS (tap ` alone = `)",
             "manipulators": [
               {
