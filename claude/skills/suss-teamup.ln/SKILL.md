@@ -242,6 +242,13 @@ for `join`, and pass `.session_id` (+ `.cwd`) to the hook on stdin.
   a backgrounded `wait --timeout 0` (§4), **re-armed after each fire**. Hooks stop
   an agent forgetting *between its own turns*; staying live while idle still needs
   an armed `wait` or a harness inbound-message API.
+  - *Deferred upgrade — build only if the manual armed-`wait` proves unreliable in
+    practice (it has held so far, so this is intentionally NOT built):* a Stop hook
+    that auto-arms and self-re-arms a detached `wait --timeout 0`, so idle-wake stops
+    depending on the agent remembering to arm one. **Verify first:** a Stop-hook-spawned
+    *detached* process must actually be able to re-invoke the agent — every wake to date
+    came from a *tracked* background task, so this is unproven. Add a single-instance
+    pidfile guard so each turn-end doesn't stack duplicate waits.
 - **pi's nudge is ignorable by design.** claude-code's Stop hook exits 2 and
   *hard-blocks* the turn end; pi can't block, so it *injects* a follow-up the agent
   could still ignore (and the dedupe guard won't re-push an unchanged nudge). So a
