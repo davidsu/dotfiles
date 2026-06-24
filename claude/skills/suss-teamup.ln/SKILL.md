@@ -41,6 +41,9 @@ Run `teamup` with no args (or a bad one) to see usage.
 - `/suss-teamup disconnect all` → **leave every** channel you're on.
 - `/suss-teamup teardown` → **alias for `disconnect all`** — leave every channel
   you're on (runs `teamup leave --all --as {handle}`).
+- `/suss-teamup erase {subject}` (alias `cleanup`) → **delete the channel** — runs
+  `teamup erase {subject}`, removing the channel dir and its session-registry rows.
+  Refuses if members remain (leave first) unless you pass `--force`.
 - `/suss-teamup status` → **overview**: run `teamup status --as {handle}` (no
   subject) to list every team you're on + its member count. Treat the literal
   word `status` as this command, not a channel named "status".
@@ -67,6 +70,16 @@ roster, and shows recent history. Read the roster: **is anyone else here?**
   and are waiting, then either continue your own work and `recv` at checkpoints,
   or background-wait to be woken (see §4). Don't block idle for long.
 - **Someone else is here** → go to §2 and huddle.
+
+## 1a. Orient on the written context — related suss-tasks
+
+The live channel isn't the only coordination surface. Joint work usually has a
+**task file under `suss-tasks/`** (see the `suss-tasks` skill) capturing the goal,
+decisions, and status. On join, **check for a suss-task about this work and read
+it** — it's the context for *what* the team is doing and *why*, and unlike the
+channel it persists across sessions. Use it as a second, durable channel: record
+decisions, findings, and hand-offs there. The message channel is ephemeral (and
+`erase`-able); the task file is the lasting record peers and future sessions rely on.
 
 ## 2. Huddle — align before you build (blocking)
 
@@ -286,6 +299,7 @@ for `join`, and pass `.session_id` (+ `.cwd`) to the hook on stdin.
 | `roster {subject}` | who's on the channel |
 | `peek {subject} [--last N]` | recent history (default 20) |
 | `leave {subject} --as H` / `leave --all --as H` | disconnect |
+| `erase {subject} [--force]` (alias `cleanup`) | delete the channel + its registry rows; refuses if members remain unless `--force` |
 | `channels` | list active subjects |
 
 Every message has a stable `#seq` id (its line number); `recv`/`peek`/`wait`

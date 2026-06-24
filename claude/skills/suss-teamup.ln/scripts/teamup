@@ -67,6 +67,7 @@ usage:
   teamup peek   <subject> [--last <n>]                    # show recent history (default 20)
   teamup leave  <subject> --as <handle>
   teamup leave  --all     --as <handle>                   # leave every channel this handle is on
+  teamup erase  <subject> [--force]                       # delete a channel + its registry rows (refuses if members remain unless --force)
   teamup channels                                         # list active subjects
 EOF
   exit 2
@@ -171,7 +172,7 @@ require_handle() { [ -n "${HANDLE:-}" ] || die "missing --as <handle>"; }
 
 # ---- arg parsing --------------------------------------------------------------
 CMD="${1:-}"; shift || usage
-SUBJECT=""; HANDLE=""; PWD_ARG="$PWD"; DOING=""; TIMEOUT="$DEFAULT_WAIT"; LAST=20; ALL=false
+SUBJECT=""; HANDLE=""; PWD_ARG="$PWD"; DOING=""; TIMEOUT="$DEFAULT_WAIT"; LAST=20; ALL=false; FORCE=false
 TO=""; RE=""
 MSG=()
 while [ $# -gt 0 ]; do
@@ -184,6 +185,7 @@ while [ $# -gt 0 ]; do
     --to)      TO="$2"; shift 2 ;;
     --re)      RE="$2"; shift 2 ;;
     --all)     ALL=true; shift ;;
+    --force)   FORCE=true; shift ;;
     --) shift; MSG+=("$@"); break ;;
     -*) die "unknown flag: $1 (put free-form message text after -- )" ;;
     *) if [ -z "$SUBJECT" ]; then SUBJECT="$1"; else MSG+=("$1"); fi; shift ;;
@@ -348,6 +350,24 @@ case "$CMD" in
       n="$(ls -A "$(mdir "$s")" 2>/dev/null | wc -l | tr -d ' ')"
       printf '  %s — %s member(s)\n' "$s" "$n"
     done
+    ;;
+
+  # Delete a whole channel: scrub its session-registry rows (so no peer's
+  # lifecycle hook resurrects it) and remove the dir. Refuses while any member
+  # is still present — `leave` first, or pass --force to nuke regardless.
+  erase|cleanup)
+    [ -n "$SUBJECT" ] || usage
+    [ -d "$BASE/$SUBJECT" ] || { echo "no channel '$SUBJECT' to erase."; exit 0; }
+    members="$(ls -A "$(mdir "$SUBJECT")" 2>/dev/null)"
+    if [ -n "$members" ] && [ "$FORCE" != true ]; then
+      die "'$SUBJECT' still has members: $(printf '%s' "$members" | tr '\n' ' '). Leave first, or re-run with --force."
+    fi
+    if [ -f "$(sessions_file)" ]; then
+      awk -F'\t' -v s="$SUBJECT" '$2 != s' "$(sessions_file)" > "$(sessions_file).tmp" \
+        && mv "$(sessions_file).tmp" "$(sessions_file)"
+    fi
+    rm -rf "$BASE/$SUBJECT"
+    echo "erased channel '$SUBJECT'."
     ;;
 
   *) usage ;;
