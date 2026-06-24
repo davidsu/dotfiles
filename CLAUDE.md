@@ -32,15 +32,7 @@ Run all Neovim tests: `cd ~/.dotfiles/config.ln/nvim && nvim --headless -c "Plen
 
 ## Debugging Neovim via MCP
 
-When working on Neovim Lua code, spin up a live Neovim instance and drive it through the `neovim` MCP (`mcp__neovim__*` tools — `vim_command`, `vim_buffer`, `vim_status`, …):
-
-```
-ghostty_spawn --run cvim
-```
-
-This opens a new Ghostty tab running `cvim` (`nvim -c ClaudeConnect`), which serves on the `/tmp/nvim` socket that `mcp-neovim-server` connects to. Drive it with the `mcp__neovim__*` tools, then close the tab when done.
-
-Only **one** Neovim is MCP-connected at a time — the socket is fixed and `ClaudeConnect` takes over from any other instance, so a spawned debug instance steals the connection from an already-connected editor. Use `mcp__neovim__vim_status` to confirm you're driving the instance you expect.
+To drive a live Neovim through the `neovim` MCP (`mcp__neovim__*`), spawn one with `ghostty_spawn --run cvim`.
 
 ## Critical Rules
 
