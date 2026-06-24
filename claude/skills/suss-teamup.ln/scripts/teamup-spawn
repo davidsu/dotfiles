@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# teamup-spawn — launch a cooperating agent in a new Ghostty tab, joined to a channel.
+#   teamup-spawn <claude|pi> <subject> [--dir DIR]
+#
+# Opens a tab (in DIR, default $PWD) running the agent with an initial prompt that
+# invokes the suss-teamup skill to JOIN <subject>. The new agent picks its own
+# handle. You (the caller) should already have joined <subject> yourself so you're
+# present when the peer arrives. Prints the spawned tab id.
+set -eo pipefail
+
+agent="${1:-}"; subject="${2:-}"; shift 2 2>/dev/null || true
+dir="$PWD"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dir) dir="$2"; shift 2 ;;
+    *) echo "teamup-spawn: unknown flag $1" >&2; exit 1 ;;
+  esac
+done
+[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi> <subject> [--dir DIR]" >&2; exit 1; }
+
+# cy = `claude --dangerously-skip-permissions` (no --mcp-config, which is variadic
+# and would swallow the prompt). claude discovers the skill globally as /suss-teamup;
+# pi invokes skills as /skill:<name>.
+case "$agent" in
+  claude) launcher="cy"; invoke="/suss-teamup $subject" ;;
+  pi)     launcher="pi"; invoke="/skill:suss-teamup $subject" ;;
+  *)      echo "teamup-spawn: agent must be 'claude' or 'pi'" >&2; exit 1 ;;
+esac
+
+ghostty_spawn --dir "$dir" --run "$launcher '$invoke'"

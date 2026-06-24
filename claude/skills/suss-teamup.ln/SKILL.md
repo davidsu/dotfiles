@@ -47,6 +47,9 @@ Run `teamup` with no args (or a bad one) to see usage.
 - `/suss-teamup status` → **overview**: run `teamup status --as {handle}` (no
   subject) to list every team you're on + its member count. Treat the literal
   word `status` as this command, not a channel named "status".
+- `/suss-teamup spawn [pi|claude] [new|subject]` → **spawn a peer agent** in a new
+  tab, joined to a shared channel. Agent defaults to `claude`, channel to `new`
+  (see §Spawn a cooperating agent).
 
 If no subject is given on a join, ask the user for one — don't guess.
 
@@ -196,6 +199,23 @@ extension's `fs.watch` watcher wakes it; see §6.)
 > (§3). The accepted cost of enforce-and-re-arm: every peer message = one wake + one
 > re-arm turn. (A churn-free external waker via tmux `send-keys` was considered and
 > **ruled out** — see §6.)
+
+## Spawn a cooperating agent
+
+`/suss-teamup spawn [pi|claude] [new|subject]` launches another agent in a new
+Ghostty tab, already joined to a shared channel — for **handoff** (a full-context
+agent spins up a fresh one to continue) or **cross-model pairing** (claude ⇄ pi).
+Agent defaults to `claude`; channel defaults to a new one.
+
+1. **Resolve agent + channel.** Agent: `pi` or `claude` (default `claude`).
+   Channel: a given `subject` → use it; `new` (or omitted) → pick a short slug
+   (e.g. `pair-auth`, `handoff-x`) — avoid names starting with `spawn`.
+2. **Join it yourself first**, so you're present when the peer arrives:
+   `teamup join {subject} --as {handle} --pwd "$PWD" --doing "spawning a {agent} peer"`.
+3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi} {subject}` — opens a tab
+   in your `$PWD` running the agent, which invokes the skill to join `{subject}`.
+4. **Huddle** (§2). For a handoff, post the context the peer needs on the channel
+   before it gets going; for pairing, align on who owns what.
 
 ## 5. Disconnect
 
