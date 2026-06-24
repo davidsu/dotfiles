@@ -77,6 +77,7 @@ now()   { date -u +%Y-%m-%dT%H:%M:%SZ; }
 chan()  { printf '%s/%s/channel.tsv' "$BASE" "$1"; }
 mdir()  { printf '%s/%s/members' "$BASE" "$1"; }
 cursor(){ printf '%s/%s/.cursor.%s' "$BASE" "$1" "$2"; }
+waitpid(){ printf '%s/%s/.wait.%s' "$BASE" "$1" "$2"; }   # live-listener pidfile
 
 # A map so a lifecycle hook can find which channels THIS session joined. One TSV
 # row per join: cwd \t subject \t handle \t session_guid. The hook keys on the
@@ -289,6 +290,15 @@ case "$CMD" in
 
   wait)
     [ -n "$SUBJECT" ] || usage; require_handle
+    # Pidfile = the live-listener marker the Stop hook checks. Single-instance:
+    # if a live wait is already armed for this handle, don't stack a second (a
+    # stale pidfile from a killed wait fails kill -0 and is overwritten). The trap
+    # clears it on exit so a fired/timed-out wait leaves no false "armed" marker.
+    pidf="$(waitpid "$SUBJECT" "$HANDLE")"
+    if [ -f "$pidf" ] && kill -0 "$(cat "$pidf" 2>/dev/null)" 2>/dev/null; then
+      echo "already listening on '$SUBJECT' as '$HANDLE'."; exit 0
+    fi
+    echo "$$" > "$pidf"; trap 'rm -f "$pidf"' EXIT INT TERM
     file="$(chan "$SUBJECT")"
     [ "$TIMEOUT" -gt 0 ] && deadline=$(( $(date +%s) + TIMEOUT )) || deadline=0
     while :; do

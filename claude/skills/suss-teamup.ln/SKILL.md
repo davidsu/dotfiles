@@ -181,15 +181,21 @@ teamup wait {subject} --as {handle} --timeout 0
 Run it with `run_in_background: true`. With `--timeout 0` the watcher stays
 armed across your whole work-turn instead of expiring after ~110s, so it's still
 listening when a peer finally speaks. When one does, it exits and the harness
-re-invokes you with the message — a poor-agent's interrupt. **Re-arm it after you
-respond** if you're still idle; that re-arm is on you.
+re-invokes you with the message — a poor-agent's interrupt. **Re-arm it after each
+fire** if you're still idle. Arming is single-instance: if a live wait is already
+running for this handle, a second `wait` just no-ops.
 
-> ⚠️ This wake is best-effort, not a true interrupt. A background command can
-> only re-invoke you **between** turns — while you're heads-down in a turn you're
-> unreachable. So a long-armed `wait` is not a substitute for a deliberate `recv`
-> at every checkpoint (§3): always `recv` when you finish a step or are about to
-> touch shared code. The durable fix for drift is harness lifecycle hooks — see
-> §6.
+On **claude-code this re-arm is enforced**, not left to memory: the Stop hook
+(`--require-listener`, §6) refuses to let you go idle on a channel without a live
+`wait`, so a peer message can always reach you. (pi doesn't need this — its
+extension's `fs.watch` watcher wakes it; see §6.)
+
+> ⚠️ Still best-effort, not a true interrupt: a background command re-invokes you
+> only **between** turns — while heads-down in a turn you're unreachable. So a
+> long-armed `wait` is not a substitute for a deliberate `recv` at every checkpoint
+> (§3). The accepted cost of enforce-and-re-arm: every peer message = one wake + one
+> re-arm turn. (A churn-free external waker via tmux `send-keys` was considered and
+> **ruled out** — see §6.)
 
 ## 5. Disconnect
 
@@ -219,9 +225,13 @@ an agent literally cannot end its turn while peer messages sit unread.
   GUID is empty and the hook falls back to cwd matching.
 - `teamup-hook stop` reads `.session_id` (and `.cwd`) from the hook event JSON on
   stdin, finds this session's channels (by GUID, else cwd), and **exits 2 to block
-  the stop** while any has unread messages — forcing a `recv` first. It blocks on
-  *unread only* (which `recv` always clears), so it can't loop; it fails open
-  (exit 0) on any missing input or tool error.
+  the stop** while any channel (a) has unread messages [`recv` clears] or, with
+  **`--require-listener`** (claude-code only), (b) has no live background `wait`
+  listener [arm one to clear; liveness = the wait's `.wait.{handle}` pidfile +
+  `kill -0`]. Both clear on the agent's next action, so it can't loop; fails open
+  (exit 0) on any missing input or tool error. **(b) is opt-in** because it assumes
+  the agent can launch a persistent background `wait` — pi must NOT pass the flag
+  (it stays reachable via `fs.watch`, not a `wait` process).
 - `teamup-hook session-end` auto-`leave`s this session's channels so rosters stay honest.
 - `join` also **refuses a handle already held by a different session** (cursor
   files are keyed by handle, so two live sessions sharing one would race it).
@@ -230,7 +240,7 @@ an agent literally cannot end its turn while peer messages sit unread.
 
 ```json
 "hooks": {
-  "Stop":       [{ "hooks": [{ "type": "command", "command": "~/.claude/skills/suss-teamup/scripts/teamup-hook stop",        "timeout": 10 }] }],
+  "Stop":       [{ "hooks": [{ "type": "command", "command": "~/.claude/skills/suss-teamup/scripts/teamup-hook stop --require-listener", "timeout": 10 }] }],
   "SessionEnd": [{ "hooks": [{ "type": "command", "command": "~/.claude/skills/suss-teamup/scripts/teamup-hook session-end", "timeout": 10 }] }]
 }
 ```
@@ -244,24 +254,29 @@ block a stop, so on `agent_end` it runs `teamup-hook stop` with `{cwd, session_i
 and, on exit 2, injects the unread summary via
 `pi.sendUserMessage(..., {deliverAs:"followUp"})` so the agent handles it before
 going idle; `session_shutdown` runs `teamup-hook session-end`. A dedupe guard
-avoids re-injecting an unchanged nudge (no autonomous loop). **Any other harness**
-reuses `teamup-hook` the same way: expose the session GUID as `$TEAMUP_SESSION`
-for `join`, and pass `.session_id` (+ `.cwd`) to the hook on stdin.
+avoids re-injecting an unchanged nudge (no autonomous loop). For **idle wake** pi
+also runs a persistent `fs.watch` on the channel dir (armed at `session_start`,
+torn down at `session_shutdown`): on a change with unread it `sendUserMessage`s to
+wake even a fully idle pi agent — so pi needs no armed `wait` and calls `teamup-hook
+stop` **without `--require-listener`**. **Any other harness** reuses `teamup-hook`
+the same way: expose the session GUID as `$TEAMUP_SESSION` for `join`, pass
+`.session_id` (+ `.cwd`) to the hook on stdin, and pass `--require-listener` only if
+its agent can hold a persistent background `wait`.
 
 ### Known limitations & caveats
 
-- **No inbound wake.** Hooks fire only at *turn-end*; nothing wakes a *fully idle*
-  agent when a peer speaks (a file channel has no push). The only idle listener is
-  a backgrounded `wait --timeout 0` (§4), **re-armed after each fire**. Hooks stop
-  an agent forgetting *between its own turns*; staying live while idle still needs
-  an armed `wait` or a harness inbound-message API.
-  - *Deferred upgrade — build only if the manual armed-`wait` proves unreliable in
-    practice (it has held so far, so this is intentionally NOT built):* a Stop hook
-    that auto-arms and self-re-arms a detached `wait --timeout 0`, so idle-wake stops
-    depending on the agent remembering to arm one. **Verify first:** a Stop-hook-spawned
-    *detached* process must actually be able to re-invoke the agent — every wake to date
-    came from a *tracked* background task, so this is unproven. Add a single-instance
-    pidfile guard so each turn-end doesn't stack duplicate waits.
+- **Idle wake is solved per-harness — but only for a LIVE session.**
+  - *claude-code:* the Stop hook (`--require-listener`, §6) won't let the agent go
+    idle on a channel without a live background `wait`, so a peer message always
+    reaches it. Cost: every message = one wake + one re-arm turn (accepted).
+  - *pi:* the extension's `fs.watch` watcher wakes a fully idle agent with no re-arm
+    (the watcher owns the wake).
+  - **Boundary — does NOT cover session DEATH:** both keep an *alive* idle session
+    reachable; neither resurrects a *crashed/exited* session. A completion guarantee
+    across session death needs a gastown-style external supervisor (durable work
+    ledger + daemon + respawn) — deliberately out of scope for a no-daemon file
+    channel. A churn-free wake via tmux `send-keys` was considered and **ruled out**
+    (no tmux). See `suss-tasks/learn_gastown_idle.md`.
 - **pi's nudge is ignorable by design.** claude-code's Stop hook exits 2 and
   *hard-blocks* the turn end; pi can't block, so it *injects* a follow-up the agent
   could still ignore (and the dedupe guard won't re-push an unchanged nudge). So a
