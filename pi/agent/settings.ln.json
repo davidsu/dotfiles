@@ -3,13 +3,13 @@
     "~/.claude/skills",
     ".claude/skills"
   ],
-  "lastChangelogVersion": "0.52.12",
+  "lastChangelogVersion": "0.79.1",
   "packages": [
     "npm:pi-mcp-adapter",
     "../../Developer/pi-agent-teams"
   ],
-  "defaultProvider": "anthropic",
-  "defaultModel": "claude-sonnet-4-5-20250929",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.4",
   "defaultThinkingLevel": "off",
   "hideThinkingBlock": false
 }
