@@ -1,4 +1,4 @@
-open
+closed
 # Verify the teamup skill fix end-to-end
 
 ## Summary
@@ -175,11 +175,49 @@ A fresh Codex read `/skill:suss-teamup fixteamup` as *"go fix teamup"* and inspe
 
 ### Open follow-up
 
-- **claude-code's own idle-wake half** is NOT solved: whether a Stop-hook-spawned *detached* `wait` actually re-invokes an idle claude-code agent is unverified (every wake so far came from a *tracked* background task). opus-cc going idle mid-session and dropping off the channel demonstrated the gap. Needs its own investigation + a single-instance (pidfile) guard if pursued.
+- **claude-code's own idle-wake half** is NOT solved: whether a Stop-hook-spawned *detached* `wait` actually re-invokes an idle claude-code agent is unverified (every wake so far came from a *tracked* background task). opus-cc going idle mid-session and dropping off the channel demonstrated the gap. Needs its own investigation + a single-instance (pidfile) guard if pursued. **→ RESOLVED in Run 5 below.**
+
+## 🟢 Run 5 — claude-code idle-reachability enforcement (resolves Run 4's open follow-up)
+
+David: *"we need the improvement, claude went to sleep in the channel."* Built by opus-cc on channel `teamup_gastown`, reviewed by opus-claude, live-validated against a fresh Codex on `testcodex`.
+
+### 🔑 Enforce, don't spawn
+
+Run 4's open question is now answered: a Stop hook **cannot** spawn the waker — only an agent-launched `run_in_background` task re-invokes claude-code; a hook-spawned *detached* process can't. So instead of spawning, `teamup-hook stop` **refuses to let a claude-code agent go idle on a channel without a live background `wait`** — perpetual self-arming, enforced, not memory-dependent. When the wait fires (peer spoke) and exits, the next stop re-blocks until re-armed.
+
+- **Opt-in + gated**: condition (b) is behind `--require-listener`. claude-code's Stop wiring passes it; **pi must not** — pi stays reachable via its `fs.watch` watcher and can't run a background wait.
+- **Liveness** = the wait's `.wait.{handle}` pidfile + `kill -0` (not a `pgrep` match); `wait` is **single-instance**.
+
+### 🤝 Review (opus-claude) — gastown research + 2 bug fixes folded in
+
+- gastown (Steve Yegge) **doesn't keep agents awake** — ephemeral sessions + a durable ledger + a daemon that *respawns*. Lesson: "respawn from durable state" beats "keep awake." See [learn_gastown_idle.md](/suss-tasks/learn_gastown_idle.md?plain=1#L1).
+- **Bug-1**: `pgrep -f` is a substring/regex match → false-positives (prefix handle, regex metachar) → switched to pidfile + `kill -0`.
+- **Bug-2**: arm→stop race / double-arm → single-instance guard in `wait`.
+- **David's decision: NO tmux** → the churn-free tmux `send-keys` waker is **ruled out** (documented in SKILL.md §6).
+
+### 🐛 Live regression caught & fixed
+
+The new enforcement (live via the symlink) **leaked into pi**: the pi extension's `agent_end → teamup-hook stop` got the unconditional listener-check and told the Codex agent to "run a background wait" — which pi can't do and doesn't need. Gated it off (the opt-in flag); pi is exempt.
+
+### ✅ LIVE RESULT: PASS (fresh Codex on `testcodex`)
+
+- **No background-wait confusion**: pi-agent confirmed it gets only the satisfiable `recv` nudge, never the "arm a wait" one (channel #15).
+- **pi idle-wake intact**: woken from cold idle by `fs.watch`, real `date +%s`, no human nudge (#17).
+- claude-code enforcement **dogfooded on opus-cc** throughout — the Stop hook repeatedly blocked idle-without-listener, forcing a re-arm. Accepted cost: every peer message = one wake + one re-arm turn.
+
+### 🧱 Boundary (documented in SKILL.md §6)
+
+Idle-wake is solved per-harness **for a LIVE session only** (claude-code = enforced armed-wait; pi = `fs.watch`). Neither resurrects a **dead** session — that needs a gastown-style respawn supervisor (durable ledger + daemon), deliberately out of scope for a no-daemon file channel.
+
+### 🚢 Shipped (committed)
+
+- `32c930a` — idle-reachability enforcement (`teamup-hook` `--require-listener` gate, pidfile + single-instance `wait`, §4/§6 docs).
+- `51f4b8f` — `erase`/`cleanup` channel-delete command + the suss-task orientation note (SKILL.md §1a).
+- claude-code's local `~/.claude/settings.json` Stop wiring now passes `--require-listener` (local, not version-controlled — same precedent as the original hook wiring).
 
 ## 📂 Where the code lives
 
-[teamup script](/claude/skills/suss-teamup.ln/scripts/teamup) and [SKILL.md](/claude/skills/suss-teamup.ln/SKILL.md?plain=1#L1) — both **uncommitted**, pending review.
+[teamup script](/claude/skills/suss-teamup.ln/scripts/teamup) and [SKILL.md](/claude/skills/suss-teamup.ln/SKILL.md?plain=1#L1) — **committed** (`371a162` Run-4 feature, `51f4b8f` erase + §1a, `32c930a` Run-5 enforcement).
 
 Key pieces to re-check if behavior regresses:
 
@@ -194,6 +232,21 @@ Key pieces to re-check if behavior regresses:
 - 2026-06-24: David's field observation — in the live Codex-on-pi-coding-agent + Claude-on-claude-code setup, Codex is the weaker channel citizen: it goes stale and, notably, claims it is "still monitoring the channel" without actually checking. This makes Phase 2 partly a behavioral/trust test, not just a feature test.
 - 2026-06-24 (run 2): the asymmetry **holds** (David, watching both sessions): Codex-on-Pi constantly fails to pick up unprompted; claude-code does much better with occasional slips. Claude's one slip was calling `AskUserQuestion` to the human mid-loop instead of running `recv`. Next step is the `Stop`-hook layer for **both** harnesses (Codex-Pi is the priority since it never looks; claude-code still benefits as a safety net for the divert-to-human slip). Building the claude-code half first since that's the harness we control directly here.
 
+## ✅ Closing Note (2026-06-24)
+
+Validated **Phase 2 with real mixed-session behavior** — not Phase 1 only. Across Runs 2–5 the loop ran live with Claude-on-claude-code + fresh Codex-on-pi sessions.
+
+**Cross-harness asymmetry — resolved, not just measured.** The original finding held (Run 2): Codex-on-Pi was the weak citizen — went stale, never picked up unprompted, made hollow "still monitoring" claims; claude-code did better but slipped (diverted to the human, and later went idle with no armed wait). The fix was **per-harness, as predicted**:
+
+- **pi** — a persistent `fs.watch` watcher in the extension wakes a fully idle agent with no re-arm. LIVE PASS (#51, #17).
+- **claude-code** — a Stop hook that **enforces** a live armed `wait` (`--require-listener`): the agent can't go idle unreachable. LIVE-dogfooded throughout Run 5.
+
+So both harnesses now wake an idle agent with **no human in the loop**.
+
+**The one thing NOT solved, by design:** neither resurrects a *dead/exited* session — that needs a gastown-style respawn supervisor (durable ledger + daemon), deliberately out of scope for a no-daemon file channel. See [learn_gastown_idle.md](/suss-tasks/learn_gastown_idle.md?plain=1#L1).
+
+Shipped across `371a162`, `51f4b8f`, `32c930a`. Doc-only residuals (handle-guard TOCTOU, GUID-less harness) remain documented in SKILL.md §6 — not blocking.
+
 ---
 **Created by**: dotfiles-master (2026-06-24)
-**Updated by**: opus-claude (2026-06-24), opus-claude + opus-cc pairing (2026-06-24), opus-claude (idle-wake live-validated, 2026-06-24)
+**Updated by**: opus-claude (2026-06-24), opus-claude + opus-cc pairing (2026-06-24), opus-claude (idle-wake live-validated, 2026-06-24), opus-cc (Run 5 — claude-code idle-reachability enforcement, 2026-06-24)
