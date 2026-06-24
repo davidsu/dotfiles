@@ -7,8 +7,16 @@
 #     members/{handle}     presence file: pwd / doing / joined
 #     .cursor.{handle}     last line number this handle has read
 #
+# Each message has a stable id = its 1-based line number in channel.tsv ("seq").
+# recv/peek/wait/join print it as "#<seq>" so any agent can ack a specific
+# message by id. Message types: ping (join/leave noise), say (chatter),
+# ask (a question targeted with @handle), ack (clears a pending ask), bye.
+#
 # Identity is explicit and stateless: pass --as {handle} on every call.
 # Appends are atomic (O_APPEND); presence is one file per handle — no lock needed.
+#
+# Output is a plain mailbox protocol any agent (Codex/Gemini/Claude) can read:
+# key=value summary lines and "#seq [time] handle (type) body" message lines.
 #
 # KNOWN ISSUE — "agents forget they're on a channel" (2026-06-22)
 #   Symptom: an agent joins, goes heads-down on its own work, and never sees
@@ -25,11 +33,17 @@
 #       real message instead of dying on a timer.
 #     - When `fswatch` is present it replaces the busy `sleep 2` poll, so a
 #       long-lived watcher costs nothing until the channel actually changes.
-#   If this STILL isn't enough (you're back here reading this): the durable fix
-#   is harness hooks, not this script — a `Stop` hook that runs `recv` for the
-#   session's channels and blocks the stop while peer messages are unread, plus
-#   a `SessionEnd` hook that auto-`leave`s. Those need `join` to persist a
-#   session_id->handle map and wiring in ~/.claude/settings.json.
+#   Durable fix (implemented for claude-code) — `scripts/teamup-hook`:
+#     - join/leave persist a cwd -> (subject, handle) map in $BASE/.sessions.tsv
+#       (a Stop hook only learns the session's cwd, never the handle).
+#     - `teamup-hook stop` blocks the stop (exit 2) while any of this cwd's
+#       channels has UNREAD messages, forcing a `recv` before the agent yields.
+#       It blocks on unread only — `recv` always clears unread, so it can't loop;
+#       an unanswered-but-read ask does not re-block (that would trap a session).
+#     - `teamup-hook session-end` auto-`leave`s this cwd's channels.
+#   Wire it per harness. claude-code: ~/.claude/settings.json Stop + SessionEnd.
+#   Other harnesses (e.g. pi) need their own wiring; the script is harness-neutral
+#   as long as the lifecycle event delivers the session cwd as JSON `.cwd` on stdin.
 
 set -eo pipefail
 
@@ -43,7 +57,11 @@ usage() {
 usage:
   teamup join   <subject> --as <handle> [--pwd <path>] [--doing <text>]
   teamup say    <subject> --as <handle> <message...>      (alias: send)
-  teamup recv   <subject> --as <handle>                   # new msgs from others, non-blocking
+  teamup ask    <subject> --as <handle> [--to <handle>] <question...>  # a question that needs an answer
+  teamup ack    <subject> --as <handle> [--re <seq>] [note...]         # answer/clear an ask (default: latest peer msg)
+  teamup recv   <subject> --as <handle>                   # new msgs from others + summary line, non-blocking
+  teamup status <subject> --as <handle>                   # summary only; exit 0=clean 1=unread 2=ask-for-me (cursor untouched)
+  teamup status --as <handle>                             # no subject: list every team this handle is on + member count
   teamup wait   <subject> --as <handle> [--timeout <sec>] # block until someone speaks (default 110s; 0 = forever, for background idle waits)
   teamup roster <subject>                                 # who is on the channel
   teamup peek   <subject> [--last <n>]                    # show recent history (default 20)
@@ -59,6 +77,34 @@ chan()  { printf '%s/%s/channel.tsv' "$BASE" "$1"; }
 mdir()  { printf '%s/%s/members' "$BASE" "$1"; }
 cursor(){ printf '%s/%s/.cursor.%s' "$BASE" "$1" "$2"; }
 
+# A map so a lifecycle hook can find which channels THIS session joined. One TSV
+# row per join: cwd \t subject \t handle \t session_guid. The hook keys on the
+# session GUID — collision-free even when several agents share a cwd. The GUID
+# comes from $TEAMUP_SESSION (a harness wrapper, e.g. the pi extension, sets it)
+# or $CLAUDE_CODE_SESSION_ID (claude-code sets it natively); empty if neither,
+# in which case the hook falls back to cwd. Concurrent join/leave races are "last
+# writer wins" — a lost row only skips that channel until the next re-join.
+sessions_file() { printf '%s/.sessions.tsv' "$BASE"; }
+
+register_session() { # subject handle pwd
+  local file sid; file="$(sessions_file)"; sid="${TEAMUP_SESSION:-${CLAUDE_CODE_SESSION_ID:-}}"; mkdir -p "$BASE"
+  if [ -f "$file" ]; then
+    awk -F'\t' -v p="$3" -v s="$1" -v h="$2" '!($1==p && $2==s && $3==h)' \
+      "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+  fi
+  printf '%s\t%s\t%s\t%s\n' "$3" "$1" "$2" "$sid" >> "$file"
+}
+
+unregister_session() { # subject handle
+  local file; file="$(sessions_file)"; [ -f "$file" ] || return 0
+  awk -F'\t' -v s="$1" -v h="$2" '!($2==s && $3==h)' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+}
+
+unregister_handle() { # handle
+  local file; file="$(sessions_file)"; [ -f "$file" ] || return 0
+  awk -F'\t' -v h="$1" '$3!=h' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+}
+
 # Collapse a message to a single safe TSV line (tabs/newlines -> spaces).
 oneline() { printf '%s' "$*" | tr '\t\n\r' '   '; }
 
@@ -68,23 +114,46 @@ append() { # subject from type body
   printf '%s\t%s\t%s\t%s\n' "$(now)" "$from" "$type" "$(oneline "$body")" >> "$(chan "$subject")"
 }
 
-# Pretty-print TSV lines from stdin: "[time] handle (type) body"
+linecount() { [ -f "$1" ] && wc -l < "$1" | tr -d ' ' || echo 0; }
+
+# Stamp every message with its stable id (seq = 1-based line number):
+# "seq <TAB> ts <TAB> from <TAB> type <TAB> body". Empty if the channel is new.
+numbered() { # subject
+  local file; file="$(chan "$1")"
+  [ -f "$file" ] || return 0
+  awk -F'\t' '{ printf "%d\t%s\n", NR, $0 }' "$file"
+}
+
+# Pretty-print numbered lines from stdin: "#seq [time] handle (type) body"
 pretty() {
   awk -F'\t' '{
-    split($1, a, "T"); t = substr(a[2], 1, 8)
-    printf "  [%s] %s (%s) %s\n", t, $2, $3, $4
+    split($2, stamp, "T"); clock = substr(stamp[2], 1, 8)
+    printf "  #%s [%s] %s (%s) %s\n", $1, clock, $3, $4, $5
   }'
 }
 
-linecount() { [ -f "$1" ] && wc -l < "$1" | tr -d ' ' || echo 0; }
-
-# New lines (from others, not me) since this handle's cursor. Prints raw TSV; empty if none.
+# Messages from others since this handle's cursor, seq-stamped. Empty if none.
 fresh_lines() { # subject handle
-  local file cur
-  file="$(chan "$1")"
-  [ -f "$file" ] || return 0
-  cur="$(cat "$(cursor "$1" "$2")" 2>/dev/null || echo 0)"
-  awk -F'\t' -v c="$cur" -v me="$2" 'NR>c && $2!=me' "$file"
+  local cur; cur="$(cat "$(cursor "$1" "$2")" 2>/dev/null || echo 0)"
+  # c+0 coerces the cursor numeric: an empty/garbage cursor file (interrupted
+  # write) would otherwise make "$1 > c" a string compare and flag everything.
+  numbered "$1" | awk -F'\t' -v c="$cur" -v me="$2" '$1 > c+0 && $3!=me'
+}
+
+# Highest seq of a message not from this handle (empty if none).
+latest_peer_seq() { # subject handle
+  numbered "$1" | awk -F'\t' -v me="$2" '$3!=me{seq=$1} END{if(seq) print seq}'
+}
+
+# Count asks aimed at this handle (@handle) that it has not yet answered. Any
+# later message from the handle — an `ack`, a `say`, anything — clears the ask,
+# so prose answers count and there is no ack-parsing policy to drift out of sync.
+pending_asks_for_me() { # subject handle
+  numbered "$1" | awk -F'\t' -v me="$2" '
+    $3==me { answered_through=$1 }
+    $4=="ask" && $3!=me && index($5, "@" me) { asked[$1]=1 }
+    END { n=0; for (seq in asked) if (seq+0 > answered_through+0) n++; print n+0 }
+  '
 }
 
 # Block until the channel changes, then return so the caller re-checks. fswatch
@@ -103,6 +172,7 @@ require_handle() { [ -n "${HANDLE:-}" ] || die "missing --as <handle>"; }
 # ---- arg parsing --------------------------------------------------------------
 CMD="${1:-}"; shift || usage
 SUBJECT=""; HANDLE=""; PWD_ARG="$PWD"; DOING=""; TIMEOUT="$DEFAULT_WAIT"; LAST=20; ALL=false
+TO=""; RE=""
 MSG=()
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -111,6 +181,8 @@ while [ $# -gt 0 ]; do
     --doing)   DOING="$2"; shift 2 ;;
     --timeout) TIMEOUT="$2"; shift 2 ;;
     --last)    LAST="$2"; shift 2 ;;
+    --to)      TO="$2"; shift 2 ;;
+    --re)      RE="$2"; shift 2 ;;
     --all)     ALL=true; shift ;;
     --) shift; MSG+=("$@"); break ;;
     -*) die "unknown flag: $1 (put free-form message text after -- )" ;;
@@ -123,9 +195,21 @@ case "$CMD" in
   join)
     [ -n "$SUBJECT" ] || usage; require_handle
     mkdir -p "$(mdir "$SUBJECT")"
-    printf 'pwd=%s\ndoing=%s\njoined=%s\n' "$PWD_ARG" "$(oneline "$DOING")" "$(now)" \
-      > "$(mdir "$SUBJECT")/$HANDLE"
+    sid="${TEAMUP_SESSION:-${CLAUDE_CODE_SESSION_ID:-}}"
+    member="$(mdir "$SUBJECT")/$HANDLE"
+    # A handle owns one cursor file (.cursor.$HANDLE); two live sessions sharing a
+    # handle would race it and silently drop/re-show messages. Refuse if the handle
+    # is already held by a DIFFERENT session. Same session re-joining (e.g. after a
+    # resume — getSessionId is stable) keeps its GUID, so it's allowed.
+    if [ -f "$member" ]; then
+      held="$(sed -n 's/^session=//p' "$member")"
+      [ -z "$sid" ] || [ -z "$held" ] || [ "$held" = "$sid" ] || \
+        die "handle '$HANDLE' is already on '$SUBJECT' from another session — pick a different handle"
+    fi
+    printf 'pwd=%s\ndoing=%s\njoined=%s\nsession=%s\n' "$PWD_ARG" "$(oneline "$DOING")" "$(now)" "$sid" \
+      > "$member"
     append "$SUBJECT" "$HANDLE" ping "joined — doing: ${DOING:-?} @ $PWD_ARG"
+    register_session "$SUBJECT" "$HANDLE" "$PWD_ARG"
     # Cursor to end so future recv only shows what comes next.
     printf '%s' "$(linecount "$(chan "$SUBJECT")")" > "$(cursor "$SUBJECT" "$HANDLE")"
     echo "joined '$SUBJECT' as '$HANDLE'."
@@ -147,7 +231,58 @@ case "$CMD" in
     [ -n "$SUBJECT" ] || usage; require_handle
     fresh="$(fresh_lines "$SUBJECT" "$HANDLE")"
     printf '%s' "$(linecount "$(chan "$SUBJECT")")" > "$(cursor "$SUBJECT" "$HANDLE")"
+    unread="$(printf '%s' "$fresh" | awk 'END{print NR+0}')"
+    pending="$(pending_asks_for_me "$SUBJECT" "$HANDLE")"
+    senders="$(printf '%s' "$fresh" | awk -F'\t' 'NF{print $3}' | sort -u | paste -sd, -)"
+    printf 'summary: unread=%s asks_for_me=%s from=%s\n' "$unread" "$pending" "${senders:-none}"
     if [ -n "$fresh" ]; then printf '%s\n' "$fresh" | pretty; else echo "  (nothing new)"; fi
+    ;;
+
+  ask)
+    [ -n "$SUBJECT" ] || usage; require_handle
+    if [ ${#MSG[@]} -gt 0 ]; then text="${MSG[*]}"; else text="$(cat)"; fi
+    [ -n "$text" ] || die "nothing to ask"
+    [ -n "$TO" ] && text="@$TO $text"
+    append "$SUBJECT" "$HANDLE" ask "$text"
+    echo "asked${TO:+ @$TO}."
+    ;;
+
+  ack)
+    [ -n "$SUBJECT" ] || usage; require_handle
+    seq="$RE"; [ -n "$seq" ] || seq="$(latest_peer_seq "$SUBJECT" "$HANDLE")"
+    [ -n "$seq" ] || die "nothing to ack — no peer messages yet"
+    note="${MSG[*]}"
+    append "$SUBJECT" "$HANDLE" ack "re:#$seq${note:+ $note}"
+    echo "acked #$seq."
+    ;;
+
+  status)
+    require_handle
+    # No subject -> my-teams overview: every channel where I'm a member, with its
+    # roster size (a crashed session that never left inflates the count, same
+    # staleness caveat as `channels`). With a subject -> the per-channel unread/ask
+    # surface the hook keys on (exit 0/1/2, cursor untouched).
+    if [ -z "$SUBJECT" ]; then
+      on_any=false
+      if [ -d "$BASE" ]; then
+        for sd in "$BASE"/*/; do
+          [ -d "$sd" ] || continue
+          s="$(basename "$sd")"
+          [ -f "$(mdir "$s")/$HANDLE" ] || continue
+          n="$(ls -A "$(mdir "$s")" 2>/dev/null | wc -l | tr -d ' ')"
+          printf '  %s — %s member(s)\n' "$s" "$n"
+          on_any=true
+        done
+      fi
+      [ "$on_any" = true ] || echo "  (on no teams)"
+      exit 0
+    fi
+    unread="$(fresh_lines "$SUBJECT" "$HANDLE" | awk 'END{print NR+0}')"
+    pending="$(pending_asks_for_me "$SUBJECT" "$HANDLE")"
+    printf 'summary: unread=%s asks_for_me=%s\n' "$unread" "$pending"
+    [ "$pending" -gt 0 ] && exit 2
+    [ "$unread" -gt 0 ] && exit 1
+    exit 0
     ;;
 
   wait)
@@ -179,9 +314,9 @@ case "$CMD" in
 
   peek)
     [ -n "$SUBJECT" ] || usage
-    file="$(chan "$SUBJECT")"
-    [ -f "$file" ] || { echo "  (channel empty)"; exit 0; }
-    tail -n "$LAST" "$file" | pretty
+    recent="$(numbered "$SUBJECT" | tail -n "$LAST")"
+    [ -n "$recent" ] || { echo "  (channel empty)"; exit 0; }
+    printf '%s\n' "$recent" | pretty
     ;;
 
   leave)
@@ -195,10 +330,12 @@ case "$CMD" in
         rm -f "$(mdir "$s")/$HANDLE" "$(cursor "$s" "$HANDLE")"
         echo "left '$s'."
       done
+      unregister_handle "$HANDLE"
     else
       [ -n "$SUBJECT" ] || usage
       append "$SUBJECT" "$HANDLE" bye "left the channel"
       rm -f "$(mdir "$SUBJECT")/$HANDLE" "$(cursor "$SUBJECT" "$HANDLE")"
+      unregister_session "$SUBJECT" "$HANDLE"
       echo "left '$SUBJECT'."
     fi
     ;;

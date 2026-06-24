@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# teamup-hook — wire teamup into a harness lifecycle so an agent can't forget the
+# channel. Reads the hook's JSON event on stdin, finds the channels THIS session
+# joined — matched by the session GUID (`.session_id`) when the harness provides
+# one, else by cwd — and acts per event:
+#
+#   stop         block the stop (exit 2) while any joined channel has unread
+#                messages or an unanswered ask-for-me; the agent must `recv`
+#                before it can yield. Clean channels -> exit 0, stop proceeds.
+#   session-end  `leave` every channel this session joined, so rosters stay honest.
+#
+# It must never wedge the agent on its own failure: any missing input, missing
+# tool, or empty registry exits 0 (fail-open, stop allowed).
+#
+# Claude Code wiring (~/.claude/settings.json):
+#   "Stop":       command "~/.claude/skills/suss-teamup/scripts/teamup-hook stop"
+#   "SessionEnd": command "~/.claude/skills/suss-teamup/scripts/teamup-hook session-end"
+
+set -uo pipefail
+
+readonly EVENT="${1:-}"
+readonly HERE="$(cd "$(dirname "$0")" && pwd)"
+readonly TEAMUP="$HERE/teamup"
+readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
+readonly SESSIONS="$BASE/.sessions.tsv"
+
+[ -f "$SESSIONS" ] || exit 0
+input="$(cat)"
+cwd="$(printf '%s' "$input" | jq -r '.cwd // empty' 2>/dev/null || true)"
+sid="$(printf '%s' "$input" | jq -r '.session_id // empty' 2>/dev/null || true)"
+[ -n "$cwd" ] || [ -n "$sid" ] || exit 0
+
+# Find this session's channels, snapshotting up front (session-end rewrites
+# $SESSIONS as it leaves). Prefer the session GUID — collision-free even when two
+# agents share a cwd. Fall back to cwd only for harnesses whose `join` can't stamp
+# a GUID (their rows carry an empty GUID field, so a cwd match never grabs another
+# harness's GUID-keyed row in the same directory).
+if [ -n "$sid" ]; then
+  my_channels="$(awk -F'\t' -v sid="$sid" '$4==sid{print $2"\t"$3}' "$SESSIONS")"
+else
+  my_channels="$(awk -F'\t' -v c="$cwd" '$1==c && $4==""{print $2"\t"$3}' "$SESSIONS")"
+fi
+[ -n "$my_channels" ] || exit 0
+
+case "$EVENT" in
+  stop)
+    # Block only while messages are UNREAD, which `recv` always clears -> the
+    # hook can't loop. (Blocking on an already-read-but-unanswered ask can't be
+    # cleared by recv, only by a reply, so it would trap a session.) An ask still
+    # surfaces here the turn it arrives, while it is unread.
+    blocked=""
+    while IFS=$'\t' read -r subject handle; do
+      [ -n "$subject" ] || continue
+      summary="$("$TEAMUP" status "$subject" --as "$handle" 2>/dev/null)"
+      unread="${summary#*unread=}"; unread="${unread%% *}"
+      [ "${unread:-0}" != "0" ] || continue
+      action="teamup recv $subject --as $handle"
+      case "$summary" in
+        *asks_for_me=0*) : ;;
+        *) action="$action, then answer the ask aimed at you (say/ack)" ;;
+      esac
+      blocked+="  [$subject] $summary — $action"$'\n'
+    done <<< "$my_channels"
+    [ -n "$blocked" ] || exit 0
+    printf 'teamup: unread channel messages — recv them before stopping:\n%s' "$blocked" >&2
+    exit 2
+    ;;
+
+  session-end)
+    while IFS=$'\t' read -r subject handle; do
+      [ -n "$subject" ] || continue
+      "$TEAMUP" leave "$subject" --as "$handle" >/dev/null 2>&1 || true
+    done <<< "$my_channels"
+    ;;
+esac
+exit 0

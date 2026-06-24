@@ -60,6 +60,9 @@
 "pi/agent/extensions/mru.ln.ts" = [
   "~/.pi/agent/extensions/mru.ts",
 ]
+"pi/agent/extensions/teamup.ln.ts" = [
+  "~/.pi/agent/extensions/teamup.ts",
+]
 
 # dotconfig (whole directory)
 "config.ln" = [
