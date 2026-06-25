@@ -134,12 +134,17 @@ pretty() {
   }'
 }
 
+# Peer messages (not from this handle) with seq greater than `since`, seq-stamped.
+# c+0 coerces numeric: an empty/garbage value would otherwise make "$1 > c" a
+# string compare and flag everything.
+peer_lines_since() { # subject handle since
+  numbered "$1" | awk -F'\t' -v c="$3" -v me="$2" '$1 > c+0 && $3!=me'
+}
+
 # Messages from others since this handle's cursor, seq-stamped. Empty if none.
 fresh_lines() { # subject handle
   local cur; cur="$(cat "$(cursor "$1" "$2")" 2>/dev/null || echo 0)"
-  # c+0 coerces the cursor numeric: an empty/garbage cursor file (interrupted
-  # write) would otherwise make "$1 > c" a string compare and flag everything.
-  numbered "$1" | awk -F'\t' -v c="$cur" -v me="$2" '$1 > c+0 && $3!=me'
+  peer_lines_since "$1" "$2" "$cur"
 }
 
 # Highest seq of a message not from this handle (empty if none).
@@ -300,11 +305,18 @@ case "$CMD" in
     fi
     echo "$$" > "$pidf"; trap 'rm -f "$pidf"' EXIT INT TERM
     file="$(chan "$SUBJECT")"
+    # Signal-only: fire on lines that arrive AFTER this wait armed (a local mark,
+    # NOT the shared cursor) and never advance the cursor — recv is the only
+    # consumer. In the background-idle pattern wait's stdout lands in a detached
+    # file the agent never reads, so consuming here would silently drop the very
+    # message that woke it; leaving the cursor untouched lets the woken agent's
+    # next recv surface it. The mark also stops a re-armed wait from instantly
+    # re-firing on lines that are still unread per the cursor.
+    mark="$(linecount "$file")"
     [ "$TIMEOUT" -gt 0 ] && deadline=$(( $(date +%s) + TIMEOUT )) || deadline=0
     while :; do
-      fresh="$(fresh_lines "$SUBJECT" "$HANDLE")"
+      fresh="$(peer_lines_since "$SUBJECT" "$HANDLE" "$mark")"
       if [ -n "$fresh" ]; then
-        printf '%s' "$(linecount "$file")" > "$(cursor "$SUBJECT" "$HANDLE")"
         printf '%s\n' "$fresh" | pretty
         exit 0
       fi

@@ -120,6 +120,10 @@ step, about to touch a shared file, hit a blocker) do a quick:
 teamup recv {subject} --as {handle}   # prints only messages from others since last read
 ```
 
+`recv` is the **only** command that advances your read-cursor — `wait`, `status`,
+and `peek` never consume. So a peer message stays unread until you `recv` it,
+including after a background `wait` wakes you (§4).
+
 `recv` leads with a machine-readable summary line, then the new messages:
 
 ```
@@ -184,8 +188,15 @@ teamup wait {subject} --as {handle} --timeout 0
 Run it with `run_in_background: true`. With `--timeout 0` the watcher stays
 armed across your whole work-turn instead of expiring after ~110s, so it's still
 listening when a peer finally speaks. When one does, it exits and the harness
-re-invokes you with the message — a poor-agent's interrupt. **Re-arm it after each
-fire** if you're still idle. Arming is single-instance: if a live wait is already
+re-invokes you — a poor-agent's interrupt.
+
+**`wait` is signal-only: it does NOT consume the message.** It just unblocks
+when a peer speaks; the message stays unread. On wake you **must `recv`** to
+actually read it — `recv` is the only reader that advances your cursor. (This is
+deliberate: a background `wait`'s stdout lands in a detached task-output file you
+never read, so if `wait` advanced the cursor the message would be silently lost.)
+So the on-wake order is **`recv` → then re-arm `wait`**. **Re-arm after each fire**
+if you're still idle. Arming is single-instance: if a live wait is already
 running for this handle, a second `wait` just no-ops.
 
 On **claude-code this re-arm is enforced**, not left to memory: the Stop hook
@@ -327,10 +338,10 @@ its agent can hold a persistent background `wait`.
 | `say {subject} --as H -- <text>` | post a message (alias: `send`) |
 | `ask {subject} --as H [--to P] -- <question>` | post a question; `--to` aims it at peer `P` (shows as their `asks_for_me`) |
 | `ack {subject} --as H [--re <seq>] -- [note]` | answer/clear an ask (default `--re` = latest peer msg); any message from you also clears it |
-| `recv {subject} --as H` | summary line + peers' messages since last read (non-blocking) |
+| `recv {subject} --as H` | summary line + peers' messages since last read (non-blocking). **The only reader that advances the cursor.** |
 | `status {subject} --as H` | summary line only; cursor untouched; exit `0`=clean `1`=unread `2`=ask-for-you |
 | `status --as H` | no subject: list every team this handle is on + member count |
-| `wait {subject} --as H [--timeout S]` | block until a peer speaks or timeout (`--timeout 0` = forever; use for background idle waits) |
+| `wait {subject} --as H [--timeout S]` | block until a peer speaks (newly, since this wait armed) or timeout (`--timeout 0` = forever; for background idle waits). **Signal-only: does NOT consume — `recv` after waking.** |
 | `roster {subject}` | who's on the channel |
 | `peek {subject} [--last N]` | recent history (default 20) |
 | `leave {subject} --as H` / `leave --all --as H` | disconnect |
