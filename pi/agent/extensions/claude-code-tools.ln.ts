@@ -1,21 +1,24 @@
 /**
  * Compact, Claude-Code-style rendering for pi's built-in tools.
  *
- * Overrides read/bash/edit/write/grep/find/ls to render as tight rows instead
- * of pi's default padded boxes. Execution is delegated to the original built-in
- * tools untouched — only the TUI rendering changes.
+ * Overrides read/bash/edit/write/grep/find/ls to render as a single tight line
+ * each, instead of pi's default padded boxes. Execution is delegated to the
+ * original built-in tools untouched — only the TUI rendering changes.
  *
- *   ⏺ read frontend/apps/builder/package.json
- *     ⎿ 42 lines
+ *   ⏺ read frontend/apps/builder/package.json · 42 lines
  *
- * A run of consecutive `read` calls folds into one expandable header. The fold
- * is derived from pi's canonical message branch (not render order), so it stays
- * correct across scroll/resize re-renders:
+ * The whole row is rendered from the `renderCall` slot (the only slot pi paints
+ * before a result exists, so the row is never blank while a slow tool runs);
+ * the result is read back from the canonical session branch. `renderResult` is
+ * always empty.
  *
- *   ⏺ read 9 files
- *     ⎿ 9 files · 465 lines (ctrl+e to expand)
+ * A run of consecutive same-tool calls (read, grep) folds into one expandable
+ * header, derived from the branch so it survives scroll/resize re-renders:
+ *
+ *   ⏺ read 9 files · 465 lines (ctrl+e to expand)
  */
 
+import type { AgentTool } from "@earendil-works/pi-agent-core";
 import type { ExtensionAPI, Theme, ThemeColor } from "@earendil-works/pi-coding-agent";
 import {
 	createBashTool,
@@ -30,14 +33,22 @@ import {
 import { Spacer, Text } from "@earendil-works/pi-tui";
 
 const CALL_GLYPH = "⏺";
-const RESULT_GLYPH = "⎿";
 const PREVIEW_LINES = 12;
 const COMMAND_WIDTH = 72;
+const LABEL_WIDTH = 50;
 const RENDER_SHELL = "self" as const;
 
 type ToolText = { content: Array<{ type: string; text?: string }>; details?: unknown };
-type RenderOptions = { expanded?: boolean; isPartial?: boolean };
 type Summary = [ThemeColor, string];
+type ToolArgs = {
+	path?: string;
+	pattern?: string;
+	glob?: string;
+	offset?: number;
+	limit?: number;
+	command?: string;
+	content?: string;
+};
 
 const outputText = (result: ToolText) => {
 	const first = result.content[0];
@@ -45,48 +56,23 @@ const outputText = (result: ToolText) => {
 };
 
 const firstLine = (text: string) => text.split("\n")[0];
+const totalLineCount = (text: string) => text.split("\n").length;
 const nonEmptyLineCount = (text: string) => text.split("\n").filter((line) => line.trim()).length;
 const isErrorResult = (result: ToolText) => outputText(result).startsWith("Error");
 const clip = (text: string, width: number) => (text.length > width ? `${text.slice(0, width - 1)}…` : text);
 const locationSuffix = (location?: string) => (location ? ` in ${location}` : "");
 const baseName = (path: string) => path.split("/").pop() || path;
-
-const callLine = (theme: Theme, name: string, target: string) =>
-	new Text(
-		`${theme.fg("toolTitle", theme.bold(CALL_GLYPH))} ${theme.fg("muted", name)} ${theme.fg("accent", target)}`,
-		0,
-		0,
-	);
-
 const previewFromOutput = (result: ToolText) => outputText(result).split("\n").slice(0, PREVIEW_LINES);
 
-type FinishResult = {
-	theme: Theme;
-	options: RenderOptions;
-	result: ToolText;
-	verb: string;
-	summary: () => Summary;
-	preview?: (result: ToolText) => string[];
+const oneLine = (theme: Theme, name: string, target: string, summary: Summary | undefined, verb: string) => {
+	const head = `${theme.fg("toolTitle", theme.bold(CALL_GLYPH))} ${theme.fg("muted", name)} ${theme.fg("accent", target)}`;
+	if (!summary) return `${head} ${theme.fg("dim", `· ${verb}…`)}`;
+	const [color, body] = summary;
+	return `${head} ${theme.fg("dim", "·")} ${theme.fg(color, body)}`;
 };
 
-const finishResult = ({ theme, options, result, verb, summary, preview = previewFromOutput }: FinishResult) => {
-	if (options.isPartial) return new Text(theme.fg("warning", `${verb}…`), 0, 0);
-	if (isErrorResult(result)) return new Text(theme.fg("error", firstLine(outputText(result))), 0, 0);
-
-	const [color, body] = summary();
-	let text = `  ${theme.fg("muted", RESULT_GLYPH)} ${theme.fg(color, body)}`;
-	if (options.expanded) {
-		for (const line of preview(result)) text += `\n     ${theme.fg("dim", line)}`;
-	}
-	return new Text(text, 0, 0);
-};
-
-const readRange = (args: { offset?: number; limit?: number }) => {
-	const parts: string[] = [];
-	if (args.offset) parts.push(`offset ${args.offset}`);
-	if (args.limit) parts.push(`limit ${args.limit}`);
-	return parts.length ? ` (${parts.join(", ")})` : "";
-};
+const indented = (theme: Theme, label: string, detail: string) =>
+	`\n     ${theme.fg("accent", label)}${detail ? theme.fg("dim", ` · ${detail}`) : ""}`;
 
 const bashSummary = (result: ToolText): Summary => {
 	const text = outputText(result);
@@ -100,33 +86,102 @@ const bashSummary = (result: ToolText): Summary => {
 const editDiff = (result: ToolText) => (result.details as { diff?: string } | undefined)?.diff ?? "";
 const diffCount = (diff: string, marker: string) =>
 	diff.split("\n").filter((line) => line.startsWith(marker) && !line.startsWith(marker.repeat(3))).length;
-const editSummary = (result: ToolText): Summary => {
-	const diff = editDiff(result);
-	return ["success", `+${diffCount(diff, "+")} -${diffCount(diff, "-")}`];
-};
+const editSummary = (result: ToolText): Summary => ["success", `+${diffCount(editDiff(result), "+")} -${diffCount(editDiff(result), "-")}`];
 const editPreview = (result: ToolText) => editDiff(result).split("\n").slice(0, PREVIEW_LINES);
 
-type ReadMember = { toolCallId: string; path: string };
-type ReadRun = { members: ReadMember[]; index: number };
-type ReadAnalysis = { runs: Map<string, ReadRun>; lineCounts: Map<string, number> };
+type SingleSpec = {
+	name: string;
+	display: string;
+	verb: string;
+	target: (args: ToolArgs) => string;
+	summary: (result: ToolText) => Summary;
+	preview?: (result: ToolText) => string[];
+};
 
-type ToolCallBlock = { type: "toolCall"; id: string; name: string; arguments?: { path?: string } };
+const SINGLES: SingleSpec[] = [
+	{ name: "bash", display: "$", verb: "running", target: (args) => clip(args.command ?? "", COMMAND_WIDTH), summary: bashSummary },
+	{ name: "edit", display: "edit", verb: "editing", target: (args) => args.path ?? "", summary: editSummary, preview: editPreview },
+	{
+		name: "write",
+		display: "write",
+		verb: "writing",
+		target: (args) => `${args.path ?? ""} (${(args.content ?? "").split("\n").length} lines)`,
+		summary: (): Summary => ["success", "written"],
+	},
+	{
+		name: "find",
+		display: "find",
+		verb: "finding",
+		target: (args) => (args.pattern ?? "") + locationSuffix(args.path),
+		summary: (result): Summary => ["success", `${nonEmptyLineCount(outputText(result))} files`],
+	},
+	{
+		name: "ls",
+		display: "ls",
+		verb: "listing",
+		target: (args) => args.path ?? ".",
+		summary: (result): Summary => ["success", `${nonEmptyLineCount(outputText(result))} entries`],
+	},
+];
+
+type GroupSpec = {
+	name: string;
+	noun: string;
+	unit: string;
+	verb: string;
+	label: (args: ToolArgs) => string;
+	target: (args: ToolArgs) => string;
+	metric: (text: string) => number;
+};
+
+const GROUPS: GroupSpec[] = [
+	{
+		name: "read",
+		noun: "files",
+		unit: "lines",
+		verb: "reading",
+		label: (args) => baseName(args.path ?? ""),
+		target: (args) => args.path ?? "",
+		metric: totalLineCount,
+	},
+	{
+		name: "grep",
+		noun: "searches",
+		unit: "matches",
+		verb: "searching",
+		label: (args) => clip(args.pattern ?? "", LABEL_WIDTH),
+		target: (args) => (args.pattern ?? "") + locationSuffix(args.path ?? args.glob),
+		metric: nonEmptyLineCount,
+	},
+];
+const groupSpecByName = new Map(GROUPS.map((spec) => [spec.name, spec]));
+
+type GroupMember = { toolCallId: string; label: string };
+type GroupRun = { spec: GroupSpec; members: GroupMember[]; index: number };
+type RunAnalysis = { runs: Map<string, GroupRun>; results: Map<string, ToolText> };
+
+type ToolCallBlock = { type: "toolCall"; id: string; name: string; arguments?: ToolArgs };
 type AssistantBlock = ToolCallBlock | { type: "text"; text: string } | { type: "thinking" | "image" };
 type BranchMessage =
 	| { role: "assistant"; content: AssistantBlock[] }
-	| { role: "toolResult"; toolName: string; toolCallId: string; content: Array<{ type: string; text?: string }> }
+	| { role: "toolResult"; toolName: string; toolCallId: string; content: ToolText["content"]; details?: unknown }
 	| { role: "user" };
 type BranchEntry = { type: string; message?: BranchMessage };
 type SessionLike = { getBranch: () => BranchEntry[] };
 
-const analyzeReads = (branch: BranchEntry[]): ReadAnalysis => {
-	const runs = new Map<string, ReadRun>();
-	const lineCounts = new Map<string, number>();
-	let run: ReadMember[] = [];
+const analyzeRuns = (branch: BranchEntry[]): RunAnalysis => {
+	const runs = new Map<string, GroupRun>();
+	const results = new Map<string, ToolText>();
+	let members: GroupMember[] = [];
+	let spec: GroupSpec | undefined;
 
 	const flush = () => {
-		run.forEach((member, index) => runs.set(member.toolCallId, { members: run, index }));
-		run = [];
+		if (spec) {
+			const run = { spec, members };
+			members.forEach((member, index) => runs.set(member.toolCallId, { ...run, index }));
+		}
+		members = [];
+		spec = undefined;
 	};
 
 	for (const { message } of branch) {
@@ -134,185 +189,126 @@ const analyzeReads = (branch: BranchEntry[]): ReadAnalysis => {
 		if (message.role === "assistant") {
 			for (const block of message.content) {
 				if (block.type === "text" && block.text.trim()) flush();
-				else if (block.type === "toolCall" && block.name === "read")
-					run.push({ toolCallId: block.id, path: block.arguments?.path ?? "" });
-				else if (block.type === "toolCall") flush();
+				else if (block.type === "toolCall") {
+					const blockSpec = groupSpecByName.get(block.name);
+					if (!blockSpec) flush();
+					else {
+						if (spec && spec.name !== blockSpec.name) flush();
+						spec = blockSpec;
+						members.push({ toolCallId: block.id, label: blockSpec.label(block.arguments ?? {}) });
+					}
+				}
 			}
-		} else if (message.role === "toolResult" && message.toolName === "read") {
-			const first = message.content[0];
-			if (first?.type === "text") lineCounts.set(message.toolCallId, (first.text ?? "").split("\n").length);
+		} else if (message.role === "toolResult") {
+			results.set(message.toolCallId, { content: message.content, details: message.details });
 		} else if (message.role === "user") {
 			flush();
 		}
 	}
 	flush();
-	return { runs, lineCounts };
+	return { runs, results };
 };
+
+let session: SessionLike | undefined;
+const headInvalidate = new Map<string, () => void>();
+const headSignature = new Map<string, string>();
+const emptyResults = new Map<string, ToolText>();
+
+const currentAnalysis = () => (session ? analyzeRuns(session.getBranch()) : undefined);
+const memberMetric = (spec: GroupSpec, results: Map<string, ToolText>, toolCallId: string) => {
+	const result = results.get(toolCallId);
+	return result ? spec.metric(outputText(result)) : undefined;
+};
+const runSignature = (run: GroupRun, results: Map<string, ToolText>) =>
+	`${run.members.length}:${run.members.reduce((sum, member) => sum + (memberMetric(run.spec, results, member.toolCallId) ?? 0), 0)}`;
+const refreshHeadIfStale = (run: GroupRun, results: Map<string, ToolText>) => {
+	const headId = run.members[0].toolCallId;
+	if (headSignature.get(headId) !== runSignature(run, results)) headInvalidate.get(headId)?.();
+};
+
+const groupedHead = (theme: Theme, run: GroupRun, results: Map<string, ToolText>, expanded: boolean) => {
+	const spec = run.spec;
+	const total = run.members.reduce((sum, member) => sum + (memberMetric(spec, results, member.toolCallId) ?? 0), 0);
+	let text = oneLine(theme, spec.name, `${run.members.length} ${spec.noun}`, ["success", `${total} ${spec.unit}`], spec.verb);
+	if (!expanded) return `${text} ${theme.fg("dim", `(${keyHint("app.tools.expand", "expand")})`)}`;
+	for (const member of run.members) {
+		const metric = memberMetric(spec, results, member.toolCallId);
+		text += indented(theme, member.label, metric === undefined ? "" : `${metric} ${spec.unit}`);
+	}
+	return text;
+};
+
+const registerSingle = (pi: ExtensionAPI, spec: SingleSpec, tool: AgentTool<any>) =>
+	pi.registerTool({
+		name: spec.name,
+		label: spec.name,
+		description: tool.description,
+		parameters: tool.parameters,
+		renderShell: RENDER_SHELL,
+		execute: (id, params, signal, onUpdate) => tool.execute(id, params, signal, onUpdate),
+		renderCall: (args: ToolArgs, theme, context) => {
+			const result = (currentAnalysis()?.results ?? emptyResults).get(context.toolCallId);
+			const summary = result
+				? isErrorResult(result)
+					? (["error", firstLine(outputText(result))] as Summary)
+					: spec.summary(result)
+				: undefined;
+			let text = oneLine(theme, spec.display, spec.target(args), summary, spec.verb);
+			if (context.expanded && result) {
+				for (const line of (spec.preview ?? previewFromOutput)(result)) text += `\n     ${theme.fg("dim", line)}`;
+			}
+			return new Text(text, 0, 0);
+		},
+		renderResult: () => new Spacer(0),
+	});
+
+const registerGrouped = (pi: ExtensionAPI, spec: GroupSpec, tool: AgentTool<any>) =>
+	pi.registerTool({
+		name: spec.name,
+		label: spec.name,
+		description: tool.description,
+		parameters: tool.parameters,
+		renderShell: RENDER_SHELL,
+		execute: (id, params, signal, onUpdate) => tool.execute(id, params, signal, onUpdate),
+		renderCall: (args: ToolArgs, theme, context) => {
+			const analysis = currentAnalysis();
+			const results = analysis?.results ?? emptyResults;
+			const run = analysis?.runs.get(context.toolCallId);
+			if (run && run.index > 0) {
+				refreshHeadIfStale(run, results);
+				return new Spacer(0);
+			}
+			headInvalidate.set(context.toolCallId, context.invalidate);
+			if (run && run.members.length > 1) {
+				headSignature.set(context.toolCallId, runSignature(run, results));
+				return new Text(groupedHead(theme, run, results, context.expanded), 0, 0);
+			}
+			headSignature.set(context.toolCallId, `1:${memberMetric(spec, results, context.toolCallId) ?? 0}`);
+			const result = results.get(context.toolCallId);
+			const summary = result ? (["success", `${spec.metric(outputText(result))} ${spec.unit}`] as Summary) : undefined;
+			return new Text(oneLine(theme, spec.name, spec.target(args), summary, spec.verb), 0, 0);
+		},
+		renderResult: () => new Spacer(0),
+	});
 
 export default function (pi: ExtensionAPI) {
 	const cwd = process.cwd();
-
-	let session: SessionLike | undefined;
-	const headInvalidate = new Map<string, () => void>();
-	const headRenderedSize = new Map<string, number>();
+	const tools: Record<string, AgentTool<any>> = {
+		read: createReadTool(cwd),
+		bash: createBashTool(cwd),
+		edit: createEditTool(cwd),
+		write: createWriteTool(cwd),
+		grep: createGrepTool(cwd),
+		find: createFindTool(cwd),
+		ls: createLsTool(cwd),
+	};
 
 	pi.on("session_start", async (_event, ctx) => {
 		session = ctx.sessionManager as unknown as SessionLike;
 		headInvalidate.clear();
-		headRenderedSize.clear();
+		headSignature.clear();
 	});
 
-	const currentAnalysis = () => (session ? analyzeReads(session.getBranch()) : undefined);
-	const refreshHeadIfStale = (run: ReadRun) => {
-		const headId = run.members[0].toolCallId;
-		if (headRenderedSize.get(headId) !== run.members.length) headInvalidate.get(headId)?.();
-	};
-
-	const read = createReadTool(cwd);
-	pi.registerTool({
-		name: "read",
-		label: "read",
-		description: read.description,
-		parameters: read.parameters,
-		renderShell: RENDER_SHELL,
-		execute: (id, params, signal, onUpdate) => read.execute(id, params, signal, onUpdate),
-		renderCall: (args, theme, context) => {
-			const run = currentAnalysis()?.runs.get(context.toolCallId);
-			if (run && run.index > 0) {
-				refreshHeadIfStale(run);
-				return new Spacer(0);
-			}
-			headInvalidate.set(context.toolCallId, context.invalidate);
-			const size = run?.members.length ?? 1;
-			headRenderedSize.set(context.toolCallId, size);
-			return callLine(theme, "read", size <= 1 ? args.path + readRange(args) : `${size} files`);
-		},
-		renderResult: (result, options, theme, context) => {
-			const analysis = currentAnalysis();
-			const run = analysis?.runs.get(context.toolCallId);
-			if (run && run.index > 0) {
-				refreshHeadIfStale(run);
-				return new Spacer(0);
-			}
-			const size = run?.members.length ?? 1;
-			if (size <= 1) {
-				return finishResult({
-					theme,
-					options,
-					result,
-					verb: "reading",
-					summary: (): Summary => ["success", `${nonEmptyLineCount(outputText(result))} lines`],
-				});
-			}
-
-			const counts = analysis!.lineCounts;
-			const total = run!.members.reduce((sum, member) => sum + (counts.get(member.toolCallId) ?? 0), 0);
-			const head = `${theme.fg("muted", RESULT_GLYPH)} ${theme.fg("success", `${size} files · ${total} lines`)}`;
-			if (!options.expanded) {
-				return new Text(`  ${head} ${theme.fg("dim", `(${keyHint("app.tools.expand", "expand")})`)}`, 0, 0);
-			}
-			let text = `  ${head}`;
-			for (const member of run!.members) {
-				const lines = counts.get(member.toolCallId);
-				text += `\n     ${theme.fg("accent", baseName(member.path))}${theme.fg("dim", lines ? ` · ${lines} lines` : "")}`;
-			}
-			return new Text(text, 0, 0);
-		},
-	});
-
-	const bash = createBashTool(cwd);
-	pi.registerTool({
-		name: "bash",
-		label: "bash",
-		description: bash.description,
-		parameters: bash.parameters,
-		renderShell: RENDER_SHELL,
-		execute: (id, params, signal, onUpdate) => bash.execute(id, params, signal, onUpdate),
-		renderCall: (args, theme) => callLine(theme, "$", clip(args.command, COMMAND_WIDTH)),
-		renderResult: (result, options, theme) =>
-			finishResult({ theme, options, result, verb: "running", summary: () => bashSummary(result) }),
-	});
-
-	const edit = createEditTool(cwd);
-	pi.registerTool({
-		name: "edit",
-		label: "edit",
-		description: edit.description,
-		parameters: edit.parameters,
-		renderShell: RENDER_SHELL,
-		execute: (id, params, signal, onUpdate) => edit.execute(id, params, signal, onUpdate),
-		renderCall: (args, theme) => callLine(theme, "edit", args.path),
-		renderResult: (result, options, theme) =>
-			finishResult({ theme, options, result, verb: "editing", summary: () => editSummary(result), preview: editPreview }),
-	});
-
-	const write = createWriteTool(cwd);
-	pi.registerTool({
-		name: "write",
-		label: "write",
-		description: write.description,
-		parameters: write.parameters,
-		renderShell: RENDER_SHELL,
-		execute: (id, params, signal, onUpdate) => write.execute(id, params, signal, onUpdate),
-		renderCall: (args, theme) => callLine(theme, "write", `${args.path} (${args.content.split("\n").length} lines)`),
-		renderResult: (result, options, theme) =>
-			finishResult({ theme, options, result, verb: "writing", summary: (): Summary => ["success", "written"] }),
-	});
-
-	const grep = createGrepTool(cwd);
-	pi.registerTool({
-		name: "grep",
-		label: "grep",
-		description: grep.description,
-		parameters: grep.parameters,
-		renderShell: RENDER_SHELL,
-		execute: (id, params, signal, onUpdate) => grep.execute(id, params, signal, onUpdate),
-		renderCall: (args, theme) => callLine(theme, "grep", args.pattern + locationSuffix(args.path ?? args.glob)),
-		renderResult: (result, options, theme) =>
-			finishResult({
-				theme,
-				options,
-				result,
-				verb: "searching",
-				summary: (): Summary => ["success", `${nonEmptyLineCount(outputText(result))} matches`],
-			}),
-	});
-
-	const find = createFindTool(cwd);
-	pi.registerTool({
-		name: "find",
-		label: "find",
-		description: find.description,
-		parameters: find.parameters,
-		renderShell: RENDER_SHELL,
-		execute: (id, params, signal, onUpdate) => find.execute(id, params, signal, onUpdate),
-		renderCall: (args, theme) => callLine(theme, "find", args.pattern + locationSuffix(args.path)),
-		renderResult: (result, options, theme) =>
-			finishResult({
-				theme,
-				options,
-				result,
-				verb: "finding",
-				summary: (): Summary => ["success", `${nonEmptyLineCount(outputText(result))} files`],
-			}),
-	});
-
-	const ls = createLsTool(cwd);
-	pi.registerTool({
-		name: "ls",
-		label: "ls",
-		description: ls.description,
-		parameters: ls.parameters,
-		renderShell: RENDER_SHELL,
-		execute: (id, params, signal, onUpdate) => ls.execute(id, params, signal, onUpdate),
-		renderCall: (args, theme) => callLine(theme, "ls", args.path ?? "."),
-		renderResult: (result, options, theme) =>
-			finishResult({
-				theme,
-				options,
-				result,
-				verb: "listing",
-				summary: (): Summary => ["success", `${nonEmptyLineCount(outputText(result))} entries`],
-			}),
-	});
+	for (const spec of GROUPS) registerGrouped(pi, spec, tools[spec.name]);
+	for (const spec of SINGLES) registerSingle(pi, spec, tools[spec.name]);
 }
