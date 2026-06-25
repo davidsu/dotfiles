@@ -66,6 +66,9 @@
 "pi/agent/extensions/claude-local-context.ln.ts" = [
   "~/.pi/agent/extensions/claude-local-context.ts",
 ]
+"pi/agent/extensions/claude-code-tools.ln.ts" = [
+  "~/.pi/agent/extensions/claude-code-tools.ts",
+]
 
 # dotconfig (whole directory)
 "config.ln" = [
