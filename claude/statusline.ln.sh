@@ -4,6 +4,14 @@ model=$(echo "$input" | jq -r '.model.display_name')
 used=$(echo "$input" | jq -r '.context_window.used_percentage // "0"')
 dir=$(pwd | awk -F/ '{if(NF<=2) print $0; else print "../"$(NF-1)"/"$NF}')
 
+# Joined teamup channels for this session (! = ask aimed at you, * = unread)
+session_id=$(echo "$input" | jq -r '.session_id // empty')
+teams_info=""
+if [ -n "$session_id" ]; then
+  teams=$("$HOME/.claude/skills/suss-teamup/scripts/teamup" teams --session "$session_id" 2>/dev/null)
+  [ -n "$teams" ] && teams_info=" | \e[38;2;216;166;135m⇄ ${teams}\e[0m"
+fi
+
 # Git info (matches Starship prompt style)
 git_info=""
 if git rev-parse --git-dir >/dev/null 2>&1; then
@@ -21,7 +29,7 @@ if git rev-parse --git-dir >/dev/null 2>&1; then
   git_info=" | \e[1;34m(\e[0m\e[1;34m${branch}\e[0m${status}\e[1;34m)\e[0m"
 fi
 
-printf "\e[38;2;130;210;195m%s\e[0m | \e[38;2;195;160;210mContext: %.1f%%\e[0m | \e[90m%s\e[0m%b" "$model" "$used" "$dir" "$git_info"
+printf "\e[38;2;130;210;195m%s\e[0m | \e[38;2;195;160;210mContext: %.1f%%\e[0m | \e[90m%s\e[0m%b%b" "$model" "$used" "$dir" "$git_info" "$teams_info"
 
 # Session banner (set via `!banner` script, keyed on Claude's PID)
 # Claude runs this script directly, so PPID = Claude's PID

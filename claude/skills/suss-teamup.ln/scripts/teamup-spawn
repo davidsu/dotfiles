@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # teamup-spawn — launch a cooperating agent in a new Ghostty tab, joined to a channel.
-#   teamup-spawn <claude|pi> <subject> [--dir DIR]
+#   teamup-spawn <claude|pi|codex> <subject> [--dir DIR]
 #
 # Opens a tab (in DIR, default $PWD) running the agent with an initial prompt that
 # invokes the suss-teamup skill to JOIN <subject>. The new agent picks its own
@@ -16,15 +16,18 @@ while [ $# -gt 0 ]; do
     *) echo "teamup-spawn: unknown flag $1" >&2; exit 1 ;;
   esac
 done
-[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi> <subject> [--dir DIR]" >&2; exit 1; }
+[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi|codex> <subject> [--dir DIR]" >&2; exit 1; }
 
 # cy = `claude --dangerously-skip-permissions` (no --mcp-config, which is variadic
 # and would swallow the prompt). claude discovers the skill globally as /suss-teamup;
-# pi invokes skills as /skill:<name>.
+# pi invokes skills as /skill:<name>. codex (cody = bypass flags) does NOT dispatch
+# slash commands from argv — argv is a plain prompt — so it gets a natural-language
+# instruction that names the skill (discovered from ~/.agents/skills/suss-teamup).
 case "$agent" in
-  claude) launcher="cy"; invoke="/suss-teamup $subject" ;;
-  pi)     launcher="pi"; invoke="/skill:suss-teamup $subject" ;;
-  *)      echo "teamup-spawn: agent must be 'claude' or 'pi'" >&2; exit 1 ;;
+  claude) launcher="cy";   invoke="/suss-teamup $subject" ;;
+  pi)     launcher="pi";   invoke="/skill:suss-teamup $subject" ;;
+  codex)  launcher="cody"; invoke="Use the suss-teamup skill. Join channel $subject. Your first action is the teamup join command." ;;
+  *)      echo "teamup-spawn: agent must be 'claude', 'pi', or 'codex'" >&2; exit 1 ;;
 esac
 
 ghostty_spawn --dir "$dir" --run "$launcher '$invoke'"

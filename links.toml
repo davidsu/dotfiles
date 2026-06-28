@@ -36,6 +36,12 @@
 ]
 "claude/skills/suss-teamup.ln" = [
   "~/.claude/skills/suss-teamup",
+  "~/.agents/skills/suss-teamup",
+]
+
+# codex
+"codex/hooks.ln.json" = [
+  "~/.codex/hooks.json",
 ]
 
 # pi

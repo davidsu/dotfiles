@@ -47,8 +47,8 @@ Run `teamup` with no args (or a bad one) to see usage.
 - `/suss-teamup status` → **overview**: run `teamup status --as {handle}` (no
   subject) to list every team you're on + its member count. Treat the literal
   word `status` as this command, not a channel named "status".
-- `/suss-teamup spawn [pi|claude] [new|subject]` → **spawn a peer agent** in a new
-  tab, joined to a shared channel. Agent defaults to `claude`, channel to `new`
+- `/suss-teamup spawn [pi|claude|codex] [new|subject]` → **spawn a peer agent** in a
+  new tab, joined to a shared channel. Agent defaults to `claude`, channel to `new`
   (see §Spawn a cooperating agent).
 
 If no subject is given on a join, ask the user for one — don't guess.
@@ -222,18 +222,20 @@ extension's `fs.watch` watcher wakes it; see §6.)
 
 ## Spawn a cooperating agent
 
-`/suss-teamup spawn [pi|claude] [new|subject]` launches another agent in a new
+`/suss-teamup spawn [pi|claude|codex] [new|subject]` launches another agent in a new
 Ghostty tab, already joined to a shared channel — for **handoff** (a full-context
-agent spins up a fresh one to continue) or **cross-model pairing** (claude ⇄ pi).
+agent spins up a fresh one to continue) or **cross-model pairing** (claude ⇄ pi ⇄ codex).
 Agent defaults to `claude`; channel defaults to a new one.
 
-1. **Resolve agent + channel.** Agent: `pi` or `claude` (default `claude`).
+1. **Resolve agent + channel.** Agent: `pi`, `claude`, or `codex` (default `claude`).
    Channel: a given `subject` → use it; `new` (or omitted) → pick a short slug
    (e.g. `pair-auth`, `handoff-x`) — avoid names starting with `spawn`.
 2. **Join it yourself first**, so you're present when the peer arrives:
    `teamup join {subject} --as {handle} --pwd "$PWD" --doing "spawning a {agent} peer"`.
-3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi} {subject}` — opens a tab
-   in your `$PWD` running the agent, which invokes the skill to join `{subject}`.
+3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi|codex} {subject}` — opens a tab
+   in your `$PWD` running the agent, which joins `{subject}`. claude/pi invoke the skill
+   by slash command; codex gets a plain-language prompt naming the skill (codex argv is
+   a prompt, not a command dispatcher).
 4. **Huddle** (§2). For a handoff, post the context the peer needs on the channel
    before it gets going; for pairing, align on who owns what.
 
@@ -303,6 +305,34 @@ the same way: expose the session GUID as `$TEAMUP_SESSION` for `join`, pass
 `.session_id` (+ `.cwd`) to the hook on stdin, and pass `--require-listener` only if
 its agent can hold a persistent background `wait`.
 
+**codex (Codex CLI):** codex needs **no wrapper extension** — it natively does what
+the other harnesses bolt on. `join` reads the GUID from `$CODEX_THREAD_ID`, which
+codex exports into the agent's shell; codex's `Stop` hook event carries the **same**
+value as `.session_id`, so GUID routing matches end-to-end (verified). Codex honors a
+`Stop` hook that exits 2 — it blocks the turn-end and re-invokes the agent with the
+hook's stderr, exactly like claude-code. Wiring is `codex/hooks.ln.json` →
+`~/.codex/hooks.json` (the hooks feature, `[features].hooks`, is **on by default** —
+no flag needed); it runs `teamup-hook stop` **without `--require-listener`**. Codex
+limitations: (1) **no idle-wake** — its exec harness doesn't keep a backgrounded
+`wait` alive and doesn't auto-start a turn when a bg process exits, so a peer message
+can't wake a *fully idle* codex (the Stop hook only catches unread that piled up
+*during* a live turn). (2) **no `SessionEnd` event** — no auto-`leave`, so a codex
+roster entry goes stale on exit (channels are ephemeral, so it self-heals on reboot).
+(3) **the hook is global** — `~/.codex/hooks.json` fires `teamup-hook` on *every*
+codex session; that's fine because `teamup-hook` fail-opens (exits 0) for any session
+not on a channel. (4) codex loads hooks **at session start**, so a codex already
+running when the hook was installed won't have it until restarted.
+
+### Joined-teams statusline
+
+`teamup teams --session {guid}` prints this session's joined channels as one compact
+line (markers: `!` = an ask aimed at you, `*` = unread), or nothing when on no teams.
+The claude statusline (`claude/statusline.ln.sh`) and the pi footer
+(`pi/agent/extensions/claude-code-footer.ln.ts`) both call it and render an `⇄ …`
+segment. Codex has **no** custom-command statusline (its `/statusline` only toggles
+built-in items), so it shows no teams segment — the Stop-hook unread surfacing is its
+equivalent signal.
+
 ### Known limitations & caveats
 
 - **Idle wake is solved per-harness — but only for a LIVE session.**
@@ -350,6 +380,7 @@ its agent can hold a persistent background `wait`.
 | `recv {subject} --as H` | summary line + peers' messages since last read (non-blocking). **The only reader that advances the cursor.** |
 | `status {subject} --as H` | summary line only; cursor untouched; exit `0`=clean `1`=unread `2`=ask-for-you |
 | `status --as H` | no subject: list every team this handle is on + member count |
+| `teams --session G [--pwd P]` | compact one-line joined channels for a statusline (`!` ask, `*` unread); empty when on none |
 | `wait {subject} --as H [--timeout S]` | block until a peer speaks (newly, since this wait armed) or timeout (`--timeout 0` = forever; for background idle waits). **Signal-only: does NOT consume — `recv` after waking.** |
 | `roster {subject}` | who's on the channel |
 | `peek {subject} [--last N]` | recent history (default 20) |

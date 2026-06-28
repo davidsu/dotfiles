@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh -c '\"$HOME/.claude/skills/suss-teamup/scripts/teamup-hook\" stop'",
+            "timeout": 10,
+            "statusMessage": "Checking teamup channels before stop"
+          }
+        ]
+      }
+    ]
+  }
+}

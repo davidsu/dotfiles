@@ -9,10 +9,29 @@
 import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
+import { spawnSync } from "node:child_process";
 import * as path from "node:path";
+
+const TEAMUP = path.join(process.env.HOME ?? "~", ".claude/skills/suss-teamup/scripts/teamup");
+
+// Joined teamup channels for a session, cached so a frequent re-render doesn't
+// spawn the script every frame. Markers: ! = ask aimed at you, * = unread.
+function makeTeamsReader(sessionId: string): () => string {
+	let cached = "";
+	let cachedAt = 0;
+	return () => {
+		const now = Date.now();
+		if (now - cachedAt < 1500) return cached;
+		cachedAt = now;
+		const result = spawnSync(TEAMUP, ["teams", "--session", sessionId], { encoding: "utf-8" });
+		cached = result.status === 0 ? (result.stdout ?? "").trim() : "";
+		return cached;
+	};
+}
 
 export default function (pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
+		const getTeams = makeTeamsReader(ctx.sessionManager.getSessionId());
 		ctx.ui.setFooter((tui, theme, footerData) => {
 			const unsub = footerData.onBranchChange(() => tui.requestRender());
 
@@ -52,12 +71,18 @@ export default function (pi: ExtensionAPI) {
 					const lavender = "\x1b[38;2;195;160;210m";
 					const grey = "\x1b[90m";
 					const boldBlue = "\x1b[1;34m";
+					const amber = "\x1b[38;2;216;166;135m";
 					const reset = "\x1b[0m";
 					const sep = `${grey} | ${reset}`;
 
 					let line1 = `${teal}${modelName}${reset}${sep}${lavender}Context: ${contextPct}${reset}${sep}${grey}${displayPath}${reset}`;
 					if (branchStr) {
 						line1 += `${sep}${boldBlue}${branchStr}${reset}`;
+					}
+
+					const teams = getTeams();
+					if (teams) {
+						line1 += `${sep}${amber}⇄ ${teams}${reset}`;
 					}
 
 					// Build line 2: statuses if any
