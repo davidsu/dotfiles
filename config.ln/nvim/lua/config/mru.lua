@@ -9,8 +9,7 @@ local IGNORED_FTS = {
 
 local IGNORED_PATTERNS = {
   '^fugitive://', '^health://', 'NvimTree_', '/private/var/folders/',
-  'nvim%.runtime', 'fugitiveblame', '/var/folders/.*nvim', '%.git/index',
-  '/tmp/beads/'
+  'nvim%.runtime', 'fugitiveblame', '/var/folders/.*nvim', '%.git/index'
 }
 
 local git_cache = {}

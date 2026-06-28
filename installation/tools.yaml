@@ -6,6 +6,11 @@ tools:
     install_command: 'curl -fsSL https://claude.ai/install.sh | bash'
     description: Official CLI for Claude AI (auto-updates enabled)
 
+  codex:
+    brew_type: cask
+    cmd: codex
+    description: OpenAI's coding agent that runs in your terminal (Node-free Rust binary)
+
   node:
     install_type: native
     cmd: node
@@ -101,12 +106,6 @@ tools:
   git-open:
     brew_type: formula
     description: Opens GitHub page for repo in browser
-
-  # Task management for AI agents
-  beads:
-    brew_type: formula
-    cmd: bd
-    description: Git-backed task management for coding agents
 
   marksman:
     brew_type: formula

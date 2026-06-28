@@ -53,7 +53,7 @@ vim_command: PlenaryBustedFile /path/to/spec_file.lua
 
 Then wait for results and read the output buffer with `vim_buffer`.
 
-**Tests are slow** (each `before_each` creates a git repo + beads). Wait adequately before checking results — typically 2+ minutes for the full suite.
+**Tests are slow**. Wait adequately before checking results — typically 2+ minutes for the full suite.
 
 ### 6. Self-heal / repeat
 

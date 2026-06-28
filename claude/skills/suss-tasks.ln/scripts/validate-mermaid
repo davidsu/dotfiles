@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# bd-validate-mermaid — validate mermaid blocks in a markdown file or string
+# validate-mermaid — validate mermaid blocks in a markdown file or string
 #
 # Usage:
-#   bd-validate-mermaid <file.md>           Validate all mermaid blocks in a markdown file
-#   bd-validate-mermaid --string '...'      Validate a single mermaid diagram string
+#   validate-mermaid <file.md>           Validate all mermaid blocks in a markdown file
+#   validate-mermaid --string '...'      Validate a single mermaid diagram string
 #
 # Exit code: 0 if all valid, 1 if any invalid
 # Prerequisites: mmdc (npm install -g @mermaid-js/mermaid-cli)

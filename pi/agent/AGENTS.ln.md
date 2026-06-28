@@ -8,8 +8,6 @@
 
 **CRITICAL**: Before writing or modifying ANY code, you MUST load `/skill:clean-code` if you haven't already loaded it in this conversation.
 
-Before any `bd create`, `bd update`, or when reading beads for context, you MUST load `/skill:suss-bead` if you haven't already loaded it in this conversation.
-
 ## Symlinks
 
 - when fileA references fileB by relative path and fileB can't be resolved: check if fileA is a symlink, if so follow it ( use `readlink` )

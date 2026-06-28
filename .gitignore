@@ -8,7 +8,3 @@ bin/links.ts
 # AI tools
 .claude/settings.local.json
 .aider*
-
-# bv (beads viewer) local config and caches
-.bv/
-beads_report*

@@ -73,7 +73,7 @@ suss-tasks/
 │   ├── epic.md                     # describes this group of tasks
 │   ├── create_skill.md             # task
 │   ├── create_nvim_plugin.md       # task
-│   └── remove_beads_wiring/        # sub-directory (nesting is fine)
+│   └── remove_old_task_wiring/     # sub-directory (nesting is fine)
 │       ├── epic.md
 │       ├── remove_hooks.md
 │       └── remove_nvim_plugin.md

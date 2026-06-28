@@ -4,8 +4,5 @@
       "Read(.cursor/**)",
       "Read(.cursor)"
     ]
-  },
-  "enabledPlugins": {
-    "beads@beads-marketplace": true
   }
 }
