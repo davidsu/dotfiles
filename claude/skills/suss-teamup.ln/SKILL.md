@@ -175,6 +175,15 @@ This is a dumb, readable mailbox any agent (Codex / Gemini / Claude) can follow.
   An ask aimed at you stays "for you" only until your next message — answer in
   prose and it clears; there is no bookkeeping to keep in sync.
 
+## 3b. Reviewing a teammate's work
+
+When you're the reviewer/boss signing off on another agent's implementation:
+
+**CRITICAL**: Read [reviewer.md](resources/reviewer.md) before you approve any teammate's
+work. The core rule: review against the **locked decision/plan**, not just code quality —
+read the actual diff for every load-bearing claim (never trust the implementer's summary),
+and send deviations back to the decision-owner instead of blessing the shortcut.
+
 ## 4. Background wait — get woken while idle
 
 When you'd otherwise be waiting (peer is still working, nothing to do), launch a

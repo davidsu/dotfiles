@@ -39,6 +39,9 @@ alias cyp='claude --chrome --dangerously-skip-permissions --mcp-config '\''{"mcp
 alias cyc='claude --chrome --dangerously-skip-permissions --mcp-config '\''{"mcpServers":{"playwright":{"command":"playwright-mcp","args":["--extension"],"env":{"PLAYWRIGHT_MCP_EXTENSION_TOKEN":"'"$PLAYWRIGHT_MCP_EXTENSION_TOKEN"'"}}}}'\'''
 alias cvim='nvim -c "ClaudeConnect"'
 
+# Codex
+alias cody='codex --dangerously-bypass-approvals-and-sandbox'
+
 # Markdown viewer
 alias mdview='nvim --headless -c "MarkdownPreview"'
 
