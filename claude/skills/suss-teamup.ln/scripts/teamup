@@ -179,6 +179,20 @@ block_for_change() { # channel-file
 
 require_handle() { [ -n "${HANDLE:-}" ] || die "missing --as <handle>"; }
 
+# An agent actively saying/asking/receiving on a channel IS on it. Restore its
+# roster entry + registry row if a prior session incarnation (resume, stale
+# session-end) dropped them, so `roster` and the statusline stop under-reporting
+# a live participant that keeps talking. Skips when the member file already
+# exists, so it never clobbers another session holding this handle.
+ensure_member() { # subject
+  local member; member="$(mdir "$1")/$HANDLE"
+  [ -f "$member" ] && return 0
+  mkdir -p "$(mdir "$1")"
+  printf 'pwd=%s\ndoing=%s\njoined=%s\nsession=%s\n' \
+    "$PWD_ARG" "(rejoined)" "$(now)" "$(session_guid)" > "$member"
+  register_session "$1" "$HANDLE" "$PWD_ARG"
+}
+
 # ---- arg parsing --------------------------------------------------------------
 CMD="${1:-}"; shift || usage
 SUBJECT=""; HANDLE=""; PWD_ARG="$PWD"; DOING=""; TIMEOUT="$DEFAULT_WAIT"; LAST=20; ALL=false; FORCE=false
@@ -232,7 +246,7 @@ case "$CMD" in
     ;;
 
   say|send)
-    [ -n "$SUBJECT" ] || usage; require_handle
+    [ -n "$SUBJECT" ] || usage; require_handle; ensure_member "$SUBJECT"
     if [ ${#MSG[@]} -gt 0 ]; then text="${MSG[*]}"; else text="$(cat)"; fi
     [ -n "$text" ] || die "nothing to say"
     append "$SUBJECT" "$HANDLE" say "$text"
@@ -240,7 +254,7 @@ case "$CMD" in
     ;;
 
   recv)
-    [ -n "$SUBJECT" ] || usage; require_handle
+    [ -n "$SUBJECT" ] || usage; require_handle; ensure_member "$SUBJECT"
     fresh="$(fresh_lines "$SUBJECT" "$HANDLE")"
     printf '%s' "$(linecount "$(chan "$SUBJECT")")" > "$(cursor "$SUBJECT" "$HANDLE")"
     unread="$(printf '%s' "$fresh" | awk 'END{print NR+0}')"
@@ -251,7 +265,7 @@ case "$CMD" in
     ;;
 
   ask)
-    [ -n "$SUBJECT" ] || usage; require_handle
+    [ -n "$SUBJECT" ] || usage; require_handle; ensure_member "$SUBJECT"
     if [ ${#MSG[@]} -gt 0 ]; then text="${MSG[*]}"; else text="$(cat)"; fi
     [ -n "$text" ] || die "nothing to ask"
     [ -n "$TO" ] && text="@$TO $text"
@@ -321,7 +335,7 @@ case "$CMD" in
     ;;
 
   wait)
-    [ -n "$SUBJECT" ] || usage; require_handle
+    [ -n "$SUBJECT" ] || usage; require_handle; ensure_member "$SUBJECT"
     # Pidfile = the live-listener marker the Stop hook checks. Single-instance:
     # if a live wait is already armed for this handle, don't stack a second (a
     # stale pidfile from a killed wait fails kill -0 and is overwritten). The trap

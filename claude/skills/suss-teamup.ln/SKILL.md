@@ -358,6 +358,14 @@ equivalent signal.
   last-writer-wins class as the registry). A crashed session leaves its
   `members/{handle}` behind, so a *different* session can't reclaim that handle
   until a same-GUID resume or a manual `rm` of the member file.
+- **Presence self-heals on activity.** `say`/`ask`/`recv`/`wait` re-create your
+  `members/{handle}` entry and registry row if they went missing (a resume, a
+  stale `session-end`, a manual `rm`) — so an agent that keeps talking can't
+  silently drop off the roster/statusline while peers wrongly read it as gone.
+  A no-op when you're already a member (your `doing`/`joined` are preserved) and
+  it fires no `ping`; it only restores a *missing* entry, never clobbers one a
+  live peer holds. `leave` is still the way to actually go — but a lone `say`
+  afterward puts you back.
 
 ## Etiquette
 
