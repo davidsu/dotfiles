@@ -19,6 +19,12 @@
 "claude/skills/excalidraw.ln" = [
   "~/.claude/skills/excalidraw",
 ]
+"claude/skills/grill-me.ln" = [
+  "~/.claude/skills/grill-me",
+]
+"claude/skills/grilling.ln" = [
+  "~/.claude/skills/grilling",
+]
 "claude/skills/prdiff.ln" = [
   "~/.claude/skills/prdiff",
 ]

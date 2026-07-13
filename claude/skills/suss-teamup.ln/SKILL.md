@@ -47,9 +47,16 @@ Run `teamup` with no args (or a bad one) to see usage.
 - `/suss-teamup status` → **overview**: run `teamup status --as {handle}` (no
   subject) to list every team you're on + its member count. Treat the literal
   word `status` as this command, not a channel named "status".
-- `/suss-teamup spawn [pi|claude|codex] [new|subject]` → **spawn a peer agent** in a
-  new tab, joined to a shared channel. Agent defaults to `claude`, channel to `new`
-  (see §Spawn a cooperating agent).
+- `/suss-teamup spawn [pi|claude|codex] [flavor] [new|subject]` → **spawn a peer agent**
+  in a new tab, joined to a shared channel. Agent defaults to `claude`, channel to
+  `new`. An optional **flavor** gives the peer a role + protocol — codified so far:
+  `handoff`; planned: `sidecar`, `tester`, `reviewer` (see §Spawn a cooperating
+  agent). Tokens are recognised by value, so order is loose (`spawn handoff`,
+  `spawn codex tester pair-x`).
+- `/suss-teamup handoff …` → alias for `/suss-teamup spawn handoff …` — **the `handoff`
+  spawn flavor**: brief the peer against a durable task file, verify it's *smart*
+  before it grills the user, and gate all code behind that grill (read
+  [resources/handoff.md](resources/handoff.md) before running one).
 
 If no subject is given on a join, ask the user for one — don't guess.
 
@@ -222,10 +229,17 @@ extension's `fs.watch` watcher wakes it; see §6.)
 
 ## Spawn a cooperating agent
 
-`/suss-teamup spawn [pi|claude|codex] [new|subject]` launches another agent in a new
-Ghostty tab, already joined to a shared channel — for **handoff** (a full-context
-agent spins up a fresh one to continue) or **cross-model pairing** (claude ⇄ pi ⇄ codex).
-Agent defaults to `claude`; channel defaults to a new one.
+`/suss-teamup spawn [pi|claude|codex] [flavor] [new|subject]` launches another agent in a
+new Ghostty tab, already joined to a shared channel — for **cross-model pairing**
+(claude ⇄ pi ⇄ codex) or, with a **flavor**, a role the peer plays. Agent defaults to
+`claude`; channel defaults to a new one.
+
+**Flavors** attach a role + protocol to the spawn. Codified so far: **`handoff`** — hand
+a task to a fresh agent and hold its hand to *smart* before it touches code. **Doing a
+handoff? Read [handoff.md](resources/handoff.md) first** (durable task file → brief →
+verified understanding-check gates the grill → no code before the grill → coordinate the
+push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A bare
+`spawn` (no flavor) is just a joined peer you then huddle with (§2).
 
 1. **Resolve agent + channel.** Agent: `pi`, `claude`, or `codex` (default `claude`).
    Channel: a given `subject` → use it; `new` (or omitted) → pick a short slug
