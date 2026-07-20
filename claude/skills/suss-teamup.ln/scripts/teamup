@@ -52,8 +52,8 @@ readonly DEFAULT_WAIT=110   # seconds; stays under the default 120s Bash budget
 
 die() { echo "teamup: $*" >&2; exit 1; }
 
-usage() {
-  cat >&2 <<'EOF'
+usage_text() {
+  cat <<'EOF'
 usage:
   teamup join   <subject> --as <handle> [--pwd <path>] [--doing <text>]
   teamup say    <subject> --as <handle> <message...>      (alias: send)
@@ -70,9 +70,11 @@ usage:
   teamup leave  --all     --as <handle>                   # leave every channel this handle is on
   teamup erase  <subject> [--force]                       # delete a channel + its registry rows (refuses if members remain unless --force)
   teamup channels                                         # list active subjects
+  teamup help                                             # print this help and exit 0 (aliases: -h, --help)
 EOF
-  exit 2
 }
+
+usage() { usage_text >&2; exit 2; }
 
 now()   { date -u +%Y-%m-%dT%H:%M:%SZ; }
 chan()  { printf '%s/%s/channel.tsv' "$BASE" "$1"; }
@@ -432,6 +434,8 @@ case "$CMD" in
     rm -rf "$BASE/$SUBJECT"
     echo "erased channel '$SUBJECT'."
     ;;
+
+  help|-h|--help) usage_text; exit 0 ;;
 
   *) usage ;;
 esac

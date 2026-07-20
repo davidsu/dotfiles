@@ -36,6 +36,11 @@ Run `teamup` with no args (or a bad one) to see usage.
 
 ## Parsing the invocation
 
+- `/suss-teamup help` (aliases `-h`, `--help`) → **print the command surface** and
+  stop — don't join anything. List every `/suss-teamup …` form from this section
+  (join, disconnect/teardown, erase, status, spawn, handoff) and then run
+  `teamup help` to show the raw script subcommands. Treat the literal word `help`
+  as this command, not a channel named "help".
 - `/suss-teamup {subject}` → **join** channel `{subject}`.
 - `/suss-teamup {subject} disconnect` → **leave** `{subject}`.
 - `/suss-teamup disconnect all` → **leave every** channel you're on.
@@ -249,7 +254,8 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
 3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi|codex} {subject}` — opens a tab
    in your `$PWD` running the agent, which joins `{subject}`. claude/pi invoke the skill
    by slash command; codex gets a plain-language prompt naming the skill (codex argv is
-   a prompt, not a command dispatcher).
+   a prompt, not a command dispatcher). A claude peer is launched with `--name {subject}`,
+   so its session name + terminal tab title are set for you — no manual `/rename`.
 4. **Huddle** (§2). For a handoff, post the context the peer needs on the channel
    before it gets going; for pairing, align on who owns what.
 
