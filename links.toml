@@ -34,6 +34,9 @@
 "claude/skills/suss-babysit-pr.ln" = [
   "~/.claude/skills/suss-babysit-pr",
 ]
+"claude/skills/suss-browser.ln" = [
+  "~/.claude/skills/suss-browser",
+]
 "claude/skills/suss-cleanup.ln" = [
   "~/.claude/skills/suss-cleanup",
 ]

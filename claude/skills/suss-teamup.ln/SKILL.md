@@ -255,7 +255,10 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
    in your `$PWD` running the agent, which joins `{subject}`. claude/pi invoke the skill
    by slash command; codex gets a plain-language prompt naming the skill (codex argv is
    a prompt, not a command dispatcher). A claude peer is launched with `--name {subject}`,
-   so its session name + terminal tab title are set for you — no manual `/rename`.
+   so its session name + terminal tab title are set for you — no manual `/rename`. Once
+   the peer is interactive, it also inherits the spawning session's **color** (random if
+   you have none) by keystroking `/color` into its tab — this briefly steals focus to the
+   peer's tab. Pass **`--no-steal`** (alias `--no-color`) to skip the color step.
 4. **Huddle** (§2). For a handoff, post the context the peer needs on the channel
    before it gets going; for pairing, align on who owns what.
 

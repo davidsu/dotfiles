@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # teamup-spawn — launch a cooperating agent in a new Ghostty tab, joined to a channel.
-#   teamup-spawn <claude|pi|codex> <subject> [--dir DIR]
+#   teamup-spawn <claude|pi|codex> <subject> [--dir DIR] [--no-steal|--no-color]
 #
 # Opens a tab (in DIR, default $PWD) running the agent with an initial prompt that
 # invokes the suss-teamup skill to JOIN <subject>. The new agent picks its own
@@ -10,17 +10,75 @@
 # A spawned claude peer is launched with `--name <subject>`, which sets its session
 # name and terminal tab title — so you never hand-run /rename on it. (pi/codex have
 # no equivalent launch flag, so they spawn unnamed.)
+#
+# Color: claude exposes no non-interactive way to set a session's color, so once the
+# peer is interactive we keystroke `/color <color>` into its tab — inheriting the
+# spawning session's color (random if it has none). This STEALS FOCUS to the peer's
+# tab for a moment. Pass --no-steal (alias --no-color) to skip coloring entirely.
 set -eo pipefail
 
+BASE_DIR="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
+member_count() { ls -A "$BASE_DIR/$1/members" 2>/dev/null | wc -l | tr -d ' '; }
+
+# Hidden subcommand (backgrounded by the main flow): wait for the spawned peer to
+# become interactive — proven by it joining the channel — then focus its tab and
+# type `/color <color>`. Best-effort; every failure is silent by design.
+if [ "${1:-}" = __inject_color ]; then
+  subject="$2"; color="$3"; baseline="${4:-0}"
+  for _ in $(seq 1 90); do
+    [ "$(member_count "$subject")" -gt "$baseline" ] && break
+    sleep 0.5
+  done
+  sleep 1   # let the freshly-live TUI settle before it reads typed input
+  cmd="/color"; [ -n "$color" ] && cmd="/color $color"
+  osascript - "$subject" "$cmd" <<'OSA' >/dev/null 2>&1 || true
+on run argv
+  set subj to item 1 of argv
+  set cmd to item 2 of argv
+  tell application "Ghostty" to activate
+  delay 0.3
+  tell application "System Events" to tell process "Ghostty"
+    repeat with b in (radio buttons of tab group 1 of window 1)
+      set t to ""
+      try
+        set t to title of b
+      end try
+      if t contains subj then
+        click b
+        delay 0.4
+        keystroke cmd
+        delay 0.2
+        key code 36 -- Return
+        return
+      end if
+    end repeat
+  end tell
+end run
+OSA
+  exit 0
+fi
+
 agent="${1:-}"; subject="${2:-}"; shift 2 2>/dev/null || true
-dir="$PWD"
+dir="$PWD"; no_color=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --dir) dir="$2"; shift 2 ;;
+    --no-steal|--no-color) no_color=true; shift ;;
     *) echo "teamup-spawn: unknown flag $1" >&2; exit 1 ;;
   esac
 done
-[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi|codex> <subject> [--dir DIR]" >&2; exit 1; }
+[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi|codex> <subject> [--dir DIR] [--no-steal|--no-color]" >&2; exit 1; }
+
+# The spawning session's color lives in its transcript as the last `agentColor`
+# value (absent → no custom color → let /color pick a random one).
+parent_color() {
+  local sid transcript
+  sid="${CLAUDE_CODE_SESSION_ID:-}"
+  [ -n "$sid" ] || return 0
+  transcript="$(rg --files "$HOME/.claude/projects" 2>/dev/null | rg "/${sid}\.jsonl$" | head -1)"
+  [ -n "$transcript" ] || return 0
+  rg -o '"agentColor":"[^"]*"' "$transcript" 2>/dev/null | tail -1 | sed 's/.*:"//;s/"$//'
+}
 
 # cyc = `claude --chrome … --mcp-config {playwright}` so a spawned peer has browser
 # tools. --mcp-config is variadic (space-separated), so a `--` terminates options
@@ -35,4 +93,11 @@ case "$agent" in
   *)      echo "teamup-spawn: agent must be 'claude', 'pi', or 'codex'" >&2; exit 1 ;;
 esac
 
+# Snapshot membership BEFORE the peer joins, so the color injector can detect its
+# arrival (member count ticking up = the peer is interactive).
+baseline="$(member_count "$subject")"
 ghostty_spawn --dir "$dir" --run "$launcher '$invoke'"
+
+if [ "$agent" = claude ] && [ "$no_color" != true ]; then
+  nohup "$0" __inject_color "$subject" "$(parent_color)" "$baseline" >/dev/null 2>&1 &
+fi
