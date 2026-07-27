@@ -85,6 +85,11 @@
   "~/.pi/agent/extensions/claude-code-tools.ts",
 ]
 
+# iterm2 (dynamic profiles are auto-loaded from this directory)
+"iterm2/dynamic-profiles/ghostty.ln.json" = [
+  "~/Library/Application Support/iTerm2/DynamicProfiles/ghostty.json",
+]
+
 # dotconfig (whole directory)
 "config.ln" = [
   "~/.config",

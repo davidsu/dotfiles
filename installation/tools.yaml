@@ -153,6 +153,11 @@ tools:
     brew_type: formula
     description: Lightweight Docker-compatible container runtime
 
+  # Fonts
+  font-jetbrains-mono-nerd-font:
+    brew_type: cask
+    description: JetBrains Mono patched with Nerd Font icons (iTerm2 profile font; Ghostty embeds its own copy)
+
   # GUI applications
   ghostty:
     brew_type: cask

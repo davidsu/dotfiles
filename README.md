@@ -258,6 +258,30 @@ Files that are symlinked use a `.ln` marker in their name (e.g., `zshrc.ln`, `CL
 
 ---
 
+### 🖥️ iTerm2 profile (`~/Library/Application Support/iTerm2/DynamicProfiles/`)
+
+A **dynamic profile** named `Ghostty` that makes iTerm2 look identical to Ghostty, for when
+you need iTerm's clickable file paths (see the iTerm2 post-install step above).
+
+Source: `iterm2/dynamic-profiles/ghostty.ln.json` — iTerm2 auto-loads anything in that
+directory, so no import step is needed. Select it via **Settings → Profiles → Ghostty →
+Other Actions… → Set as Default**.
+
+| Setting | Value |
+|---------|-------|
+| Font | `JetBrainsMonoNFM-Regular 21` (Ghostty's built-in default, at the size from `config.ln/ghostty/config`) |
+| Background / Foreground | `#282C34` / `#FFFFFF` |
+| ANSI palette | Ghostty's 16 defaults (Tomorrow Night) |
+
+> ⚠️ **Edit the JSON, not the GUI.** Dynamic profiles are reloaded from disk, so changes made
+> in iTerm2's settings get overwritten. Colors are written explicitly as `sRGB` because
+> macOS's color picker defaults to Display P3, which silently shifts every value.
+
+**Not matched to Ghostty:** thin strokes (iTerm2 default kept) and selection colors (Ghostty
+inverts fg/bg, which iTerm2 can't express).
+
+---
+
 ## ⌨️ Keyboard Customization
 
 > 🎹 Powered by **Karabiner-Elements**
