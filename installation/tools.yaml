@@ -163,6 +163,12 @@ tools:
     brew_type: cask
     description: Fast, native, GPU-accelerated terminal emulator
 
+  iterm2:
+    brew_type: cask
+    app_path: /Applications/iTerm.app
+    description: Terminal emulator used when clickable file paths matter (Ghostty can't open them)
+    setup_message: "Quit iTerm, run `install-iterm-click-nvim`, relaunch, then set the Ghostty profile as default: Settings → Profiles → Ghostty → Other Actions… → Set as Default."
+
   karabiner-elements:
     brew_type: cask
     description: Powerful keyboard customizer for macOS
