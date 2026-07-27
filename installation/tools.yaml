@@ -51,6 +51,11 @@ tools:
     cmd: rg
     description: Fast line-oriented search tool
 
+  cliclick:
+    brew_type: formula
+    cmd: cliclick
+    description: Synthesize real mouse/keyboard events from the CLI (used to test terminal click handlers)
+
   fd:
     brew_type: formula
     description: Simple, fast alternative to find

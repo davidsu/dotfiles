@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# teamup-spawn — launch a cooperating agent in a new Ghostty tab, joined to a channel.
+# teamup-spawn — launch a cooperating agent in a new terminal tab, joined to a channel.
 #   teamup-spawn <claude|pi|codex> <subject> [--dir DIR] [--no-steal|--no-color]
+# The tab opens in the caller's terminal (Ghostty or iTerm, via term_spawn).
 #
 # Opens a tab (in DIR, default $PWD) running the agent with an initial prompt that
 # invokes the suss-teamup skill to JOIN <subject>. The new agent picks its own
@@ -12,25 +13,51 @@
 # no equivalent launch flag, so they spawn unnamed.)
 #
 # Color: claude exposes no non-interactive way to set a session's color, so once the
-# peer is interactive we keystroke `/color <color>` into its tab — inheriting the
-# spawning session's color (random if it has none). This STEALS FOCUS to the peer's
-# tab for a moment. Pass --no-steal (alias --no-color) to skip coloring entirely.
+# peer is interactive we type `/color <color>` into its tab — inheriting the
+# spawning session's color (random if it has none). On Ghostty this STEALS FOCUS to
+# the peer's tab for a moment (System Events keystrokes need focus); on iTerm it is
+# focus-free (`write text`). Pass --no-steal (alias --no-color) to skip coloring.
 set -eo pipefail
 
 BASE_DIR="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
 member_count() { ls -A "$BASE_DIR/$1/members" 2>/dev/null | wc -l | tr -d ' '; }
 
 # Hidden subcommand (backgrounded by the main flow): wait for the spawned peer to
-# become interactive — proven by it joining the channel — then focus its tab and
-# type `/color <color>`. Best-effort; every failure is silent by design.
+# become interactive — proven by it joining the channel — then type `/color <color>`
+# into its tab. Best-effort; every failure is silent by design.
 if [ "${1:-}" = __inject_color ]; then
-  subject="$2"; color="$3"; baseline="${4:-0}"
+  subject="$2"; color="$3"; baseline="${4:-0}"; terminal="${5:-ghostty}"
   for _ in $(seq 1 90); do
     [ "$(member_count "$subject")" -gt "$baseline" ] && break
     sleep 0.5
   done
   sleep 1   # let the freshly-live TUI settle before it reads typed input
   cmd="/color"; [ -n "$color" ] && cmd="/color $color"
+  if [ "$terminal" = iterm ]; then
+    osascript - "$subject" "$cmd" <<'OSA' >/dev/null 2>&1 || true
+on run argv
+  set subj to item 1 of argv
+  set cmd to item 2 of argv
+  tell application "iTerm2"
+    repeat with w in windows
+      repeat with t in tabs of w
+        repeat with s in sessions of t
+          if (name of s) contains subj then
+            tell s to write text (ASCII character 21) newline NO -- ctrl-U: clear any stray input
+            delay 0.3
+            tell s to write text cmd newline NO
+            delay 1.5 -- claude's slash-command menu must settle before Enter, or the command is swallowed
+            tell s to write text ""
+            return
+          end if
+        end repeat
+      end repeat
+    end repeat
+  end tell
+end run
+OSA
+    exit 0
+  fi
   osascript - "$subject" "$cmd" <<'OSA' >/dev/null 2>&1 || true
 on run argv
   set subj to item 1 of argv
@@ -96,8 +123,9 @@ esac
 # Snapshot membership BEFORE the peer joins, so the color injector can detect its
 # arrival (member count ticking up = the peer is interactive).
 baseline="$(member_count "$subject")"
-ghostty_spawn --dir "$dir" --run "$launcher '$invoke'"
+terminal="$(term_spawn --resolve)"
+term_spawn --dir "$dir" --run "$launcher '$invoke'"
 
 if [ "$agent" = claude ] && [ "$no_color" != true ]; then
-  nohup "$0" __inject_color "$subject" "$(parent_color)" "$baseline" >/dev/null 2>&1 &
+  nohup "$0" __inject_color "$subject" "$(parent_color)" "$baseline" "$terminal" >/dev/null 2>&1 &
 fi

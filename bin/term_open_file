@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# term_open_file — open a file in nvim (cvim) in a NEW terminal tab (Ghostty or iTerm).
+#   term_open_file [--app ghostty|iterm] PATH [LINE [COLUMN]] [CWD]
+# Built for iTerm Semantic History "Run command":
+#   term_open_file --app iterm \1 \2 \(semanticHistory.columnNumber) \5
+# PATH may be relative (resolved against CWD, else $PWD) and may carry a trailing
+# :LINE[:COL] which is peeled off when the part before it is a real file. iTerm
+# substitutes empty tokens when no line/column was clicked, and empty arguments may
+# be dropped entirely — so numeric arguments are LINE then COLUMN, and a non-numeric
+# argument is the CWD, wherever they land.
+set -euo pipefail
+
+app=""
+[ "${1:-}" = "--app" ] && { app="$2"; shift 2; }
+target="${1:-}"; shift || true
+[ -n "$target" ] || { echo "term_open_file: PATH required" >&2; exit 1; }
+
+line=""; column=""; cwd=""
+for arg in "$@"; do
+  case "$arg" in
+    "") ;;
+    *[!0-9]*) cwd="$arg" ;;
+    *) if [ -z "$line" ]; then line="$arg"; else column="$arg"; fi ;;
+  esac
+done
+[ -n "$cwd" ] || cwd="$PWD"
+
+path="$target"
+[[ "$path" = /* ]] || path="$cwd/$path"
+
+peel_trailing_line_and_column() {
+  if [[ "$path" =~ ^(.+):([0-9]+):([0-9]+)$ ]] && [[ -f "${BASH_REMATCH[1]}" ]]; then
+    path="${BASH_REMATCH[1]}"; line="${line:-${BASH_REMATCH[2]}}"; column="${column:-${BASH_REMATCH[3]}}"
+  elif [[ "$path" =~ ^(.+):([0-9]+)$ ]] && [[ -f "${BASH_REMATCH[1]}" ]]; then
+    path="${BASH_REMATCH[1]}"; line="${line:-${BASH_REMATCH[2]}}"
+  fi
+}
+peel_trailing_line_and_column
+
+cursor_flag() {
+  [ -n "$line" ] || return 0
+  if [ -n "$column" ]; then
+    printf '%q' "+call cursor($line,$column)"
+  else
+    printf '+%s' "$line"
+  fi
+}
+
+command="cvim"
+flag="$(cursor_flag)"
+[ -n "$flag" ] && command="$command $flag"
+command="$command -- $(printf '%q' "$path")"
+
+spawn_args=(--dir "$cwd" --run "$command")
+[ -n "$app" ] && spawn_args=(--app "$app" "${spawn_args[@]}")
+exec "$HOME/.dotfiles/bin/term_spawn" "${spawn_args[@]}"

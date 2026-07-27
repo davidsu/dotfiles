@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# term_spawn — open a new tab in the current terminal (Ghostty or iTerm) running CMD.
+#   term_spawn --run CMD [--dir DIR] [--app ghostty|iterm]
+#   term_spawn --resolve             print which terminal would be targeted, and exit
+# CMD is typed into a fresh interactive shell (so aliases like cvim/cyc work).
+# Terminal is picked from --app, else $TERM_PROGRAM, else the frontmost app.
+# Prints an id for the spawned tab (ghostty tab id / iTerm session id).
+set -euo pipefail
+
+dir=""; run=""; app=""; resolve_only=false
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dir) dir="$2"; shift 2 ;;
+    --run) run="$2"; shift 2 ;;
+    --app) app="$2"; shift 2 ;;
+    --resolve) resolve_only=true; shift ;;
+    *) echo "term_spawn: unknown flag $1" >&2; exit 1 ;;
+  esac
+done
+[ -n "$run" ] || [ "$resolve_only" = true ] || { echo "term_spawn: --run CMD is required" >&2; exit 1; }
+
+frontmost_app() {
+  osascript -e 'tell application "System Events" to name of first application process whose frontmost is true'
+}
+
+resolve_terminal() {
+  case "${app:-${TERM_PROGRAM:-$(frontmost_app)}}" in
+    ghostty|Ghostty) echo ghostty ;;
+    iterm|iterm2|iTerm.app|iTerm2|iTerm) echo iterm ;;
+    *) echo unsupported ;;
+  esac
+}
+
+spawn_ghostty() {
+  local args=(--run "$run")
+  [ -n "$dir" ] && args+=(--dir "$dir")
+  exec "$HOME/.dotfiles/bin/ghostty_spawn" "${args[@]}"
+}
+
+spawn_iterm() {
+  local command="$run"
+  [ -n "$dir" ] && command="cd $(printf '%q' "$dir") && $run"
+  osascript - "$command" <<'APPLESCRIPT'
+-- Window state is unreliable: closing is async and iTerm can report zombie
+-- windows with no tabs. Try a new tab in the current window; on any failure
+-- fall back to a new window and poll until a usable session appears.
+on acquireSession()
+	tell application "iTerm2"
+		try
+			tell current window to create tab with default profile
+			return current session of current window
+		on error
+			create window with default profile
+			repeat 30 times
+				try
+					set theSession to current session of current window
+					if theSession is not missing value then return theSession
+				end try
+				delay 0.1
+			end repeat
+			error "iTerm produced no usable session"
+		end try
+	end tell
+end acquireSession
+
+on run argv
+	set theRun to item 1 of argv
+	set theSession to acquireSession()
+	tell application "iTerm2"
+		tell theSession to write text theRun
+		return id of theSession
+	end tell
+end run
+APPLESCRIPT
+}
+
+terminal="$(resolve_terminal)"
+[ "$resolve_only" = true ] && { echo "$terminal"; exit 0; }
+
+case "$terminal" in
+  ghostty) spawn_ghostty ;;
+  iterm) spawn_iterm ;;
+  *) echo "term_spawn: unsupported terminal '${app:-${TERM_PROGRAM:-unknown}}'" >&2; exit 1 ;;
+esac

@@ -101,6 +101,13 @@ After running `./installation/install.ts`, complete these manual steps:
   - Set Ghostty as your default terminal in any tools that support it.
   - Pin Ghostty to the Dock (the installer clears Dock items).
 
+#### iTerm2
+- **Click-to-nvim:** quit iTerm, run `install-iterm-click-nvim`, and relaunch. Cmd-clicking a
+  file path (absolute or relative, with optional `:line` or `:line:col`) opens it in `nvim`
+  (`cvim`) in a new iTerm tab via Semantic History → `bin/term_open_file` → `bin/term_spawn`.
+  Ghostty can't do this: it refuses to open file links on cmd-click (ghostty#11907, closed
+  not-planned), so use iTerm for Claude sessions where clickable paths matter.
+
 ### 3. Shell / dev environment
 
 - Open a new terminal and verify:

@@ -8,3 +8,6 @@ bin/links.ts
 # AI tools
 .claude/settings.local.json
 .aider*
+
+# iTerm runtime files (it creates ~/.config/iterm2 = config.ln/iterm2 on launch)
+config.ln/iterm2/
