@@ -378,10 +378,13 @@ security add-generic-password -a "$USER" -s "TAVILY_API_KEY" -w "your-tavily-key
 
 # Playwright MCP extension token (for Chrome browser control)
 security add-generic-password -a "$USER" -s "PLAYWRIGHT_MCP_EXTENSION_TOKEN" -w "your-playwright-token" -T /usr/bin/security
+
+# Playwright MCP extension token (for Brave browser control)
+security add-generic-password -a "$USER" -s "PLAYWRIGHT_MCP_EXTENSION_TOKEN_BRAVE" -w "your-brave-playwright-token" -T /usr/bin/security
 ```
 
 - Get Tavily key at: **https://tavily.com**
-- Get Playwright token from the Playwright MCP Bridge extension in Chrome
+- Get each Playwright token from the Playwright extension's status page in that browser (each browser's extension generates its own token)
 
 ### ⚙️ How It Works
 
@@ -398,9 +401,11 @@ echo $PLAYWRIGHT_MCP_EXTENSION_TOKEN    # Should show your Playwright token
 
 ### 🌐 Browser Control Aliases
 
-- `cy` / `cyolo` - Claude Code without permission prompts
-- `cyp` - Claude Code with isolated Playwright browser
-- `cyc` - Claude Code with Playwright controlling your Chrome (faster than `--chrome`, no daily logout!)
+- `cyolo` - Claude Code without permission prompts
+- `cyc` - Claude Code with full browser control via three named Playwright MCP servers plus claude-in-chrome:
+  - `playwright-chrome` → your personal Chrome (via the [Playwright extension](https://chromewebstore.google.com/detail/playwright-extension/mmlmfjhmonkocbjadbfplnigmagldckm), token in Keychain as `PLAYWRIGHT_MCP_EXTENSION_TOKEN`)
+  - `playwright-chrome-anon` → anonymous Chrome (fresh in-memory profile)
+  - `playwright-brave` → your personal Brave (same extension installed in Brave, token in Keychain as `PLAYWRIGHT_MCP_EXTENSION_TOKEN_BRAVE`)
 
 ---
 

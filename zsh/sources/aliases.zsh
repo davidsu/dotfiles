@@ -34,9 +34,7 @@ goto() {
 
 # Claude Code
 alias cyolo='claude --dangerously-skip-permissions'
-alias cy='claude --dangerously-skip-permissions'
-alias cyp='claude --chrome --dangerously-skip-permissions --mcp-config '\''{"mcpServers":{"playwright":{"command":"mcp-server-playwright"}}}'\'''
-alias cyc='claude --chrome --dangerously-skip-permissions --mcp-config '\''{"mcpServers":{"playwright":{"command":"playwright-mcp","args":["--extension"],"env":{"PLAYWRIGHT_MCP_EXTENSION_TOKEN":"'"$PLAYWRIGHT_MCP_EXTENSION_TOKEN"'"}}}}'\'''
+alias cyc='claude --chrome --dangerously-skip-permissions --mcp-config '\''{"mcpServers":{"playwright-chrome":{"command":"playwright-mcp","args":["--extension"],"env":{"PLAYWRIGHT_MCP_EXTENSION_TOKEN":"'"$PLAYWRIGHT_MCP_EXTENSION_TOKEN"'"}},"playwright-chrome-anon":{"command":"playwright-mcp","args":["--isolated","--browser","chrome"]},"playwright-brave":{"command":"playwright-mcp","args":["--extension","--executable-path","/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"],"env":{"PLAYWRIGHT_MCP_EXTENSION_TOKEN":"'"$PLAYWRIGHT_MCP_EXTENSION_TOKEN_BRAVE"'"}}}}'\'''
 alias cvim='nvim -c "ClaudeConnect"'
 
 # Codex

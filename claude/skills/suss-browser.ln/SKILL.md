@@ -2,23 +2,30 @@
 name: suss-browser
 description: >
   Use the browser (run/test/interact with a web page). Invoked manually via
-  /suss-browser. Picks the right tool: Playwright MCP vs claude-in-chrome,
-  depending on the session launch mode (cyc vs cyp).
+  /suss-browser. Picks the right tool (Playwright MCP vs claude-in-chrome)
+  and the right browser (personal Chrome, anonymous Chrome, or Brave).
 ---
 
 # suss-browser
 
-Default to the Playwright MCP tools (`mcp__playwright__*`) — load them in one
-ToolSearch call if deferred. claude-in-chrome is weaker: it cannot
-click/scroll/manipulate inside iframes.
+Default to the Playwright MCP tools — load them in one ToolSearch call if
+deferred. claude-in-chrome is weaker: it cannot click/scroll/manipulate
+inside iframes.
 
-Which browser each tool drives depends on how the session was launched
-(check with `pgrep -fl playwright`):
+Each Playwright MCP server name says which browser it drives:
 
-| Launch | Playwright process | Playwright drives | Personal Chrome via |
-|--------|--------------------|-------------------|---------------------|
-| `cyc`  | `playwright-mcp --extension` | David's personal Chrome | Playwright |
-| `cyp`  | `mcp-server-playwright` | isolated browser | claude-in-chrome |
+| Tool namespace | Drives |
+|----------------|--------|
+| `mcp__playwright-chrome__*` | David's personal Chrome (logged in) |
+| `mcp__playwright-chrome-anon__*` | anonymous Chrome (fresh in-memory profile) |
+| `mcp__playwright-brave__*` | David's personal Brave |
+| claude-in-chrome | David's personal Chrome |
 
-Rule: use Playwright for everything, except under `cyp` when the task needs
-David's logged-in personal Chrome — then use claude-in-chrome.
+Rules:
+
+- **Prefer Chrome with the user profile unless explicitly asked otherwise.**
+  Default to `mcp__playwright-chrome__*`; touch `mcp__playwright-brave__*`
+  only when the task names Brave.
+- Use `mcp__playwright-chrome-anon__*` when the task needs a logged-out /
+  clean-profile browser (e.g. testing signup or incognito-like behavior).
+- Use Playwright over claude-in-chrome for everything.
