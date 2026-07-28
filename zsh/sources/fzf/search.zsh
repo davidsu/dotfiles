@@ -3,7 +3,9 @@
 function fag() {
     local matches tmpfile
 
-    matches=$(rg --line-number --column --color=always --smart-case "$@" | \
+    # --max-columns=0 overrides the global ripgrep config's 150-column limit;
+    # fzf needs the full line text to fuzzy-match against
+    matches=$(rg --line-number --column --color=always --smart-case --max-columns=0 "$@" | \
         fzf --multi \
             --ansi \
             --delimiter ':' \
