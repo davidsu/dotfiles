@@ -3,6 +3,10 @@
     {
       "Name": "Ghostty",
       "Guid": "A7F3C1E0-4B2D-4C8A-9E6F-1D3B5C7E9A02",
+      "Custom Directory": "Advanced",
+      "AWDS Window Option": "No",
+      "AWDS Tab Option": "Recycle",
+      "AWDS Pane Option": "Recycle",
       "Normal Font": "JetBrainsMonoNFM-Regular 21",
       "Use Non-ASCII Font": false,
       "Use Bold Font": true,
