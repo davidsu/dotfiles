@@ -32,6 +32,13 @@ tools:
     description: Tavily search MCP server for Claude Code
     requires: node
 
+  playwright-mcp:
+    install_type: native
+    cmd: playwright-mcp
+    install_command: 'npm install -g @playwright/mcp'
+    description: Playwright MCP server (Claude Code's built-in playwright expects this binary on PATH)
+    requires: node
+
   # Build dependencies (required for Neovim and high-performance plugins)
   cmake:
     brew_type: formula
