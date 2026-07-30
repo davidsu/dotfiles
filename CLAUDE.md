@@ -15,7 +15,17 @@ Run all Neovim tests: `cd ~/.dotfiles/config.ln/nvim && nvim --headless -c "Plen
 
 ## Debugging Neovim via MCP
 
-To drive a live Neovim through the `neovim` MCP (`mcp__neovim__*`), spawn one with `ghostty_spawn --run cvim`.
+To drive a live Neovim through the `neovim` MCP (`mcp__neovim__*`), spawn one with
+`term_spawn --app iterm --run cvim --dir DIR` (omit `--app` to follow the current terminal).
+
+`cvim` runs `:ClaudeConnect`, which claims the `/tmp/nvim` socket. The MCP server needs that
+socket to exist when *it* starts: launched with no Neovim running, the process exits and its
+tools vanish for the session — ask the user to reconnect it via `/mcp`. Once running it
+reconnects per request, so restarting Neovim (e.g. to reload a plugin spec) is safe.
+
+Either way, the socket can always be driven directly, which is the fallback while the MCP is
+down: `nvim --server /tmp/nvim --remote-send '...'` and `--remote-expr '...'`.
+Note `:qa` via the MCP hangs (the connection drops before it replies) — expect to `TaskStop` it.
 
 ## Critical Rules
 
