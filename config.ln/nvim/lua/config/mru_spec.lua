@@ -1,7 +1,13 @@
 -- Tests for config/mru.lua
 -- Run with: :PlenaryBustedFile %
 
-local mru_file = vim.fn.expand('~/.local/share/nvim_mru.txt')
+-- Isolated per test process: the real MRU file is shared global state, and
+-- PlenaryBustedDirectory runs spec files in parallel
+vim.g.mru_file = vim.fn.tempname()
+local mru_file = vim.g.mru_file
+-- init.lua already required the module against the real path; reload it so the
+-- override takes effect (setup() clears the augroup, so no stale autocmds remain)
+package.loaded['config.mru'] = nil
 require('config.mru').setup()
 
 local function create_git_repo(path)

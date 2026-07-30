@@ -21,6 +21,9 @@ local has_fugitive = vim.fn.exists(':Git') == 2
 
 local test_dir = nil
 
+-- Pinned so tests never inherit the user's init.defaultBranch
+local default_branch = 'master'
+
 local function run_git(cmd)
   local output = vim.fn.system("cd " .. test_dir .. " && git " .. cmd .. " 2>&1")
   return output:gsub("%s+$", ""), vim.v.shell_error == 0
@@ -29,7 +32,7 @@ end
 local function create_temp_git_repo()
   test_dir = vim.fn.tempname()
   vim.fn.mkdir(test_dir, "p")
-  run_git("init")
+  run_git("init --initial-branch=" .. default_branch)
   run_git("config user.email 'test@test.com'")
   run_git("config user.name 'Test User'")
   return test_dir
@@ -399,7 +402,6 @@ end)
 
 describe("GDiffBranch", function()
   local original_dir
-  local main_commit
 
   before_each(function()
     close_all_windows()
@@ -408,7 +410,7 @@ describe("GDiffBranch", function()
     create_temp_git_repo()
     vim.cmd("cd " .. test_dir)
 
-    main_commit = add_test_commit("main.txt", "main content", "Main commit")
+    add_test_commit("base.txt", "base content", "Base commit")
     run_git("checkout -b feature")
     add_test_commit("feature.txt", "feature content", "Feature commit")
   end)
@@ -420,12 +422,11 @@ describe("GDiffBranch", function()
   end)
 
   it("compares working tree with specified branch", function()
-    vim.cmd("GDiffBranch master")
+    vim.cmd("GDiffBranch " .. default_branch)
     local lines = get_buffer_lines()
     assert.truthy(lines[1]:match("Comparing:"))
     assert.truthy(lines[1]:match("WORKTREE"))
 
-    -- Should show feature.txt as added (exists in working tree, not in master)
     local found_feature = false
     for _, line in ipairs(lines) do
       if line:match("feature.txt") then

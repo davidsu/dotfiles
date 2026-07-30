@@ -1,7 +1,7 @@
 -- MRU (Most Recently Used) files tracker
 -- Tracks recently opened files with cursor position
 
-local mru_file = vim.fn.expand('~/.local/share/nvim_mru.txt')
+local mru_file = vim.fn.expand(vim.g.mru_file or '~/.local/share/nvim_mru.txt')
 
 local IGNORED_FTS = {
   'git', 'gitcommit', 'gitrebase', 'fugitive', 'help', 'qf', 'fzf', 'health', 'NvimTree'
