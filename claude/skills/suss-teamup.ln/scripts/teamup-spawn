@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
 # teamup-spawn — launch a cooperating agent in a new terminal tab, joined to a channel.
-#   teamup-spawn <claude|pi|codex> <subject> [--dir DIR] [--no-steal|--no-color]
+#   teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--no-steal|--no-color]
 # The tab opens in the caller's terminal (Ghostty or iTerm, via term_spawn).
 #
 # Opens a tab (in DIR, default $PWD) running the agent with an initial prompt that
-# invokes the suss-teamup skill to JOIN <subject>. The new agent picks its own
-# handle. You (the caller) should already have joined <subject> yourself so you're
-# present when the peer arrives. Prints the spawned tab id.
+# invokes the suss-teamup skill to JOIN <subject>. You (the caller) should already
+# have joined <subject> yourself so you're present when the peer arrives. Prints the
+# spawned tab id.
 #
-# A spawned claude peer is launched with `--name <subject>`, which sets its session
-# name and terminal tab title — so you never hand-run /rename on it. (pi/codex have
-# no equivalent launch flag, so they spawn unnamed.)
+# The SPAWNER assigns the peer's handle (--as, default <subject>-peer<n>, unique
+# against the roster) and a claude peer is launched with `--name <handle>`, so its
+# session name IS its channel handle and it derives that handle on join — one name
+# in the session, on the channel, and in your `/rename` banner. Naming the session
+# after the <subject> instead (what this did before) gave every peer on a channel
+# the same name, and a peer that picked its own handle answered to a name shown
+# nowhere. (pi/codex have no launch-name flag, so they still spawn unnamed and pick
+# their own handle.)
 #
 # Color: claude exposes no non-interactive way to set a session's color, so once the
 # peer is interactive we type `/color <color>` into its tab — inheriting the
@@ -20,13 +25,13 @@
 set -eo pipefail
 
 BASE_DIR="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
-member_count() { ls -A "$BASE_DIR/$1/members" 2>/dev/null | wc -l | tr -d ' '; }
+member_count() { ls -A "$BASE_DIR/$1/members" 2>/dev/null | wc -l | tr -d ' ' || true; }
 
 # Hidden subcommand (backgrounded by the main flow): wait for the spawned peer to
 # become interactive — proven by it joining the channel — then type `/color <color>`
 # into its tab. Best-effort; every failure is silent by design.
 if [ "${1:-}" = __inject_color ]; then
-  subject="$2"; color="$3"; baseline="${4:-0}"; terminal="${5:-ghostty}"
+  subject="$2"; handle="$3"; color="$4"; baseline="${5:-0}"; terminal="${6:-ghostty}"
   for _ in $(seq 1 90); do
     [ "$(member_count "$subject")" -gt "$baseline" ] && break
     sleep 0.5
@@ -34,7 +39,7 @@ if [ "${1:-}" = __inject_color ]; then
   sleep 1   # let the freshly-live TUI settle before it reads typed input
   cmd="/color"; [ -n "$color" ] && cmd="/color $color"
   if [ "$terminal" = iterm ]; then
-    osascript - "$subject" "$cmd" <<'OSA' >/dev/null 2>&1 || true
+    osascript - "$handle" "$cmd" <<'OSA' >/dev/null 2>&1 || true
 on run argv
   set subj to item 1 of argv
   set cmd to item 2 of argv
@@ -58,7 +63,7 @@ end run
 OSA
     exit 0
   fi
-  osascript - "$subject" "$cmd" <<'OSA' >/dev/null 2>&1 || true
+  osascript - "$handle" "$cmd" <<'OSA' >/dev/null 2>&1 || true
 on run argv
   set subj to item 1 of argv
   set cmd to item 2 of argv
@@ -86,15 +91,26 @@ OSA
 fi
 
 agent="${1:-}"; subject="${2:-}"; shift 2 2>/dev/null || true
-dir="$PWD"; no_color=false
+dir="$PWD"; no_color=false; handle=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    --as)  handle="$2"; shift 2 ;;
     --dir) dir="$2"; shift 2 ;;
     --no-steal|--no-color) no_color=true; shift ;;
     *) echo "teamup-spawn: unknown flag $1" >&2; exit 1 ;;
   esac
 done
-[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi|codex> <subject> [--dir DIR] [--no-steal|--no-color]" >&2; exit 1; }
+[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--no-steal|--no-color]" >&2; exit 1; }
+
+free_peer_handle() {
+  local candidate n=1
+  candidate="$subject-peer"
+  while [ -e "$BASE_DIR/$subject/members/$candidate" ]; do
+    n=$((n + 1)); candidate="$subject-peer$n"
+  done
+  printf '%s' "$candidate"
+}
+[ -n "$handle" ] || handle="$(free_peer_handle)"
 
 # The spawning session's color lives in its transcript as the last `agentColor`
 # value (absent → no custom color → let /color pick a random one).
@@ -114,7 +130,7 @@ parent_color() {
 # bypass flags) does NOT dispatch slash commands from argv — argv is a plain prompt —
 # so it gets a natural-language instruction naming the skill (from ~/.agents/skills).
 case "$agent" in
-  claude) launcher="cyc --name '$subject' --"; invoke="/suss-teamup $subject" ;;
+  claude) launcher="cyc --name '$handle' --"; invoke="/suss-teamup $subject" ;;
   pi)     launcher="pi";   invoke="/skill:suss-teamup $subject" ;;
   codex)  launcher="cody"; invoke="Use the suss-teamup skill. Join channel $subject. Your first action is the teamup join command." ;;
   *)      echo "teamup-spawn: agent must be 'claude', 'pi', or 'codex'" >&2; exit 1 ;;
@@ -125,7 +141,8 @@ esac
 baseline="$(member_count "$subject")"
 terminal="$(term_spawn --resolve)"
 term_spawn --dir "$dir" --run "$launcher '$invoke'"
+echo "spawned $agent on '$subject' as '$handle'."
 
 if [ "$agent" = claude ] && [ "$no_color" != true ]; then
-  nohup "$0" __inject_color "$subject" "$(parent_color)" "$baseline" "$terminal" >/dev/null 2>&1 &
+  nohup "$0" __inject_color "$subject" "$handle" "$(parent_color)" "$baseline" "$terminal" >/dev/null 2>&1 &
 fi
