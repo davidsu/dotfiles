@@ -25,62 +25,82 @@ local function config()
     indent = {
       enable = true,
     },
-
-    -- Configure textobjects
-    textobjects = {
-      select = {
-        enable = true,
-        lookahead = true,     -- Automatically jump forward to textobj
-        keymaps = {
-          -- Functions
-          ['af'] = '@function.outer',
-          ['if'] = '@function.inner',
-          -- Classes
-          ['ac'] = '@class.outer',
-          ['ic'] = '@class.inner',
-          -- Conditionals
-          ['ai'] = '@conditional.outer',
-          ['ii'] = '@conditional.inner',
-          -- Loops
-          ['al'] = '@loop.outer',
-          ['il'] = '@loop.inner',
-          -- Parameters/arguments
-          ['aa'] = '@parameter.outer',
-          ['ia'] = '@parameter.inner',
-        },
-      },
-      move = {
-        enable = true,
-        set_jumps = true,     -- Add jumps to jumplist
-        goto_next_start = {
-          [']m'] = '@class.outer',
-          [']]'] = '@function.outer',
-          [']f'] = '@function.outer',
-        },
-        goto_next_end = {
-          [']['] = '@function.outer',
-        },
-        goto_previous_start = {
-          ['[m'] = '@class.outer',
-          ['[['] = '@function.outer',
-          ['[f'] = '@function.outer',
-        },
-        goto_previous_end = {
-          ['[]'] = '@function.outer',
-        },
-      },
-    },
   })
 end
+
+local selection_keys = {
+  ['af'] = '@function.outer',
+  ['if'] = '@function.inner',
+  ['ac'] = '@class.outer',
+  ['ic'] = '@class.inner',
+  ['ai'] = '@conditional.outer',
+  ['ii'] = '@conditional.inner',
+  ['al'] = '@loop.outer',
+  ['il'] = '@loop.inner',
+  ['aa'] = '@parameter.outer',
+  ['ia'] = '@parameter.inner',
+}
+
+-- '[f'/']f' are deliberately absent: vim-unimpaired owns them for file navigation
+local movement_keys = {
+  goto_next_start = {
+    [']]'] = '@function.outer',
+    [']m'] = '@class.outer',
+  },
+  goto_next_end = {
+    [']['] = '@function.outer',
+  },
+  goto_previous_start = {
+    ['[['] = '@function.outer',
+    ['[m'] = '@class.outer',
+  },
+  goto_previous_end = {
+    ['[]'] = '@function.outer',
+  },
+}
+
+local function map_selection_keys()
+  for key, query in pairs(selection_keys) do
+    vim.keymap.set({ 'x', 'o' }, key, function()
+      require('nvim-treesitter-textobjects.select').select_textobject(query, 'textobjects')
+    end, { silent = true, desc = 'Select ' .. query })
+  end
+end
+
+local function map_movement_keys()
+  for movement, keys in pairs(movement_keys) do
+    for key, query in pairs(keys) do
+      vim.keymap.set({ 'n', 'x', 'o' }, key, function()
+        require('nvim-treesitter-textobjects.move')[movement](query, 'textobjects')
+      end, { silent = true, desc = movement .. ' ' .. query })
+    end
+  end
+end
+
+local function config_textobjects()
+  require('nvim-treesitter-textobjects').setup({
+    select = { lookahead = true },
+    move = { set_jumps = true },
+  })
+  map_selection_keys()
+  map_movement_keys()
+end
+
 return {
   {
     'nvim-treesitter/nvim-treesitter',
-    branch = 'master', -- Use stable master branch for compatibility with textobjects
+    branch = 'master',
     build = ':TSUpdate',
     lazy = false,      -- This plugin does not support lazy-loading
     dependencies = {
       'nvim-treesitter/nvim-treesitter-textobjects',
     },
     config = config,
+  },
+  {
+    'nvim-treesitter/nvim-treesitter-textobjects',
+    branch = 'main',
+    lazy = false,
+    config = config_textobjects,
   },
 }

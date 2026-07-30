@@ -120,6 +120,35 @@ Task docs reference code with root-relative links like `[label](/frontend/a.ts#L
 - 🔄 **Update**: Run `:TSUpdate` after upgrading nvim-treesitter
 - 🔗 **Matchparen**: Highlights matching brackets when cursor is over them
 
+#### 🎯 Syntax-Aware Textobjects (nvim-treesitter-textobjects)
+
+Pinned to the `main` branch, which has no `nvim-treesitter.configs` integration — the
+keymaps are set explicitly in `plugins/treesitter.lua`, not via a `textobjects = {}` block.
+
+**⌨️ Select** (visual + operator-pending, with lookahead):
+
+| Keys | Textobject |
+|------|-----------|
+| `af` / `if` | function outer / inner |
+| `ac` / `ic` | class outer / inner |
+| `ai` / `ii` | conditional outer / inner |
+| `al` / `il` | loop outer / inner |
+| `aa` / `ia` | parameter outer / inner |
+
+**⌨️ Move** (adds to jumplist):
+
+| Keys | Motion |
+|------|--------|
+| `[[` / `]]` | previous / next **function** start |
+| `[m` / `]m` | previous / next **class** start |
+| `[]` / `][` | previous / next **function** end |
+
+⚠️ `[f` / `]f` are **not** bound here — vim-unimpaired owns them for previous/next file.
+
+💡 **Jump to the start of the function you're inside**: use `vafo<Esc>` (or `vaf` then `` `< ``).
+`[[` walks to the previous function start in the file, which for nested callbacks is a
+sibling rather than the enclosing function.
+
 #### 📂 Code Folding (nvim-ufo)
 **Smart fold providers**: LSP → TreeSitter → indent (automatically falls back)
 
