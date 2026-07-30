@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # ghostty_spawn — open a new Ghostty tab running a command, and print its tab id.
 #   ghostty_spawn --run CMD [--dir DIR]
+#   ghostty_spawn --dir DIR              just a shell sitting in DIR
 # CMD is typed into a fresh interactive shell (so aliases like cvim/cyc work).
 set -euo pipefail
 
@@ -12,7 +13,7 @@ while [ $# -gt 0 ]; do
     *) echo "ghostty_spawn: unknown flag $1" >&2; exit 1 ;;
   esac
 done
-[ -n "$run" ] || { echo "ghostty_spawn: --run CMD is required" >&2; exit 1; }
+[ -n "$run" ] || [ -n "$dir" ] || { echo "ghostty_spawn: --run CMD or --dir DIR is required" >&2; exit 1; }
 
 osascript - "$dir" "$run" <<'APPLESCRIPT'
 on run argv
@@ -21,7 +22,7 @@ on run argv
 	tell application "Ghostty"
 		set cfg to new surface configuration
 		if theDir is not "" then set initial working directory of cfg to theDir
-		set initial input of cfg to (theRun & return)
+		if theRun is not "" then set initial input of cfg to (theRun & return)
 		set theTab to (new tab in front window with configuration cfg)
 		return id of theTab
 	end tell

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # term_open_file — open a file in nvim (cvim) in a NEW terminal tab (Ghostty or iTerm).
+# A directory PATH just opens a new tab cd'd into it, with no command.
 #   term_open_file [--app ghostty|iterm] PATH [LINE [COLUMN]] [CWD]
 # Built for iTerm Semantic History "Run command":
 #   term_open_file --app iterm \1 \2 \(semanticHistory.columnNumber) \5
@@ -37,6 +38,14 @@ peel_trailing_line_and_column() {
 }
 peel_trailing_line_and_column
 
+spawn_tab() {
+  local args=("$@")
+  [ -n "$app" ] && args=(--app "$app" "${args[@]}")
+  exec "$HOME/.dotfiles/bin/term_spawn" "${args[@]}"
+}
+
+[ -d "$path" ] && spawn_tab --dir "$path"
+
 cursor_flag() {
   [ -n "$line" ] || return 0
   if [ -n "$column" ]; then
@@ -51,6 +60,4 @@ flag="$(cursor_flag)"
 [ -n "$flag" ] && command="$command $flag"
 command="$command -- $(printf '%q' "$path")"
 
-spawn_args=(--dir "$cwd" --run "$command")
-[ -n "$app" ] && spawn_args=(--app "$app" "${spawn_args[@]}")
-exec "$HOME/.dotfiles/bin/term_spawn" "${spawn_args[@]}"
+spawn_tab --dir "$cwd" --run "$command"

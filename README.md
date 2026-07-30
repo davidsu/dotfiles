@@ -105,6 +105,7 @@ After running `./installation/install.ts`, complete these manual steps:
 - **Click-to-nvim:** quit iTerm, run `install-iterm-click-nvim`, and relaunch. Cmd-clicking a
   file path (absolute or relative, with optional `:line` or `:line:col`) opens it in `nvim`
   (`cvim`) in a new iTerm tab via Semantic History → `bin/term_open_file` → `bin/term_spawn`.
+  A clicked directory instead opens a new tab `cd`'d into it, with no command.
   Ghostty can't do this: it refuses to open file links on cmd-click (ghostty#11907, closed
   not-planned), so use iTerm for Claude sessions where clickable paths matter.
 

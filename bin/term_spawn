@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # term_spawn — open a new tab in the current terminal (Ghostty or iTerm) running CMD.
 #   term_spawn --run CMD [--dir DIR] [--app ghostty|iterm]
+#   term_spawn --dir DIR [--app ghostty|iterm]   just a shell sitting in DIR
 #   term_spawn --resolve             print which terminal would be targeted, and exit
 # CMD is typed into a fresh interactive shell (so aliases like cvim/cyc work).
 # Terminal is picked from --app, else $TERM_PROGRAM, else the frontmost app.
@@ -17,7 +18,7 @@ while [ $# -gt 0 ]; do
     *) echo "term_spawn: unknown flag $1" >&2; exit 1 ;;
   esac
 done
-[ -n "$run" ] || [ "$resolve_only" = true ] || { echo "term_spawn: --run CMD is required" >&2; exit 1; }
+[ -n "$run" ] || [ -n "$dir" ] || [ "$resolve_only" = true ] || { echo "term_spawn: --run CMD or --dir DIR is required" >&2; exit 1; }
 
 frontmost_app() {
   osascript -e 'tell application "System Events" to name of first application process whose frontmost is true'
@@ -32,14 +33,15 @@ resolve_terminal() {
 }
 
 spawn_ghostty() {
-  local args=(--run "$run")
+  local args=()
+  [ -n "$run" ] && args+=(--run "$run")
   [ -n "$dir" ] && args+=(--dir "$dir")
   exec "$HOME/.dotfiles/bin/ghostty_spawn" "${args[@]}"
 }
 
 spawn_iterm() {
   local command="$run"
-  [ -n "$dir" ] && command="cd $(printf '%q' "$dir") && $run"
+  [ -n "$dir" ] && command="cd $(printf '%q' "$dir")${run:+ && $run}"
   osascript - "$command" <<'APPLESCRIPT'
 -- Window state is unreliable: closing is async and iTerm can report zombie
 -- windows with no tabs. Try a new tab in the current window; on any failure
