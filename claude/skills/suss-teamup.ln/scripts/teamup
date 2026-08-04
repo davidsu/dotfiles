@@ -6,6 +6,8 @@
 #     channel.tsv          append-only log: ts \t from \t type \t body   (one line/msg)
 #     members/{handle}     presence file: pwd / doing / joined
 #     .cursor.{handle}     last line number this handle has read
+#     .wait.{handle}       pid of the armed idle listener (the Stop hook's liveness marker)
+#     .woken.{handle}      highest seq a wait has already woken this handle for
 #
 # Each message has a stable id = its 1-based line number in channel.tsv ("seq").
 # recv/peek/wait/join print it as "#<seq>" so any agent can ack a specific
@@ -44,12 +46,34 @@
 #   Wire it per harness. claude-code: ~/.claude/settings.json Stop + SessionEnd.
 #   Other harnesses (e.g. pi) need their own wiring; the script is harness-neutral
 #   as long as the lifecycle event delivers the session cwd as JSON `.cwd` on stdin.
+#
+# FIXED — "the channel woke me for nothing" (2026-08-04)
+#   Symptom: agents kept being re-invoked by a finished background `wait`, ran
+#   `recv`, and found unread=0. Cause: the harness's only wake signal is "the
+#   background process exited", so EVERY exit read as a message — and `wait` had
+#   three exits that were not messages: (a) a duplicate arm printed "already
+#   listening" and exited 0 at once, which the Stop hook's --require-listener then
+#   turned into a per-turn loop (arm blindly -> no-op exit -> wake -> arm again);
+#   (b) a peer's join/leave ping counted as "someone spoke"; (c) an agent's own
+#   guard wrapper around the arm exited after detaching. The invariant now enforced
+#   in `wait` below: a wait exits only when something has happened on the channel
+#   that this handle has not already seen. Duplicate idle arms stand by instead of
+#   exiting, `leave` kills its listener, and `.woken.{handle}` stops a re-armed wait
+#   from re-firing on the message that just woke the agent. A presence ping still
+#   WAKES (it is the only tie-breaker when two agents idle waiting for each other)
+#   but no longer counts as UNREAD anywhere — two questions that had been merged.
+#   Residual (harness-inherent, cannot be fixed here): a message that lands mid-turn
+#   fires the wait immediately, but the completion only reaches the agent after the
+#   turn ends — so if the agent recv'd it at a checkpoint in between, that wake
+#   arrives with nothing left to read. Always `recv` before believing a wake.
 
 set -eo pipefail
 
 readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
 readonly DEFAULT_WAIT=110   # seconds; stays under the default 120s Bash budget
 readonly CLAUDE_SESSIONS="$HOME/.claude/sessions"
+readonly STANDBY_POLL=2      # seconds between ownership re-checks by a standby listener
+readonly CONFIRM_DELAY=1     # seconds an idle listener defers to a foreground reader before firing
 
 die() { echo "teamup: $*" >&2; exit 1; }
 
@@ -67,6 +91,7 @@ usage:
   teamup status --as <handle>                             # no subject: list every team this handle is on + member count
   teamup teams  --session <guid> [--pwd <path>]           # compact one-line joined channels for a statusline (! ask, * unread)
   teamup wait   <subject> --as <handle> [--timeout <sec>] # block until someone speaks (default 110s; 0 = forever, for background idle waits)
+                                                          # exits 0 only with something unread to read, 1 on timeout; a duplicate --timeout 0 stands by instead of exiting
   teamup roster <subject>                                 # who is on the channel
   teamup peek   <subject> [--last <n>]                    # show recent history (default 20)
   teamup leave  <subject> --as <handle>
@@ -84,6 +109,7 @@ chan()  { printf '%s/%s/channel.tsv' "$BASE" "$1"; }
 mdir()  { printf '%s/%s/members' "$BASE" "$1"; }
 cursor(){ printf '%s/%s/.cursor.%s' "$BASE" "$1" "$2"; }
 waitpid(){ printf '%s/%s/.wait.%s' "$BASE" "$1" "$2"; }   # live-listener pidfile
+woken(){ printf '%s/%s/.woken.%s' "$BASE" "$1" "$2"; }    # highest seq a wait has already fired on
 
 # A map so a lifecycle hook can find which channels THIS session joined. One TSV
 # row per join: cwd \t subject \t handle \t session_guid. The hook keys on the
@@ -189,6 +215,79 @@ fresh_lines() { # subject handle
   peer_lines_since "$1" "$2" "$cur"
 }
 
+count_lines() { awk 'END{print NR+0}'; }
+
+# stdin filter: keep only messages someone actually wrote. A ping/bye is presence,
+# not mail — counting it as unread would let a peer merely joining block your idle.
+spoken_only() { awk -F'\t' '$4=="say" || $4=="ack" || $4=="ask"'; }
+
+# stdin filter: what justifies waking an idle agent. Everything a peer wrote, plus a
+# join `ping` — "a new peer appeared" is a cue to open the huddle, and it is the only
+# thing that reaches a peer who joins and then waits to be briefed instead of
+# speaking first (§1/§2 tell it to speak, but nothing enforces that).
+# A `bye` is excluded: a departure is never actionable for an idle agent, and if a
+# leaving peer's parting message matters, that `say` wakes you on its own.
+worth_waking_for() { awk -F'\t' '$4!="bye"'; }
+
+# What a `wait` may legitimately fire on: peer lines this handle has neither read
+# (cursor) nor already been woken for (woken mark) — a conjunction, so a wait
+# re-armed while older unread sits there does NOT re-fire on it. The woken mark is
+# only ever advanced by an actual fire, never by `recv`; letting a checkpoint recv
+# advance it would silently swallow the next real wake.
+# Whether a line counts as UNREAD is a separate question from whether it justifies a
+# WAKE — see spoken_only vs worth_waking_for.
+unwoken_lines() { # subject handle
+  local mark; mark="$(cat "$(woken "$1" "$2")" 2>/dev/null || echo 0)"
+  fresh_lines "$1" "$2" | worth_waking_for | awk -F'\t' -v w="$mark" '$1 > w+0'
+}
+
+record_woken() { # subject handle numbered-lines
+  printf '%s\n' "$3" | awk -F'\t' 'END{print $1}' > "$(woken "$1" "$2")"
+}
+
+# A pid alone is not proof: after a crash (or a `kill -9` sweep) the OS recycles pids,
+# and a stale pidfile then names an innocent process — which would make every standby
+# defer forever to something that is not a listener at all.
+listener_is_alive() { # pidfile — true only for another live process that is a wait
+  local pid; pid="$(cat "$1" 2>/dev/null || true)"
+  [ -n "$pid" ] && [ "$pid" != "$$" ] && kill -0 "$pid" 2>/dev/null &&
+    ps -p "$pid" -o command= 2>/dev/null | grep -q 'teamup wait'
+}
+
+# Take ownership of the listener slot. Check-then-write would let two standbys that
+# spot the same dead owner both believe they won, so this verifies afterwards instead:
+# whoever's pid is in the file at the end owns it, everyone else stands by. Lock-free
+# on purpose — a lock file dropped by a killed process would leave the channel with no
+# possible owner, which is worse than the rare double-wake it prevents.
+claim_listener() { # pidfile
+  listener_is_alive "$1" && return 1
+  echo "$$" > "$1"
+  [ "$(cat "$1" 2>/dev/null || true)" = "$$" ]
+}
+
+release_listener() { # pidfile
+  [ "$(cat "$1" 2>/dev/null || true)" = "$$" ] && rm -f "$1" || true
+}
+
+# No need to kill this handle's listeners: removing the member file makes every one of
+# them — owner and standby alike — exit on its own with a labelled reason. Signalling
+# them instead would hand the agent an unexplained background exit, which is the very
+# confusion this design removes.
+# The member file goes FIRST and the `bye` second: the bye is what wakes the listeners
+# via fswatch, so writing it first lets one check its membership in the moment before
+# the file is gone, conclude it is still a member, and block on until some later
+# message — retiring long after the agent left.
+leave_channel() { # subject handle
+  rm -f "$(mdir "$1")/$2" "$(cursor "$1" "$2")" "$(woken "$1" "$2")"
+  append "$1" "$2" bye "left the channel"
+  echo "left '$1'."
+}
+
+has_spoken() { # subject handle — has this handle ever appeared on the channel?
+  local file; file="$(chan "$1")"
+  [ -f "$file" ] && awk -F'\t' -v me="$2" '$2==me{found=1} END{exit !found}' "$file"
+}
+
 # Highest seq of a message not from this handle (empty if none).
 latest_peer_seq() { # subject handle
   numbered "$1" | awk -F'\t' -v me="$2" '$3!=me{seq=$1} END{if(seq) print seq}'
@@ -226,9 +325,16 @@ require_handle() {
 # session-end) dropped them, so `roster` and the statusline stop under-reporting
 # a live participant that keeps talking. Skips when the member file already
 # exists, so it never clobbers another session holding this handle.
+# RESTORES ONLY, never invents: a handle that has never appeared on the channel is
+# a typo in --as, and materialising it would show peers a phantom member that
+# never answers (and split the typing agent's read-cursor in two).
 ensure_member() { # subject
   local member; member="$(mdir "$1")/$HANDLE"
   [ -f "$member" ] && return 0
+  [ -d "$BASE/$HANDLE" ] &&
+    die "'$HANDLE' is a CHANNEL name, not a handle — you almost certainly meant --as <your handle>"
+  has_spoken "$1" "$HANDLE" ||
+    die "'$HANDLE' has never been on '$1' — typo in --as? to take part, run: teamup join $1 --as $HANDLE"
   mkdir -p "$(mdir "$1")"
   printf 'pwd=%s\ndoing=%s\njoined=%s\nsession=%s\n' \
     "$PWD_ARG" "(rejoined)" "$(now)" "$(session_guid)" > "$member"
@@ -319,6 +425,7 @@ case "$CMD" in
       mv "$(mdir "$s")/$HANDLE" "$(mdir "$s")/$new"
       mv "$(cursor "$s" "$HANDLE")" "$(cursor "$s" "$new")" 2>/dev/null || true
       mv "$(waitpid "$s" "$HANDLE")" "$(waitpid "$s" "$new")" 2>/dev/null || true
+      mv "$(woken "$s" "$HANDLE")" "$(woken "$s" "$new")" 2>/dev/null || true
       # Announced as the NEW handle, so it doesn't land in our own unread.
       append "$s" "$new" say "renamed: $HANDLE → $new — address me as '$new' from now on"
       echo "renamed on '$s': $HANDLE → $new."
@@ -339,9 +446,9 @@ case "$CMD" in
     [ -n "$SUBJECT" ] || usage; require_handle; ensure_member "$SUBJECT"
     fresh="$(fresh_lines "$SUBJECT" "$HANDLE")"
     printf '%s' "$(linecount "$(chan "$SUBJECT")")" > "$(cursor "$SUBJECT" "$HANDLE")"
-    unread="$(printf '%s' "$fresh" | awk 'END{print NR+0}')"
+    unread="$(printf '%s' "$fresh" | spoken_only | count_lines)"
     pending="$(pending_asks_for_me "$SUBJECT" "$HANDLE")"
-    senders="$(printf '%s' "$fresh" | awk -F'\t' 'NF{print $3}' | sort -u | paste -sd, -)"
+    senders="$(printf '%s' "$fresh" | spoken_only | awk -F'\t' 'NF{print $3}' | sort -u | paste -sd, -)"
     printf 'summary: unread=%s asks_for_me=%s from=%s\n' "$unread" "$pending" "${senders:-none}"
     if [ -n "$fresh" ]; then printf '%s\n' "$fresh" | pretty; else echo "  (nothing new)"; fi
     ;;
@@ -376,9 +483,13 @@ case "$CMD" in
       while read -r s; do print_member_count "$s"; done <<< "$subjects"
       exit 0
     fi
-    unread="$(fresh_lines "$SUBJECT" "$HANDLE" | awk 'END{print NR+0}')"
+    unread="$(fresh_lines "$SUBJECT" "$HANDLE" | spoken_only | count_lines)"
     pending="$(pending_asks_for_me "$SUBJECT" "$HANDLE")"
-    printf 'summary: unread=%s asks_for_me=%s\n' "$unread" "$pending"
+    # listener= lets an agent see whether it still needs to arm one WITHOUT wrapping
+    # `wait` in a guard script (whose own exit would wake it — the churn this whole
+    # design is about). Cursor-safe, so it is also the tester's assertion point.
+    listener_is_alive "$(waitpid "$SUBJECT" "$HANDLE")" && live=live || live=none
+    printf 'summary: unread=%s asks_for_me=%s listener=%s\n' "$unread" "$pending" "$live"
     [ "$pending" -gt 0 ] && exit 2
     [ "$unread" -gt 0 ] && exit 1
     exit 0
@@ -399,7 +510,7 @@ case "$CMD" in
     out=""
     while IFS=$'\t' read -r subject handle; do
       [ -n "$subject" ] || continue
-      unread="$(fresh_lines "$subject" "$handle" | awk 'END{print NR+0}')"
+      unread="$(fresh_lines "$subject" "$handle" | spoken_only | count_lines)"
       pending="$(pending_asks_for_me "$subject" "$handle")"
       if [ "$pending" -gt 0 ]; then mark="!"; elif [ "$unread" -gt 0 ]; then mark="*"; else mark=""; fi
       out="$out $subject$mark"
@@ -407,35 +518,73 @@ case "$CMD" in
     printf '%s' "${out# }"
     ;;
 
+  # THE INVARIANT: a background `wait` is the agent's wake signal, and the harness
+  # reads nothing but "the process exited". So this must exit ONLY when something has
+  # happened on the channel that this handle has not already seen — and must SAY which
+  # case it was on its last line. Every unexplained exit lands on the agent as a
+  # message that isn't there.
+  #
+  # Signal-only: never advances the cursor — recv is the sole consumer. A detached
+  # wait's stdout goes to a file the agent never reads, so consuming here would
+  # drop the very message that woke it.
   wait)
     [ -n "$SUBJECT" ] || usage; require_handle; ensure_member "$SUBJECT"
-    # Pidfile = the live-listener marker the Stop hook checks. Single-instance:
-    # if a live wait is already armed for this handle, don't stack a second (a
-    # stale pidfile from a killed wait fails kill -0 and is overwritten). The trap
-    # clears it on exit so a fired/timed-out wait leaves no false "armed" marker.
-    pidf="$(waitpid "$SUBJECT" "$HANDLE")"
-    if [ -f "$pidf" ] && kill -0 "$(cat "$pidf" 2>/dev/null)" 2>/dev/null; then
-      echo "already listening on '$SUBJECT' as '$HANDLE'."; exit 0
-    fi
-    echo "$$" > "$pidf"; trap 'rm -f "$pidf"' EXIT INT TERM
     file="$(chan "$SUBJECT")"
-    # Signal-only: fire on lines that arrive AFTER this wait armed (a local mark,
-    # NOT the shared cursor) and never advance the cursor — recv is the only
-    # consumer. In the background-idle pattern wait's stdout lands in a detached
-    # file the agent never reads, so consuming here would silently drop the very
-    # message that woke it; leaving the cursor untouched lets the woken agent's
-    # next recv surface it. The mark also stops a re-armed wait from instantly
-    # re-firing on lines that are still unread per the cursor.
-    mark="$(linecount "$file")"
-    [ "$TIMEOUT" -gt 0 ] && deadline=$(( $(date +%s) + TIMEOUT )) || deadline=0
+    # An indefinite wait is the armed idle listener the Stop hook looks for, so it
+    # owns the pidfile. Only the owner may fire: a second armed wait would deliver a
+    # duplicate wake for one message, so it STANDS BY instead — blocking (not
+    # exiting, which would itself be a false wake) until the owner dies and it can
+    # take over. That makes arming idempotent from the harness's point of view.
+    # A bounded wait is a foreground blocking read (§huddle): it never touches the
+    # pidfile and always fires, and its own fire marks the message woken — so the
+    # armed listener won't wake the agent again for what it already delivered.
+    if [ "$TIMEOUT" -gt 0 ]; then
+      deadline=$(( $(date +%s) + TIMEOUT )); pidf=""
+    else
+      deadline=0; pidf="$(waitpid "$SUBJECT" "$HANDLE")"
+      listener_is_alive "$pidf" &&
+        echo "standby: '$HANDLE' already has a live listener on '$SUBJECT' — blocking until it needs replacing."
+      # A handler that only cleans up would let the script RESUME after the signal,
+      # so a `kill` on a listener has to route through an explicit exit.
+      trap 'release_listener "$pidf"' EXIT
+      trap 'echo "wake: none reason=killed — this listener was signalled, nothing to read"; exit 1' INT TERM
+    fi
     while :; do
-      fresh="$(peer_lines_since "$SUBJECT" "$HANDLE" "$mark")"
-      if [ -n "$fresh" ]; then
-        printf '%s\n' "$fresh" | pretty
-        exit 0
+      # `leave` (or a lifecycle hook's leave) removes the member file. A listener
+      # that outlived its membership must stop rather than wake the agent about a
+      # channel it is no longer on — and standby listeners hold no pidfile, so this
+      # is the only thing that reaches them.
+      [ -f "$(mdir "$SUBJECT")/$HANDLE" ] ||
+        { echo "wake: none reason=left-channel — '$HANDLE' is no longer on '$SUBJECT'"; exit 1; }
+      if [ -n "$pidf" ] && ! claim_listener "$pidf"; then
+        sleep "$STANDBY_POLL"
+      else
+        fresh="$(unwoken_lines "$SUBJECT" "$HANDLE")"
+        if [ -n "$fresh" ] && [ -n "$pidf" ]; then
+          # Both an idle listener and a foreground huddle wait can wake on the same
+          # channel event, and whoever marks it woken first wins — a coin flip that
+          # can cost the agent two wakes for one message. An idle listener's wake is
+          # only delivered between turns anyway, so it can afford to lose: pause, then
+          # re-check whether a reader in the same turn already claimed this one.
+          sleep "$CONFIRM_DELAY"
+          fresh="$(unwoken_lines "$SUBJECT" "$HANDLE")"
+        fi
+        if [ -n "$fresh" ]; then
+          record_woken "$SUBJECT" "$HANDLE" "$fresh"
+          spoken="$(printf '%s\n' "$fresh" | spoken_only | count_lines)"
+          if [ "$spoken" -gt 0 ]; then
+            printf 'wake: peer-spoke unread=%s — read them with: teamup recv %s --as %s\n' \
+              "$spoken" "$SUBJECT" "$HANDLE"
+          else
+            printf 'wake: peer-joined unread=0 — a new peer is on the channel; open the huddle if you were waiting for one, else re-arm\n'
+          fi
+          printf '%s\n' "$fresh" | pretty
+          exit 0
+        fi
+        block_for_change "$file"
       fi
-      [ "$deadline" -ne 0 ] && [ "$(date +%s)" -ge "$deadline" ] && { echo "  (timeout — no one spoke)"; exit 1; }
-      block_for_change "$file"
+      [ "$deadline" -ne 0 ] && [ "$(date +%s)" -ge "$deadline" ] &&
+        { echo "wake: none reason=timeout — no one spoke, nothing to read"; exit 1; }
     done
     ;;
 
@@ -462,18 +611,12 @@ case "$CMD" in
     if [ "$ALL" = true ]; then
       subjects="$(channels_of_handle "$HANDLE")"
       [ -n "$subjects" ] || { echo "no channels."; exit 0; }
-      while read -r s; do
-        append "$s" "$HANDLE" bye "left the channel"
-        rm -f "$(mdir "$s")/$HANDLE" "$(cursor "$s" "$HANDLE")"
-        echo "left '$s'."
-      done <<< "$subjects"
+      while read -r s; do leave_channel "$s" "$HANDLE"; done <<< "$subjects"
       unregister_handle "$HANDLE"
     else
       [ -n "$SUBJECT" ] || usage
-      append "$SUBJECT" "$HANDLE" bye "left the channel"
-      rm -f "$(mdir "$SUBJECT")/$HANDLE" "$(cursor "$SUBJECT" "$HANDLE")"
+      leave_channel "$SUBJECT" "$HANDLE"
       unregister_session "$SUBJECT" "$HANDLE"
-      echo "left '$SUBJECT'."
     fi
     ;;
 

@@ -58,9 +58,10 @@ case "$EVENT" in
     #       a persistent background wait. pi keeps itself reachable via its extension's
     #       fs.watch watcher (no teamup-wait process), so pi MUST NOT pass the flag —
     #       else it gets told to arm a wait it can't run and doesn't need.
-    # (b)'s liveness marker is the wait's pidfile (.wait.{handle}) + kill -0, NOT a
-    # pgrep match — so a prefix handle / editor showing channel.tsv / regex metachar
-    # can't false-positive, and a killed wait (stale pidfile) reads as "no listener".
+    # Both come from one `status` call, so the hook can't drift from what the agent
+    # sees: unread= counts only what a peer actually wrote (a join/leave ping must
+    # never block an idle), and listener= is the pidfile liveness check — which lives
+    # in `teamup` because it also has to rule out a recycled pid, not just a live one.
     blocked=""
     # The session got renamed out from under the channel, so peers are addressing a
     # name the user can't see anywhere. Nudge ONCE per new name (marker keyed on the
@@ -96,10 +97,10 @@ case "$EVENT" in
         esac
         blocked+="  [$subject] $summary — $action"$'\n'
       elif [ "$require_listener" = true ]; then
-        pidf="$BASE/$subject/.wait.$handle"
-        if ! { [ -f "$pidf" ] && kill -0 "$(cat "$pidf" 2>/dev/null)" 2>/dev/null; }; then
-          blocked+="  [$subject] no live listener — stay reachable while idle by running this in the BACKGROUND: $TEAMUP wait $subject --as $handle --timeout 0"$'\n'
-        fi
+        case "$summary" in
+          *listener=live*) : ;;
+          *) blocked+="  [$subject] no live listener — stay reachable while idle by running EXACTLY this in the BACKGROUND, on its own with nothing chained to it: $TEAMUP wait $subject --as $handle --timeout 0"$'\n' ;;
+        esac
       fi
     done <<< "$my_channels"
     [ -n "$blocked" ] || exit 0

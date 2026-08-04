@@ -137,7 +137,9 @@ teamup wait {subject} --as {handle} --timeout 110   # blocks until a peer speaks
 ```
 
 Keep `--timeout` ≤ 110s so it fits the default Bash budget; for a longer hold,
-raise the Bash tool timeout to match. Loop say→wait until you've reached an
+raise the Bash tool timeout to match. Run this one in the **foreground** — a
+bounded wait that expires exits with nothing to read, which backgrounded would land
+on you as a phantom message (§4). Loop say→wait until you've reached an
 agreement. Look for the three coordination cases:
 
 - **חפיפה / overlap** — you're on different tasks that touch the same code.
@@ -211,6 +213,10 @@ This is a dumb, readable mailbox any agent (Codex / Gemini / Claude) can follow.
   teamup status {subject} --as {handle}   # exit 2 = someone needs you
   ```
 
+  Its summary also reports `listener=live|none` — whether you have an armed idle
+  listener on this channel (§4). Cheap and cursor-safe, so it's the way to check
+  before arming rather than wrapping `wait` in a guard script.
+
   `status` is the piece a harness can wire a `Stop` hook to: block the stop
   while it exits non-zero so an agent can't walk away from an open question.
   An ask aimed at you stays "for you" only until your next message — answer in
@@ -246,8 +252,46 @@ actually read it — `recv` is the only reader that advances your cursor. (This 
 deliberate: a background `wait`'s stdout lands in a detached task-output file you
 never read, so if `wait` advanced the cursor the message would be silently lost.)
 So the on-wake order is **`recv` → then re-arm `wait`**. **Re-arm after each fire**
-if you're still idle. Arming is single-instance: if a live wait is already
-running for this handle, a second `wait` just no-ops.
+if you're still idle. Arming is idempotent and safe to repeat: if a live wait is
+already armed for this handle, the second one **stands by** — it blocks instead of
+exiting, and takes over only if the first dies. (It must not exit: an exiting
+background command IS the wake signal, so a no-op exit would land on you as a
+message that isn't there.)
+
+**Two rules that keep a wake honest** — both learned from agents chasing phantom
+messages for hours:
+
+- **The backgrounded command must BE the wait — not something that starts one.**
+  A prefix in the *same* process is fine (`cd /some/wt && teamup wait … --timeout 0`);
+  what breaks is anything that spawns the wait and returns, `nohup teamup wait … &`
+  above all, and anything chained *after* it. If you do put a command before it,
+  separate with `;` rather than `&&` — a non-zero exit upstream of `&&` short-circuits
+  the wait away, and you get an unexplained background exit *and* no listener. Those exit immediately, and their exit
+  is the wake — you get woken by your own wrapper. You don't need a liveness guard
+  around it either: arming is idempotent (see above), and `teamup status` reports
+  `listener=live|none` if you want to look before arming.
+- **`recv` before you believe a wake.** A wake means "a background command exited",
+  nothing more. `wait` now exits only with something unread, and tells you which
+  case it was on its last line (`wake: peer-spoke …` / `wake: none reason=…`), but
+  one honest false alarm survives by construction: a message that lands mid-turn
+  fires your listener immediately, and the harness only reports that exit after your
+  turn ends — so if you already read it at a checkpoint (§3), the wake arrives with
+  nothing left to read. `recv` says `unread=0`; that's the whole story. Just re-arm
+  and carry on — don't announce a message, and don't go hunting for a lost one.
+- **A `wake: peer-joined` wake is the exception to that** — it is deliberate, and
+  `unread=0` is correct rather than a bug. A new peer is on the channel: if you were
+  idle waiting for company (§1), this is your cue to open the huddle (§2). If you
+  weren't, re-arm and carry on. A peer *leaving* never wakes you — if their parting
+  message mattered, that `say` woke you on its own.
+
+**Never background a *bounded* wait.** A `--timeout` that expires exits with nothing
+to read, which is exactly the false wake this section is about. Bounded waits are for
+blocking in the **foreground**, where you read the result yourself in-turn (that's the
+§2 huddle loop). Backgrounded, always `--timeout 0`.
+
+Also worth knowing: the harness wakes you when **any** background command exits, not
+just a `wait`. A backgrounded build, poll loop, or unrelated script finishing looks
+identical from inside the session. `recv` is what tells the two apart.
 
 On **claude-code this re-arm is enforced**, not left to memory: the Stop hook
 (`--require-listener`, §6) refuses to let you go idle on a channel without a live
@@ -435,7 +479,43 @@ equivalent signal.
   A no-op when you're already a member (your `doing`/`joined` are preserved) and
   it fires no `ping`; it only restores a *missing* entry, never clobbers one a
   live peer holds. `leave` is still the way to actually go — but a lone `say`
-  afterward puts you back.
+  afterward puts you back. It **restores only, never invents**: a handle that has
+  never appeared on the channel is refused with "run join" — otherwise one typo in
+  `--as` materialises a phantom member that peers see arrive, get woken by, and
+  wait on forever.
+- **A wake is a hint, not a fact — always `recv` before believing it.** The harness's
+  only wake signal is "a background command exited", so nothing richer than that can
+  be delivered. `wait` therefore exits only on something this handle has not already
+  seen (a duplicate arm stands by rather than exiting, and `.woken.{handle}` stops a
+  re-armed wait re-firing on the message that just woke you), but two false alarms
+  survive by construction: (a) a message landing mid-turn fires your listener at once
+  while the harness reports that exit only after the turn ends — so if you read it at
+  a checkpoint in between, the wake arrives empty; (b) *any* background command
+  exiting wakes you, teamup or not. `recv` → `unread=0` → re-arm and move on. See §4.
+- **A join ping wakes you but is not mail.** A peer's `join` wakes an armed listener
+  (labelled `wake: peer-joined`) — deliberately, as a safety net for a peer who joins
+  and then waits to be briefed instead of speaking first, which §1/§2 discourage but
+  cannot prevent. A `bye` never wakes anyone: a departure isn't actionable, and a
+  leaving peer's parting `say` wakes you by itself. Neither is counted as unread,
+  marks the statusline, or blocks your idle; only `say`/`ask`/`ack` do. So `recv` can
+  print more lines than its own `unread=` count — the extras are presence, as context.
+- **Two listeners can still double-wake you, rarely.** A foreground huddle `wait` and
+  an armed idle listener can wake on the same channel event; the idle one defers a
+  second and re-checks so the foreground reader normally wins, but a slower reader
+  can lose that race and you get a second, empty wake. Same treatment as any wake:
+  `recv`, see `unread=0`, carry on.
+- **Ownership handoff has a ~2s gap.** When an idle listener fires, its pidfile is
+  freed and a standby claims it within one poll. In that window the Stop hook sees no
+  live listener and tells you to arm one; the arm then just stands by, so the cost is
+  one extra harmless process, never a loop. The claim verifies afterwards which pid actually
+  landed in the file, which narrows the window for two standbys racing a dead owner
+  but does not close it — one can write-and-verify before the other writes, and both
+  then believe they own. Cost is one duplicate wake, and it self-heals.
+- **Upgrading the script does not fix running listeners.** A `wait` already blocking
+  keeps executing the code it started with, so after a change to `teamup` its live
+  listeners keep the old behaviour until they exit — and they hold the pidfile, so a
+  correct new arm stands by behind them. Restart them (`leave` + re-`join`, or end the
+  session) if you need the new behaviour on a channel that already has one armed.
 
 ## Etiquette
 
@@ -457,11 +537,11 @@ equivalent signal.
 | `say {subject} --as H -- <text>` | post a message (alias: `send`) |
 | `ask {subject} --as H [--to P] -- <question>` | post a question; `--to` aims it at peer `P` (shows as their `asks_for_me`) |
 | `ack {subject} --as H [--re <seq>] -- [note]` | answer/clear an ask (default `--re` = latest peer msg); any message from you also clears it |
-| `recv {subject} --as H` | summary line + peers' messages since last read (non-blocking). **The only reader that advances the cursor.** |
-| `status {subject} --as H` | summary line only; cursor untouched; exit `0`=clean `1`=unread `2`=ask-for-you |
+| `recv {subject} --as H` | summary line + peers' messages since last read (non-blocking); join/leave pings print as context but aren't counted as unread. **The only reader that advances the cursor.** |
+| `status {subject} --as H` | summary line only (incl. `listener=live\|none`); cursor untouched; exit `0`=clean `1`=unread `2`=ask-for-you |
 | `status --as H` | no subject: list every team this handle is on + member count |
 | `teams --session G [--pwd P]` | compact one-line joined channels for a statusline (`!` ask, `*` unread); empty when on none |
-| `wait {subject} --as H [--timeout S]` | block until a peer speaks (newly, since this wait armed) or timeout (`--timeout 0` = forever; for background idle waits). **Signal-only: does NOT consume — `recv` after waking.** |
+| `wait {subject} --as H [--timeout S]` | block until a peer speaks something you have not read, or timeout (`--timeout 0` = forever, for background idle waits; a second one stands by instead of exiting). Exits `0` only with something to read, `1` on timeout/left-channel, and names the case on its last `wake:` line. **Signal-only: does NOT consume — `recv` after waking.** |
 | `roster {subject}` | who's on the channel |
 | `peek {subject} [--last N]` | recent history (default 20) |
 | `leave {subject} --as H` / `leave --all --as H` | disconnect |
