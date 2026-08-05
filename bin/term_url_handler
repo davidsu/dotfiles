@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# term_url_handler — iTerm "urlHandlerCommand": every clicked URL lands here.
+#   term_url_handler URL
+# file:// URLs pointing at text/code files (or directories) open in nvim in a new
+# iTerm tab via term_open_file; everything else falls through to macOS `open`.
+# This is what makes cmd-click work on OSC 8 hyperlinks (e.g. Claude Code's tool
+# headers), which bypass Semantic History unless the URL carries a #fragment.
+set -euo pipefail
+
+url="${1:-}"
+[[ -n "$url" ]] || exit 0
+
+open_with_macos() { exec /usr/bin/open "$url"; }
+
+[[ "$url" == file://* ]] || open_with_macos
+
+path="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.unquote(urllib.parse.urlparse(sys.argv[1]).path))' "$url")"
+[[ -e "$path" ]] || open_with_macos
+
+opens_in_nvim() {
+  local mime
+  mime="$(file -b --mime-type "$path")"
+  case "$mime" in
+    inode/directory | text/* | inode/x-empty | application/json | application/javascript | application/xml | application/x-yaml | application/toml) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+opens_in_nvim && exec "$HOME/.dotfiles/bin/term_open_file" --app iterm "$path"
+open_with_macos

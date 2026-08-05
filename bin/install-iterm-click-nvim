@@ -9,23 +9,32 @@
 # interpolated-string syntax the shorthands themselves expand to. Relative clicked
 # paths are resolved by iTerm against the line's tracked working directory.
 #
+# Semantic History only fires on plain-text paths. Clicks on explicit OSC 8
+# hyperlinks (e.g. Claude Code's tool headers) open the link's URL instead, so the
+# advanced setting urlHandlerCommand is also pointed at bin/term_url_handler, which
+# sends file:// URLs of text/code files to nvim and everything else to macOS.
+# \(url) is substituted unescaped, but NSURL rejects raw quotes/spaces, so the
+# single-quoted form below cannot be broken out of.
+#
 # iTerm rewrites its prefs from memory on quit, so this only sticks while iTerm is
 # NOT running. Going through `defaults export/import` keeps cfprefsd in sync.
 set -euo pipefail
 
 domain="com.googlecode.iterm2"
 opener="$HOME/.dotfiles/bin/term_open_file"
+url_handler="$HOME/.dotfiles/bin/term_url_handler"
 snapshot="$(mktemp -t iterm-prefs.XXXXXX).plist"
 
 pgrep -xq iTerm2 && { echo "install-iterm-click-nvim: quit iTerm first — it overwrites its prefs on quit" >&2; exit 1; }
 [ -x "$opener" ] || { echo "install-iterm-click-nvim: $opener not found" >&2; exit 1; }
+[ -x "$url_handler" ] || { echo "install-iterm-click-nvim: $url_handler not found" >&2; exit 1; }
 
 defaults export "$domain" "$snapshot"
 
-python3 - "$snapshot" "$opener --app iterm \\1 \\2 \\(semanticHistory.columnNumber) \\5" <<'PYTHON'
+python3 - "$snapshot" "$opener --app iterm \\1 \\2 \\(semanticHistory.columnNumber) \\5" "$url_handler '\\(url)'" <<'PYTHON'
 import plistlib, sys
 
-snapshot_path, command = sys.argv[1], sys.argv[2]
+snapshot_path, command, url_handler_command = sys.argv[1], sys.argv[2], sys.argv[3]
 with open(snapshot_path, 'rb') as prefs_file:
     prefs = plistlib.load(prefs_file)
 
@@ -35,10 +44,12 @@ if not profiles:
 
 for profile in profiles:
     profile['Semantic History'] = {'action': 'command', 'text': command}
+prefs['urlHandlerCommand'] = url_handler_command
 
 with open(snapshot_path, 'wb') as prefs_file:
     plistlib.dump(prefs, prefs_file)
 print(f"configured {len(profiles)} iTerm profile(s): cmd-click runs {command}")
+print(f"configured urlHandlerCommand: clicked URLs run {url_handler_command}")
 PYTHON
 
 defaults import "$domain" "$snapshot"

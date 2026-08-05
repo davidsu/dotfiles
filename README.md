@@ -108,6 +108,11 @@ After running `./installation/install.ts`, complete these manual steps:
   A clicked directory instead opens a new tab `cd`'d into it, with no command.
   Ghostty can't do this: it refuses to open file links on cmd-click (ghostty#11907, closed
   not-planned), so use iTerm for Claude sessions where clickable paths matter.
+  The same installer also sets iTerm's `urlHandlerCommand` advanced setting to
+  `bin/term_url_handler`, covering clicks on explicit OSC 8 hyperlinks (e.g. Claude Code's
+  `Update(...)` tool headers) that carry fragmentless `file://` URLs and therefore bypass
+  Semantic History: text/code files and directories go to nvim in a new tab, everything
+  else (including `https://` links) falls through to macOS `open`.
 
 ### 3. Shell / dev environment
 
