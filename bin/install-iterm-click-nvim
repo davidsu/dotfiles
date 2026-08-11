@@ -11,7 +11,9 @@
 #
 # Semantic History only fires on plain-text paths. Clicks on explicit OSC 8
 # hyperlinks (e.g. Claude Code's tool headers) open the link's URL instead, so the
-# advanced setting urlHandlerCommand is also pointed at bin/term_url_handler, which
+# advanced setting urlHandlerCommand (iTerm >= 3.7; stored under the
+# first-letter-capitalized key UrlHandlerCommand, per iTerm's advanced-settings
+# key convention) is also pointed at bin/term_url_handler, which
 # sends file:// URLs of text/code files to nvim and everything else to macOS.
 # \(url) is substituted unescaped, but NSURL rejects raw quotes/spaces, so the
 # single-quoted form below cannot be broken out of.
@@ -44,12 +46,13 @@ if not profiles:
 
 for profile in profiles:
     profile['Semantic History'] = {'action': 'command', 'text': command}
-prefs['urlHandlerCommand'] = url_handler_command
+prefs.pop('urlHandlerCommand', None)
+prefs['UrlHandlerCommand'] = url_handler_command
 
 with open(snapshot_path, 'wb') as prefs_file:
     plistlib.dump(prefs, prefs_file)
 print(f"configured {len(profiles)} iTerm profile(s): cmd-click runs {command}")
-print(f"configured urlHandlerCommand: clicked URLs run {url_handler_command}")
+print(f"configured UrlHandlerCommand: clicked URLs run {url_handler_command}")
 PYTHON
 
 defaults import "$domain" "$snapshot"

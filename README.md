@@ -113,6 +113,9 @@ After running `./installation/install.ts`, complete these manual steps:
   `Update(...)` tool headers) that carry fragmentless `file://` URLs and therefore bypass
   Semantic History: text/code files and directories go to nvim in a new tab, everything
   else (including `https://` links) falls through to macOS `open`.
+  `urlHandlerCommand` requires iTerm ≥ 3.7 (the `iterm2@beta` cask), and iTerm reads it
+  from the first-letter-capitalized defaults key `UrlHandlerCommand` (its advanced-settings
+  key convention).
 
 ### 3. Shell / dev environment
 

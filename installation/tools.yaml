@@ -175,10 +175,10 @@ tools:
     brew_type: cask
     description: Fast, native, GPU-accelerated terminal emulator
 
-  iterm2:
+  iterm2@beta:
     brew_type: cask
     app_path: /Applications/iTerm.app
-    description: Terminal emulator used when clickable file paths matter (Ghostty can't open them)
+    description: Terminal emulator used when clickable file paths matter (Ghostty can't open them); beta needed for urlHandlerCommand (OSC 8 links -> nvim), added in 3.7
     setup_message: "Quit iTerm, run `install-iterm-click-nvim`, relaunch, then set the Ghostty profile as default: Settings → Profiles → Ghostty → Other Actions… → Set as Default."
 
   karabiner-elements:
