@@ -123,6 +123,11 @@ map('n', '+', function() win_utils.win_size('+') end, { desc = 'Increase window 
 map('n', '_', function() win_utils.win_size('-') end, { desc = 'Decrease window size', silent = true })
 map('n', '≠', function() win_utils.win_size('+') end, { desc = 'Increase window size (Alt+=)', silent = true })
 map('n', '–', function() win_utils.win_size('-') end, { desc = 'Decrease window size (Alt+-)', silent = true })
+local function resize_height(direction)
+  return function() vim.cmd((vim.v.count > 0 and vim.v.count or 5) .. 'wincmd ' .. direction) end
+end
+map('n', '<C-=>', resize_height('+'), { desc = 'Increase window height (Ctrl+=)', silent = true })
+map('n', '<C-->', resize_height('-'), { desc = 'Decrease window height (Ctrl+-)', silent = true })
 
 -- Toggle resize mode (horizontal vs vertical)
 map('n', '<space>v', win_utils.toggle_force_horizontal_resize, { desc = 'Toggle resize mode', silent = true })
