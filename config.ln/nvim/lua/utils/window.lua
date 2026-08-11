@@ -17,13 +17,13 @@ local function win_move(key)
   end
 end
 
+local function resize_step()
+  return vim.v.count > 0 and vim.v.count or 5
+end
+
 local function horizontal_resize(key)
   local winheight = vim.fn.winheight(0)
-  if key == '+' then
-    vim.cmd('5wincmd +')
-  else
-    vim.cmd('5wincmd -')
-  end
+  vim.cmd(resize_step() .. 'wincmd ' .. key)
   if winheight == vim.fn.winheight(0) then
     force_horizontal_resize = false
   end
@@ -48,11 +48,7 @@ local function win_size(key)
     return
   end
 
-  if key == '+' then
-    vim.cmd('5wincmd >')
-  else
-    vim.cmd('5wincmd <')
-  end
+  vim.cmd(resize_step() .. 'wincmd ' .. (key == '+' and '>' or '<'))
 end
 
 local function toggle_force_horizontal_resize()
@@ -63,6 +59,7 @@ end
 return {
   win_move = win_move,
   win_size = win_size,
+  resize_step = resize_step,
   toggle_force_horizontal_resize = toggle_force_horizontal_resize,
 }
 
