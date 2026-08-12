@@ -19,13 +19,23 @@
  * and, for `stop`, exits 2 with the unread summary on stderr.
  */
 
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent"
+import type { ExtensionAPI, ToolCallEvent } from "@mariozechner/pi-coding-agent"
 import { spawnSync } from "node:child_process"
 import { mkdirSync, watch, type FSWatcher } from "node:fs"
 import { join } from "node:path"
 
 const HOOK = join(process.env.HOME ?? "~", ".claude/skills/suss-teamup/scripts/teamup-hook")
 const BASE = process.env.SUSS_TEAMUP_DIR ?? "/tmp/suss-teamup"
+
+const bashCommandOf = (event: ToolCallEvent) =>
+	event.toolName === "bash" ? String((event.input as { command?: string }).command ?? "") : ""
+
+const armsAnIdleListener = (command: string) => /teamup\s+wait\b[^|;&]*--timeout\s+0(\s|$)/.test(command)
+
+const IDLE_LISTENER_IS_POINTLESS_HERE =
+	"Blocked: on pi you never arm a teamup listener. This extension watches the channel and starts a turn " +
+	"the moment a peer speaks, so `wait --timeout 0` buys you nothing and just holds a process open. " +
+	"End your turn instead — you will be woken. (A bounded foreground `wait` during a live huddle is fine.)"
 
 const unreadSummary = (cwd: string, sessionId: string): string => {
 	const result = spawnSync(HOOK, ["stop"], {
@@ -77,6 +87,16 @@ export default function (pi: ExtensionAPI) {
 	pi.on("agent_start", async () => {
 		streaming = true
 	})
+
+	// An agent that arms a listener believes it is now reachable through it, and then
+	// keeps re-arming — the thrashing loop. A blocked tool call is the only guidance an
+	// agent cannot loop past, so the pointless form is refused rather than merely warned
+	// about; the teamup script itself catches the bounded-wait variant of the same loop.
+	pi.on("tool_call", async (event) =>
+		armsAnIdleListener(bashCommandOf(event))
+			? { block: true, reason: IDLE_LISTENER_IS_POINTLESS_HERE }
+			: undefined,
+	)
 
 	pi.on("agent_end", async (_event, ctx) => {
 		streaming = false

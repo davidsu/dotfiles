@@ -233,6 +233,23 @@ and send deviations back to the decision-owner instead of blessing the shortcut.
 
 ## 4. Background wait — get woken while idle
 
+> 🚨 **On pi, skip this whole section — you have no listener to arm.** pi's extension
+> watches the channel with `fs.watch` and starts a turn the moment a peer speaks, even
+> on a fully idle agent. So on pi:
+> - **Never** run `wait --timeout 0` — the extension **blocks** the call. There is
+>   nothing to arm and nothing to re-arm.
+> - **Never loop `wait` to stay reachable.** `say` → `wait` → "still quiet, re-arming"
+>   → `wait` is the thrashing loop: it burns a turn per lap and reaches nobody. When
+>   there is nothing to do, **end your turn** — that is how you go idle *and* stay
+>   reachable here.
+> - A **bounded foreground `wait`** is still right during a live huddle (§2), where you
+>   read the result yourself in-turn. Once it expires with nothing, the huddle is over:
+>   end the turn instead of waiting again. (`teamup` says so itself on the second expiry
+>   with nothing new on the channel — on **any** harness.)
+>
+> The rest of this section is the **claude-code** protocol, where an armed background
+> `wait` is the only wake signal and the Stop hook enforces one.
+
 When you'd otherwise be waiting (peer is still working, nothing to do), launch a
 blocking wait as a **background** Bash command with **`--timeout 0`** (waits
 indefinitely):
@@ -289,14 +306,19 @@ to read, which is exactly the false wake this section is about. Bounded waits ar
 blocking in the **foreground**, where you read the result yourself in-turn (that's the
 §2 huddle loop). Backgrounded, always `--timeout 0`.
 
+**And never loop bounded waits to stay reachable.** Two expiries in a row with nothing
+new on the channel means the huddle is over and you are just burning a turn per lap;
+`wait` tells you so (`STOP LOOPING: …`) and names the way to go idle on your harness.
+Arm one background `--timeout 0` here and end your turn.
+
 Also worth knowing: the harness wakes you when **any** background command exits, not
 just a `wait`. A backgrounded build, poll loop, or unrelated script finishing looks
 identical from inside the session. `recv` is what tells the two apart.
 
 On **claude-code this re-arm is enforced**, not left to memory: the Stop hook
 (`--require-listener`, §6) refuses to let you go idle on a channel without a live
-`wait`, so a peer message can always reach you. (pi doesn't need this — its
-extension's `fs.watch` watcher wakes it; see §6.)
+`wait`, so a peer message can always reach you. (pi must NOT do this — its extension's
+`fs.watch` watcher wakes it and blocks an armed `wait` outright; see the box above and §6.)
 
 > ⚠️ Still best-effort, not a true interrupt: a background command re-invokes you
 > only **between** turns — while heads-down in a turn you're unreachable. So a
@@ -409,7 +431,10 @@ avoids re-injecting an unchanged nudge (no autonomous loop). For **idle wake** p
 also runs a persistent `fs.watch` on the channel dir (armed at `session_start`,
 torn down at `session_shutdown`): on a change with unread it `sendUserMessage`s to
 wake even a fully idle pi agent — so pi needs no armed `wait` and calls `teamup-hook
-stop` **without `--require-listener`**. **Any other harness** reuses `teamup-hook`
+stop` **without `--require-listener`**. Because the watcher owns the wake, the
+extension also **blocks** any bash `tool_call` that arms an idle listener
+(`teamup wait … --timeout 0`) with the §4 pi rule: agents kept re-arming a listener
+that does nothing here, then looping around it. **Any other harness** reuses `teamup-hook`
 the same way: expose the session GUID as `$TEAMUP_SESSION` for `join`, pass
 `.session_id` (+ `.cwd`) to the hook on stdin, and pass `--require-listener` only if
 its agent can hold a persistent background `wait`.
@@ -456,6 +481,14 @@ equivalent signal.
     ledger + daemon + respawn) — deliberately out of scope for a no-daemon file
     channel. A churn-free wake via tmux `send-keys` was considered and **ruled out**
     (no tmux). See `suss-tasks/learn_gastown_idle.md`.
+- **The anti-thrash guards are heuristics, and one of them is stateful.** The
+  bounded-wait `STOP LOOPING` line fires on the *second* expiry with the channel
+  **unchanged** in between, so a lap in which anyone (you included) speaks resets it —
+  a slow thrash interleaved with chatter never trips it, by design. Its state is one
+  file per handle (`.expiry.{handle}`), moved by `rename` and dropped on `leave`. pi's
+  block on `wait --timeout 0` matches the *command string*, so a command assembled at
+  runtime (via a variable or a wrapper script) slips through — harm bounded to one
+  useless process, since the watcher wakes the agent either way.
 - **pi's nudge is ignorable by design.** claude-code's Stop hook exits 2 and
   *hard-blocks* the turn end; pi can't block, so it *injects* a follow-up the agent
   could still ignore (and the dedupe guard won't re-push an unchanged nudge). So a
@@ -541,7 +574,7 @@ equivalent signal.
 | `status {subject} --as H` | summary line only (incl. `listener=live\|none`); cursor untouched; exit `0`=clean `1`=unread `2`=ask-for-you |
 | `status --as H` | no subject: list every team this handle is on + member count |
 | `teams --session G [--pwd P]` | compact one-line joined channels for a statusline (`!` ask, `*` unread); empty when on none |
-| `wait {subject} --as H [--timeout S]` | block until a peer speaks something you have not read, or timeout (`--timeout 0` = forever, for background idle waits; a second one stands by instead of exiting). Exits `0` only with something to read, `1` on timeout/left-channel, and names the case on its last `wake:` line. **Signal-only: does NOT consume — `recv` after waking.** |
+| `wait {subject} --as H [--timeout S]` | block until a peer speaks something you have not read, or timeout (`--timeout 0` = forever, for background idle waits; a second one stands by instead of exiting). Exits `0` only with something to read, `1` on timeout/left-channel, and names the case on its last `wake:` line. A second expiry with nothing new on the channel says `STOP LOOPING` + how to go idle on your harness. **Signal-only: does NOT consume — `recv` after waking.** Not on pi for idle waiting (§4). |
 | `roster {subject}` | who's on the channel |
 | `peek {subject} [--last N]` | recent history (default 20) |
 | `leave {subject} --as H` / `leave --all --as H` | disconnect |

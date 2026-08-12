@@ -67,6 +67,18 @@
 #   turn ends — so if the agent recv'd it at a checkpoint in between, that wake
 #   arrives with nothing left to read. Always `recv` before believing a wake.
 
+# FIXED — "the agent burned six turns waiting for a quiet channel" (2026-08-12)
+#   Symptom: a pi agent looping say -> `wait --timeout 600` -> "still quiet, re-arming"
+#   -> `wait` ..., a turn per lap, reaching nobody. Cause: §4's arm-and-re-arm protocol
+#   is claude-code's (a background wait IS its only wake signal); on pi the extension's
+#   fs.watch owns the wake, so the right move there is to END THE TURN. The docs said pi
+#   "needs no armed wait" — permission, not prohibition — so agents kept polling.
+#   Guard here (harness-neutral): a bounded wait that expires twice with the channel
+#   UNCHANGED in between is that loop, so the second expiry says STOP LOOPING and names
+#   the way to go idle on this harness. Any traffic in between (a peer's, or the agent's
+#   own) resets it, so a real huddle is never scolded. pi's extension separately blocks
+#   `wait --timeout 0` outright — nothing to arm there.
+
 set -eo pipefail
 
 readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
@@ -110,6 +122,7 @@ mdir()  { printf '%s/%s/members' "$BASE" "$1"; }
 cursor(){ printf '%s/%s/.cursor.%s' "$BASE" "$1" "$2"; }
 waitpid(){ printf '%s/%s/.wait.%s' "$BASE" "$1" "$2"; }   # live-listener pidfile
 woken(){ printf '%s/%s/.woken.%s' "$BASE" "$1" "$2"; }    # highest seq a wait has already fired on
+expiry(){ printf '%s/%s/.expiry.%s' "$BASE" "$1" "$2"; }  # channel size when this handle's last bounded wait expired
 
 # A map so a lifecycle hook can find which channels THIS session joined. One TSV
 # row per join: cwd \t subject \t handle \t session_guid. The hook keys on the
@@ -245,6 +258,32 @@ record_woken() { # subject handle numbered-lines
   printf '%s\n' "$3" | awk -F'\t' 'END{print $1}' > "$(woken "$1" "$2")"
 }
 
+# How to become reachable while idle WITHOUT holding a wait open. Every harness has an
+# answer, and on none of them is it "wait again": which one applies is told by the env
+# var that carries the session GUID (the pi extension exports TEAMUP_SESSION itself).
+how_to_go_idle() {
+  if [ -n "${TEAMUP_SESSION:-}" ]; then
+    echo "on pi: just end your turn — the teamup extension's fs.watch wakes you when a peer speaks."
+  elif [ -n "${CLAUDE_CODE_SESSION_ID:-}" ]; then
+    echo "on claude-code: arm ONE background 'wait --timeout 0' (never a bounded one) and end your turn."
+  else
+    echo "end your turn — unread is surfaced to you the next time you are invoked."
+  fi
+}
+
+# A bounded wait is a foreground blocking read for a live huddle. Expiring twice with
+# the channel unchanged in between is the thrashing loop — say/wait/"still quiet,
+# re-arming"/wait — which costs a turn per lap and reaches no one. Comparing the
+# channel size across expiries needs no counter and cannot misfire: any traffic at all,
+# the agent's own message included, makes this a real huddle rather than a lap.
+report_expiry() { # subject handle
+  local mark size; mark="$(expiry "$1" "$2")"; size="$(linecount "$(chan "$1")")"
+  echo "wake: none reason=timeout — no one spoke, nothing to read"
+  [ "$(cat "$mark" 2>/dev/null || true)" = "$size" ] &&
+    echo "STOP LOOPING: second expiry with nothing new on '$1' — $(how_to_go_idle)"
+  echo "$size" > "$mark"
+}
+
 # A pid alone is not proof: after a crash (or a `kill -9` sweep) the OS recycles pids,
 # and a stale pidfile then names an innocent process — which would make every standby
 # defer forever to something that is not a listener at all.
@@ -278,7 +317,7 @@ release_listener() { # pidfile
 # the file is gone, conclude it is still a member, and block on until some later
 # message — retiring long after the agent left.
 leave_channel() { # subject handle
-  rm -f "$(mdir "$1")/$2" "$(cursor "$1" "$2")" "$(woken "$1" "$2")"
+  rm -f "$(mdir "$1")/$2" "$(cursor "$1" "$2")" "$(woken "$1" "$2")" "$(expiry "$1" "$2")"
   append "$1" "$2" bye "left the channel"
   echo "left '$1'."
 }
@@ -426,6 +465,7 @@ case "$CMD" in
       mv "$(cursor "$s" "$HANDLE")" "$(cursor "$s" "$new")" 2>/dev/null || true
       mv "$(waitpid "$s" "$HANDLE")" "$(waitpid "$s" "$new")" 2>/dev/null || true
       mv "$(woken "$s" "$HANDLE")" "$(woken "$s" "$new")" 2>/dev/null || true
+      mv "$(expiry "$s" "$HANDLE")" "$(expiry "$s" "$new")" 2>/dev/null || true
       # Announced as the NEW handle, so it doesn't land in our own unread.
       append "$s" "$new" say "renamed: $HANDLE → $new — address me as '$new' from now on"
       echo "renamed on '$s': $HANDLE → $new."
@@ -584,7 +624,7 @@ case "$CMD" in
         block_for_change "$file"
       fi
       [ "$deadline" -ne 0 ] && [ "$(date +%s)" -ge "$deadline" ] &&
-        { echo "wake: none reason=timeout — no one spoke, nothing to read"; exit 1; }
+        { report_expiry "$SUBJECT" "$HANDLE"; exit 1; }
     done
     ;;
 
