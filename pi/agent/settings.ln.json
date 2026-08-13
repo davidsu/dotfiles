@@ -1,15 +1,14 @@
 {
-  "skills": [
-    "~/.claude/skills",
-    ".claude/skills"
-  ],
-  "lastChangelogVersion": "0.79.1",
-  "packages": [
-    "npm:pi-mcp-adapter",
-    "../../Developer/pi-agent-teams"
-  ],
+  "skills": ["~/.claude/skills", ".claude/skills"],
+  "lastChangelogVersion": "0.83.0",
+  "packages": ["npm:pi-mcp-adapter", "../../Developer/pi-agent-teams"],
   "defaultProvider": "anthropic",
   "defaultModel": "claude-opus-4-6",
   "defaultThinkingLevel": "off",
-  "hideThinkingBlock": false
+  "hideThinkingBlock": false,
+  "theme": "dark",
+  "warnings": {
+    "anthropicExtraUsage": false
+  }
 }
+
