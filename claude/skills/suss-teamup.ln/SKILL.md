@@ -68,10 +68,18 @@ If no subject is given on a join, ask the user for one — don't guess.
 
 ## Your handle — it's your session name
 
-**Don't invent a handle.** Omit `--as` on join and the script derives it from your
-**claude session name** (the `/rename` banner above your prompt, or `--name` at
-launch) — so the identity peers address is the one the user can actually see on
-their screen. `teamup session-name` prints what it would pick.
+**Don't invent a handle.** Omit `--as` on join and the script derives it from **your
+session's own name** — so the identity peers address is the one the user can actually
+see on their screen. `teamup session-name` prints what it would pick.
+
+| harness | the name it derives from | how the user sets it |
+|---|---|---|
+| claude-code | the session name above your prompt | `/rename {name}`, or `--name` at launch |
+| pi | your **banner** (`/banner` sets the banner and the session name together) | `/banner {name}` |
+| codex | nothing — no session name exists | — |
+
+`teamup name-command` prints the one for *this* harness, so you can tell the user what
+to type without guessing which agent you are.
 
 ```
 teamup join {subject} --pwd "$PWD" --doing "..."      # handle = your session name
@@ -80,15 +88,19 @@ teamup join {subject} --pwd "$PWD" --doing "..."      # handle = your session na
 Only pass `--as {handle}` when you were *given* one (a spawner assigns its peer's
 handle, §Spawn) or when the script says it can't derive one — an unnamed session
 (claude auto-derives a name and tags it `nameSource: derived`; that's noise, not
-identity), or a harness with no session-name file (pi, codex). Then pick something
-short and stable: your worktree/branch basename or your role (`auth-wt`,
-`reviewer`). Either way, **remember it** — you pass `--as {handle}` on every
-*subsequent* call this session. It keys your read-cursor and your roster entry.
+identity — an unnamed pi session simply has no name), or codex, which has none to
+read. Then pick something short and stable: your worktree/branch basename or your
+role (`auth-wt`, `reviewer`) — and **ask the user to make it visible**, with the
+command `teamup name-command` names (`/banner {handle}` on pi, `/rename {handle}` on
+claude); a handle shown nowhere means they can't tell which tab the channel is talking
+about. Either way, **remember it** — you pass `--as {handle}` on every *subsequent*
+call this session. It keys your read-cursor and your roster entry.
 
 ### If the user renames your session mid-flight
 
-Your handle is now a name shown nowhere, and the user can't tell which session the
-channel is talking about. Re-key with a single command:
+A rename is `/rename` on claude and `/banner` on pi — either way your handle is now a
+name shown nowhere, and the user can't tell which session the channel is talking about.
+Re-key with a single command:
 
 ```
 teamup rename --as {old-handle} --to {new-session-name}
@@ -351,13 +363,15 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
    invoke the skill by slash command; codex gets a plain-language prompt naming the skill
    (codex argv is a prompt, not a command dispatcher). **You assign the peer's handle**
    (`--as`, default `{subject}-peer{n}`, checked free against the roster) and it's final:
-   a claude peer launches with `--name {handle}`, so its session name *is* its channel
-   handle and it derives that handle on join — one name in its banner, its tab, and the
-   roster. Give it a descriptive one (`apper-test-runner`) — that string is how the user
-   will find its session. Once
-   the peer is interactive, it also inherits the spawning session's **color** (random if
-   you have none) by keystroking `/color` into its tab — this briefly steals focus to the
-   peer's tab. Pass **`--no-steal`** (alias `--no-color`) to skip the color step.
+   a claude peer launches with `--name {handle}` and a pi peer gets a leading
+   `/banner {handle}` message, so its session name *is* its channel handle and it derives
+   that handle on join — one name on its screen, in its session, and on the roster. (codex
+   can't be named either way and picks its own.) Give it a descriptive one
+   (`apper-test-runner`) — that string is how the user will find its session. A **claude**
+   peer additionally inherits the spawning session's **color** (random if you have none)
+   by keystroking `/color` into its tab once it's interactive — this briefly steals focus
+   to the peer's tab, and only claude needs the detour. Pass **`--no-steal`** (alias
+   `--no-color`) to skip the color step.
 4. **Huddle** (§2). For a handoff, post the context the peer needs on the channel
    before it gets going; for pairing, align on who owns what.
 
@@ -422,7 +436,13 @@ an agent literally cannot end its turn while peer messages sit unread.
 `pi/agent/extensions/teamup.ln.ts`) wires this in. At `session_start` it sets
 `process.env.TEAMUP_SESSION = sessionManager.getSessionId()` so the bash `join`
 inherits pi's session GUID (pi gives bash no session-id env of its own; the GUID
-is stable across resume — it's read from the persisted session header). pi can't
+is stable across resume — it's read from the persisted session header). The same
+bridge carries **identity**: `TEAMUP_SESSION_NAME` (from `pi.getSessionName()`, which
+`/banner` sets — refreshed every `agent_start`, since pi rebuilds the bash env per
+command, so a mid-session `/banner` lands on the next turn) and
+`TEAMUP_NAME_COMMAND=/banner`, which is what `teamup name-command` reports. That makes
+`handle == the name on screen` true on pi too: an unnamed pi session reports no name at
+all, so derivation stays empty rather than inventing one. pi can't
 block a stop, so on `agent_end` it runs `teamup-hook stop` with `{cwd, session_id}`
 and, on exit 2, injects the unread summary via
 `pi.sendUserMessage(..., {deliverAs:"followUp"})` so the agent handles it before
@@ -493,11 +513,15 @@ equivalent signal.
   *hard-blocks* the turn end; pi can't block, so it *injects* a follow-up the agent
   could still ignore (and the dedupe guard won't re-push an unchanged nudge). So a
   pi agent stays a slightly weaker channel citizen than claude-code — expected.
-- **handle == session name is a claude-only guarantee.** Only claude-code writes a
-  live session-name file (`~/.claude/sessions/{pid}.json`) and only claude has a
-  launch-name flag, so only claude peers derive their handle and only claude sessions
-  get the drift nudge. pi and codex peers spawn unnamed and pick their own handle —
-  their channel identity can still be a name the user sees nowhere.
+- **handle == session name holds on claude and pi, never on codex.** claude-code writes
+  a live session-name file (`~/.claude/sessions/{pid}.json`); pi has no such file, so its
+  extension exports `TEAMUP_SESSION_NAME` from `pi.getSessionName()` instead (§6) —
+  different plumbing, same guarantee, and the drift nudge works for both since it goes
+  through `teamup session-name`. codex exposes no session name at all: a codex peer picks
+  its own handle and its channel identity can be a name the user sees nowhere. Two pi
+  caveats: the export is refreshed per turn, so a `/banner` mid-turn reaches the channel
+  only on the next one; and the drift nudge only reaches pi when the hook is spawned by
+  the extension (it inherits the env), never from a bare shell.
 - **Handle guard needs a GUID and isn't atomic.** It refuses a handle held by a
   different session only when both sides have a session GUID — a GUID-less harness
   is unprotected and can stomp a held handle. Two sessions first-claiming the *same
@@ -566,6 +590,7 @@ equivalent signal.
 |---|---|
 | `join {subject} [--as H] [--pwd P] [--doing T]` | announce + register + show roster/history. `--as` defaults to your session name |
 | `session-name [--session G]` | the handle your session name implies (exit 1 if it has no user-chosen name) |
+| `name-command` | what the USER types to name this session: `/rename` on claude, `/banner` on pi |
 | `rename --as H --to N` | re-key H → N on every channel you're on (presence, cursor, listener, registry) + tell peers |
 | `say {subject} --as H -- <text>` | post a message (alias: `send`) |
 | `ask {subject} --as H [--to P] -- <question>` | post a question; `--to` aims it at peer `P` (shows as their `asks_for_me`) |

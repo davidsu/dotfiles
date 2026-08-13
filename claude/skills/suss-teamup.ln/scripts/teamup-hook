@@ -77,9 +77,10 @@ case "$EVENT" in
         # A session named after a CHANNEL is a pre-fix spawn (teamup-spawn used to
         # pass --name {subject}), not a user rename: re-keying to it would hand the
         # agent a channel-shaped handle and orphan every message that named the old
-        # one. Only the user can /rename, so send them that way instead.
+        # one. Only the user can name a session, so send them that way instead — with
+        # the naming command of THIS harness (`/rename` on claude, `/banner` on pi).
         if [ -d "$BASE/$expected" ]; then
-          blocked+="  [identity] this session is named '$expected', which is a CHANNEL name — do NOT re-key to it; ask the user to run '/rename $handle' so the session takes your handle instead"$'\n'
+          blocked+="  [identity] this session is named '$expected', which is a CHANNEL name — do NOT re-key to it; ask the user to run '$("$TEAMUP" name-command) $handle' so the session takes your handle instead"$'\n'
         else
           blocked+="  [identity] peers know you as '$handle' but this session is named '$expected' — re-key so the channel and the session agree: $TEAMUP rename --as $handle --to $expected"$'\n'
         fi

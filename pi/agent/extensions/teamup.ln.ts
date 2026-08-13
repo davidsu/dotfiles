@@ -15,6 +15,13 @@
  * header) into TEAMUP_SESSION; getShellEnv() spreads process.env into every bash
  * tool call, so `join` stamps the registry row with it and the hook keys by GUID.
  *
+ * The same bridge carries the session NAME, so a pi handle can be the name the user
+ * sees on screen (claude derives one from its own session file; pi has none to read).
+ * `/banner` is pi's `/rename`: pi's built-in `/name` sets the session name (footer and
+ * terminal title) but paints no banner, and session-banner.ts — installed alongside this
+ * one — sets both, so `/banner` is what the user is sent to when a handle needs naming.
+ * Re-read every turn, since a rename can land mid-session.
+ *
  * Reuses the harness-neutral `teamup-hook`: it reads `.cwd`/`.session_id` on stdin
  * and, for `stop`, exits 2 with the unread summary on stderr.
  */
@@ -64,10 +71,21 @@ export default function (pi: ExtensionAPI) {
 		pi.sendUserMessage(nudge, { deliverAs: "followUp" })
 	}
 
+	// pi's naming command, and whatever it has named this session so far. An unnamed pi
+	// session reports no name at all, so the handle derivation stays empty rather than
+	// inventing one, and the agent is told to send the user to `/banner`.
+	const publishSessionName = () => {
+		process.env.TEAMUP_NAME_COMMAND = "/banner"
+		const name = pi.getSessionName()
+		if (name) process.env.TEAMUP_SESSION_NAME = name
+		else delete process.env.TEAMUP_SESSION_NAME
+	}
+
 	pi.on("session_start", async (_event, ctx) => {
 		const cwd = ctx.cwd
 		const sessionId = ctx.sessionManager.getSessionId()
 		process.env.TEAMUP_SESSION = sessionId
+		publishSessionName()
 		try {
 			mkdirSync(BASE, { recursive: true })
 			watcher = watch(BASE, { recursive: true }, () => {
@@ -86,6 +104,7 @@ export default function (pi: ExtensionAPI) {
 
 	pi.on("agent_start", async () => {
 		streaming = true
+		publishSessionName()
 	})
 
 	// An agent that arms a listener believes it is now reachable through it, and then

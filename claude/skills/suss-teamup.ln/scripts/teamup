@@ -93,8 +93,9 @@ usage_text() {
   cat <<'EOF'
 usage:
   teamup join   <subject> [--as <handle>] [--pwd <path>] [--doing <text>]  # --as defaults to this session's name
-  teamup rename --as <handle> --to <new>                  # re-key your identity on every channel you're on (after a /rename)
+  teamup rename --as <handle> --to <new>                  # re-key your identity on every channel you're on (after a rename)
   teamup session-name [--session <guid>]                  # the handle this session's name implies; exit 1 if it has no chosen name
+  teamup name-command                                     # what the USER types to name this session (/rename on claude, /banner on pi)
   teamup say    <subject> --as <handle> <message...>      (alias: send)
   teamup ask    <subject> --as <handle> [--to <handle>] <question...>  # a question that needs an answer
   teamup ack    <subject> --as <handle> [--re <seq>] [note...]         # answer/clear an ask (default: latest peer msg)
@@ -139,10 +140,21 @@ session_guid()  { printf '%s' "${TEAMUP_SESSION:-${CLAUDE_CODE_SESSION_ID:-${COD
 # (spaces, slashes) into dashes.
 as_handle() { printf '%s' "$1" | tr -c 'A-Za-z0-9._+-' '-' | sed 's/--*/-/g; s/^-//; s/-$//'; }
 
-# claude-code keeps a live file per session; a name the user chose (/rename, or
-# --name at launch) has no nameSource, a machine-derived one is tagged "derived".
-# Other harnesses write no such file, so they simply get nothing back.
+# What the USER types to (re)name this session — the name a handle is derived from, and
+# the only one they can see on screen. A harness whose naming command isn't claude's
+# `/rename` exports its own: pi's teamup extension exports `/banner`, which sets the
+# banner widget and the session name together.
+name_session_command() { printf '%s' "${TEAMUP_NAME_COMMAND:-/rename}"; }
+
+# The name the USER chose for this session — never a machine-derived one, which is
+# noise rather than identity.
+# A harness that can tell the agent's shell its session name just exports it (pi's
+# teamup extension does, from whatever `/banner` or `pi -n` set; an unnamed pi session
+# reports nothing at all, so this stays empty rather than guessing).
+# claude-code instead keeps a live file per session: a chosen name has no nameSource,
+# a machine-derived one is tagged "derived". A harness with neither gets nothing back.
 chosen_session_name() { # session-guid
+  [ -n "${TEAMUP_SESSION_NAME:-}" ] && { printf '%s' "$TEAMUP_SESSION_NAME"; return 0; }
   [ -n "$1" ] && command -v jq >/dev/null 2>&1 || return 0
   jq -r --arg sid "$1" 'select(.sessionId == $sid and (has("nameSource") | not)) | .name // empty' \
     "$CLAUDE_SESSIONS"/*.json 2>/dev/null | head -1 || true
@@ -356,7 +368,7 @@ block_for_change() { # channel-file
 
 require_handle() {
   [ -n "${HANDLE:-}" ] ||
-    die "missing --as <handle> (this session has no name to derive one from — /rename it, or pass --as)"
+    die "missing --as <handle> (this session has no name to derive one from — ask the user to $(name_session_command) it, or pass --as)"
 }
 
 # An agent actively saying/asking/receiving on a channel IS on it. Restore its
@@ -434,6 +446,12 @@ case "$CMD" in
     "$0" roster "$SUBJECT"
     echo "--- recent ---"
     "$0" peek "$SUBJECT" --last "$LAST"
+    ;;
+
+  # For a hook or an agent that has to tell the USER how to name this session.
+  name-command)
+    name_session_command
+    echo
     ;;
 
   session-name)

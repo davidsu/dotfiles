@@ -8,36 +8,42 @@
 # have joined <subject> yourself so you're present when the peer arrives. Prints the
 # spawned tab id.
 #
-# The SPAWNER assigns the peer's handle (--as, default <subject>-peer<n>, unique
-# against the roster) and a claude peer is launched with `--name <handle>`, so its
-# session name IS its channel handle and it derives that handle on join — one name
-# in the session, on the channel, and in your `/rename` banner. Naming the session
-# after the <subject> instead (what this did before) gave every peer on a channel
-# the same name, and a peer that picked its own handle answered to a name shown
-# nowhere. (pi/codex have no launch-name flag, so they still spawn unnamed and pick
-# their own handle.)
+# The SPAWNER assigns the peer's handle (--as, default <subject>-peer<n>, unique against
+# the roster) and a claude or pi peer is named after it before it joins, so its session
+# name IS its channel handle and it derives that handle on join — one name in the
+# session, on the channel, and on the user's screen. Naming the session after the
+# <subject> instead (what this did before) gave every peer on a channel the same name,
+# and a peer that picked its own handle answered to a name shown nowhere.
+#   claude -> `--name <handle>` at launch.
+#   pi     -> a leading `/banner <handle>` argv message: pi dispatches slash commands
+#             from argv and runs several messages in order, so the peer names ITSELF
+#             before it joins — deterministic and focus-free, unlike a keystroke.
+#             `/banner` is pi's `/rename`: it sets the session name the handle is derived
+#             from (pi puts it in the footer and the terminal title) and paints the
+#             banner, which pi's built-in `/name` does not.
+#   codex  -> no launch-name flag and no argv command dispatch, so it still spawns
+#             unnamed and picks its own handle.
 #
-# Color: claude exposes no non-interactive way to set a session's color, so once the
-# peer is interactive we type `/color <color>` into its tab — inheriting the
-# spawning session's color (random if it has none). On Ghostty this STEALS FOCUS to
-# the peer's tab for a moment (System Events keystrokes need focus); on iTerm it is
-# focus-free (`write text`). Pass --no-steal (alias --no-color) to skip coloring.
+# Color: claude exposes no non-interactive way to set a session's color, so once the peer
+# is interactive we type `/color <color>` into its tab — inheriting the spawning session's
+# color (random if it has none). On Ghostty this STEALS FOCUS to the peer's tab for a
+# moment (System Events keystrokes need focus); on iTerm it is focus-free (`write text`).
+# Pass --no-steal (alias --no-color) to skip it. Only claude needs this detour.
 set -eo pipefail
 
 BASE_DIR="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
 member_count() { ls -A "$BASE_DIR/$1/members" 2>/dev/null | wc -l | tr -d ' ' || true; }
 
 # Hidden subcommand (backgrounded by the main flow): wait for the spawned peer to
-# become interactive — proven by it joining the channel — then type `/color <color>`
+# become interactive — proven by it joining the channel — then type one slash command
 # into its tab. Best-effort; every failure is silent by design.
-if [ "${1:-}" = __inject_color ]; then
-  subject="$2"; handle="$3"; color="$4"; baseline="${5:-0}"; terminal="${6:-ghostty}"
+if [ "${1:-}" = __inject_cmd ]; then
+  subject="$2"; handle="$3"; cmd="$4"; baseline="${5:-0}"; terminal="${6:-ghostty}"
   for _ in $(seq 1 90); do
     [ "$(member_count "$subject")" -gt "$baseline" ] && break
     sleep 0.5
   done
   sleep 1   # let the freshly-live TUI settle before it reads typed input
-  cmd="/color"; [ -n "$color" ] && cmd="/color $color"
   if [ "$terminal" = iterm ]; then
     osascript - "$handle" "$cmd" <<'OSA' >/dev/null 2>&1 || true
 on run argv
@@ -129,20 +135,28 @@ parent_color() {
 # skill globally as /suss-teamup; pi invokes skills as /skill:<name>. codex (cody =
 # bypass flags) does NOT dispatch slash commands from argv — argv is a plain prompt —
 # so it gets a natural-language instruction naming the skill (from ~/.agents/skills).
+# `|| true` because no color is the normal case (an uncolored spawner, or a transcript
+# with no agentColor yet), and pipefail would otherwise make that abort the spawn.
+color="$(parent_color || true)"
 case "$agent" in
-  claude) launcher="cyc --name '$handle' --"; invoke="/suss-teamup $subject" ;;
-  pi)     launcher="pi";   invoke="/skill:suss-teamup $subject" ;;
-  codex)  launcher="cody"; invoke="Use the suss-teamup skill. Join channel $subject. Your first action is the teamup join command." ;;
+  # A bare `/color` lets claude pick a random one, which is right when the spawner has none.
+  claude) run="cyc --name '$handle' -- '/suss-teamup $subject'"; inject="/color${color:+ $color}" ;;
+  # pi takes several argv messages and runs them in order, so it names ITSELF before it
+  # joins — no keystroke injection, no focus steal. `/banner` is pi's `/rename`: it sets
+  # the session name the handle is derived from AND paints the banner, which is the only
+  # place the user can see which peer a tab is.
+  pi)     run="pi '/banner $handle' '/skill:suss-teamup $subject'"; inject="" ;;
+  codex)  run="cody 'Use the suss-teamup skill. Join channel $subject. Your first action is the teamup join command.'"; inject="" ;;
   *)      echo "teamup-spawn: agent must be 'claude', 'pi', or 'codex'" >&2; exit 1 ;;
 esac
 
-# Snapshot membership BEFORE the peer joins, so the color injector can detect its
-# arrival (member count ticking up = the peer is interactive).
+# Snapshot membership BEFORE the peer joins, so the injector can detect its arrival
+# (member count ticking up = the peer is interactive).
 baseline="$(member_count "$subject")"
 terminal="$(term_spawn --resolve)"
-term_spawn --dir "$dir" --run "$launcher '$invoke'"
+term_spawn --dir "$dir" --run "$run"
 echo "spawned $agent on '$subject' as '$handle'."
 
-if [ "$agent" = claude ] && [ "$no_color" != true ]; then
-  nohup "$0" __inject_color "$subject" "$handle" "$(parent_color)" "$baseline" "$terminal" >/dev/null 2>&1 &
+if [ -n "$inject" ] && [ "$no_color" != true ]; then
+  nohup "$0" __inject_cmd "$subject" "$handle" "$inject" "$baseline" "$terminal" >/dev/null 2>&1 &
 fi
