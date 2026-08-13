@@ -6,32 +6,54 @@
  *   ▶▶ bypass permissions on (shift+tab to cycle) · PR #4321
  */
 
-import type { AssistantMessage } from "@mariozechner/pi-ai";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
+import { truncateToWidth } from "@mariozechner/pi-tui";
 import { spawnSync } from "node:child_process";
 import * as path from "node:path";
 
 const TEAMUP = path.join(process.env.HOME ?? "~", ".claude/skills/suss-teamup/scripts/teamup");
 
-// Joined teamup channels for a session, cached so a frequent re-render doesn't
-// spawn the script every frame. Markers: ! = ask aimed at you, * = unread.
-function makeTeamsReader(sessionId: string): () => string {
+const GIT_INDICATORS: Array<{ args: string[]; symbol: string; color: string }> = [
+	{ args: ["diff", "--cached", "--quiet"], symbol: "✚", color: "\x1b[33m" },
+	{ args: ["diff", "--quiet"], symbol: "✭", color: "\x1b[32m" },
+	{ args: ["ls-files", "--others", "--exclude-standard"], symbol: "✱", color: "\x1b[36m" },
+];
+
+function makeGitStatusReader(cwd: string): () => string {
+	return makeCachedReader(2000, () => {
+		let status = "";
+		for (const { args, symbol, color } of GIT_INDICATORS) {
+			const result = spawnSync("git", args, { cwd, encoding: "utf-8" });
+			const dirty = args[0] === "ls-files" ? (result.stdout ?? "").trim().length > 0 : result.status !== 0;
+			if (dirty) status += `${color}${symbol}\x1b[0m`;
+		}
+		return status;
+	});
+}
+
+function makeCachedReader(intervalMs: number, read: () => string): () => string {
 	let cached = "";
 	let cachedAt = 0;
 	return () => {
 		const now = Date.now();
-		if (now - cachedAt < 1500) return cached;
+		if (now - cachedAt < intervalMs) return cached;
 		cachedAt = now;
-		const result = spawnSync(TEAMUP, ["teams", "--session", sessionId], { encoding: "utf-8" });
-		cached = result.status === 0 ? (result.stdout ?? "").trim() : "";
+		cached = read();
 		return cached;
 	};
+}
+
+function makeTeamsReader(sessionId: string): () => string {
+	return makeCachedReader(1500, () => {
+		const result = spawnSync(TEAMUP, ["teams", "--session", sessionId], { encoding: "utf-8" });
+		return result.status === 0 ? (result.stdout ?? "").trim() : "";
+	});
 }
 
 export default function (pi: ExtensionAPI) {
 	pi.on("session_start", async (_event, ctx) => {
 		const getTeams = makeTeamsReader(ctx.sessionManager.getSessionId());
+		const getGitStatus = makeGitStatusReader(ctx.cwd);
 		ctx.ui.setFooter((tui, theme, footerData) => {
 			const unsub = footerData.onBranchChange(() => tui.requestRender());
 
@@ -56,9 +78,10 @@ export default function (pi: ExtensionAPI) {
 					// Show parent/current like Claude Code does
 					const displayPath = shortenPath(shortPath);
 
-					// Git branch
+					// Git branch + status indicators (✚ staged, ✭ modified, ✱ untracked)
 					const branch = footerData.getGitBranch();
-					const branchStr = branch ? `(${branch})` : "";
+					const gitStatus = branch ? getGitStatus() : "";
+					const branchStr = branch ? `(${branch}${gitStatus})` : "";
 
 					// Extension statuses (for permission mode, etc.)
 					const statuses = footerData.getExtensionStatuses();

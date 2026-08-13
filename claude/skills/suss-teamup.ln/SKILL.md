@@ -89,11 +89,17 @@ Only pass `--as {handle}` when you were *given* one (a spawner assigns its peer'
 handle, §Spawn) or when the script says it can't derive one — an unnamed session
 (claude auto-derives a name and tags it `nameSource: derived`; that's noise, not
 identity — an unnamed pi session simply has no name), or codex, which has none to
-read. Then pick something short and stable: your worktree/branch basename or your
-role (`auth-wt`, `reviewer`) — and **ask the user to make it visible**, with the
-command `teamup name-command` names (`/banner {handle}` on pi, `/rename {handle}` on
-claude); a handle shown nowhere means they can't tell which tab the channel is talking
-about. Either way, **remember it** — you pass `--as {handle}` on every *subsequent*
+read. Then **pick a handle yourself and make it visible** — don't ask the user, just
+do it:
+
+1. Choose something short and stable: `{cwd-basename}-{agent}` (e.g. `dotfiles-pi`,
+   `apper-claude`) or your role (`auth-reviewer`).
+2. Join with `--as {handle}`.
+3. **Immediately** make it visible on screen by running the naming command for your
+   harness: on pi run `/banner {handle}`, on claude run `/rename {handle}`. This way
+   the user can tell which tab the channel is talking about.
+
+Either way, **remember it** — you pass `--as {handle}` on every *subsequent*
 call this session. It keys your read-cursor and your roster entry.
 
 ### If the user renames your session mid-flight
