@@ -571,7 +571,8 @@ case "$CMD" in
       unread="$(fresh_lines "$subject" "$handle" | spoken_only | count_lines)"
       pending="$(pending_asks_for_me "$subject" "$handle")"
       if [ "$pending" -gt 0 ]; then mark="!"; elif [ "$unread" -gt 0 ]; then mark="*"; else mark=""; fi
-      out="$out $subject$mark"
+      membercount="$(ls -A "$(mdir "$subject")" 2>/dev/null | wc -l | tr -d ' ')"
+      out="$out $subject($membercount)$mark"
     done <<< "$rows"
     printf '%s' "${out# }"
     ;;
