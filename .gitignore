@@ -11,3 +11,7 @@ bin/links.ts
 
 # iTerm runtime files (it creates ~/.config/iterm2 = config.ln/iterm2 on launch)
 config.ln/iterm2/
+
+# excalidraw skill renderer runtime (created by uv sync on first render)
+claude/skills/excalidraw.ln/references/.venv/
+claude/skills/excalidraw.ln/references/uv.lock
