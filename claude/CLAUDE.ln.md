@@ -12,6 +12,17 @@ This ensures you follow clean code principles and coding standards automatically
 
 **CRITICAL**: NEVER guess. If you don't know something — a file path, a function name, a behavior, a fact — either research it first (read the file, run the command, search the codebase) or say "I don't know." Ask the user to clarify if needed. Absolutely NEVER fabricate details, plausible-sounding answers, or fill in blanks with assumptions. Wrong information is worse than no information.
 
+## Always Show Proof
+
+**CRITICAL**: When reporting findings from external data — logs, metrics, dashboards, DB queries, web sources — every claim must carry a pointer the user can open themselves, captured while the evidence is in front of you:
+
+- **Metrics / logs / dashboards** → the URL encoding the exact query and timeframe
+- **Command / query results** → the command and its relevant output
+- **Code** → `path/file.ext:line`
+- **External facts** → the source URL
+
+Evidence only you saw is not evidence. No pointer → mark the claim unverified. (The user can also demand proof after the fact via `/suss-proof`.)
+
 ## Ask When Uncertain
 
 If you're uncertain about requirements, ask for clarification BEFORE implementing. If an attempt fails and you still don't understand, STOP and ask - don't loop through guesses.

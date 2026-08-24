@@ -40,6 +40,9 @@
 "claude/skills/suss-cleanup.ln" = [
   "~/.claude/skills/suss-cleanup",
 ]
+"claude/skills/suss-proof.ln" = [
+  "~/.claude/skills/suss-proof",
+]
 "claude/skills/suss-tasks.ln" = [
   "~/.claude/skills/suss-tasks",
 ]
