@@ -15,3 +15,6 @@ config.ln/iterm2/
 # excalidraw skill renderer runtime (created by uv sync on first render)
 claude/skills/excalidraw.ln/references/.venv/
 claude/skills/excalidraw.ln/references/uv.lock
+
+# b44sync runtime config (created on first run; holds an API key)
+config.ln/b44sync/
