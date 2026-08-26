@@ -10,11 +10,23 @@ set -euo pipefail
 url="${1:-}"
 [[ -n "$url" ]] || exit 0
 
+# Temporary debug log — remove after verifying Claude Code URL format
+echo "$(date '+%H:%M:%S') url_handler: $url" >> /tmp/term_url_handler.log
+
 open_with_macos() { exec /usr/bin/open "$url"; }
 
-[[ "$url" == file://* ]] || open_with_macos
-
-path="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.unquote(urllib.parse.urlparse(sys.argv[1]).path))' "$url")"
+# Claude Code emits OSC 8 hyperlinks with https:// + a local path as the URL
+# (e.g. https:///Users/foo/bar or https://$HOME/bar). Detect these and treat
+# them as local paths rather than opening a browser.
+if [[ "$url" == file://* ]]; then
+  path="$(python3 -c 'import sys, urllib.parse; print(urllib.parse.unquote(urllib.parse.urlparse(sys.argv[1]).path))' "$url")"
+elif [[ "$url" =~ ^https?://(/.+)$ ]]; then
+  path="${BASH_REMATCH[1]}"
+elif [[ "$url" =~ ^https?://\$HOME/(.+)$ ]] || [[ "$url" =~ ^https?://~/.(.+)$ ]]; then
+  path="$HOME/${BASH_REMATCH[1]}"
+else
+  open_with_macos
+fi
 [[ -e "$path" ]] || open_with_macos
 
 opens_in_nvim() {
