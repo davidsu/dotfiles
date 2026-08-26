@@ -1,52 +1,65 @@
-import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, RegisteredCommand } from "@mariozechner/pi-coding-agent";
 import { truncateToWidth, visibleWidth } from "@mariozechner/pi-tui";
 
-// Visually distinct background colors — all readable with white bold text
-const PALETTES = [
-  { bg: [40, 80, 120], label: "steel" },
-  { bg: [120, 40, 80], label: "berry" },
-  { bg: [80, 100, 40], label: "olive" },
-  { bg: [100, 50, 120], label: "plum" },
-  { bg: [40, 100, 90], label: "teal" },
-  { bg: [130, 70, 30], label: "amber" },
-  { bg: [60, 60, 120], label: "indigo" },
-  { bg: [120, 50, 50], label: "brick" },
-  { bg: [50, 90, 60], label: "forest" },
-  { bg: [90, 60, 100], label: "mauve" },
-];
+const COLORS: Record<string, [number, number, number]> = {
+  red: [120, 50, 50],
+  blue: [40, 80, 120],
+  green: [50, 90, 60],
+  yellow: [80, 100, 40],
+  purple: [100, 50, 120],
+  orange: [130, 70, 30],
+  pink: [120, 40, 80],
+  cyan: [40, 100, 90],
+  indigo: [60, 60, 120],
+  mauve: [90, 60, 100],
+};
 
-function hashString(s: string): number {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) {
-    h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+const COLOR_NAMES = Object.keys(COLORS);
+
+function hashString(text: string): number {
+  let hash = 0;
+  for (let i = 0; i < text.length; i++) {
+    hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
   }
-  return Math.abs(h);
+  return Math.abs(hash);
 }
 
-function pickPalette(text: string) {
-  return PALETTES[hashString(text) % PALETTES.length];
+function colorFromText(text: string) {
+  return COLORS[COLOR_NAMES[hashString(text) % COLOR_NAMES.length]];
 }
 
-function bg(r: number, g: number, b: number, s: string): string {
-  return `\x1b[48;2;${r};${g};${b}m${s}\x1b[49m`;
+function randomColorName() {
+  return COLOR_NAMES[Math.floor(Math.random() * COLOR_NAMES.length)];
 }
 
-function white(s: string): string {
-  return `\x1b[38;2;255;255;255m${s}\x1b[39m`;
+function bg(rgb: [number, number, number], text: string): string {
+  const [red, green, blue] = rgb;
+  return `\x1b[48;2;${red};${green};${blue}m${text}\x1b[49m`;
 }
 
-function bold(s: string): string {
-  return `\x1b[1m${s}\x1b[22m`;
+function white(text: string): string {
+  return `\x1b[38;2;255;255;255m${text}\x1b[39m`;
+}
+
+function bold(text: string): string {
+  return `\x1b[1m${text}\x1b[22m`;
+}
+
+function colorCompletions(prefix: string) {
+  return ["default", ...COLOR_NAMES]
+    .filter((name) => name.startsWith(prefix.toLowerCase()))
+    .map((name) => ({ value: name, label: name }));
 }
 
 export default function (pi: ExtensionAPI) {
   let bannerText = "";
+  let colorName = "";
 
   pi.on("session_start", async (_event, ctx) => {
     for (const entry of ctx.sessionManager.getEntries()) {
-      if (entry.type === "custom" && entry.customType === "session-banner") {
-        bannerText = entry.data?.text ?? "";
-      }
+      if (entry.type !== "custom") continue;
+      if (entry.customType === "session-banner") bannerText = entry.data?.text ?? "";
+      if (entry.customType === "session-banner-color") colorName = entry.data?.color ?? "";
     }
     if (bannerText) {
       showBanner(ctx);
@@ -54,13 +67,11 @@ export default function (pi: ExtensionAPI) {
   });
 
   function showBanner(ctx: { ui: { setWidget: Function } }) {
-    const palette = pickPalette(bannerText);
-    const [r, g, b] = palette.bg;
-
     ctx.ui.setWidget("session-banner", () => {
       return {
         render(width: number): string[] {
-          const fill = (s: string) => bg(r, g, b, s);
+          const fill = (text: string) =>
+            bg(COLORS[colorName] ?? colorFromText(bannerText), text);
           const pad = fill(" ".repeat(width));
 
           const raw = `  ▌ ${bannerText}  `;
@@ -82,8 +93,8 @@ export default function (pi: ExtensionAPI) {
     });
   }
 
-  pi.registerCommand("banner", {
-    description: "Set a session banner (empty to clear)",
+  const setBanner: Omit<RegisteredCommand, "name"> = {
+    description: "Set the session banner and name (empty to clear)",
     handler: async (args, ctx) => {
       bannerText = (args ?? "").trim();
 
@@ -97,6 +108,28 @@ export default function (pi: ExtensionAPI) {
         ctx.ui.setWidget("session-banner", undefined);
         ctx.ui.notify("Banner cleared", "info");
       }
+    },
+  };
+
+  pi.registerCommand("banner", setBanner);
+  pi.registerCommand("rename", setBanner);
+
+  pi.registerCommand("color", {
+    description: `Set the banner color (${COLOR_NAMES.join(", ")}, default, or empty for random)`,
+    getArgumentCompletions: colorCompletions,
+    handler: async (args, ctx) => {
+      const requested = (args ?? "").trim().toLowerCase();
+
+      if (requested && requested !== "default" && !COLORS[requested]) {
+        ctx.ui.notify(`Unknown color: ${requested}. Available: ${COLOR_NAMES.join(", ")}, default`, "error");
+        return;
+      }
+
+      colorName = requested === "default" ? "" : requested || randomColorName();
+      pi.appendEntry("session-banner-color", { color: colorName });
+
+      if (bannerText) showBanner(ctx);
+      ctx.ui.notify(colorName ? `Banner color: ${colorName}` : "Banner color reset", "info");
     },
   });
 }
