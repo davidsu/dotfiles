@@ -16,5 +16,6 @@ config.ln/iterm2/
 claude/skills/excalidraw.ln/references/.venv/
 claude/skills/excalidraw.ln/references/uv.lock
 
-# b44sync runtime config (created on first run; holds an API key)
-config.ln/b44sync/config.json
+# b44sync config: the real file lives in ~/projects/apper/susskind, symlinked in
+# here by that repo's links.toml. Company tooling, not dotfiles.
+config.ln/b44sync/
