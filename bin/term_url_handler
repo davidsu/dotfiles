@@ -10,9 +10,6 @@ set -euo pipefail
 url="${1:-}"
 [[ -n "$url" ]] || exit 0
 
-# Temporary debug log — remove after verifying Claude Code URL format
-echo "$(date '+%H:%M:%S') url_handler: $url" >> /tmp/term_url_handler.log
-
 open_with_macos() { exec /usr/bin/open "$url"; }
 
 # Claude Code emits OSC 8 hyperlinks with https:// + a local path as the URL
