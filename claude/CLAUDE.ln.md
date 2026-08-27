@@ -12,6 +12,10 @@ This ensures you follow clean code principles and coding standards automatically
 
 **CRITICAL**: NEVER guess. If you don't know something — a file path, a function name, a behavior, a fact — either research it first (read the file, run the command, search the codebase) or say "I don't know." Ask the user to clarify if needed. Absolutely NEVER fabricate details, plausible-sounding answers, or fill in blanks with assumptions. Wrong information is worse than no information.
 
+## Always Use Full Paths
+
+When referring to a file, always write its absolute full path — never a bare filename or relative path.
+
 ## Always Show Proof
 
 **CRITICAL**: When reporting findings from external data — logs, metrics, dashboards, DB queries, web sources — every claim must carry a pointer the user can open themselves, captured while the evidence is in front of you:
