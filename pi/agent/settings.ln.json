@@ -10,7 +10,7 @@
   ],
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.6-sol",
-  "defaultThinkingLevel": "off",
+  "defaultThinkingLevel": "high",
   "hideThinkingBlock": false,
   "theme": "dark",
   "warnings": {
