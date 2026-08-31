@@ -43,6 +43,9 @@
 "claude/skills/suss-proof.ln" = [
   "~/.claude/skills/suss-proof",
 ]
+"claude/skills/suss-review-pr-assistant.ln" = [
+  "~/.claude/skills/suss-review-pr-assistant",
+]
 "claude/skills/suss-tasks.ln" = [
   "~/.claude/skills/suss-tasks",
 ]
