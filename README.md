@@ -183,6 +183,7 @@ Because the installer clears the Dock:
 | `installation/` | Bootstrap scripts, `tools.yaml` (packages), `links.ts` (symlink runner) |
 | `links.toml` | Symlink map: repo paths → target locations |
 | `zsh/` | Modular Zsh config (`env.zsh`, `aliases.zsh`, etc.) |
+| `pi/` | Pi agent instructions, settings, keybindings, and extensions |
 | `config.ln/` | Tool configs → `~/.config` |
 
 ### 🔗 Symlink Convention

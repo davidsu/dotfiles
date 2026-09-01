@@ -66,6 +66,9 @@
 "pi/agent/settings.ln.json" = [
   "~/.pi/agent/settings.json",
 ]
+"pi/agent/keybindings.ln.json" = [
+  "~/.pi/agent/keybindings.json",
+]
 "pi/agent/mcp.ln.json" = [
   "~/.pi/agent/mcp.json",
 ]
