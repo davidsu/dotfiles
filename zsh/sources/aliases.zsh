@@ -42,3 +42,7 @@ alias cody='codex --dangerously-bypass-approvals-and-sandbox'
 
 # Markdown viewer
 alias mdview='nvim --headless -c "MarkdownPreview"'
+
+# npm registry (writes ~/.npmrc, i.e. the user-level config)
+alias npmprivate='npm config set registry http://npm.dev.wixpress.com && npm config get registry'
+alias npmpublic='npm config set registry https://registry.npmjs.org/ && npm config get registry'
