@@ -104,6 +104,17 @@ case "$EVENT" in
         esac
       fi
     done <<< "$my_channels"
+    unnamed="$BASE/.unnamed-nudge.$sid"
+    attempted="$BASE/.rename-attempt.$sid"
+    if [ -z "$expected" ] && [ -n "$sid" ]; then
+      handle="$(printf '%s\n' "$my_channels" | cut -f2 | sort -u | head -1)"
+      if [ -f "$attempted" ] && [ "$(cat "$unnamed" 2>/dev/null || true)" != "$handle" ]; then
+        printf '%s' "$handle" > "$unnamed"
+        blocked+="  [identity] peers address you as '$handle' but this session is unnamed and auto-rename hasn't landed — ask the user to run '$("$TEAMUP" name-command) $handle'"$'\n'
+      fi
+      printf '%s' "$handle" > "$attempted"
+      "$HERE/teamup-name-session" "$handle" "$sid" >/dev/null 2>&1 &
+    fi
     [ -n "$blocked" ] || exit 0
     printf 'teamup: do not go idle yet — clear these first:\n%s' "$blocked" >&2
     exit 2

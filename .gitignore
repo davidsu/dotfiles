@@ -19,3 +19,5 @@ claude/skills/excalidraw.ln/references/uv.lock
 # b44sync config: the real file lives in ~/projects/apper/susskind, symlinked in
 # here by that repo's links.toml. Company tooling, not dotfiles.
 config.ln/b44sync/
+claude/skills/suss-teamup.ln/.slack-tasks-state.tsv
+claude/skills/suss-teamup.ln/.slack-tasks-threads.tsv

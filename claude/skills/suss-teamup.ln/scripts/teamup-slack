@@ -1,0 +1,251 @@
+#!/usr/bin/env bash
+# teamup-slack on|off [subject] | status — mirror teamup channels into Slack threads.
+# Design, auth and failure modes: SKILL.md §4a.
+set -uo pipefail
+
+unset CLAUDE_CODE_SESSION_ID TEAMUP_SESSION CODEX_THREAD_ID TEAMUP_SESSION_NAME
+
+readonly HERE="$(cd "$(dirname "$0")" && pwd)"
+readonly TEAMUP="$HERE/teamup"
+readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
+readonly HANDLE="${TEAMUP_SLACK_HANDLE:-david}"
+readonly POLL_SECONDS="${TEAMUP_SLACK_POLL:-10}"
+readonly BACKFILL_LINES=20
+readonly CHANNEL_FILE="$HERE/../slack-channel"
+
+die() { echo "teamup-slack: $*" >&2; exit 1; }
+
+thread_file() { printf '%s/%s/.slack.thread' "$BASE" "$1"; }
+posted_file() { printf '%s/%s/.slack.posted' "$BASE" "$1"; }
+relayed_file() { printf '%s/%s/.slack.relayed' "$BASE" "$1"; }
+pid_file() { printf '%s/%s/.slack.pid' "$BASE" "$1"; }
+log_file() { printf '%s/%s/.slack.log' "$BASE" "$1"; }
+broken_file() { printf '%s/%s/.slack.broken' "$BASE" "$1"; }
+engaged_file() { printf '%s/%s/.slack.engaged' "$BASE" "$1"; }
+
+keychain_secret() { security find-generic-password -a "$USER" -s "$1" -w 2>/dev/null; }
+
+slack_api() { # method [curl data args...]
+  local method="$1"; shift
+  curl -s --max-time 20 -X POST "https://slack.com/api/$method" \
+    -H "Cookie: d=$SLACK_COOKIE" --data-urlencode "token=$SLACK_TOKEN" "$@"
+}
+
+load_slack_session() {
+  SLACK_TOKEN="$(keychain_secret slack-mcp-xoxc)"
+  SLACK_COOKIE="$(keychain_secret slack-mcp-xoxd)"
+  [ -n "$SLACK_TOKEN" ] && [ -n "$SLACK_COOKIE" ] ||
+    die "no Slack session in the keychain (slack-mcp-xoxc / slack-mcp-xoxd)"
+  local identity; identity="$(slack_api auth.test)"
+  [ "$(jq -r '.ok' <<<"$identity")" = true ] ||
+    die "Slack rejected the session: $(jq -r '.error // "unreachable"' <<<"$identity") — re-copy the xoxc/xoxd tokens into the keychain"
+  SLACK_OWNER="$(jq -r '.user_id' <<<"$identity")"
+  SLACK_DESTINATION="${TEAMUP_SLACK_CHANNEL:-$(cat "$CHANNEL_FILE" 2>/dev/null || true)}"
+  [ -n "$SLACK_DESTINATION" ] ||
+    SLACK_DESTINATION="$(open_self_dm "$(jq -r '.user_id' <<<"$identity")")"
+  [ -n "$SLACK_DESTINATION" ] || die "could not resolve a Slack destination"
+}
+
+open_self_dm() { # user_id
+  slack_api conversations.open --data-urlencode "users=$1" | jq -r '.channel.id // empty'
+}
+
+post_thread_root() { # text
+  slack_api chat.postMessage \
+    --data-urlencode "channel=$SLACK_DESTINATION" \
+    --data-urlencode "text=$1" | jq -r '.ts // empty'
+}
+
+post_to_thread() { # subject text
+  local ts
+  ts="$(slack_api chat.postMessage \
+    --data-urlencode "channel=$SLACK_DESTINATION" \
+    --data-urlencode "thread_ts=$(cat "$(thread_file "$1")")" \
+    --data-urlencode "text=$2" | jq -r '.ts // empty')"
+  [ -n "$ts" ] || return 1
+  echo "$ts" >> "$(posted_file "$1")"
+  unfollow_unless_engaged "$1"
+}
+
+unfollow_unless_engaged() { # subject
+  [ -f "$(engaged_file "$1")" ] && return 0
+  slack_api subscriptions.thread.remove \
+    --data-urlencode "channel=$SLACK_DESTINATION" \
+    --data-urlencode "thread_ts=$(cat "$(thread_file "$1")")" >/dev/null
+}
+
+as_code_block() { printf '```\n%s\n```' "$1"; }
+
+post_code_block() { # subject multiline-text — chunked, or Slack splits the post itself and the fragments' ts go unrecorded
+  local line chunk=""
+  while IFS= read -r line; do
+    if [ -n "$chunk" ] && [ $(( ${#chunk} + ${#line} )) -gt 3500 ]; then
+      post_to_thread "$1" "$(as_code_block "$chunk")"
+      chunk=""
+    fi
+    chunk="${chunk:+$chunk
+}$line"
+  done <<<"$2"
+  [ -n "$chunk" ] && post_to_thread "$1" "$(as_code_block "$chunk")"
+}
+
+open_thread() { # subject
+  local root; root="$(cat "$(thread_file "$1")" 2>/dev/null || true)"
+  [ -n "$root" ] && return 0
+  root="$(post_thread_root "$(thread_root_text "$1")")"
+  [ -n "$root" ] || die "could not open a Slack thread for '$1'"
+  printf '%s' "$root" > "$(thread_file "$1")"
+  unfollow_unless_engaged "$1"
+}
+
+unescape_slack() { sed 's/&lt;/</g; s/&gt;/>/g; s/&amp;/\&/g'; }
+
+agent_handles() { # subject
+  ls -A "$BASE/$1/members" 2>/dev/null | grep -v "^$HANDLE$"
+}
+
+thread_root_text() { # subject
+  printf '*teamup · %s* — reply here and every agent on this channel reads it.\nTo make one agent answer before it can go idle, start your reply with its handle, e.g. `@%s your question`. Live handles: %s\nWho is talking: code blocks are the agents; among replies, David appears bare and anyone else (Claude included) is prefixed `[slack: name]`.' \
+    "$1" "$(agent_handles "$1" | head -1)" "$(agent_handles "$1" | paste -sd', ' -)"
+}
+
+slack_author_name() { # user_id name_from_message
+  [ -n "$2" ] && { printf '%s' "$2"; return 0; }
+  slack_api users.info --data-urlencode "user=$1" |
+    jq -r '.user.profile.display_name // .user.real_name // .user.name // empty'
+}
+
+deliver_to_channel() { # subject text author_id author_name
+  local text target body attribution=""
+  text="$(unescape_slack <<<"$2")"
+  target="$(awk 'NR==1 && $1 ~ /^@/ { print substr($1, 2) }' <<<"$text")"
+  if [ "$3" = "$SLACK_OWNER" ]; then touch "$(engaged_file "$1")"
+  else attribution="[slack: $(slack_author_name "$3" "$4")] "; fi
+  if [ -z "$target" ]; then
+    "$TEAMUP" say "$1" --as "$HANDLE" -- "$attribution$text"
+  elif agent_handles "$1" | grep -qx "$target"; then
+    body="${text#@$target }"
+    "$TEAMUP" ask "$1" --as "$HANDLE" --to "$target" -- "$attribution$body"
+  else
+    post_to_thread "$1" ":warning: no agent here is called \`$target\` — sent to everyone instead. Live handles: $(agent_handles "$1" | paste -sd', ' -)" || true
+    "$TEAMUP" say "$1" --as "$HANDLE" -- "$attribution$text"
+  fi
+}
+
+mirror_channel_to_slack() { # subject
+  local spoken
+  while "$TEAMUP" wait "$1" --as "$HANDLE" --timeout 0 >/dev/null 2>&1; do
+    spoken="$("$TEAMUP" recv "$1" --as "$HANDLE" | sed 1d | grep '^  #' || true)"
+    [ -n "$spoken" ] && post_code_block "$1" "$spoken"
+  done
+}
+
+report_broken_session() { # subject error
+  [ -f "$(broken_file "$1")" ] && return 0
+  printf '%s' "$2" > "$(broken_file "$1")"
+  post_to_thread "$1" ":warning: the Slack session died ($2) — replies in this thread are NOT reaching the agents." || true
+  "$TEAMUP" say "$1" --as "$HANDLE" -- "teamup-slack bridge is down ($2) — David is not receiving this channel and his replies are not arriving." || true
+}
+
+agents_remain() { # subject
+  ls -A "$BASE/$1/members" 2>/dev/null | grep -qv "^$HANDLE$"
+}
+
+retire_mirror() { # subject
+  post_to_thread "$1" "_channel is empty — mirror stopped._" || true
+  "$TEAMUP" leave "$1" --as "$HANDLE" >/dev/null 2>&1 || true
+  rm -f "$(pid_file "$1")"
+}
+
+relay_slack_replies() { # subject
+  local root replies skip ts author author_name text
+  root="$(cat "$(thread_file "$1")")"
+  while sleep "$POLL_SECONDS"; do
+    agents_remain "$1" || { retire_mirror "$1"; return 0; }
+    replies="$(slack_api conversations.replies \
+      --data-urlencode "channel=$SLACK_DESTINATION" \
+      --data-urlencode "ts=$root" --data-urlencode "limit=50")"
+    [ "$(jq -r '.ok' <<<"$replies")" = true ] || {
+      report_broken_session "$1" "$(jq -r '.error // "unreachable"' <<<"${replies:-null}")"
+      continue
+    }
+    rm -f "$(broken_file "$1")"
+    skip="$(cat "$(posted_file "$1")" "$(relayed_file "$1")" 2>/dev/null)"
+    while IFS=$'\x1f' read -r ts author author_name text; do
+      grep -qxF "$ts" <<<"$skip" && continue
+      echo "$ts" >> "$(relayed_file "$1")"
+      deliver_to_channel "$1" "$text" "$author" "$author_name"
+    done < <(jq -r --arg root "$root" '.messages[] | select(.ts != $root) |
+      [(.ts), (.user // .bot_id), (.bot_profile.name // .username // ""), (.text | gsub("[\n\t]"; " "))] | join("\u001f")' <<<"$replies")
+  done
+}
+
+run_bridge() { # subject
+  local outbound inbound
+  load_slack_session
+  mirror_channel_to_slack "$1" & outbound=$!
+  relay_slack_replies "$1" & inbound=$!
+  trap 'kill "$outbound" "$inbound" 2>/dev/null' EXIT TERM INT
+  wait
+}
+
+is_mirrored() { # subject
+  local pid; pid="$(cat "$(pid_file "$1")" 2>/dev/null || true)"
+  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+}
+
+claim_mirror() { # subject — concurrent joins must start exactly one bridge
+  local pidfile; pidfile="$(pid_file "$1")"
+  is_mirrored "$1" || rm -f "$pidfile"
+  ( set -o noclobber; echo "$$" > "$pidfile" ) 2>/dev/null || return 1
+  [ "$(cat "$pidfile" 2>/dev/null)" = "$$" ]
+}
+
+start_mirror() { # subject
+  [ -d "$BASE/$1" ] || die "no such channel '$1' — teamup channels lists the live ones"
+  claim_mirror "$1" || { echo "'$1' is already mirrored (pid $(cat "$(pid_file "$1")"))."; return 0; }
+  load_slack_session
+  "$TEAMUP" join "$1" --as "$HANDLE" --pwd "slack-bridge" --doing "watching from Slack" >/dev/null
+  if [ ! -f "$(thread_file "$1")" ]; then
+    open_thread "$1"
+    post_code_block "$1" "$("$TEAMUP" peek "$1" --last "$BACKFILL_LINES")"
+  fi
+  nohup "$0" __run "$1" >> "$(log_file "$1")" 2>&1 &
+  echo $! > "$(pid_file "$1")"
+  echo "mirroring '$1' to Slack (pid $(cat "$(pid_file "$1")")); log: $(log_file "$1")"
+}
+
+stop_mirror() { # subject
+  is_mirrored "$1" && kill "$(cat "$(pid_file "$1")")" 2>/dev/null
+  rm -f "$(pid_file "$1")"
+  "$TEAMUP" leave "$1" --as "$HANDLE" >/dev/null 2>&1 || true
+  echo "stopped mirroring '$1'."
+}
+
+live_channels() { "$TEAMUP" channels | awk 'NF && $1 != "(none)" { print $1 }'; }
+
+for_each_channel() { # action [subject]
+  [ -n "${2:-}" ] && { "$1" "$2"; return; }
+  local subject
+  for subject in $(live_channels); do "$1" "$subject"; done
+}
+
+print_status() {
+  local subject
+  for subject in $(live_channels); do
+    is_mirrored "$subject" &&
+      printf '  %s — mirrored (pid %s, thread %s)\n' "$subject" "$(cat "$(pid_file "$subject")")" "$(cat "$(thread_file "$subject")" 2>/dev/null)" ||
+      printf '  %s — not mirrored\n' "$subject"
+  done
+}
+
+case "${1:-}" in
+  on)      for_each_channel start_mirror "${2:-}" ;;
+  auto)    [ "${TEAMUP_SLACK:-on}" = off ] && exit 0
+           is_mirrored "$2" && exit 0
+           start_mirror "$2" >/dev/null 2>&1 || true ;;
+  off)     for_each_channel stop_mirror "${2:-}" ;;
+  status)  print_status ;;
+  __run)   run_bridge "$2" ;;
+  *) echo "usage: teamup-slack on|off [subject] | status" >&2; exit 2 ;;
+esac

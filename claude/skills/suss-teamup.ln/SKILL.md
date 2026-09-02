@@ -95,9 +95,14 @@ do it:
 1. Choose something short and stable: `{cwd-basename}-{agent}` (e.g. `dotfiles-pi`,
    `apper-claude`) or your role (`auth-reviewer`).
 2. Join with `--as {handle}`.
-3. **Immediately** make it visible on screen by running the naming command for your
-   harness: on pi run `/banner {handle}`, on claude run `/rename {handle}`. This way
-   the user can tell which tab the channel is talking about.
+3. **Making it visible on screen is handled for you on claude+iTerm**: your Stop hook
+   runs `teamup-name-session`, which types `/rename {handle}` into this session's own
+   tab the moment you go idle (an agent can't dispatch a slash command mid-turn, and a
+   busy TUI silently drops typed input — so the stop is the one moment it works; both
+   probed live 2026-09-01). On pi, tell the user to run `/banner {handle}`. If the
+   auto-rename can't land (no iTerm, session kept busy), the hook nudges once to ask
+   the user. A spawned peer needs none of this — `teamup-spawn` passes `--name` at
+   launch, which claude records as a user-chosen name.
 
 Either way, **remember it** — you pass `--as {handle}` on every *subsequent*
 call this session. It keys your read-cursor and your roster entry.
@@ -380,6 +385,81 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
    `--no-color`) to skip the color step.
 4. **Huddle** (§2). For a handoff, post the context the peer needs on the channel
    before it gets going; for pairing, align on who owns what.
+
+## 4a. Mirror a channel to Slack — follow it from a phone
+
+Every channel is mirrored into a **Slack thread automatically** — `join` starts the
+bridge (§join, `mirror_to_slack_unless_bridge`), so the user can pick a channel up on a
+phone without anyone having armed anything first. One thread per channel, reused across
+restarts; the bridge retires itself when the last real member leaves. **Nothing to
+invoke** — the manual controls exist only for overriding it:
+
+```
+scripts/teamup-slack status          # which channels are mirrored
+scripts/teamup-slack off [subject]   # stop mirroring (bare: all channels)
+scripts/teamup-slack on  [subject]   # re-start one you turned off
+```
+
+**A running poller keeps the code it started with.** Restart it (`off` then `on`) only
+when the edit touched a path the live loop executes — `deliver_to_channel`,
+`mirror_channel_to_slack`, `post_to_thread`, the poll loop. `claim_mirror` and the docs
+are start-path only, so they need nothing. Sweep what is live and how stale it is:
+`for p in "$SUSS_TEAMUP_DIR"/*/.slack.pid; do pid=$(cat "$p"); kill -0 "$pid" 2>/dev/null && echo "$p $pid $(ps -o lstart= -p "$pid")"; done`
+
+**suss-tasks mirror** — `scripts/teamup-tasks-sync` (run on demand) uploads every active
+task file (`~/projects/*/suss-tasks/**/*.md`, `done/` excluded) into the same Slack
+channel: one `suss-tasks · {project}` thread per project, each file titled
+`{project}/{relpath}` with its local path as the first line. Idempotent by content hash;
+changed files replace their superseded upload, locally deleted files are removed. This is
+the context Slack-side readers (the user's phone, Claude-in-Slack) have for the team's
+work — re-run it after meaningful task-file changes.
+
+**Residual (documented, not fixed):** `claim_mirror` clears a dead pidfile and then
+`noclobber`-creates its own, and it verifies afterwards that its pid is the one that
+landed — so a loser backs off. Two joiners whose writes straddle the other's verify can
+both believe they claimed; cost is one duplicate relay until an `off`. Same TOCTOU class
+as `claim_listener` above, and not worth a lock.
+
+`TEAMUP_SLACK=off` disables auto-mirroring entirely. A machine with no Slack session in
+its keychain silently gets no mirror — auto-start never speaks and never fails, so it
+cannot break `join`.
+
+It is **deterministic plumbing — no model in the loop**, so it costs no turns and no
+context, and it keeps working while every agent is mid-turn or wedged (unlike the Stop
+hook, which only fires *between* turns). It joins as a normal member
+(`$TEAMUP_SLACK_HANDLE`, default `david`) and reuses teamup's own delivery both ways:
+
+- **out** — `wait --timeout 0` (fswatch, free) → `recv` → `chat.postMessage` in the thread.
+- **in** — `conversations.replies` → `say`, or `ask --to {handle}` when the reply starts
+  with a **live** handle, so an aimed reply wakes one agent and trips its Stop hook
+  (`asks_for_me=1`) instead of waking the roster. A name no member holds is delivered to
+  everyone and answered in the thread with the live handles — aiming at nobody used to
+  become a dangling ask. Aiming is **not privacy**: every message lands on the shared
+  channel and all agents read it; it only decides whose idle is blocked.
+- **attribution** — the bridge posts under one handle, so a thread reply from anyone but
+  the channel owner is prefixed `[slack: {name}]` (from `bot_profile.name`/`username`,
+  else `users.info`). Without it, @Claude's replies arrived on the channel as the user's.
+
+**It cannot loop.** Outbound, `recv` never returns this handle's own lines (`$3!=me`,
+`teamup:234`), so anything injected from Slack can't be posted back. Inbound, every
+message the bridge posts is recorded in `.slack.posted` and skipped on read — needed
+because a user-session token posts as the user, so bridge posts and phone replies share
+one author. Both directions are exact, no heuristics.
+
+**Auth is the user's Slack web session** — the same `slack-mcp-xoxc` / `slack-mcp-xoxd`
+keychain items the Slack MCP uses. No Slack app, therefore no Events API: the inbound
+side polls (`$TEAMUP_SLACK_POLL`, default 10s — Tier-3, one poller per channel). Those
+tokens rotate, and the failure mode is **silence**, indistinguishable from a quiet
+channel — so the bridge auth-checks loudly at `on`, and on a failing poll posts a warning
+into the thread *and* says it on the channel, once (`.slack.broken`).
+
+Destination resolves `TEAMUP_SLACK_CHANNEL` → the id in `slack-channel` at the skill root
+→ the user's self-DM. It is the private **#suss-teamup** channel (`C0BU8PNU5AQ`), which
+also has **@Claude** in it, so the user can talk to a Slack-side Claude in a thread —
+Slack refuses to add an agent to an existing DM ("agents can only be added at the start of
+direct messages"), which is why a self-DM cannot serve. The bridge never creates a
+channel: ad-hoc ones litter a shared workspace and archive rather than delete. One
+channel, one thread per teamup channel, forever.
 
 ## 5. Disconnect
 

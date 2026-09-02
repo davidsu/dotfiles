@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# teamup-name-session <handle> <session-guid> — put HANDLE on this session's own screen
+# by typing /rename into its iTerm tab (found by tty, focus-free). An agent cannot run a
+# slash command itself, so its Stop hook runs this once the turn is over — the one moment
+# the TUI is at its prompt. Injection into a BUSY tui is silently dropped (probed live,
+# 2026-09-01), hence the idle-glyph guard; a skipped run self-heals via the hook's nudge.
+set -uo pipefail
+
+readonly HANDLE="${1:-}"
+readonly GUID="${2:-}"
+readonly SESSIONS="$HOME/.claude/sessions"
+readonly SETTLE_SECONDS=2
+
+[ -n "$HANDLE" ] && [ -n "$GUID" ] || exit 0
+command -v osascript >/dev/null 2>&1 && command -v jq >/dev/null 2>&1 || exit 0
+ps -Ao comm= | grep -q '/iTerm2$' || exit 0
+
+session_file() {
+  jq -r --arg sid "$GUID" 'select(.sessionId == $sid) | input_filename' \
+    "$SESSIONS"/*.json 2>/dev/null | head -1
+}
+
+user_named_already() { jq -e '.nameSource == "user"' "$1" >/dev/null 2>&1; }
+
+session_tty() { # claude-pid
+  local device; device="$(ps -o tty= -p "$1" 2>/dev/null | tr -d ' ')"
+  [ -n "$device" ] && [ "$device" != '??' ] && printf '/dev/%s' "$device"
+}
+
+file="$(session_file)"
+[ -n "$file" ] || exit 0
+user_named_already "$file" && exit 0
+tty_path="$(session_tty "$(basename "$file" .json)")"
+[ -n "$tty_path" ] || exit 0
+
+sleep "$SETTLE_SECONDS"
+osascript - "$tty_path" "/rename $HANDLE" <<'OSA' >/dev/null 2>&1 || true
+on run argv
+  set target to item 1 of argv
+  set cmd to item 2 of argv
+  tell application "iTerm2"
+    repeat with w in windows
+      repeat with t in tabs of w
+        repeat with s in sessions of t
+          if (tty of s) is target then
+            if (name of s) does not start with "✳" then return -- busy tui drops input
+            tell s to write text (ASCII character 21) newline NO
+            delay 0.3
+            tell s to write text cmd newline NO
+            delay 1.5 -- claude's slash-command menu must settle before Enter
+            tell s to write text ""
+            return
+          end if
+        end repeat
+      end repeat
+    end repeat
+  end tell
+end run
+OSA

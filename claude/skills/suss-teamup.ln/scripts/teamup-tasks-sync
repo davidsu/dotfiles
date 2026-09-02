@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# teamup-tasks-sync — mirror active suss-tasks (~/projects/*/suss-tasks, done/ excluded)
+# into the #suss-teamup Slack channel so Slack-side readers (David's phone, Claude-in-
+# Slack) share the team's task context. One thread per project; each file uploads as a
+# snapshot titled {project}/{relpath} with its local path on the first line. Idempotent:
+# re-run any time, only changed files re-upload (superseded uploads are deleted).
+set -uo pipefail
+
+readonly HERE="$(cd "$(dirname "$0")" && pwd)"
+readonly ROOT_DIR="$HOME/projects"
+readonly STATE="$HERE/../.slack-tasks-state.tsv"    # localpath \t sha \t file_id
+readonly THREADS="$HERE/../.slack-tasks-threads.tsv" # project \t thread_root_ts
+readonly CHANNEL="$(cat "$HERE/../slack-channel" 2>/dev/null || true)"
+
+die() { echo "teamup-tasks-sync: $*" >&2; exit 1; }
+[ -n "$CHANNEL" ] || die "no slack-channel file at $HERE/../slack-channel"
+
+keychain_secret() { security find-generic-password -a "$USER" -s "$1" -w 2>/dev/null; }
+SLACK_TOKEN="$(keychain_secret slack-mcp-xoxc)"; SLACK_COOKIE="$(keychain_secret slack-mcp-xoxd)"
+[ -n "$SLACK_TOKEN" ] && [ -n "$SLACK_COOKIE" ] || die "no Slack session in the keychain"
+
+slack_api() { # method [curl data args...]
+  local method="$1"; shift
+  curl -s --max-time 30 -X POST "https://slack.com/api/$method" \
+    -H "Cookie: d=$SLACK_COOKIE" --data-urlencode "token=$SLACK_TOKEN" "$@"
+}
+
+state_row() { grep -F "$1	" "$STATE" 2>/dev/null | head -1; }
+
+project_thread() { # project — print root ts, creating the thread on first use
+  local ts; ts="$(awk -F'\t' -v p="$1" '$1==p{print $2}' "$THREADS" 2>/dev/null | head -1)"
+  [ -n "$ts" ] && { printf '%s' "$ts"; return 0; }
+  ts="$(slack_api chat.postMessage --data-urlencode "channel=$CHANNEL" \
+    --data-urlencode "text=:books: *suss-tasks · $1* — mirror of \`~/projects/$1/suss-tasks\` (active tasks only; \`done/\` excluded). Each file below is a synced snapshot named \`$1/<path>\`; its first line is the path on David's machine. Replies here reach no agent — steer the team in its \`teamup ·\` thread instead." \
+    | jq -r '.ts // empty')"
+  [ -n "$ts" ] || return 1
+  printf '%s\t%s\n' "$1" "$ts" >> "$THREADS"
+  slack_api subscriptions.thread.remove --data-urlencode "channel=$CHANNEL" --data-urlencode "thread_ts=$ts" >/dev/null
+  printf '%s' "$ts"
+}
+
+upload_task_file() { # localpath project relpath thread_ts
+  local body size url file_id title
+  body="$(mktemp)"
+  printf '> local: %s\n\n' "$1" > "$body"; cat "$1" >> "$body"
+  size=$(wc -c < "$body" | tr -d ' ')
+  title="$2/$3"
+  read -r url file_id < <(slack_api files.getUploadURLExternal \
+    --data-urlencode "filename=$(basename "$1")" --data-urlencode "length=$size" \
+    | jq -r '"\(.upload_url // "") \(.file_id // "")"')
+  [ -n "$file_id" ] || { rm -f "$body"; return 1; }
+  curl -s --max-time 60 -X POST "$url" --data-binary @"$body" >/dev/null
+  rm -f "$body"
+  slack_api files.completeUploadExternal \
+    --data-urlencode "files=[{\"id\":\"$file_id\",\"title\":\"$title\"}]" \
+    --data-urlencode "channel_id=$CHANNEL" --data-urlencode "thread_ts=$4" \
+    | jq -e '.ok' >/dev/null || return 1
+  printf '%s' "$file_id"
+}
+
+delete_upload() { slack_api files.delete --data-urlencode "file=$1" | jq -r '.ok'; }
+
+remove_state_row() { # localpath
+  grep -vF "$1	" "$STATE" 2>/dev/null > "$STATE.tmp" || true; mv "$STATE.tmp" "$STATE"
+}
+
+touch "$STATE" "$THREADS"
+uploaded=0 unchanged=0 removed=0 failed=0
+seen="$(mktemp)"
+
+while IFS= read -r path; do
+  echo "$path" >> "$seen"
+  project="$(basename "$(dirname "$(dirname "${path#*suss-tasks/}")" 2>/dev/null || true)")"
+  project="${path#"$ROOT_DIR"/}"; project="${project%%/*}"
+  rel="${path#*suss-tasks/}"
+  sha="$(shasum -a 256 "$path" | cut -d' ' -f1)"
+  row="$(state_row "$path")"
+  [ "$(printf '%s' "$row" | cut -f2)" = "$sha" ] && { unchanged=$((unchanged+1)); continue; }
+  thread="$(project_thread "$project")" || { failed=$((failed+1)); continue; }
+  new_id="$(upload_task_file "$path" "$project" "$rel" "$thread")" || { failed=$((failed+1)); continue; }
+  old_id="$(printf '%s' "$row" | cut -f3)"
+  [ -n "$old_id" ] && delete_upload "$old_id" >/dev/null
+  remove_state_row "$path"
+  printf '%s\t%s\t%s\n' "$path" "$sha" "$new_id" >> "$STATE"
+  slack_api subscriptions.thread.remove --data-urlencode "channel=$CHANNEL" --data-urlencode "thread_ts=$thread" >/dev/null
+  uploaded=$((uploaded+1))
+done < <(find -L "$ROOT_DIR"/*/suss-tasks -name '*.md' -not -path '*/done/*' 2>/dev/null | sort)
+
+while IFS=$'\t' read -r path sha file_id; do
+  [ -n "$path" ] || continue
+  grep -qxF "$path" "$seen" && continue
+  delete_upload "$file_id" >/dev/null
+  remove_state_row "$path"
+  removed=$((removed+1))
+done < "$STATE"
+
+rm -f "$seen"
+echo "synced: $uploaded uploaded, $unchanged unchanged, $removed removed, $failed failed"
