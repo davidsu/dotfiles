@@ -22,3 +22,4 @@ config.ln/b44sync/
 claude/skills/suss-teamup.ln/.slack-tasks-state.tsv
 claude/skills/suss-teamup.ln/.slack-tasks-threads.tsv
 suss-tasks
+suss-tasks.pre_git_backup/
