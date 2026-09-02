@@ -400,6 +400,11 @@ scripts/teamup-slack off [subject]   # stop mirroring (bare: all channels)
 scripts/teamup-slack on  [subject]   # re-start one you turned off
 ```
 
+**Finding a channel's Slack thread** — never reconstruct a permalink from `.slack.thread`:
+the bridge announces it on the channel (`mirror thread in Slack: <url>`) the first time a
+mirror opens, writes it to `$SUSS_TEAMUP_DIR/{subject}/.slack.url`, and
+`scripts/teamup-slack url {subject}` prints it (creating + announcing it if missing).
+
 **A running poller keeps the code it started with.** Restart it (`off` then `on`) only
 when the edit touched a path the live loop executes — `deliver_to_channel`,
 `mirror_channel_to_slack`, `post_to_thread`, the poll loop. `claim_mirror` and the docs

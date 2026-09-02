@@ -40,6 +40,7 @@ load_slack_session() {
   [ "$(jq -r '.ok' <<<"$identity")" = true ] ||
     die "Slack rejected the session: $(jq -r '.error // "unreachable"' <<<"$identity") — re-copy the xoxc/xoxd tokens into the keychain"
   SLACK_OWNER="$(jq -r '.user_id' <<<"$identity")"
+  SLACK_TEAM_URL="$(jq -r '.url' <<<"$identity")"
   SLACK_DESTINATION="${TEAMUP_SLACK_CHANNEL:-$(cat "$CHANNEL_FILE" 2>/dev/null || true)}"
   [ -n "$SLACK_DESTINATION" ] ||
     SLACK_DESTINATION="$(open_self_dm "$(jq -r '.user_id' <<<"$identity")")"
@@ -194,6 +195,16 @@ is_mirrored() { # subject
   [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
 }
 
+url_file() { printf '%s/%s/.slack.url' "$BASE" "$1"; }
+
+announce_thread_url() { # subject — once per channel, so agents never hunt for the permalink
+  [ -f "$(url_file "$1")" ] && return 0
+  local root; root="$(cat "$(thread_file "$1")" 2>/dev/null)"
+  [ -n "$root" ] || return 0
+  printf '%sarchives/%s/p%s\n' "$SLACK_TEAM_URL" "$SLACK_DESTINATION" "${root/./}" > "$(url_file "$1")"
+  "$TEAMUP" say "$1" --as "$HANDLE" -- "mirror thread in Slack: $(cat "$(url_file "$1")") (also in $(url_file "$1"))" >/dev/null
+}
+
 claim_mirror() { # subject — concurrent joins must start exactly one bridge
   local pidfile; pidfile="$(pid_file "$1")"
   is_mirrored "$1" || rm -f "$pidfile"
@@ -210,6 +221,7 @@ start_mirror() { # subject
     open_thread "$1"
     post_code_block "$1" "$("$TEAMUP" peek "$1" --last "$BACKFILL_LINES")"
   fi
+  announce_thread_url "$1"
   nohup "$0" __run "$1" >> "$(log_file "$1")" 2>&1 &
   echo $! > "$(pid_file "$1")"
   echo "mirroring '$1' to Slack (pid $(cat "$(pid_file "$1")")); log: $(log_file "$1")"
@@ -241,6 +253,8 @@ print_status() {
 
 case "${1:-}" in
   on)      for_each_channel start_mirror "${2:-}" ;;
+  url)     [ -n "${2:-}" ] || { echo "usage: teamup-slack url <subject>" >&2; exit 2; }
+           load_slack_session; announce_thread_url "$2"; cat "$(url_file "$2")" ;;
   auto)    [ "${TEAMUP_SLACK:-on}" = off ] && exit 0
            is_mirrored "$2" && exit 0
            start_mirror "$2" >/dev/null 2>&1 || true ;;
