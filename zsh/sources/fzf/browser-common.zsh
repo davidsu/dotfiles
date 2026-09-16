@@ -20,7 +20,7 @@ function fzf_browser_history() {
         --accept-nth 2 \
         --bind 'ctrl-s:toggle-sort' \
         --bind 'ctrl-o:execute:open {2}' \
-        --preview 'echo {3}; echo $(tput setaf 12){2} | sed -E '\''s#([&?])#'$(tput setaf 8)'\1'$(tput setaf 10)'#g'\' \
+        --preview 'echo {3}; url-preview.ts {2}' \
         --preview-window 'up:35%:wrap' \
         --bind 'ctrl-/:toggle-preview' \
         "$@"

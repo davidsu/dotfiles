@@ -229,7 +229,7 @@ Files that are symlinked use a `.ln` marker in their name (e.g., `zshrc.ln`, `CL
 - `fa` - File finder with bat preview
 - `mru` / `1m` - Most recently used files
 - `zi` / `jfzf` - Jump to frequent directories
-- `bravehistory` - Browse Brave history
+- `bravehistory` / `chromehistory` - Browse browser history; the preview shows the full title and the URL split into origin, path, and one decoded query param per line (`bin/url-preview.ts`)
 - `cb` / `bookmarks` - Browse Brave bookmarks
 
 **⌨️ System Tools**
