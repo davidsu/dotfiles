@@ -29,7 +29,6 @@ function bravehistory() {
         fzf_browser_history \
             --header 'CTRL-o: open in browser | CTRL-s: toggle sort | CTRL-/: toggle preview' \
             --prompt 'Brave History> ' | \
-        extract_url_from_line | \
         open_urls_with_browser
 }
 

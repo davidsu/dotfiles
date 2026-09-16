@@ -15,9 +15,12 @@ function open_urls_with_browser() {
 function fzf_browser_history() {
     fzf --ansi \
         --multi \
+        --delimiter=$'\t' \
+        --with-nth '{1}  {2}' \
+        --accept-nth 2 \
         --bind 'ctrl-s:toggle-sort' \
-        --bind 'ctrl-o:execute:open {-1}' \
-        --preview 'echo {..-2}; echo $(tput setaf 12){-1} | sed -E '\''s#([&?])#'$(tput setaf 8)'\1'$(tput setaf 10)'#g'\' \
+        --bind 'ctrl-o:execute:open {2}' \
+        --preview 'echo {3}; echo $(tput setaf 12){2} | sed -E '\''s#([&?])#'$(tput setaf 8)'\1'$(tput setaf 10)'#g'\' \
         --preview-window 'up:35%:wrap' \
         --bind 'ctrl-/:toggle-preview' \
         "$@"
@@ -45,7 +48,7 @@ function query_chromium_history() {
     cp -f "$historyfile" "$temp_db"
 
     sqlite3 -separator "$sep" "$temp_db" \
-        "SELECT substr(title, 1, $cols), url
+        "SELECT substr(title, 1, $cols), url, title
          FROM urls
          ORDER BY last_visit_time DESC"
 
@@ -55,11 +58,7 @@ function query_chromium_history() {
 function format_history_entry() {
     local cols="$1"
     local sep='{::}'
-    awk -F "$sep" '{printf "%-'$cols's  \x1b[36m%s\x1b[m\n", $1, $2}'
-}
-
-function extract_url_from_line() {
-    perl -pe 's|.*?(https*://.*?)$|\1|'
+    awk -F "$sep" '{printf "%-'$cols's\t\x1b[36m%s\x1b[m\t%s\n", $1, $2, $3}'
 }
 
 function parse_chromium_bookmarks() {
