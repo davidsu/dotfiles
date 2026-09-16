@@ -105,14 +105,15 @@ After running `./installation/install.ts`, complete these manual steps:
 - **Click-to-nvim:** quit iTerm, run `install-iterm-click-nvim`, and relaunch. Cmd-clicking a
   file path (absolute or relative, with optional `:line` or `:line:col`) opens it in `nvim`
   (`cvim`) in a new iTerm tab via Semantic History → `bin/term_open_file` → `bin/term_spawn`.
-  A clicked directory instead opens a new tab `cd`'d into it, with no command.
+  A clicked directory instead opens a new tab `cd`'d into it, with no command, and a
+  non-text file (image, PDF, binary) opens in its macOS default app via `open`.
   Ghostty can't do this: it refuses to open file links on cmd-click (ghostty#11907, closed
   not-planned), so use iTerm for Claude sessions where clickable paths matter.
   The same installer also sets iTerm's `urlHandlerCommand` advanced setting to
   `bin/term_url_handler`, covering clicks on explicit OSC 8 hyperlinks (e.g. Claude Code's
   `Update(...)` tool headers) that carry fragmentless `file://` URLs and therefore bypass
-  Semantic History: text/code files and directories go to nvim in a new tab, everything
-  else (including `https://` links) falls through to macOS `open`.
+  Semantic History: local paths are routed through `bin/term_open_file` exactly as above,
+  and real `https://` links fall through to macOS `open`.
   `urlHandlerCommand` requires iTerm ≥ 3.7 (the `iterm2@beta` cask), and iTerm reads it
   from the first-letter-capitalized defaults key `UrlHandlerCommand` (its advanced-settings
   key convention).

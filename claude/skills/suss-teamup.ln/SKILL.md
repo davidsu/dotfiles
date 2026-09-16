@@ -417,7 +417,11 @@ channel: one `suss-tasks · {project}` thread per project, each file titled
 `{project}/{relpath}` with its local path as the first line. Idempotent by content hash;
 changed files replace their superseded upload, locally deleted files are removed. This is
 the context Slack-side readers (the user's phone, Claude-in-Slack) have for the team's
-work — re-run it after meaningful task-file changes.
+work — re-run it after meaningful task-file changes. Claude-in-Slack cannot clone the
+private suss-tasks repo, so its channel instructions (set on the configure page
+https://claude.ai/claude-in-slack/T08EJMFT8LD/C0BU8PNU5AQ/configure, not stored here) only
+say: read these snapshot threads, and ask an agent in the teamup thread to post a task
+file when it is missing or stale.
 
 **Residual (documented, not fixed):** `claim_mirror` clears a dead pidfile and then
 `noclobber`-creates its own, and it verifies afterwards that its pid is the one that
