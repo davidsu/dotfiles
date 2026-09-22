@@ -46,3 +46,12 @@ alias mdview='nvim --headless -c "MarkdownPreview"'
 # npm registry (writes ~/.npmrc, i.e. the user-level config)
 alias npmprivate='npm config set registry http://npm.dev.wixpress.com && npm config get registry'
 alias npmpublic='npm config set registry https://registry.npmjs.org/ && npm config get registry'
+
+# lssorted [N] - list entries in cwd, newest first, by the most recently
+# modified file inside each entry (recursive). Default N=20.
+lssorted() {
+  for d in *; do
+    find "$d" -type f -exec stat -f '%m %Sm' -t '%Y-%m-%d %H:%M' {} + \
+      | sort -n | tail -1 | awk -v d="$d" '{print $2, $3, d}'
+  done | sort -r | head -"${1:-20}"
+}
