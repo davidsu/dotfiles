@@ -77,7 +77,12 @@ local function map_movement_keys()
   end
 end
 
+local function let_treesitter_own_python_bracket_keys()
+  vim.g.no_python_maps = 1
+end
+
 local function config_textobjects()
+  let_treesitter_own_python_bracket_keys()
   require('nvim-treesitter-textobjects').setup({
     select = { lookahead = true },
     move = { set_jumps = true },
