@@ -18,6 +18,7 @@ nvim/
 │   │   └── lazy.lua           # Plugin manager bootstrap
 │   ├── config/                # Feature modules
 │   │   ├── claude.lua         # Claude AI integration settings
+│   │   ├── fileline.lua       # :e path:line:col opens path at that position
 │   │   ├── mru.lua            # MRU (Most Recently Used) file tracking
 │   │   ├── tasknav.lua        # suss-tasks code-link navigation (gd on a link)
 │   │   └── taskpreview.lua    # :TaskPreview — browser preview with local file:// links
@@ -238,6 +239,9 @@ Shows colors inline for hex codes, RGB values, CSS colors
 - ⚡ Works in both terminal (via shell function) and Neovim
 
 💡 Replaces dotfilesold's PM2/Node.js server with simple Lua implementation
+
+#### 📍 Open at `path:line:col`
+`:e path:989:15` (or `nvim path:989:15` from the shell) opens `path` with the cursor on line 989, column 15. `path:989` works too. A line past the end of the file is clamped to the last line. Only kicks in when `path` exists, so real files with colons in their names still open normally. Same format the MRU file uses, so its entries paste straight into `:e`.
 
 #### 🚀 LSP (Language Server Protocol)
 Native Neovim LSP with **TypeScript** and **ESLint** support
