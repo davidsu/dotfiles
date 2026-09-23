@@ -3,7 +3,7 @@
     "~/.claude/skills",
     ".claude/skills"
   ],
-  "lastChangelogVersion": "0.84.2",
+  "lastChangelogVersion": "0.85.1",
   "packages": [
     "npm:pi-mcp-adapter",
     "../../Developer/pi-agent-teams"
