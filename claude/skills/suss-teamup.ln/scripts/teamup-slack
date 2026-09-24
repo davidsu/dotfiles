@@ -12,16 +12,22 @@ readonly HANDLE="${TEAMUP_SLACK_HANDLE:-david}"
 readonly POLL_SECONDS="${TEAMUP_SLACK_POLL:-10}"
 readonly BACKFILL_LINES=20
 readonly CHANNEL_FILE="$HERE/../slack-channel"
+readonly THREAD_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/slack"
+readonly RETIRE_AFTER_EMPTY_SECONDS=120
+readonly REPORT_DOWN_AFTER_SECONDS=300
+readonly LATE_REPLY_MARGIN_SECONDS=60
+mkdir -p "$THREAD_STATE"
 
 die() { echo "teamup-slack: $*" >&2; exit 1; }
 
-thread_file() { printf '%s/%s/.slack.thread' "$BASE" "$1"; }
-posted_file() { printf '%s/%s/.slack.posted' "$BASE" "$1"; }
-relayed_file() { printf '%s/%s/.slack.relayed' "$BASE" "$1"; }
+thread_file() { printf '%s/%s.thread' "$THREAD_STATE" "$1"; }
+posted_file() { printf '%s/%s.posted' "$THREAD_STATE" "$1"; }
+relayed_file() { printf '%s/%s.relayed' "$THREAD_STATE" "$1"; }
+engaged_file() { printf '%s/%s.engaged' "$THREAD_STATE" "$1"; }
+url_file() { printf '%s/%s.url' "$THREAD_STATE" "$1"; }
 pid_file() { printf '%s/%s/.slack.pid' "$BASE" "$1"; }
 log_file() { printf '%s/%s/.slack.log' "$BASE" "$1"; }
 broken_file() { printf '%s/%s/.slack.broken' "$BASE" "$1"; }
-engaged_file() { printf '%s/%s/.slack.engaged' "$BASE" "$1"; }
 
 keychain_secret() { security find-generic-password -a "$USER" -s "$1" -w 2>/dev/null; }
 
@@ -134,10 +140,11 @@ deliver_to_channel() { # subject text author_id author_name
 }
 
 mirror_channel_to_slack() { # subject
-  local spoken
+  local message
   while "$TEAMUP" wait "$1" --as "$HANDLE" --timeout 0 >/dev/null 2>&1; do
-    spoken="$("$TEAMUP" recv "$1" --as "$HANDLE" | sed 1d | grep '^  #' || true)"
-    [ -n "$spoken" ] && post_code_block "$1" "$spoken"
+    while IFS= read -r message; do
+      post_code_block "$1" "$message"
+    done < <("$TEAMUP" recv "$1" --as "$HANDLE" | sed 1d | grep '^  #')
   done
 }
 
@@ -148,45 +155,85 @@ report_broken_session() { # subject error
   "$TEAMUP" say "$1" --as "$HANDLE" -- "teamup-slack bridge is down ($2) — David is not receiving this channel and his replies are not arriving." || true
 }
 
+report_session_recovered() { # subject
+  [ -f "$(broken_file "$1")" ] || return 0
+  rm -f "$(broken_file "$1")"
+  post_to_thread "$1" ":white_check_mark: the Slack session is back — replies in this thread reach the agents again." || true
+  "$TEAMUP" say "$1" --as "$HANDLE" -- "teamup-slack bridge is back up — David's replies are arriving again." || true
+}
+
+session_down_too_long() { # sets FAILING_SINCE
+  FAILING_SINCE="${FAILING_SINCE:-$SECONDS}"
+  (( SECONDS - FAILING_SINCE >= REPORT_DOWN_AFTER_SECONDS ))
+}
+
 agents_remain() { # subject
   ls -A "$BASE/$1/members" 2>/dev/null | grep -qv "^$HANDLE$"
 }
 
+channel_stayed_empty() { # subject — sets EMPTY_SINCE
+  agents_remain "$1" && { EMPTY_SINCE=""; return 1; }
+  EMPTY_SINCE="${EMPTY_SINCE:-$SECONDS}"
+  (( SECONDS - EMPTY_SINCE >= RETIRE_AFTER_EMPTY_SECONDS ))
+}
+
 retire_mirror() { # subject
-  post_to_thread "$1" "_channel is empty — mirror stopped._" || true
+  post_to_thread "$1" "_channel is empty — mirror stopped. Replies here are delivered when an agent next joins \`$1\`._" || true
   "$TEAMUP" leave "$1" --as "$HANDLE" >/dev/null 2>&1 || true
   rm -f "$(pid_file "$1")"
 }
 
+newest_known_reply() { # subject root — replies older than this minus a margin were already handled
+  local newest
+  newest="$(cat "$(posted_file "$1")" "$(relayed_file "$1")" 2>/dev/null | sort -n | tail -1)"
+  awk -v ts="${newest:-$2}" -v margin="$LATE_REPLY_MARGIN_SECONDS" 'BEGIN { printf "%.6f", ts - margin }'
+}
+
+fetch_unseen_replies() { # subject root
+  slack_api conversations.replies \
+    --data-urlencode "channel=$SLACK_DESTINATION" --data-urlencode "ts=$2" \
+    --data-urlencode "oldest=$(newest_known_reply "$1" "$2")" --data-urlencode "limit=200"
+}
+
+deliver_unseen_replies() { # subject root replies
+  local skip ts author author_name text
+  skip="$(cat "$(posted_file "$1")" "$(relayed_file "$1")" 2>/dev/null)"
+  while IFS=$'\x1f' read -r ts author author_name text; do
+    grep -qxF "$ts" <<<"$skip" && continue
+    deliver_to_channel "$1" "$text" "$author" "$author_name" && echo "$ts" >> "$(relayed_file "$1")"
+  done < <(jq -r --arg root "$2" '.messages[] | select(.ts != $root) |
+    [(.ts), (.user // .bot_id), (.bot_profile.name // .username // ""), (.text | gsub("[\n\t]"; " "))] | join("\u001f")' <<<"$3")
+}
+
 relay_slack_replies() { # subject
-  local root replies skip ts author author_name text
+  local root replies
   root="$(cat "$(thread_file "$1")")"
   while sleep "$POLL_SECONDS"; do
-    agents_remain "$1" || { retire_mirror "$1"; return 0; }
-    replies="$(slack_api conversations.replies \
-      --data-urlencode "channel=$SLACK_DESTINATION" \
-      --data-urlencode "ts=$root" --data-urlencode "limit=50")"
-    [ "$(jq -r '.ok' <<<"$replies")" = true ] || {
-      report_broken_session "$1" "$(jq -r '.error // "unreachable"' <<<"${replies:-null}")"
+    channel_stayed_empty "$1" && { retire_mirror "$1"; return 0; }
+    replies="$(fetch_unseen_replies "$1" "$root")"
+    if [ "$(jq -r '.ok' <<<"$replies" 2>/dev/null)" != true ]; then
+      session_down_too_long &&
+        report_broken_session "$1" "$(jq -r '.error // "unreachable"' <<<"${replies:-null}" 2>/dev/null || echo "truncated response")"
       continue
-    }
-    rm -f "$(broken_file "$1")"
-    skip="$(cat "$(posted_file "$1")" "$(relayed_file "$1")" 2>/dev/null)"
-    while IFS=$'\x1f' read -r ts author author_name text; do
-      grep -qxF "$ts" <<<"$skip" && continue
-      echo "$ts" >> "$(relayed_file "$1")"
-      deliver_to_channel "$1" "$text" "$author" "$author_name"
-    done < <(jq -r --arg root "$root" '.messages[] | select(.ts != $root) |
-      [(.ts), (.user // .bot_id), (.bot_profile.name // .username // ""), (.text | gsub("[\n\t]"; " "))] | join("\u001f")' <<<"$replies")
+    fi
+    FAILING_SINCE=""
+    report_session_recovered "$1"
+    deliver_unseen_replies "$1" "$root" "$replies"
   done
 }
 
+stop_loops_and_their_listeners() { # an orphaned `teamup wait` keeps the listener pidfile and swallows the next message
+  local loops; loops="$(jobs -p | paste -sd, -)"
+  [ -n "$loops" ] || return 0
+  pkill -P "$loops" 2>/dev/null
+  kill ${loops//,/ } 2>/dev/null
+}
+
 run_bridge() { # subject
-  local outbound inbound
   load_slack_session
-  mirror_channel_to_slack "$1" & outbound=$!
-  relay_slack_replies "$1" & inbound=$!
-  trap 'kill "$outbound" "$inbound" 2>/dev/null' EXIT TERM INT
+  mirror_channel_to_slack "$1" &
+  relay_slack_replies "$1" &
+  trap stop_loops_and_their_listeners EXIT TERM INT
   wait
 }
 
@@ -194,8 +241,6 @@ is_mirrored() { # subject
   local pid; pid="$(cat "$(pid_file "$1")" 2>/dev/null || true)"
   [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
 }
-
-url_file() { printf '%s/%s/.slack.url' "$BASE" "$1"; }
 
 announce_thread_url() { # subject — once per channel, so agents never hunt for the permalink
   [ -f "$(url_file "$1")" ] && return 0
