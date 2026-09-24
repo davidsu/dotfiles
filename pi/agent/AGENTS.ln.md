@@ -4,6 +4,10 @@
 
 **CRITICAL**: DO NOT write summary documents at the end of your responses. No "Summary" sections, no markdown documents explaining what you did. Just do the work and respond concisely about what you did.
 
+## File Paths in Output
+
+- When referencing a file, use its relative path from the repo root (e.g. `app/api/user_repos_api.py:115`), not a bare filename. This keeps cmd+click working in the terminal.
+
 ## Auto-Load Skills
 
 **CRITICAL**: Before writing or modifying ANY code, you MUST load `/skill:clean-code` if you haven't already loaded it in this conversation.
