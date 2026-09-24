@@ -14,7 +14,7 @@ This ensures you follow clean code principles and coding standards automatically
 
 ## Always Use Full Paths
 
-When referring to a file, always write its absolute full path — never a bare filename or relative path.
+When referencing a file, use its absolute path (e.g. `/Users/davidsu/projects/apper/app/api/user_repos_api.py:115`), not a bare filename (`user_repos_api.py:115`). This keeps cmd+click working in the terminal. Applies everywhere, prose answers included.
 
 ## Always Show Proof
 
