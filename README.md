@@ -328,6 +328,15 @@ Cmd+Ctrl+R → Rename current tab (prompts) + random tab color
 > An all-lowercase name is upper-cased; mixed-case is kept as typed.
 > Requires Accessibility permission for Karabiner-Elements (see first-run setup).
 
+### 🤖 iTerm Claude Sessions
+```
+Cmd+Ctrl+R → Name + color the Claude Code session in the current tab (one dialog)
+```
+> Runs `bin/claude_session_style` (JXA); active only when iTerm is frontmost.
+> Type a name, ↑/↓ cycles the `/color` palette (starts on a random pick), Enter applies, Esc cancels.
+> An empty name sets only the color. Types `/rename` and `/color` into the tab, so it only acts
+> on an idle Claude tab (`✳ … (claude)`). Errors go to `~/Library/Logs/claude_session_style.log`.
+
 ### 🎹 Function Keys
 ```
 F1/F2       → Brightness

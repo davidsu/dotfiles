@@ -16,6 +16,17 @@
             ]
           },
           {
+            "description": "iTerm: cmd+ctrl+r → name + color the Claude session in the current tab",
+            "manipulators": [
+              {
+                "conditions": [{ "type": "frontmost_application_if", "bundle_identifiers": ["^com\\.googlecode\\.iterm2$"] }],
+                "from": { "key_code": "r", "modifiers": { "mandatory": ["command", "control"] } },
+                "to": [{ "shell_command": "/Users/davidsu/.dotfiles/bin/claude_session_style >> $HOME/Library/Logs/claude_session_style.log 2>&1" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
             "description": "Vim layer: ` + hjkl/ui/m,/90/BS (tap ` alone = `)",
             "manipulators": [
               {

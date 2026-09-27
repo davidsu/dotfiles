@@ -1,0 +1,118 @@
+#!/usr/bin/osascript -l JavaScript
+// claude_session_style — name and color the Claude Code session in the current iTerm tab.
+// One dialog: type a name, ↑/↓ cycles /color's palette (starts on a random pick), Enter applies.
+// An empty name applies only the color. Types /rename and /color into the tab (focus-free).
+// Only acts on an idle Claude tab: iTerm titles those "✳ … (claude)", and a busy TUI drops input.
+ObjC.import('Cocoa');
+
+const SESSION_COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
+const KEYSTROKE_GAP_SECONDS = 0.1;
+const CLEAR_LINE = '\x15';
+const ARROW_STEPS = { 'moveUp:': -1, 'moveDown:': 1 };
+
+const swatchFor = (color) => ({
+  red: $.NSColor.systemRedColor,
+  blue: $.NSColor.systemBlueColor,
+  green: $.NSColor.systemGreenColor,
+  yellow: $.NSColor.systemYellowColor,
+  purple: $.NSColor.systemPurpleColor,
+  orange: $.NSColor.systemOrangeColor,
+  pink: $.NSColor.systemPinkColor,
+  cyan: $.NSColor.systemCyanColor,
+})[color];
+
+const isIdleClaude = (session) => {
+  const title = session.name();
+  return title.startsWith('✳') && title.endsWith('(claude)');
+};
+
+const showAlert = (message, info) => {
+  const alert = $.NSAlert.alloc.init;
+  alert.messageText = message;
+  alert.informativeText = info;
+  return alert;
+};
+
+const createColorPicker = () => {
+  const picker = { index: Math.floor(Math.random() * SESSION_COLORS.length) };
+  picker.swatch = $.NSTextField.labelWithString('');
+  picker.swatch.frame = $.NSMakeRect(0, 0, 300, 22);
+  picker.swatch.drawsBackground = true;
+  picker.swatch.alignment = $.NSTextAlignmentCenter;
+  picker.color = () => SESSION_COLORS[picker.index];
+  picker.paint = () => {
+    picker.swatch.stringValue = `↑  ${picker.color()}  ↓`;
+    picker.swatch.backgroundColor = swatchFor(picker.color());
+  };
+  picker.step = (offset) => {
+    picker.index = (picker.index + offset + SESSION_COLORS.length) % SESSION_COLORS.length;
+    picker.paint();
+  };
+  picker.paint();
+  return picker;
+};
+
+const registerArrowDelegate = (picker) => {
+  ObjC.registerSubclass({
+    name: 'ClaudeSessionColorCycler',
+    protocols: ['NSTextFieldDelegate'],
+    methods: {
+      'control:textView:doCommandBySelector:': {
+        types: ['bool', ['id', 'id', 'SEL']],
+        implementation: (control, textView, selector) => {
+          const offset = ARROW_STEPS[selector];
+          if (!offset) return false;
+          picker.step(offset);
+          return true;
+        },
+      },
+    },
+  });
+  return $.ClaudeSessionColorCycler.alloc.init;
+};
+
+const buildStyleDialog = () => {
+  const picker = createColorPicker();
+  const nameField = $.NSTextField.alloc.initWithFrame($.NSMakeRect(0, 30, 300, 24));
+  nameField.placeholderString = 'session name (empty = color only)';
+  nameField.delegate = registerArrowDelegate(picker);
+  const accessory = $.NSView.alloc.initWithFrame($.NSMakeRect(0, 0, 300, 54));
+  accessory.addSubview(nameField);
+  accessory.addSubview(picker.swatch);
+  const alert = showAlert('Name Claude session', '↑/↓ changes the color');
+  alert.addButtonWithTitle('OK');
+  alert.addButtonWithTitle('Cancel');
+  alert.accessoryView = accessory;
+  alert.layout;
+  alert.window.initialFirstResponder = nameField;
+  return { alert, nameField, picker };
+};
+
+const promptStyle = () => {
+  const { alert, nameField, picker } = buildStyleDialog();
+  $.NSApplication.sharedApplication.activateIgnoringOtherApps(true);
+  if (alert.runModal !== $.NSAlertFirstButtonReturn) return null;
+  return { name: nameField.stringValue.js.trim(), color: picker.color() };
+};
+
+const typeSlashCommand = (session, slashCommand) => {
+  [CLEAR_LINE, slashCommand, ''].forEach((text, idx, chunks) => {
+    session.write({ text, newline: idx === chunks.length - 1 });
+    delay(KEYSTROKE_GAP_SECONDS);
+  });
+};
+
+function run() {
+  $.NSApplication.sharedApplication.setActivationPolicy($.NSApplicationActivationPolicyAccessory);
+  const iterm = Application('iTerm2');
+  const target = iterm.currentWindow().currentSession();
+  if (!isIdleClaude(target)) {
+    showAlert('Not an idle Claude session', 'Focus a Claude tab that is waiting at its prompt.').runModal;
+    return;
+  }
+  const style = promptStyle();
+  iterm.activate();
+  if (!style) return;
+  if (style.name) typeSlashCommand(target, `/rename ${style.name}`);
+  typeSlashCommand(target, `/color ${style.color}`);
+}
