@@ -1,5 +1,6 @@
 -- Compare commits or working tree with Fugitive-style UI
--- Usage: :Gdc <commit>           (compare commit to working tree)
+-- Usage: :Gdc                     (compare branch point with origin's default branch to working tree)
+--        :Gdc <commit>           (compare commit to working tree)
 --        :Gdc <commit1> <commit2> (compare two commits)
 
 local git = require("git.helpers")
@@ -266,16 +267,32 @@ local function complete_refs(arglead)
   return branches
 end
 
+local function find_branch_point()
+  local sha, ok = git.run("merge-base origin/HEAD HEAD")
+  return ok and sha or nil
+end
+
+local function diff_branch_point()
+  local branch_point = find_branch_point()
+  if not branch_point then
+    return vim.notify("Gdc: no merge-base between origin/HEAD and HEAD", vim.log.levels.ERROR)
+  end
+  gdc(branch_point)
+end
+
 local function command_handler(opts)
+  if opts.args == "" then
+    return diff_branch_point()
+  end
   local commit1, commit2 = parse_commits(opts.args)
   if not commit1 then
-    return vim.notify("Usage: :Gdc <commit> [commit2] (defaults to working tree)", vim.log.levels.ERROR)
+    return vim.notify("Usage: :Gdc [commit] [commit2] (defaults to merge-base with origin/HEAD vs working tree)", vim.log.levels.ERROR)
   end
   gdc(commit1, commit2)
 end
 
 local command_opts = {
-  nargs = "+",
+  nargs = "*",
   desc = "Compare commit to working tree, or two commits",
   complete = complete_refs,
 }

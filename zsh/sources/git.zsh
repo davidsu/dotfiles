@@ -34,11 +34,10 @@ gsv() {
 alias gsva='gsv'
 
 # gdc - Git Diff Commits (Fugitive-style UI via :Gdc)
-# Usage: gdc <commit1> <commit2> 
+# Usage: gdc [commit1] [commit2]  (no args: merge-base with origin/HEAD vs working tree)
 gdiffbranch() {
   _require_git_repo gdc || return 1
 
-  [[ -z "$1" ]] && { echo "Usage: gdc <commit1> <commit2>" >&2; return 1; }
   nvim -c "GDiffBranch $*"
 }
 alias gdc='gdiffbranch'

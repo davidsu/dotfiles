@@ -435,4 +435,15 @@ describe("GDiffBranch", function()
     end
     assert.is_true(found_feature)
   end)
+
+  it("defaults to merge-base with origin/HEAD when no args", function()
+    run_git("update-ref refs/remotes/origin/HEAD " .. default_branch)
+    local branch_point = vim.fn.system("git merge-base origin/HEAD HEAD"):sub(1, 8)
+
+    vim.cmd("GDiffBranch")
+
+    local header = get_buffer_lines()[1]
+    eq(branch_point, header:match("Comparing: (%x+)"))
+    assert.truthy(header:match("WORKTREE"))
+  end)
 end)
