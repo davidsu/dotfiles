@@ -39,7 +39,7 @@ alias cyc='claude --chrome --dangerously-skip-permissions --mcp-config '\''{"mcp
 alias cvim='nvim -c "ClaudeConnect"'
 
 # Codex
-alias cody='codex --dangerously-bypass-approvals-and-sandbox'
+alias codex='command codex --dangerously-bypass-approvals-and-sandbox'
 
 # Markdown viewer
 alias mdview='nvim --headless -c "MarkdownPreview"'
