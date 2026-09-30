@@ -118,15 +118,17 @@ free_peer_handle() {
 }
 [ -n "$handle" ] || handle="$(free_peer_handle)"
 
-# The spawning session's color lives in its transcript as the last `agentColor`
-# value (absent → no custom color → let /color pick a random one).
+# The spawning session's color lives in its transcript as the last `agent-color`
+# entry (absent or "default" → no custom color → let /color pick a random one).
+# Found by glob, not `rg --files`: the user's ripgrep config caps files at 10MB, and a
+# long-running spawner's transcript outgrows that, silently losing its color.
 parent_color() {
-  local sid transcript
-  sid="${CLAUDE_CODE_SESSION_ID:-}"
-  [ -n "$sid" ] || return 0
-  transcript="$(rg --files "$HOME/.claude/projects" 2>/dev/null | rg "/${sid}\.jsonl$" | head -1)"
-  [ -n "$transcript" ] || return 0
-  rg -o '"agentColor":"[^"]*"' "$transcript" 2>/dev/null | tail -1 | sed 's/.*:"//;s/"$//'
+  local transcripts
+  [ -n "${CLAUDE_CODE_SESSION_ID:-}" ] || return 0
+  transcripts=("$HOME"/.claude/projects/*/"$CLAUDE_CODE_SESSION_ID".jsonl)
+  [ -f "${transcripts[0]}" ] || return 0
+  rg --no-config -o '"type":"agent-color","agentColor":"[^"]*"' "${transcripts[0]}" \
+    | tail -1 | sed 's/.*:"//;s/"$//' | grep -vx default
 }
 
 # cyc = `claude --chrome … --mcp-config {playwright}` so a spawned peer has browser
