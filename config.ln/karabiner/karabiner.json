@@ -16,7 +16,7 @@
             ]
           },
           {
-            "description": "iTerm: cmd+ctrl+r → name + color the Claude session in the current tab",
+            "description": "iTerm: cmd+ctrl+r → name + color the Claude or Codex session in the current tab",
             "manipulators": [
               {
                 "conditions": [{ "type": "frontmost_application_if", "bundle_identifiers": ["^com\\.googlecode\\.iterm2$"] }],
@@ -281,6 +281,12 @@
           }
         ]
       },
+      "devices": [
+        {
+          "identifiers": { "is_keyboard": true, "is_pointing_device": true, "product_id": 2368, "vendor_id": 13364 },
+          "ignore": false
+        }
+      ],
       "name": "Default profile",
       "selected": true,
       "virtual_hid_keyboard": {
