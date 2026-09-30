@@ -33,9 +33,30 @@ gsv() {
 
 alias gsva='gsv'
 
+_print_gdc_usage() {
+  cat <<'USAGE'
+Usage: gdc [-h|--help] [<commit> [<commit>]]
+       gdc <commit>..<commit>
+
+Open a Fugitive-style file list of what changed, then `dd` on a file to diff it.
+
+  gdc                   branch point (merge-base of origin/HEAD and HEAD) vs working tree
+  gdc <commit>          <commit> vs working tree
+  gdc <a> <b>           commit vs commit (order doesn't matter, sorted by commit time)
+  gdc <a>..<b>          same as above
+
+Examples:
+  gdc HEAD~1            what I changed since the last commit
+  gdc abc123~1 abc123   a commit vs its parent
+  gdc main feature      two branches
+
+Keys in the list: dd diff, <CR> open, o split, q close all, g? help
+USAGE
+}
+
 # gdc - Git Diff Commits (Fugitive-style UI via :Gdc)
-# Usage: gdc [commit1] [commit2]  (no args: merge-base with origin/HEAD vs working tree)
 gdiffbranch() {
+  [[ "$1" == "-h" || "$1" == "--help" ]] && { _print_gdc_usage; return 0; }
   _require_git_repo gdc || return 1
 
   nvim -c "GDiffBranch $*"
