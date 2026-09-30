@@ -24,11 +24,13 @@
 #   codex  -> no launch-name flag and no argv command dispatch, so it still spawns
 #             unnamed and picks its own handle.
 #
-# Color: claude exposes no non-interactive way to set a session's color, so once the peer
-# is interactive we type `/color <color>` into its tab — inheriting the spawning session's
-# color (random if it has none). On Ghostty this STEALS FOCUS to the peer's tab for a
-# moment (System Events keystrokes need focus); on iTerm it is focus-free (`write text`).
-# Pass --no-steal (alias --no-color) to skip it. Only claude needs this detour.
+# Color: claude has no launch flag for a session's color, so we type `/color <color>` into
+# its tab — the spawning session's color, or a random palette pick if it has none.
+# On iTerm, focus-free: claude launches with its join prompt and gets `/color` typed the
+# moment its process is up (claude runs /color immediately, even mid-turn); codex launches
+# bare and gets `/rename <handle>` then the join prompt typed. The tab gets the same color. On Ghostty, claude's `/color` is keystroked once
+# the peer joins, which STEALS FOCUS and lands after its first turn, and codex spawns
+# unnamed. Pass --no-steal (alias --no-color) to skip coloring.
 set -eo pipefail
 
 BASE_DIR="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
@@ -38,37 +40,12 @@ member_count() { ls -A "$BASE_DIR/$1/members" 2>/dev/null | wc -l | tr -d ' ' ||
 # become interactive — proven by it joining the channel — then type one slash command
 # into its tab. Best-effort; every failure is silent by design.
 if [ "${1:-}" = __inject_cmd ]; then
-  subject="$2"; handle="$3"; cmd="$4"; baseline="${5:-0}"; terminal="${6:-ghostty}"
+  subject="$2"; handle="$3"; cmd="$4"; baseline="${5:-0}"
   for _ in $(seq 1 90); do
     [ "$(member_count "$subject")" -gt "$baseline" ] && break
     sleep 0.5
   done
   sleep 1   # let the freshly-live TUI settle before it reads typed input
-  if [ "$terminal" = iterm ]; then
-    osascript - "$handle" "$cmd" <<'OSA' >/dev/null 2>&1 || true
-on run argv
-  set subj to item 1 of argv
-  set cmd to item 2 of argv
-  tell application "iTerm2"
-    repeat with w in windows
-      repeat with t in tabs of w
-        repeat with s in sessions of t
-          if (name of s) contains subj then
-            tell s to write text (ASCII character 21) newline NO -- ctrl-U: clear any stray input
-            delay 0.3
-            tell s to write text cmd newline NO
-            delay 1.5 -- claude's slash-command menu must settle before Enter, or the command is swallowed
-            tell s to write text ""
-            return
-          end if
-        end repeat
-      end repeat
-    end repeat
-  end tell
-end run
-OSA
-    exit 0
-  fi
   osascript - "$handle" "$cmd" <<'OSA' >/dev/null 2>&1 || true
 on run argv
   set subj to item 1 of argv
@@ -93,6 +70,69 @@ on run argv
   end tell
 end run
 OSA
+  exit 0
+fi
+
+SESSION_COLORS=(red blue green yellow purple orange pink cyan)
+
+type_into_iterm_session() { # session-id text seconds-before-enter
+  osascript - "$1" "$2" "$3" <<'OSA' >/dev/null 2>&1 || true
+on run argv
+  tell application "iTerm2"
+    repeat with w in windows
+      repeat with t in tabs of w
+        repeat with s in sessions of t
+          if (id of s) is (item 1 of argv) then
+            tell s to write text (ASCII character 21) newline NO
+            delay 0.1
+            tell s to write text (item 2 of argv) newline NO
+            delay ((item 3 of argv) as real)
+            tell s to write text ""
+            return
+          end if
+        end repeat
+      end repeat
+    end repeat
+  end tell
+end run
+OSA
+}
+
+iterm_session_field() { # session-id tty|name
+  osascript -e "tell application \"iTerm2\" to repeat with w in windows
+repeat with t in tabs of w
+repeat with s in sessions of t
+if (id of s) is \"$1\" then return $2 of s
+end repeat
+end repeat
+end repeat" 2>/dev/null || true
+}
+
+is_agent_running() { # tty agent
+  ps -t "${1#/dev/}" -o comm= 2>/dev/null | grep -qE "(^|/)$2\$"
+}
+
+settle_seconds()      { case "$1" in claude) echo 0 ;;   *) echo 2 ;;   esac; }
+seconds_before_enter() { case "$1" in claude) echo 0.1 ;; *) echo 1.5 ;; esac; }
+
+wait_for_agent() { # session-id agent
+  local tty; tty="$(iterm_session_field "$1" tty)"
+  [ -n "$tty" ] || return 1
+  for _ in $(seq 1 300); do
+    is_agent_running "$tty" "$2" && { sleep "$(settle_seconds "$2")"; return 0; }
+    sleep 0.1
+  done
+  return 1
+}
+
+if [ "${1:-}" = __boot_iterm ]; then
+  session="$2"; agent="$3"; color="$4"; shift 4
+  [ -z "$color" ] || "$HOME/.dotfiles/bin/iterm_tab_style" --session "$session" --color "$color" >/dev/null 2>&1 || true
+  wait_for_agent "$session" "$agent" || exit 0
+  for command in "$@"; do
+    type_into_iterm_session "$session" "$command" "$(seconds_before_enter "$agent")"
+    sleep "$(settle_seconds "$agent")"
+  done
   exit 0
 fi
 
@@ -134,21 +174,22 @@ parent_color() {
 # cyc = `claude --chrome … --mcp-config {playwright}` so a spawned peer has browser
 # tools. --mcp-config is variadic (space-separated), so a `--` terminates options
 # and keeps the prompt from being read as another config path. claude discovers the
-# skill globally as /suss-teamup; pi invokes skills as /skill:<name>. codex (cody =
+# skill globally as /suss-teamup; pi invokes skills as /skill:<name>. codex (the codex alias =
 # bypass flags) does NOT dispatch slash commands from argv — argv is a plain prompt —
 # so it gets a natural-language instruction naming the skill (from ~/.agents/skills).
 # `|| true` because no color is the normal case (an uncolored spawner, or a transcript
 # with no agentColor yet), and pipefail would otherwise make that abort the spawn.
 color="$(parent_color || true)"
+color="${color:-${SESSION_COLORS[RANDOM % ${#SESSION_COLORS[@]}]}}"
 case "$agent" in
-  # A bare `/color` lets claude pick a random one, which is right when the spawner has none.
-  claude) run="cyc --name '$handle' -- '/suss-teamup $subject'"; inject="/color${color:+ $color}" ;;
+  claude) run="cyc --name '$handle' -- '/suss-teamup $subject'"; inject="/color $color" ;;
   # pi takes several argv messages and runs them in order, so it names ITSELF before it
   # joins — no keystroke injection, no focus steal. `/banner` is pi's `/rename`: it sets
   # the session name the handle is derived from AND paints the banner, which is the only
   # place the user can see which peer a tab is.
   pi)     run="pi '/banner $handle' '/skill:suss-teamup $subject'"; inject="" ;;
-  codex)  run="cody 'Use the suss-teamup skill. Join channel $subject. Your first action is the teamup join command.'"; inject="" ;;
+  codex)  codex_prompt="Use the suss-teamup skill. Your first action: ~/.claude/skills/suss-teamup/scripts/teamup join $subject --as $handle"
+          run="codex '$codex_prompt'"; inject="" ;;
   *)      echo "teamup-spawn: agent must be 'claude', 'pi', or 'codex'" >&2; exit 1 ;;
 esac
 
@@ -156,9 +197,20 @@ esac
 # (member count ticking up = the peer is interactive).
 baseline="$(member_count "$subject")"
 terminal="$(term_spawn --resolve)"
-term_spawn --dir "$dir" --run "$run"
+tab_color="$color"; [ "$no_color" = true ] && tab_color=""
+case "$terminal:$agent" in
+  iterm:claude)
+    session="$(term_spawn --dir "$dir" --run "$run")"
+    [ "$no_color" = true ] ||
+      nohup "$0" __boot_iterm "$session" claude "$tab_color" "/color $color" >/dev/null 2>&1 &
+    inject="" ;;
+  iterm:codex)
+    session="$(term_spawn --dir "$dir" --run codex)"
+    nohup "$0" __boot_iterm "$session" codex "$tab_color" "/rename $handle" "$codex_prompt" >/dev/null 2>&1 & ;;
+  *) term_spawn --dir "$dir" --run "$run" >/dev/null ;;
+esac
 echo "spawned $agent on '$subject' as '$handle'."
 
 if [ -n "$inject" ] && [ "$no_color" != true ]; then
-  nohup "$0" __inject_cmd "$subject" "$handle" "$inject" "$baseline" "$terminal" >/dev/null 2>&1 &
+  nohup "$0" __inject_cmd "$subject" "$handle" "$inject" "$baseline" >/dev/null 2>&1 &
 fi

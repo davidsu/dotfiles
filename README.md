@@ -328,14 +328,21 @@ Cmd+Ctrl+R → Rename current tab (prompts) + random tab color
 > An all-lowercase name is upper-cased; mixed-case is kept as typed.
 > Requires Accessibility permission for Karabiner-Elements (see first-run setup).
 
-### 🤖 iTerm Claude Sessions
+### 🤖 iTerm Claude / Codex Sessions
 ```
-Cmd+Ctrl+R → Name + color the Claude Code session in the current tab (one dialog)
+Cmd+Ctrl+R → Name + color the Claude Code or Codex session in the current tab (one dialog)
 ```
 > Runs `bin/claude_session_style` (JXA); active only when iTerm is frontmost.
 > Type a name, ↑/↓ cycles the `/color` palette (starts on a random pick), Enter applies, Esc cancels.
-> An empty name sets only the color. Types `/rename` and `/color` into the tab, so it only acts
-> on an idle Claude tab (`✳ … (claude)`). Errors go to `~/Library/Logs/claude_session_style.log`.
+> An empty name sets only the color. Types `/rename` (and, on Claude, `/color`) into the tab, so it
+> only acts on an idle Claude tab (`✳ … (claude)`) or an idle Codex tab (`… (codex)`, no spinner).
+> Both also get a matching **iTerm tab color** (Codex has no `/color`, so that's its only color), via `bin/iterm_tab_style`
+> (writes iTerm's tab-color escape sequence to the tab's tty).
+> Errors go to `~/Library/Logs/claude_session_style.log`.
+>
+> Codex's footer is configured in `~/.codex/config.toml` (not tracked: codex rewrites it):
+> `[tui] status_line = ["thread-name", "model-with-reasoning", "current-dir"]`, so the
+> `/rename` name leads the footer. Codex can't show custom text there or above the prompt.
 
 ### 🎹 Function Keys
 ```

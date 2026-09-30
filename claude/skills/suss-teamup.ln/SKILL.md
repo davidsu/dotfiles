@@ -76,7 +76,7 @@ see on their screen. `teamup session-name` prints what it would pick.
 |---|---|---|
 | claude-code | the session name above your prompt | `/rename {name}`, or `--name` at launch |
 | pi | your **banner** (`/banner` sets the banner and the session name together) | `/banner {name}` |
-| codex | nothing — no session name exists | — |
+| codex | the **thread name** in codex's footer (`threads.name` in `~/.codex/state_*.sqlite`) | `/rename {name}` |
 
 `teamup name-command` prints the one for *this* harness, so you can tell the user what
 to type without guessing which agent you are.
@@ -88,8 +88,9 @@ teamup join {subject} --pwd "$PWD" --doing "..."      # handle = your session na
 Only pass `--as {handle}` when you were *given* one (a spawner assigns its peer's
 handle, §Spawn) or when the script says it can't derive one — an unnamed session
 (claude auto-derives a name and tags it `nameSource: derived`; that's noise, not
-identity — an unnamed pi session simply has no name), or codex, which has none to
-read. Then **pick a handle yourself and make it visible** — don't ask the user, just
+identity — an unnamed pi session simply has no name). codex has no such tag: it writes
+its own AI title into the same field, so an un-renamed codex derives its AI title — pass
+`--as` there if that title is noise. Then **pick a handle yourself and make it visible** — don't ask the user, just
 do it:
 
 1. Choose something short and stable: `{cwd-basename}-{agent}` (e.g. `dotfiles-pi`,
@@ -376,13 +377,20 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
    (`--as`, default `{subject}-peer{n}`, checked free against the roster) and it's final:
    a claude peer launches with `--name {handle}` and a pi peer gets a leading
    `/banner {handle}` message, so its session name *is* its channel handle and it derives
-   that handle on join — one name on its screen, in its session, and on the roster. (codex
-   can't be named either way and picks its own.) Give it a descriptive one
+   that handle on join — one name on its screen, in its session, and on the roster. A codex
+   peer on **iTerm** launches bare; spawn then types `/rename {handle}` and the join prompt
+   (with `--as {handle}`) into its idle tab, since codex dispatches no argv slash commands.
+   On Ghostty codex still spawns unnamed and joins with `--as`. Give it a descriptive one
    (`apper-test-runner`) — that string is how the user will find its session. A **claude**
-   peer additionally inherits the spawning session's **color** (random if you have none)
-   by keystroking `/color` into its tab once it's interactive — this briefly steals focus
-   to the peer's tab, and only claude needs the detour. Pass **`--no-steal`** (alias
-   `--no-color`) to skip the color step.
+   peer additionally inherits the spawning session's **color** (a random pick if you have
+   none). On iTerm it launches with its join prompt and spawn types `/color` the moment
+   the claude process is up (claude runs `/color` immediately, even mid-turn) — about 2s
+   after spawn — and its tab gets the same color. On Ghostty `/color` is keystroked after the peer joins,
+   which briefly steals focus and lands after its first turn. Pass **`--no-steal`** (alias
+   `--no-color`) to skip coloring. (Claude has no public launch flag for color; the hidden
+   `--agent-color` only works as part of Claude's own agent-teams launch.)
+   A **codex** peer on iTerm gets the same color as its **iTerm tab color** instead (codex
+   has no `/color`), written to the tab's tty by `bin/iterm_tab_style`.
 4. **Huddle** (§2). For a handoff, post the context the peer needs on the channel
    before it gets going; for pairing, align on who owns what.
 
@@ -596,8 +604,8 @@ line (markers: `!` = an ask aimed at you, `*` = unread), or nothing when on no t
 The claude statusline (`claude/statusline.ln.sh`) and the pi footer
 (`pi/agent/extensions/claude-code-footer.ln.ts`) both call it and render an `⇄ …`
 segment. Codex has **no** custom-command statusline (its `/statusline` only toggles
-built-in items), so it shows no teams segment — the Stop-hook unread surfacing is its
-equivalent signal.
+built-in items; openai/codex#20244 tracks one), so it shows no teams segment — the
+Stop-hook unread surfacing is its equivalent signal.
 
 ### Known limitations & caveats
 
@@ -625,12 +633,12 @@ equivalent signal.
   *hard-blocks* the turn end; pi can't block, so it *injects* a follow-up the agent
   could still ignore (and the dedupe guard won't re-push an unchanged nudge). So a
   pi agent stays a slightly weaker channel citizen than claude-code — expected.
-- **handle == session name holds on claude and pi, never on codex.** claude-code writes
+- **handle == session name holds on claude, pi and codex.** claude-code writes
   a live session-name file (`~/.claude/sessions/{pid}.json`); pi has no such file, so its
   extension exports `TEAMUP_SESSION_NAME` from `pi.getSessionName()` instead (§6) —
   different plumbing, same guarantee, and the drift nudge works for both since it goes
-  through `teamup session-name`. codex exposes no session name at all: a codex peer picks
-  its own handle and its channel identity can be a name the user sees nowhere. Two pi
+  through `teamup session-name`. codex keeps its thread name in its state DB, which
+  `teamup` reads directly; the catch is that an AI title counts as a name there. Two pi
   caveats: the export is refreshed per turn, so a `/banner` mid-turn reaches the channel
   only on the next one; and the drift nudge only reaches pi when the hook is spawned by
   the extension (it inherits the env), never from a bare shell.

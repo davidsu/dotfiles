@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# iterm_tab_style — color an iTerm tab, focus-free.
+#   iterm_tab_style (--tty /dev/ttysNNN | --session ITERM_SESSION_ID) --color NAME
+# Writes iTerm's escape sequences straight to the tab's tty, so it works while the
+# program in the tab (codex, claude) owns the screen. NAME is one of claude's /color
+# palette.
+set -euo pipefail
+
+tty=""; session=""; color=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --tty) tty="$2"; shift 2 ;;
+    --session) session="$2"; shift 2 ;;
+    --color) color="$2"; shift 2 ;;
+    *) echo "iterm_tab_style: unknown flag $1" >&2; exit 1 ;;
+  esac
+done
+
+tty_of_session() {
+  osascript - "$1" <<'OSA'
+on run argv
+  tell application "iTerm2"
+    repeat with w in windows
+      repeat with t in tabs of w
+        repeat with s in sessions of t
+          if (id of s) is (item 1 of argv) then return tty of s
+        end repeat
+      end repeat
+    end repeat
+  end tell
+end run
+OSA
+}
+
+rgb_of() {
+  case "$1" in
+    red) echo "255 69 58" ;;
+    blue) echo "10 132 255" ;;
+    green) echo "48 209 88" ;;
+    yellow) echo "255 214 10" ;;
+    purple) echo "191 90 242" ;;
+    orange) echo "255 159 10" ;;
+    pink) echo "255 55 95" ;;
+    cyan) echo "100 210 255" ;;
+    *) return 1 ;;
+  esac
+}
+
+write_tab_color() {
+  local rgb red green blue
+  rgb="$(rgb_of "$1")" || { echo "iterm_tab_style: unknown color $1" >&2; exit 1; }
+  read -r red green blue <<< "$rgb"
+  printf '\033]6;1;bg;red;brightness;%s\a\033]6;1;bg;green;brightness;%s\a\033]6;1;bg;blue;brightness;%s\a' \
+    "$red" "$green" "$blue" > "$tty"
+}
+
+[ -n "$tty" ] || [ -z "$session" ] || tty="$(tty_of_session "$session")"
+[ -w "$tty" ] || { echo "iterm_tab_style: no writable tty (--tty or --session)" >&2; exit 1; }
+[ -n "$color" ] || { echo "iterm_tab_style: --color is required" >&2; exit 1; }
+write_tab_color "$color"

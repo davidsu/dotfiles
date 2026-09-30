@@ -165,11 +165,27 @@ name_session_command() { printf '%s' "${TEAMUP_NAME_COMMAND:-/rename}"; }
 # reports nothing at all, so this stays empty rather than guessing).
 # claude-code instead keeps a live file per session: a chosen name has no nameSource,
 # a machine-derived one is tagged "derived". A harness with neither gets nothing back.
-chosen_session_name() { # session-guid
-  [ -n "${TEAMUP_SESSION_NAME:-}" ] && { printf '%s' "$TEAMUP_SESSION_NAME"; return 0; }
-  [ -n "$1" ] && command -v jq >/dev/null 2>&1 || return 0
+# codex keeps thread names in its state DB. It can't tell a /rename from its own AI
+# title, so an un-renamed codex thread answers to its AI title — accepted, since that
+# title is what the user sees in codex's footer.
+codex_thread_name() { # thread-id
+  local db; db="$(ls "$HOME"/.codex/state_*.sqlite 2>/dev/null | tail -1)"
+  [ -n "$db" ] && command -v sqlite3 >/dev/null 2>&1 || return 0
+  sqlite3 "$db" "select coalesce(name, '') from threads where id = '${1//\'/}'" 2>/dev/null || true
+}
+
+claude_session_name() { # session-guid
+  command -v jq >/dev/null 2>&1 || return 0
   jq -r --arg sid "$1" 'select(.sessionId == $sid and .nameSource != "derived") | .name // empty' \
     "$CLAUDE_SESSIONS"/*.json 2>/dev/null | head -1 || true
+}
+
+chosen_session_name() { # session-guid
+  [ -n "${TEAMUP_SESSION_NAME:-}" ] && { printf '%s' "$TEAMUP_SESSION_NAME"; return 0; }
+  [ -n "$1" ] || return 0
+  local name; name="$(claude_session_name "$1")"
+  [ -n "$name" ] && { printf '%s' "$name"; return 0; }
+  codex_thread_name "$1"
 }
 
 print_member_count() { # subject
