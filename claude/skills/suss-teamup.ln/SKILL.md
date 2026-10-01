@@ -157,8 +157,12 @@ Once ≥1 peer is present, describe concretely: **what** you're implementing,
 
 ```
 teamup say  {subject} --as {handle} -- "<your message; put free text after -->"
-teamup wait {subject} --as {handle} --timeout 110   # blocks until a peer speaks
+teamup wait {subject} --as {handle} --timeout 110   # blocks until a reply meant for you
 ```
+
+With 3+ agents on the channel, **address the huddle** (`@peer`, `ask --to peer`, or
+`@all`): an unaddressed `say` wakes nobody there, and your `wait` only fires on a message
+meant for you (§4). With one peer, plain `say` reaches it.
 
 Keep `--timeout` ≤ 110s so it fits the default Bash budget; for a longer hold,
 raise the Bash tool timeout to match. Run this one in the **foreground** — a
@@ -190,6 +194,12 @@ teamup recv {subject} --as {handle}   # prints only messages from others since l
 `recv` is the **only** command that advances your read-cursor — `wait`, `status`,
 and `peek` never consume. So a peer message stays unread until you `recv` it,
 including after a background `wait` wakes you (§4).
+
+**You post only from an up-to-date view.** If anything arrived since your last read —
+a message, a join, a peer leaving — `say`, `ask` and `ack` print it, mark it read, and
+post **nothing** (exit `3`, `NOT POSTED`). Read it, then send again if it still makes
+sense. This stops you answering a superseded question or addressing a peer who already
+left. So `recv` right before you post; the human's handle (the Slack bridge) is exempt.
 
 `recv` leads with a machine-readable summary line, then the new messages:
 
@@ -259,7 +269,8 @@ and send deviations back to the decision-owner instead of blessing the shortcut.
 
 > 🚨 **On pi, skip this whole section — you have no listener to arm.** pi's extension
 > watches the channel with `fs.watch` and starts a turn the moment a peer speaks, even
-> on a fully idle agent. So on pi:
+> on a fully idle agent. (That watcher wakes on **any** unread — the "meant for you"
+> rule below applies to `wait`, so it doesn't thin out pi's wake-ups yet.) So on pi:
 > - **Never** run `wait --timeout 0` — the extension **blocks** the call. There is
 >   nothing to arm and nothing to re-arm.
 > - **Never loop `wait` to stay reachable.** `say` → `wait` → "still quiet, re-arming"
@@ -284,11 +295,28 @@ teamup wait {subject} --as {handle} --timeout 0
 
 Run it with `run_in_background: true`. With `--timeout 0` the watcher stays
 armed across your whole work-turn instead of expiring after ~110s, so it's still
-listening when a peer finally speaks. When one does, it exits and the harness
+listening when a message meant for you arrives (§4). When one does, it exits and the harness
 re-invokes you — a poor-agent's interrupt.
 
+**A wait wakes you only for messages meant for you.** On a busy channel every agent
+used to wake for every message, which buried the user's own conversation under
+wake-up turns. Every message still lands on the shared channel for everyone to `recv`;
+what changed is only who gets **woken**. A `wait` (idle or bounded) decides, in order:
+
+1. a join `ping` → wakes you (a new peer is the cue to huddle; a `bye` never wakes)
+2. `@{you}` or `@all` anywhere in the message → wakes you (`ask --to {you}` writes the `@`)
+3. an `@` of anyone else, the human included → **doesn't** wake you, whoever wrote it
+4. a reply — `ack --re N`, or a `say` opening `ack #N` / `re #N` → wakes only N's author
+5. anything else is unaddressed → wakes you if it's from the human (`$TEAMUP_SLACK_HANDLE`,
+   default `david`, i.e. their Slack replies) or if you are the **one** other agent here
+
+So on a channel with 3+ agents, an unaddressed update wakes nobody. It still counts as
+**unread**: you see it at your next `recv`, and the Stop hook still makes you read it
+before going idle. **Address what needs an answer** — `ask --to {peer}` or `@{peer}` —
+and use `@all` for something every agent must act on now.
+
 **`wait` is signal-only: it does NOT consume the message.** It just unblocks
-when a peer speaks; the message stays unread. On wake you **must `recv`** to
+when a message meant for you arrives; it stays unread. On wake you **must `recv`** to
 actually read it — `recv` is the only reader that advances your cursor. (This is
 deliberate: a background `wait`'s stdout lands in a detached task-output file you
 never read, so if `wait` advanced the cursor the message would be silently lost.)
@@ -347,8 +375,8 @@ On **claude-code this re-arm is enforced**, not left to memory: the Stop hook
 > ⚠️ Still best-effort, not a true interrupt: a background command re-invokes you
 > only **between** turns — while heads-down in a turn you're unreachable. So a
 > long-armed `wait` is not a substitute for a deliberate `recv` at every checkpoint
-> (§3). The accepted cost of enforce-and-re-arm: every peer message = one wake + one
-> re-arm turn. (A churn-free external waker via tmux `send-keys` was considered and
+> (§3). The accepted cost of enforce-and-re-arm: every message meant for you = one wake +
+> one re-arm turn. (A churn-free external waker via tmux `send-keys` was considered and
 > **ruled out** — see §6.)
 
 ## Spawn a cooperating agent
@@ -696,6 +724,8 @@ Stop-hook unread surfacing is its equivalent signal.
 
 ## Etiquette
 
+- Address what needs an answer (`@peer`, `ask --to peer`, `@all`): on a channel of 3+
+  agents an unaddressed message wakes nobody (§4).
 - One line per message; lead with intent (`overlap on tokenValidator?`,
   `claiming src/auth/*`, `done: pushed validator to wt-a`).
 - Announce file claims **before** editing shared code; release them when done.
@@ -712,14 +742,14 @@ Stop-hook unread surfacing is its equivalent signal.
 | `session-name [--session G]` | the handle your session name implies (exit 1 if it has no user-chosen name) |
 | `name-command` | what the USER types to name this session: `/rename` on claude, `/banner` on pi |
 | `rename --as H --to N` | re-key H → N on every channel you're on (presence, cursor, listener, registry) + tell peers |
-| `say {subject} --as H -- <text>` | post a message (alias: `send`) |
+| `say {subject} --as H -- <text>` | post a message (alias: `send`). Refuses (exit `3`, shows what's new, marks it read) if anything arrived since your last read — resend after reading. Same for `ask`/`ack` |
 | `ask {subject} --as H [--to P] -- <question>` | post a question; `--to` aims it at peer `P` (shows as their `asks_for_me`) |
 | `ack {subject} --as H [--re <seq>] -- [note]` | answer/clear an ask (default `--re` = latest peer msg); any message from you also clears it |
 | `recv {subject} --as H` | summary line + peers' messages since last read (non-blocking); join/leave pings print as context but aren't counted as unread. **The only reader that advances the cursor.** |
 | `status {subject} --as H` | summary line only (incl. `listener=live\|none`); cursor untouched; exit `0`=clean `1`=unread `2`=ask-for-you |
 | `status --as H` | no subject: list every team this handle is on + member count |
 | `teams --session G [--pwd P]` | compact one-line joined channels for a statusline (`!` ask, `*` unread); empty when on none |
-| `wait {subject} --as H [--timeout S]` | block until a peer speaks something you have not read, or timeout (`--timeout 0` = forever, for background idle waits; a second one stands by instead of exiting). Exits `0` only with something to read, `1` on timeout/left-channel, and names the case on its last `wake:` line. A second expiry with nothing new on the channel says `STOP LOOPING` + how to go idle on your harness. **Signal-only: does NOT consume — `recv` after waking.** Not on pi for idle waiting (§4). |
+| `wait {subject} --as H [--timeout S]` | block until a peer says something meant for you (§4: from the human, `@you`/`@all`, a reply to you, a join, or anything when you are the only other agent) that you have not read, or timeout (`--timeout 0` = forever, for background idle waits; a second one stands by instead of exiting). Exits `0` only with something to read, `1` on timeout/left-channel, and names the case on its last `wake:` line. A second expiry with nothing new on the channel says `STOP LOOPING` + how to go idle on your harness. **Signal-only: does NOT consume — `recv` after waking.** Not on pi for idle waiting (§4). |
 | `roster {subject}` | who's on the channel |
 | `peek {subject} [--last N]` | recent history (default 20) |
 | `leave {subject} --as H` / `leave --all --as H` | disconnect |

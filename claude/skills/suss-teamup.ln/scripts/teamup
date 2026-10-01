@@ -96,14 +96,14 @@ usage:
   teamup rename --as <handle> --to <new>                  # re-key your identity on every channel you're on (after a rename)
   teamup session-name [--session <guid>]                  # the handle this session's name implies; exit 1 if it has no chosen name
   teamup name-command                                     # what the USER types to name this session (/rename on claude, /banner on pi)
-  teamup say    <subject> --as <handle> <message...>      (alias: send)
+  teamup say    <subject> --as <handle> <message...>      (alias: send; say/ask/ack refuse with exit 3 until you have read what's new)
   teamup ask    <subject> --as <handle> [--to <handle>] <question...>  # a question that needs an answer
   teamup ack    <subject> --as <handle> [--re <seq>] [note...]         # answer/clear an ask (default: latest peer msg)
   teamup recv   <subject> --as <handle>                   # new msgs from others + summary line, non-blocking
   teamup status <subject> --as <handle>                   # summary only; exit 0=clean 1=unread 2=ask-for-me (cursor untouched)
   teamup status --as <handle>                             # no subject: list every team this handle is on + member count
   teamup teams  --session <guid> [--pwd <path>]           # compact one-line joined channels for a statusline (! ask, * unread)
-  teamup wait   <subject> --as <handle> [--timeout <sec>] # block until someone speaks (default 110s; 0 = forever, for background idle waits)
+  teamup wait   <subject> --as <handle> [--timeout <sec>] # block until a message meant for you: @you/@all, a reply to you, the human, a join, or anything on a 2-agent channel (default 110s; 0 = forever)
                                                           # exits 0 only with something unread to read, 1 on timeout; a duplicate --timeout 0 stands by instead of exiting
   teamup roster <subject>                                 # who is on the channel
   teamup peek   <subject> [--last <n>]                    # show recent history (default 20)
@@ -274,13 +274,50 @@ count_lines() { awk 'END{print NR+0}'; }
 # not mail — counting it as unread would let a peer merely joining block your idle.
 spoken_only() { awk -F'\t' '$4=="say" || $4=="ack" || $4=="ask"'; }
 
-# stdin filter: what justifies waking an idle agent. Everything a peer wrote, plus a
-# join `ping` — "a new peer appeared" is a cue to open the huddle, and it is the only
-# thing that reaches a peer who joins and then waits to be briefed instead of
-# speaking first (§1/§2 tell it to speak, but nothing enforces that).
-# A `bye` is excluded: a departure is never actionable for an idle agent, and if a
-# leaving peer's parting message matters, that `say` wakes you on its own.
-worth_waking_for() { awk -F'\t' '$4!="bye"'; }
+HUMAN_HANDLE="${TEAMUP_SLACK_HANDLE:-david}"
+
+other_agent_count() { # subject handle
+  ls -A "$(mdir "$1")" 2>/dev/null | grep -vxF -e "$2" -e "$HUMAN_HANDLE" | count_lines
+}
+
+# stdin filter (numbered lines): what justifies waking this handle. On a busy channel
+# every agent waking for every message buried the user's own conversation under
+# wake-up turns, so a wake needs a message MEANT for this handle, decided in order:
+#   - a join `ping`: a new peer is the cue to open the huddle (a `bye` never wakes)
+#   - an @mention of this handle, or @all
+#   - an @mention of anyone else: not for this handle, whoever wrote it
+#   - a reply: `ack` (re:#N) or a say opening "ack #N" / "re #N" wakes N's author only
+#   - otherwise unaddressed: wakes everyone if from the human (their Slack replies
+#     arrive as $HUMAN_HANDLE), or if this handle is the only other agent here
+# Anything that doesn't wake stays unread for the next checkpoint.
+worth_waking_for() { # subject handle
+  local solo=0; [ "$(other_agent_count "$1" "$2")" -le 1 ] && solo=1
+  awk -F'\t' -v me="$2" -v human="$HUMAN_HANDLE" -v solo="$solo" '
+    function is_handle_char(c) { return c ~ /[A-Za-z0-9._+-]/ }
+    function mentions(body, h,   at, rest) {
+      rest = body
+      while ((at = index(rest, "@" h)) > 0) {
+        rest = substr(rest, at + length(h) + 1)
+        if (rest == "" || !is_handle_char(substr(rest, 1, 1))) return 1
+      }
+      return 0
+    }
+    function mentions_anyone(body,   h) { for (h in author_seen) if (mentions(body, h)) return 1; return 0 }
+    function reply_target(type, body,   seq) {
+      if (!match(body, /^(re:|[Aa][Cc][Kk]|[Rr][Ee])[: ]*#[0-9]+/)) return ""
+      seq = substr(body, RSTART, RLENGTH); sub(/^[^#]*#/, "", seq)
+      return author[seq + 0]
+    }
+    FNR == NR { author[FNR] = $2; author_seen[$2] = 1; next }
+    $4 == "ping" { print; next }
+    $4 != "say" && $4 != "ask" && $4 != "ack" { next }
+    mentions($5, me) || mentions($5, "all") { print; next }
+    mentions_anyone($5) { next }
+    { target = reply_target($4, $5) }
+    target != "" { if (target == me) print; next }
+    $3 == human || solo { print }
+  ' "$(chan "$1")" -
+}
 
 # What a `wait` may legitimately fire on: peer lines this handle has neither read
 # (cursor) nor already been woken for (woken mark) — a conjunction, so a wait
@@ -291,7 +328,7 @@ worth_waking_for() { awk -F'\t' '$4!="bye"'; }
 # WAKE — see spoken_only vs worth_waking_for.
 unwoken_lines() { # subject handle
   local mark; mark="$(cat "$(woken "$1" "$2")" 2>/dev/null || echo 0)"
-  fresh_lines "$1" "$2" | worth_waking_for | awk -F'\t' -v w="$mark" '$1 > w+0'
+  fresh_lines "$1" "$2" | worth_waking_for "$1" "$2" | awk -F'\t' -v w="$mark" '$1 > w+0'
 }
 
 record_woken() { # subject handle numbered-lines
@@ -381,6 +418,30 @@ pending_asks_for_me() { # subject handle
     $4=="ask" && $3!=me && index($5, "@" me) { asked[$1]=1 }
     END { n=0; for (seq in asked) if (seq+0 > answered_through+0) n++; print n+0 }
   '
+}
+
+# Print what is new since this handle's cursor, then advance the cursor — `recv`'s job.
+read_unread() { # subject handle
+  local fresh unread pending senders
+  fresh="$(fresh_lines "$1" "$2")"
+  printf '%s' "$(linecount "$(chan "$1")")" > "$(cursor "$1" "$2")"
+  unread="$(printf '%s' "$fresh" | spoken_only | count_lines)"
+  pending="$(pending_asks_for_me "$1" "$2")"
+  senders="$(printf '%s' "$fresh" | spoken_only | awk -F'\t' 'NF{print $3}' | sort -u | paste -sd, -)"
+  printf 'summary: unread=%s asks_for_me=%s from=%s\n' "$unread" "$pending" "${senders:-none}"
+  if [ -n "$fresh" ]; then printf '%s\n' "$fresh" | pretty; else echo "  (nothing new)"; fi
+}
+
+# A post written without reading what arrived meanwhile can answer a stale question or
+# address a peer who already left. So an agent posts only from an up-to-date view: if
+# anything is new (messages, joins, leaves), show it and refuse; the next attempt goes
+# through. The human's handle is exempt — the Slack bridge relays their replies under it.
+refuse_post_if_unread() { # subject handle
+  [ "$2" = "$HUMAN_HANDLE" ] && return 0
+  [ -n "$(fresh_lines "$1" "$2")" ] || return 0
+  echo "NOT POSTED — the channel changed since you last read it. Read this, then send again if it still makes sense:"
+  read_unread "$1" "$2"
+  exit 3
 }
 
 # Block until the channel changes, then return so the caller re-checks. fswatch
@@ -525,25 +586,21 @@ case "$CMD" in
     [ -n "$SUBJECT" ] || usage; require_handle; ensure_member "$SUBJECT"
     if [ ${#MSG[@]} -gt 0 ]; then text="${MSG[*]}"; else text="$(cat)"; fi
     [ -n "$text" ] || die "nothing to say"
+    refuse_post_if_unread "$SUBJECT" "$HANDLE"
     append "$SUBJECT" "$HANDLE" say "$text"
     echo "sent."
     ;;
 
   recv)
     [ -n "$SUBJECT" ] || usage; require_handle; ensure_member "$SUBJECT"
-    fresh="$(fresh_lines "$SUBJECT" "$HANDLE")"
-    printf '%s' "$(linecount "$(chan "$SUBJECT")")" > "$(cursor "$SUBJECT" "$HANDLE")"
-    unread="$(printf '%s' "$fresh" | spoken_only | count_lines)"
-    pending="$(pending_asks_for_me "$SUBJECT" "$HANDLE")"
-    senders="$(printf '%s' "$fresh" | spoken_only | awk -F'\t' 'NF{print $3}' | sort -u | paste -sd, -)"
-    printf 'summary: unread=%s asks_for_me=%s from=%s\n' "$unread" "$pending" "${senders:-none}"
-    if [ -n "$fresh" ]; then printf '%s\n' "$fresh" | pretty; else echo "  (nothing new)"; fi
+    read_unread "$SUBJECT" "$HANDLE"
     ;;
 
   ask)
     [ -n "$SUBJECT" ] || usage; require_handle; ensure_member "$SUBJECT"
     if [ ${#MSG[@]} -gt 0 ]; then text="${MSG[*]}"; else text="$(cat)"; fi
     [ -n "$text" ] || die "nothing to ask"
+    refuse_post_if_unread "$SUBJECT" "$HANDLE"
     [ -n "$TO" ] && text="@$TO $text"
     append "$SUBJECT" "$HANDLE" ask "$text"
     echo "asked${TO:+ @$TO}."
@@ -551,6 +608,7 @@ case "$CMD" in
 
   ack)
     [ -n "$SUBJECT" ] || usage; require_handle
+    refuse_post_if_unread "$SUBJECT" "$HANDLE"
     seq="$RE"; [ -n "$seq" ] || seq="$(latest_peer_seq "$SUBJECT" "$HANDLE")"
     [ -n "$seq" ] || die "nothing to ack — no peer messages yet"
     note="${MSG[*]}"
@@ -662,7 +720,7 @@ case "$CMD" in
           spoken="$(printf '%s\n' "$fresh" | spoken_only | count_lines)"
           if [ "$spoken" -gt 0 ]; then
             printf 'wake: peer-spoke unread=%s — read them with: teamup recv %s --as %s\n' \
-              "$spoken" "$SUBJECT" "$HANDLE"
+              "$(fresh_lines "$SUBJECT" "$HANDLE" | spoken_only | count_lines)" "$SUBJECT" "$HANDLE"
           else
             printf 'wake: peer-joined unread=0 — a new peer is on the channel; open the huddle if you were waiting for one, else re-arm\n'
           fi

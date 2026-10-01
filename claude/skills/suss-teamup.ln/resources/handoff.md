@@ -23,7 +23,9 @@ off to, and having handed off.
    project docs + the actual code it will change + load `clean-code`, a one-line problem
    statement, the scope, and the two hard gates (below). Also dump the **conversational
    context the files can't hold** — verbal decisions, blame-traps, false-green lessons —
-   and ask the peer to **cite them back** so they land.
+   and ask the peer to **cite them back** so they land. **Address it to the peer**
+   (`ask --to {handle}` or open with `@{handle}`), and have the peer address its replies
+   to you: on a channel with 3+ agents an unaddressed message wakes nobody (SKILL.md §4).
 4. **Gate the grill on a VERIFIED understanding-check.** The peer orients, then posts an
    **understanding-check**: the mechanism, the load-bearing code seam, its recommended
    plan, and how it would stage the test — **citing files as authority and flagging its
