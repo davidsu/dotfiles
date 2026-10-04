@@ -11,6 +11,7 @@
 	prompt = false
 [alias]
 	d = difftool
+	pr = !gh pr view --web
 [credential]
 	helper = osxkeychain
 [push]

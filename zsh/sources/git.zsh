@@ -3,6 +3,7 @@
 # Git Aliases
 alias gst='git status'
 alias glv='git log --max-count=500 --name-only V'
+alias prview='gh pr view --web'
 
 # Helpers
 _require_git_repo() {
