@@ -94,6 +94,7 @@ Task docs reference code with root-relative links like `[label](/frontend/a.ts#L
 **🪟 Window Navigation:**
 - `<C-h/j/k/l>` - Move between existing windows
 - `<C-h>`/`<C-l>` - With no window in that direction, smooth-scroll half a screen left/right (needs `nowrap`)
+- `<C-S-h>`/`<C-S-l>` - Always smooth-scroll half a screen left/right; diff panes scroll together (`scrollopt+=hor`)
 - `gh`/`gj`/`gk`/`gl` - Smart navigation (auto-creates splits at edges)
 - `<C-p>` - Previous window
 

@@ -74,6 +74,8 @@ map('n', '<C-h>', function() win_utils.win_move_or_scroll('h') end, { desc = 'Mo
 map('n', '<C-j>', '<cmd>wincmd j<cr>', { desc = 'Move to down window', silent = true })
 map('n', '<C-k>', '<cmd>wincmd k<cr>', { desc = 'Move to up window', silent = true })
 map('n', '<C-l>', function() win_utils.win_move_or_scroll('l') end, { desc = 'Move to right window, or scroll right', silent = true })
+map('n', '<C-S-h>', function() win_utils.scroll_half_screen('h') end, { desc = 'Scroll half screen left', silent = true })
+map('n', '<C-S-l>', function() win_utils.scroll_half_screen('l') end, { desc = 'Scroll half screen right', silent = true })
 map('n', '<C-p>', '<cmd>wincmd p<cr>', { desc = 'Move to previous window', silent = true })
 
 -- Smart window navigation (creates splits at edges)

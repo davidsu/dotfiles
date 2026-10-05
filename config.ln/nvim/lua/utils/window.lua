@@ -39,12 +39,16 @@ end
 
 local half_screen_scroll = { h = 'zH', l = 'zL' }
 
+local function scroll_half_screen(direction)
+  require('cinnamon').scroll(half_screen_scroll[direction])
+end
+
 local function win_move_or_scroll(key)
   if has_neighbor(key) then
     vim.cmd('wincmd ' .. key)
     return
   end
-  require('cinnamon').scroll(half_screen_scroll[key])
+  scroll_half_screen(key)
 end
 
 local function win_size(key)
@@ -69,6 +73,7 @@ end
 return {
   win_move = win_move,
   win_move_or_scroll = win_move_or_scroll,
+  scroll_half_screen = scroll_half_screen,
   win_size = win_size,
   resize_step = resize_step,
   toggle_force_horizontal_resize = toggle_force_horizontal_resize,
