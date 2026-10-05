@@ -1,7 +1,8 @@
 #!/usr/bin/osascript -l JavaScript
 // claude_session_style — name and color the Claude Code or Codex session in the current iTerm tab.
 // One dialog: type a name, ↑/↓ cycles /color's palette (starts on a random pick), Enter applies.
-// An empty name applies only the color. Types /rename and /color into the tab (focus-free).
+// The name field starts on the session's current user-chosen name, so Enter alone recolors.
+// An empty or unchanged name applies only the color. Types /rename and /color into the tab (focus-free).
 // Only acts on an idle Claude tab ("✳ … (claude)") or an idle Codex tab ("… (codex)", no spinner):
 // a busy TUI drops input. Both get the iTerm tab color via iterm_tab_style; claude also gets /color.
 ObjC.import('Cocoa');
@@ -30,6 +31,26 @@ const isIdleClaude = (session) => {
 const CODEX_BUSY_SPINNER = /^[\u2800-\u28FF]/;
 const CODEX_SUBMIT_DELAY_SECONDS = 1.5;
 const TAB_STYLE = `${$.NSHomeDirectory().js}/.dotfiles/bin/iterm_tab_style`;
+
+const SESSIONS_DIR = `${$.NSHomeDirectory().js}/.claude/sessions`;
+
+const shell = (command) => {
+  const app = Application.currentApplication();
+  app.includeStandardAdditions = true;
+  return app.doShellScript(command);
+};
+
+const pidsOnTty = (session) => shell(`ps -t '${session.tty().replace('/dev/', '')}' -o pid=`).split(/\s+/).filter(Boolean);
+
+const readSessionRecord = (pid) => {
+  const contents = $.NSString.stringWithContentsOfFileEncodingError(`${SESSIONS_DIR}/${pid}.json`, $.NSUTF8StringEncoding, null);
+  return contents.isNil() ? null : JSON.parse(contents.js);
+};
+
+const userChosenName = (record) => (record && record.nameSource !== 'derived' && record.name) || '';
+
+const currentSessionName = (session) =>
+  pidsOnTty(session).map(readSessionRecord).map(userChosenName).find(Boolean) || '';
 
 const isIdleCodex = (session) => {
   const title = session.name();
@@ -81,9 +102,10 @@ const registerArrowDelegate = (picker) => {
   return $.ClaudeSessionColorCycler.alloc.init;
 };
 
-const buildStyleDialog = () => {
+const buildStyleDialog = (currentName) => {
   const picker = createColorPicker();
   const nameField = $.NSTextField.alloc.initWithFrame($.NSMakeRect(0, 30, 300, 24));
+  nameField.stringValue = currentName;
   nameField.placeholderString = 'session name (empty = color only)';
   nameField.delegate = registerArrowDelegate(picker);
   const accessory = $.NSView.alloc.initWithFrame($.NSMakeRect(0, 0, 300, 54));
@@ -98,11 +120,12 @@ const buildStyleDialog = () => {
   return { alert, nameField, picker };
 };
 
-const promptStyle = () => {
-  const { alert, nameField, picker } = buildStyleDialog();
+const promptStyle = (currentName) => {
+  const { alert, nameField, picker } = buildStyleDialog(currentName);
   $.NSApplication.sharedApplication.activateIgnoringOtherApps(true);
   if (alert.runModal !== $.NSAlertFirstButtonReturn) return null;
-  return { name: nameField.stringValue.js.trim(), color: picker.color() };
+  const name = nameField.stringValue.js.trim();
+  return { name: name === currentName ? '' : name, color: picker.color() };
 };
 
 const typeSlashCommand = (session, slashCommand) => {
@@ -120,11 +143,7 @@ const typeCodexCommand = (session, command) => {
   session.write({ text: '', newline: true });
 };
 
-const colorTab = (session, color) => {
-  const app = Application.currentApplication();
-  app.includeStandardAdditions = true;
-  app.doShellScript(`'${TAB_STYLE}' --tty '${session.tty()}' --color ${color}`);
-};
+const colorTab = (session, color) => shell(`'${TAB_STYLE}' --tty '${session.tty()}' --color ${color}`);
 
 const styleClaude = (session, style) => {
   colorTab(session, style.color);
@@ -147,7 +166,7 @@ function run() {
     showAlert('Not an idle Claude or Codex session', 'Focus an agent tab that is waiting at its prompt.').runModal;
     return;
   }
-  const style = promptStyle();
+  const style = promptStyle(currentSessionName(target));
   iterm.activate();
   if (!style) return;
   applyStyle(target, style);
