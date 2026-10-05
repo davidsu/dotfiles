@@ -364,6 +364,8 @@ F10/F11/F12 → Volume
 ### 🧭 Navigation
 - `auto_cd` - Type directory name to cd
 - `jd` - Jump to `~/.dotfiles`
+- `ja` / `jas` - Jump to `~/projects/apper` / its `suss-tasks` (`alias.work.zsh`)
+- `jc` / `jcs` - Jump to `~/projects/cli` / its `suss-tasks`
 
 ### 🧪 Power Aliases
 - `V` (global) - Pipe command output into a temp file and open it in Neovim
