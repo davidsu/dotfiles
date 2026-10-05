@@ -70,10 +70,10 @@ local win_utils = require('utils.window')
 local term_utils = require('utils.terminal')
 
 -- Window navigation (Ctrl + hjkl)
-map('n', '<C-h>', '<cmd>wincmd h<cr>', { desc = 'Move to left window', silent = true })
+map('n', '<C-h>', function() win_utils.win_move_or_scroll('h') end, { desc = 'Move to left window, or scroll left', silent = true })
 map('n', '<C-j>', '<cmd>wincmd j<cr>', { desc = 'Move to down window', silent = true })
 map('n', '<C-k>', '<cmd>wincmd k<cr>', { desc = 'Move to up window', silent = true })
-map('n', '<C-l>', '<cmd>wincmd l<cr>', { desc = 'Move to right window', silent = true })
+map('n', '<C-l>', function() win_utils.win_move_or_scroll('l') end, { desc = 'Move to right window, or scroll right', silent = true })
 map('n', '<C-p>', '<cmd>wincmd p<cr>', { desc = 'Move to previous window', silent = true })
 
 -- Smart window navigation (creates splits at edges)

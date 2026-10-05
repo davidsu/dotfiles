@@ -93,6 +93,7 @@ Task docs reference code with root-relative links like `[label](/frontend/a.ts#L
 
 **🪟 Window Navigation:**
 - `<C-h/j/k/l>` - Move between existing windows
+- `<C-h>`/`<C-l>` - With no window in that direction, smooth-scroll half a screen left/right (needs `nowrap`)
 - `gh`/`gj`/`gk`/`gl` - Smart navigation (auto-creates splits at edges)
 - `<C-p>` - Previous window
 
@@ -337,7 +338,7 @@ Powered by **live-preview.nvim** (pure Lua, no external dependencies)
 
 #### 🎭 UI Enhancements
 - 📊 **Lualine statusline** - Beautiful, informative status line
-- 🌊 **Smooth scrolling** - Buttery smooth navigation
+- 🌊 **Smooth scrolling** - cinnamon.nvim animates `<C-u>`/`<C-d>`/`<C-f>`/`<C-b>`, `{`/`}`, `n`/`N`/`*`/`#`, `<C-o>`/`<C-i>` and horizontal scrolling
 - 🌑 **Dim inactive windows** - Focus on what matters
 
 ## 📦 Installation

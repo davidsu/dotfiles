@@ -3,8 +3,13 @@
 return {
   -- Smooth scrolling
   {
-    'psliwka/vim-smoothie',
+    'declancm/cinnamon.nvim',
+    version = '*',
     event = 'VeryLazy',
+    opts = {
+      keymaps = { basic = true },
+      options = { delay = 10 },
+    },
   },
 
   -- Dim inactive windows
