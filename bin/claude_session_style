@@ -3,8 +3,10 @@
 // One dialog: type a name, ↑/↓ cycles /color's palette (starts on a random pick), Enter applies.
 // The name field starts on the session's current user-chosen name, so Enter alone recolors.
 // An empty or unchanged name applies only the color. Types /rename and /color into the tab (focus-free).
-// Only acts on an idle Claude tab ("✳ … (claude)") or an idle Codex tab ("… (codex)", no spinner):
-// a busy TUI drops input. Both get the iTerm tab color via iterm_tab_style; claude also gets /color.
+// Acts on any Claude tab ("… (claude)"): /rename and /color apply immediately even mid-turn. Refuses while
+// Claude shows a choice (permission prompt etc.), since the typed Enter would pick its highlighted option.
+// Acts on a Codex tab ("… (codex)") only when idle (no spinner).
+// Both get the iTerm tab color via iterm_tab_style; claude also gets /color.
 ObjC.import('Cocoa');
 
 const SESSION_COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
@@ -23,10 +25,14 @@ const swatchFor = (color) => ({
   cyan: $.NSColor.systemCyanColor,
 })[color];
 
-const isIdleClaude = (session) => {
-  const title = session.name();
-  return title.startsWith('✳') && title.endsWith('(claude)');
-};
+const PENDING_CHOICE_HINT = 'Esc to cancel';
+const SCREEN_TAIL_LINES = 15;
+
+const isClaude = (session) => session.name().endsWith('(claude)');
+
+const screenTail = (session) => session.contents().trimEnd().split('\n').slice(-SCREEN_TAIL_LINES).join('\n');
+
+const isAwaitingChoice = (session) => screenTail(session).includes(PENDING_CHOICE_HINT);
 
 const CODEX_BUSY_SPINNER = /^[\u2800-\u28FF]/;
 const CODEX_SUBMIT_DELAY_SECONDS = 1.5;
@@ -63,6 +69,11 @@ const showAlert = (message, info) => {
   alert.informativeText = info;
   return alert;
 };
+
+function runFocusedModal(alert) {
+  $.NSApplication.sharedApplication.activateIgnoringOtherApps(true);
+  return alert.runModal;
+}
 
 const createColorPicker = () => {
   const picker = { index: Math.floor(Math.random() * SESSION_COLORS.length) };
@@ -122,8 +133,7 @@ const buildStyleDialog = (currentName) => {
 
 const promptStyle = (currentName) => {
   const { alert, nameField, picker } = buildStyleDialog(currentName);
-  $.NSApplication.sharedApplication.activateIgnoringOtherApps(true);
-  if (alert.runModal !== $.NSAlertFirstButtonReturn) return null;
+  if (runFocusedModal(alert) !== $.NSAlertFirstButtonReturn) return null;
   const name = nameField.stringValue.js.trim();
   return { name: name === currentName ? '' : name, color: picker.color() };
 };
@@ -161,9 +171,13 @@ function run() {
   const iterm = Application('iTerm2');
   const target = iterm.currentWindow().currentSession();
   console.log(`${new Date().toISOString()} invoked on ${JSON.stringify(target.name())}`);
-  const applyStyle = isIdleClaude(target) ? styleClaude : isIdleCodex(target) ? styleCodex : null;
+  if (isClaude(target) && isAwaitingChoice(target)) {
+    runFocusedModal(showAlert('Claude is waiting on a choice', 'Answer it first: the typed Enter would pick the highlighted option.'));
+    return;
+  }
+  const applyStyle = isClaude(target) ? styleClaude : isIdleCodex(target) ? styleCodex : null;
   if (!applyStyle) {
-    showAlert('Not an idle Claude or Codex session', 'Focus an agent tab that is waiting at its prompt.').runModal;
+    runFocusedModal(showAlert('Not a Claude or idle Codex session', 'Focus a Claude tab, or a Codex tab waiting at its prompt.'));
     return;
   }
   const style = promptStyle(currentSessionName(target));

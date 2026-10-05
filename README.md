@@ -334,8 +334,9 @@ Cmd+Ctrl+R → Name + color the Claude Code or Codex session in the current tab 
 ```
 > Runs `bin/claude_session_style` (JXA); active only when iTerm is frontmost.
 > Type a name, ↑/↓ cycles the `/color` palette (starts on a random pick), Enter applies, Esc cancels.
-> An empty name sets only the color. Types `/rename` (and, on Claude, `/color`) into the tab, so it
-> only acts on an idle Claude tab (`✳ … (claude)`) or an idle Codex tab (`… (codex)`, no spinner).
+> An empty name sets only the color. Types `/rename` (and, on Claude, `/color`) into the tab. On Claude
+> it works mid-turn too, but refuses while a choice (permission prompt etc.) is on screen, because the
+> typed Enter would pick the highlighted option. Codex tabs (`… (codex)`) must be idle (no spinner).
 > Both also get a matching **iTerm tab color** (Codex has no `/color`, so that's its only color), via `bin/iterm_tab_style`
 > (writes iTerm's tab-color escape sequence to the tab's tty).
 > Errors go to `~/Library/Logs/claude_session_style.log`.
