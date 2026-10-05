@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # teamup-spawn — launch a cooperating agent in a new terminal tab, joined to a channel.
-#   teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--no-steal|--no-color]
+#   teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--color COLOR] [--no-steal|--no-color]
 # The tab opens in the caller's terminal (Ghostty or iTerm, via term_spawn).
 #
 # Opens a tab (in DIR, default $PWD) running the agent with an initial prompt that
@@ -25,9 +25,10 @@
 #             unnamed and picks its own handle.
 #
 # Color: claude has no launch flag for a session's color, so we type `/color <color>` into
-# its tab — the spawning session's color, or a random palette pick if it has none.
-# On iTerm, focus-free: claude launches with its join prompt and gets `/color` typed the
-# moment its process is up (claude runs /color immediately, even mid-turn); codex launches
+# its tab — --color, else the spawning session's color, else a random palette pick.
+# On iTerm, focus-free: claude launches with its join prompt and gets `/color` typed until
+# its transcript records the color — its TUI drops keystrokes typed while it boots, so a
+# single early attempt is silently lost (claude runs /color immediately, even mid-turn); codex launches
 # bare and gets `/rename <handle>` then the join prompt typed. The tab gets the same color. On Ghostty, claude's `/color` is keystroked once
 # the peer joins, which STEALS FOCUS and lands after its first turn, and codex spawns
 # unnamed. Pass --no-steal (alias --no-color) to skip coloring.
@@ -115,20 +116,41 @@ is_agent_running() { # tty agent
 settle_seconds()      { case "$1" in claude) echo 0 ;;   *) echo 2 ;;   esac; }
 seconds_before_enter() { case "$1" in claude) echo 0.1 ;; *) echo 1.5 ;; esac; }
 
-wait_for_agent() { # session-id agent
-  local tty; tty="$(iterm_session_field "$1" tty)"
-  [ -n "$tty" ] || return 1
+wait_for_agent() { # tty agent
+  [ -n "$1" ] || return 1
   for _ in $(seq 1 300); do
-    is_agent_running "$tty" "$2" && { sleep "$(settle_seconds "$2")"; return 0; }
+    is_agent_running "$1" "$2" && { sleep "$(settle_seconds "$2")"; return 0; }
     sleep 0.1
   done
   return 1
 }
 
+claude_transcript() { # tty
+  local pid session_id
+  pid="$(ps -t "${1#/dev/}" -o pid=,comm= | awk '$2 ~ /(^|\/)claude$/ { print $1; exit }')"
+  session_id="$(jq -r '.sessionId // empty' "$HOME/.claude/sessions/$pid.json" 2>/dev/null)"
+  [ -n "$session_id" ] && printf '%s' "$HOME"/.claude/projects/*/"$session_id".jsonl
+}
+
+has_session_color() { # tty color
+  local transcript; transcript="$(claude_transcript "$1")"
+  [ -f "$transcript" ] && rg --no-config -q "\"agentColor\":\"$2\"" "$transcript"
+}
+
+color_claude_session() { # session-id tty color
+  for _ in $(seq 1 30); do
+    type_into_iterm_session "$1" "/color $3" "$(seconds_before_enter claude)"
+    sleep 1
+    has_session_color "$2" "$3" && return 0
+  done
+}
+
 if [ "${1:-}" = __boot_iterm ]; then
   session="$2"; agent="$3"; color="$4"; shift 4
   [ -z "$color" ] || "$HOME/.dotfiles/bin/iterm_tab_style" --session "$session" --color "$color" >/dev/null 2>&1 || true
-  wait_for_agent "$session" "$agent" || exit 0
+  tty="$(iterm_session_field "$session" tty)"
+  wait_for_agent "$tty" "$agent" || exit 0
+  [ "$agent" = claude ] && { color_claude_session "$session" "$tty" "$color"; exit 0; }
   for command in "$@"; do
     type_into_iterm_session "$session" "$command" "$(seconds_before_enter "$agent")"
     sleep "$(settle_seconds "$agent")"
@@ -137,16 +159,19 @@ if [ "${1:-}" = __boot_iterm ]; then
 fi
 
 agent="${1:-}"; subject="${2:-}"; shift 2 2>/dev/null || true
-dir="$PWD"; no_color=false; handle=""
+dir="$PWD"; no_color=false; handle=""; color=""
 while [ $# -gt 0 ]; do
   case "$1" in
-    --as)  handle="$2"; shift 2 ;;
-    --dir) dir="$2"; shift 2 ;;
+    --as)    handle="$2"; shift 2 ;;
+    --dir)   dir="$2"; shift 2 ;;
+    --color) color="$2"; shift 2 ;;
     --no-steal|--no-color) no_color=true; shift ;;
     *) echo "teamup-spawn: unknown flag $1" >&2; exit 1 ;;
   esac
 done
-[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--no-steal|--no-color]" >&2; exit 1; }
+[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--color $(IFS='|'; echo "${SESSION_COLORS[*]}")] [--no-steal|--no-color]" >&2; exit 1; }
+is_session_color() { [[ " ${SESSION_COLORS[*]} " == *" $1 "* ]]; }
+[ -z "$color" ] || is_session_color "$color" || { echo "teamup-spawn: --color must be one of: ${SESSION_COLORS[*]}" >&2; exit 1; }
 
 free_peer_handle() {
   local candidate n=1
@@ -179,7 +204,7 @@ parent_color() {
 # so it gets a natural-language instruction naming the skill (from ~/.agents/skills).
 # `|| true` because no color is the normal case (an uncolored spawner, or a transcript
 # with no agentColor yet), and pipefail would otherwise make that abort the spawn.
-color="$(parent_color || true)"
+color="${color:-$(parent_color || true)}"
 color="${color:-${SESSION_COLORS[RANDOM % ${#SESSION_COLORS[@]}]}}"
 case "$agent" in
   claude) run="cyc --name '$handle' -- '/suss-teamup $subject'"; inject="/color $color" ;;
@@ -202,7 +227,7 @@ case "$terminal:$agent" in
   iterm:claude)
     session="$(term_spawn --dir "$dir" --run "$run")"
     [ "$no_color" = true ] ||
-      nohup "$0" __boot_iterm "$session" claude "$tab_color" "/color $color" >/dev/null 2>&1 &
+      nohup "$0" __boot_iterm "$session" claude "$color" >/dev/null 2>&1 &
     inject="" ;;
   iterm:codex)
     session="$(term_spawn --dir "$dir" --run codex)"

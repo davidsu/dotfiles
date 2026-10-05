@@ -398,7 +398,7 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
    (e.g. `pair-auth`, `handoff-x`) — avoid names starting with `spawn`.
 2. **Join it yourself first**, so you're present when the peer arrives:
    `teamup join {subject} --pwd "$PWD" --doing "spawning a {agent} peer"`.
-3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi|codex} {subject} [--as {handle}]`
+3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi|codex} {subject} [--as {handle}] [--color {color}]`
    — opens a tab in your `$PWD` running the agent, which joins `{subject}`. claude/pi
    invoke the skill by slash command; codex gets a plain-language prompt naming the skill
    (codex argv is a prompt, not a command dispatcher). **You assign the peer's handle**
@@ -410,10 +410,13 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
    (with `--as {handle}`) into its idle tab, since codex dispatches no argv slash commands.
    On Ghostty codex still spawns unnamed and joins with `--as`. Give it a descriptive one
    (`apper-test-runner`) — that string is how the user will find its session. A **claude**
-   peer additionally inherits the spawning session's **color** (a random pick if you have
-   none). On iTerm it launches with its join prompt and spawn types `/color` the moment
-   the claude process is up (claude runs `/color` immediately, even mid-turn) — about 2s
-   after spawn — and its tab gets the same color. On Ghostty `/color` is keystroked after the peer joins,
+   peer additionally gets a session **color**: **`--color {color}`** (one of claude's
+   `/color` palette: red blue green yellow purple orange pink cyan — anything else is
+   rejected), else the spawning session's color, else a random pick. On iTerm it launches
+   with its join prompt and spawn types `/color` into its tab, retrying every second until
+   the peer's transcript records the color — claude drops (or glues together) keystrokes
+   typed while it boots, so a single early attempt is silently lost (claude runs `/color`
+   immediately, even mid-turn). Its tab gets the same color. On Ghostty `/color` is keystroked after the peer joins,
    which briefly steals focus and lands after its first turn. Pass **`--no-steal`** (alias
    `--no-color`) to skip coloring. (Claude has no public launch flag for color; the hidden
    `--agent-color` only works as part of Claude's own agent-teams launch.)
