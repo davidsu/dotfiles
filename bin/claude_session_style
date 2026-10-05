@@ -1,7 +1,7 @@
 #!/usr/bin/osascript -l JavaScript
 // claude_session_style — name and color the Claude Code or Codex session in the current iTerm tab.
-// One dialog: type a name, ↑/↓ cycles /color's palette (starts on a random pick), Enter applies.
-// The name field starts on the session's current user-chosen name, so Enter alone recolors.
+// One dialog: type a name, ↑/↓ cycles /color's palette, Enter applies.
+// Both start on the session's current choices (user-chosen name; last /color, else a random pick).
 // An empty or unchanged name applies only the color. Types /rename and /color into the tab (focus-free).
 // Acts on any Claude tab ("… (claude)"): /rename and /color apply immediately even mid-turn. Refuses while
 // Claude shows a choice (permission prompt etc.), since the typed Enter would pick its highlighted option.
@@ -39,6 +39,7 @@ const CODEX_SUBMIT_DELAY_SECONDS = 1.5;
 const TAB_STYLE = `${$.NSHomeDirectory().js}/.dotfiles/bin/iterm_tab_style`;
 
 const SESSIONS_DIR = `${$.NSHomeDirectory().js}/.claude/sessions`;
+const TRANSCRIPTS_DIR = `${$.NSHomeDirectory().js}/.claude/projects`;
 
 const shell = (command) => {
   const app = Application.currentApplication();
@@ -55,8 +56,13 @@ const readSessionRecord = (pid) => {
 
 const userChosenName = (record) => (record && record.nameSource !== 'derived' && record.name) || '';
 
-const currentSessionName = (session) =>
-  pidsOnTty(session).map(readSessionRecord).map(userChosenName).find(Boolean) || '';
+const lastChosenColor = (record) =>
+  record ? shell(`grep -oh '"agentColor":"[a-z]*"' ${TRANSCRIPTS_DIR}/*/${record.sessionId}.jsonl 2>/dev/null | tail -1 | cut -d'"' -f4`) : '';
+
+const currentStyle = (session) => {
+  const record = pidsOnTty(session).map(readSessionRecord).find(Boolean);
+  return { name: userChosenName(record), color: lastChosenColor(record) };
+};
 
 const isIdleCodex = (session) => {
   const title = session.name();
@@ -75,8 +81,11 @@ function runFocusedModal(alert) {
   return alert.runModal;
 }
 
-const createColorPicker = () => {
-  const picker = { index: Math.floor(Math.random() * SESSION_COLORS.length) };
+const startingColorIndex = (color) =>
+  SESSION_COLORS.includes(color) ? SESSION_COLORS.indexOf(color) : Math.floor(Math.random() * SESSION_COLORS.length);
+
+const createColorPicker = (initialColor) => {
+  const picker = { index: startingColorIndex(initialColor) };
   picker.swatch = $.NSTextField.labelWithString('');
   picker.swatch.frame = $.NSMakeRect(0, 0, 300, 22);
   picker.swatch.drawsBackground = true;
@@ -113,10 +122,10 @@ const registerArrowDelegate = (picker) => {
   return $.ClaudeSessionColorCycler.alloc.init;
 };
 
-const buildStyleDialog = (currentName) => {
-  const picker = createColorPicker();
+const buildStyleDialog = (current) => {
+  const picker = createColorPicker(current.color);
   const nameField = $.NSTextField.alloc.initWithFrame($.NSMakeRect(0, 30, 300, 24));
-  nameField.stringValue = currentName;
+  nameField.stringValue = current.name;
   nameField.placeholderString = 'session name (empty = color only)';
   nameField.delegate = registerArrowDelegate(picker);
   const accessory = $.NSView.alloc.initWithFrame($.NSMakeRect(0, 0, 300, 54));
@@ -131,11 +140,11 @@ const buildStyleDialog = (currentName) => {
   return { alert, nameField, picker };
 };
 
-const promptStyle = (currentName) => {
-  const { alert, nameField, picker } = buildStyleDialog(currentName);
+const promptStyle = (current) => {
+  const { alert, nameField, picker } = buildStyleDialog(current);
   if (runFocusedModal(alert) !== $.NSAlertFirstButtonReturn) return null;
   const name = nameField.stringValue.js.trim();
-  return { name: name === currentName ? '' : name, color: picker.color() };
+  return { name: name === current.name ? '' : name, color: picker.color() };
 };
 
 const typeSlashCommand = (session, slashCommand) => {
@@ -180,7 +189,7 @@ function run() {
     runFocusedModal(showAlert('Not a Claude or idle Codex session', 'Focus a Claude tab, or a Codex tab waiting at its prompt.'));
     return;
   }
-  const style = promptStyle(currentSessionName(target));
+  const style = promptStyle(currentStyle(target));
   iterm.activate();
   if (!style) return;
   applyStyle(target, style);

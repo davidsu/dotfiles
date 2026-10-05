@@ -333,7 +333,8 @@ Cmd+Ctrl+R → Rename current tab (prompts) + random tab color
 Cmd+Ctrl+R → Name + color the Claude Code or Codex session in the current tab (one dialog)
 ```
 > Runs `bin/claude_session_style` (JXA); active only when iTerm is frontmost.
-> Type a name, ↑/↓ cycles the `/color` palette (starts on a random pick), Enter applies, Esc cancels.
+> Type a name, ↑/↓ cycles the `/color` palette, Enter applies, Esc cancels. Both start on the session's
+> current name and last `/color` (read from its transcript; a random pick if none).
 > An empty name sets only the color. Types `/rename` (and, on Claude, `/color`) into the tab. On Claude
 > it works mid-turn too, but refuses while a choice (permission prompt etc.) is on screen, because the
 > typed Enter would pick the highlighted option. Codex tabs (`… (codex)`) must be idle (no spinner).
