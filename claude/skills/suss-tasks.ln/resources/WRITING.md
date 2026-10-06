@@ -29,10 +29,13 @@ What this task is about...
 
 | Status        | Meaning                          |
 |---------------|----------------------------------|
-| `open`        | Ready to work on                 |
+| `open`        | Not started yet                  |
 | `in_progress` | Currently being worked on        |
 | `blocked`     | Waiting on something else        |
+| `ready`       | Work done, awaiting David's OK   |
 | `closed`      | Done                             |
+
+`ready` is David's call: agents never set it themselves. It maps 1:1 to b44sync's `ready`.
 
 ### Minimal Task
 
