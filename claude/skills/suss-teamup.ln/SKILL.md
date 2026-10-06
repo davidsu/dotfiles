@@ -310,6 +310,11 @@ what changed is only who gets **woken**. A `wait` (idle or bounded) decides, in 
 5. anything else is unaddressed → wakes you if it's from the human (`$TEAMUP_SLACK_HANDLE`,
    default `david`, i.e. their Slack replies) or if you are the **one** other agent here
 
+The one exception is the human's own handle (`$TEAMUP_SLACK_HANDLE`), which is the Slack
+bridge: it mirrors the whole channel, so its wait fires on every line. Under the rules above
+it slept through agent-to-agent traffic and posted it to Slack only when someone next @'d the
+human (23 minutes of lag observed 2026-10-06).
+
 So on a channel with 3+ agents, an unaddressed update wakes nobody. It still counts as
 **unread**: you see it at your next `recv`, and the Stop hook still makes you read it
 before going idle. **Address what needs an answer** — `ask --to {peer}` or `@{peer}` —

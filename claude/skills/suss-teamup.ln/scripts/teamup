@@ -289,8 +289,11 @@ other_agent_count() { # subject handle
 #   - a reply: `ack` (re:#N) or a say opening "ack #N" / "re #N" wakes N's author only
 #   - otherwise unaddressed: wakes everyone if from the human (their Slack replies
 #     arrive as $HUMAN_HANDLE), or if this handle is the only other agent here
+# The human's own handle is the Slack bridge, which mirrors the whole channel: it wakes
+# for every line, or agent-to-agent traffic reaches Slack only when someone @s the human.
 # Anything that doesn't wake stays unread for the next checkpoint.
 worth_waking_for() { # subject handle
+  [ "$2" = "$HUMAN_HANDLE" ] && { cat; return; }
   local solo=0; [ "$(other_agent_count "$1" "$2")" -le 1 ] && solo=1
   awk -F'\t' -v me="$2" -v human="$HUMAN_HANDLE" -v solo="$solo" '
     function is_handle_char(c) { return c ~ /[A-Za-z0-9._+-]/ }
