@@ -93,8 +93,9 @@ its own AI title into the same field, so an un-renamed codex derives its AI titl
 `--as` there if that title is noise. Then **pick a handle yourself and make it visible** — don't ask the user, just
 do it:
 
-1. Choose something short and stable: `{cwd-basename}-{agent}` (e.g. `dotfiles-pi`,
-   `apper-claude`) or your role (`auth-reviewer`).
+1. Choose something short and stable: `{cwd-basename}.{agent}` (e.g. `dotfiles.pi`,
+   `apper.claude`) or your role (`auth.reviewer`). Prefer `.` over `-` in new handles: the user
+   types handles in Slack, where `-` is far away on the keyboard.
 2. Join with `--as {handle}`.
 3. **Making it visible on screen is handled for you on claude+iTerm**: your Stop hook
    runs `teamup-name-session`, which types `/rename {handle}` into this session's own
@@ -407,14 +408,14 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
    — opens a tab in your `$PWD` running the agent, which joins `{subject}`. claude/pi
    invoke the skill by slash command; codex gets a plain-language prompt naming the skill
    (codex argv is a prompt, not a command dispatcher). **You assign the peer's handle**
-   (`--as`, default `{subject}-peer{n}`, checked free against the roster) and it's final:
+   (`--as`, default `{subject}.peer{n}`, checked free against the roster) and it's final:
    a claude peer launches with `--name {handle}` and a pi peer gets a leading
    `/banner {handle}` message, so its session name *is* its channel handle and it derives
    that handle on join — one name on its screen, in its session, and on the roster. A codex
    peer on **iTerm** launches bare; spawn then types `/rename {handle}` and the join prompt
    (with `--as {handle}`) into its idle tab, since codex dispatches no argv slash commands.
    On Ghostty codex still spawns unnamed and joins with `--as`. Give it a descriptive one
-   (`apper-test-runner`) — that string is how the user will find its session. A **claude**
+   (`apper.test.runner`) — that string is how the user will find its session. A **claude**
    peer additionally gets a session **color**: **`--color {color}`** (one of claude's
    `/color` palette: red blue green yellow purple orange pink cyan — anything else is
    rejected), else the spawning session's color, else a random pick. On iTerm it launches

@@ -297,11 +297,16 @@ worth_waking_for() { # subject handle
   local solo=0; [ "$(other_agent_count "$1" "$2")" -le 1 ] && solo=1
   awk -F'\t' -v me="$2" -v human="$HUMAN_HANDLE" -v solo="$solo" '
     function is_handle_char(c) { return c ~ /[A-Za-z0-9._+-]/ }
+    function ends_handle(rest,   following) {
+      following = substr(rest, 1, 1)
+      if (following == ".") following = substr(rest, 2, 1)
+      return following == "" || !is_handle_char(following)
+    }
     function mentions(body, h,   at, rest) {
       rest = body
       while ((at = index(rest, "@" h)) > 0) {
         rest = substr(rest, at + length(h) + 1)
-        if (rest == "" || !is_handle_char(substr(rest, 1, 1))) return 1
+        if (ends_handle(rest)) return 1
       }
       return 0
     }

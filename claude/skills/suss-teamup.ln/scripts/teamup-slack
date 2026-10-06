@@ -122,19 +122,28 @@ slack_author_name() { # user_id name_from_message
     jq -r '.user.profile.display_name // .user.real_name // .user.name // empty'
 }
 
+aimed_token() { awk 'NR==1 && $1 ~ /^@/ { print substr($1, 2) }' <<<"$1"; }
+
+live_handle_for() { # subject typed — exact, else with "." and "-" interchangeable, since the user types them alike
+  local typed="${2%[,:;.]}"
+  agent_handles "$1" | grep -xF -- "$typed" && return 0
+  agent_handles "$1" | awk -v want="$(tr . - <<<"$typed")" '{ h = $0; gsub(/\./, "-", h) } h == want { print; found = 1; exit } END { exit !found }'
+}
+
 deliver_to_channel() { # subject text author_id author_name
-  local text target body attribution=""
+  local text token target body attribution=""
   text="$(unescape_slack <<<"$2")"
-  target="$(awk 'NR==1 && $1 ~ /^@/ { print substr($1, 2) }' <<<"$text")"
+  token="$(aimed_token "$text")"
+  target="$([ -n "$token" ] && live_handle_for "$1" "$token")"
   if [ "$3" = "$SLACK_OWNER" ]; then touch "$(engaged_file "$1")"
   else attribution="[slack: $(slack_author_name "$3" "$4")] "; fi
-  if [ -z "$target" ]; then
+  if [ -z "$token" ]; then
     "$TEAMUP" say "$1" --as "$HANDLE" -- "$attribution$text"
-  elif agent_handles "$1" | grep -qx "$target"; then
-    body="${text#@$target }"
+  elif [ -n "$target" ]; then
+    body="${text#@$token }"
     "$TEAMUP" ask "$1" --as "$HANDLE" --to "$target" -- "$attribution$body"
   else
-    post_to_thread "$1" ":warning: no agent here is called \`$target\` — sent to everyone instead. Live handles: $(agent_handles "$1" | paste -sd', ' -)" || true
+    post_to_thread "$1" ":warning: no agent here is called \`$token\` — sent to everyone instead. Live handles: $(agent_handles "$1" | paste -sd', ' -)" || true
     "$TEAMUP" say "$1" --as "$HANDLE" -- "$attribution$text"
   fi
 }

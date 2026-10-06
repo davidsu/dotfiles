@@ -8,7 +8,7 @@
 # have joined <subject> yourself so you're present when the peer arrives. Prints the
 # spawned tab id.
 #
-# The SPAWNER assigns the peer's handle (--as, default <subject>-peer<n>, unique against
+# The SPAWNER assigns the peer's handle (--as, default <subject>.peer<n>, unique against
 # the roster) and a claude or pi peer is named after it before it joins, so its session
 # name IS its channel handle and it derives that handle on join — one name in the
 # session, on the channel, and on the user's screen. Naming the session after the
@@ -175,9 +175,9 @@ is_session_color() { [[ " ${SESSION_COLORS[*]} " == *" $1 "* ]]; }
 
 free_peer_handle() {
   local candidate n=1
-  candidate="$subject-peer"
+  candidate="$subject.peer"
   while [ -e "$BASE_DIR/$subject/members/$candidate" ]; do
-    n=$((n + 1)); candidate="$subject-peer$n"
+    n=$((n + 1)); candidate="$subject.peer$n"
   done
   printf '%s' "$candidate"
 }
