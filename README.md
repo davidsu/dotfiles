@@ -352,7 +352,7 @@ Cmd+Ctrl+G → Focus the iTerm tab of a Claude agent by name (works from any app
 > Runs `bin/iterm_focus_agent` (JXA). The dialog's combo box lists live Claude session names
 > (from `~/.claude/sessions/*.json`) with type-ahead completion; an exact name wins, else a unique
 > case-insensitive substring. Maps the session's pid to its tty, then selects the iTerm window, tab and pane on it.
-> Also callable directly: `iterm_focus_agent row5-plan-card`.
+> Also callable from a shell as `findagent` (dialog) or `findagent row5-plan-card` (alias for `iterm_focus_agent`).
 > Errors go to `~/Library/Logs/iterm_focus_agent.log`.
 
 ### 🎹 Function Keys
