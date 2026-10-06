@@ -346,6 +346,15 @@ Cmd+Ctrl+R → Name + color the Claude Code or Codex session in the current tab 
 > `[tui] status_line = ["thread-name", "model-with-reasoning", "current-dir"]`, so the
 > `/rename` name leads the footer. Codex can't show custom text there or above the prompt.
 
+```
+Cmd+Ctrl+G → Focus the iTerm tab of a Claude agent by name (works from any app)
+```
+> Runs `bin/iterm_focus_agent` (JXA). The dialog's combo box lists live Claude session names
+> (from `~/.claude/sessions/*.json`) with type-ahead completion; an exact name wins, else a unique
+> case-insensitive substring. Maps the session's pid to its tty, then selects the iTerm window, tab and pane on it.
+> Also callable directly: `iterm_focus_agent row5-plan-card`.
+> Errors go to `~/Library/Logs/iterm_focus_agent.log`.
+
 ### 🎹 Function Keys
 ```
 F1/F2       → Brightness

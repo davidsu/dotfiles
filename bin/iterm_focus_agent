@@ -1,0 +1,127 @@
+#!/usr/bin/osascript -l JavaScript
+// iterm_focus_agent [name] — focus the iTerm tab running the Claude session with that name (its /rename).
+// No argument: a dialog lists the live agent names, with type-ahead completion.
+// The name matches exactly, else by a unique case-insensitive substring.
+ObjC.import('Cocoa');
+
+const SESSIONS_DIR = `${$.NSHomeDirectory().js}/.claude/sessions`;
+
+const shell = (command) => {
+  const app = Application.currentApplication();
+  app.includeStandardAdditions = true;
+  return app.doShellScript(command);
+};
+
+const readJson = (path) => JSON.parse($.NSString.stringWithContentsOfFileEncodingError(path, $.NSUTF8StringEncoding, null).js);
+
+const sessionRecords = () =>
+  ObjC.deepUnwrap($.NSFileManager.defaultManager.contentsOfDirectoryAtPathError(SESSIONS_DIR, null))
+    .filter((file) => file.endsWith('.json'))
+    .map((file) => readJson(`${SESSIONS_DIR}/${file}`))
+    .filter((record) => record.name);
+
+const ttyByPid = () =>
+  Object.fromEntries(
+    shell('ps -A -o pid=,tty=')
+      .split(/[\r\n]+/)
+      .map((line) => line.trim().split(/\s+/))
+      .filter(([, tty]) => tty && tty !== '??')
+      .map(([pid, tty]) => [pid, `/dev/${tty}`]),
+  );
+
+const liveAgents = () => {
+  const ttys = ttyByPid();
+  return sessionRecords()
+    .filter((record) => ttys[record.pid])
+    .map((record) => ({ name: record.name, tty: ttys[record.pid] }))
+    .sort((left, right) => left.name.localeCompare(right.name));
+};
+
+const findAgent = (agents, query) => {
+  const exact = agents.find((agent) => agent.name === query);
+  if (exact) return exact;
+  const partial = agents.filter((agent) => agent.name.toLowerCase().includes(query.toLowerCase()));
+  return partial.length === 1 ? partial[0] : null;
+};
+
+const showAlert = (message, info) => {
+  const alert = $.NSAlert.alloc.init;
+  alert.messageText = message;
+  alert.informativeText = info;
+  return alert;
+};
+
+const EDIT_SHORTCUTS = [
+  ['Cut', 'cut:', 'x'],
+  ['Copy', 'copy:', 'c'],
+  ['Paste', 'paste:', 'v'],
+  ['Select All', 'selectAll:', 'a'],
+  ['Undo', 'undo:', 'z'],
+];
+
+const installEditMenu = () => {
+  const editMenu = $.NSMenu.alloc.initWithTitle('Edit');
+  EDIT_SHORTCUTS.forEach(([title, action, key]) => editMenu.addItemWithTitleActionKeyEquivalent(title, action, key));
+  const editItem = $.NSMenuItem.alloc.init;
+  editItem.submenu = editMenu;
+  const mainMenu = $.NSMenu.alloc.init;
+  mainMenu.addItem(editItem);
+  $.NSApplication.sharedApplication.mainMenu = mainMenu;
+};
+
+function runFocusedModal(alert) {
+  $.NSApplication.sharedApplication.activateIgnoringOtherApps(true);
+  return alert.runModal;
+}
+
+const buildNameCombo = (names) => {
+  const combo = $.NSComboBox.alloc.initWithFrame($.NSMakeRect(0, 0, 300, 26));
+  combo.addItemsWithObjectValues(names);
+  combo.completes = true;
+  combo.numberOfVisibleItems = Math.min(names.length, 20);
+  combo.placeholderString = 'agent name';
+  return combo;
+};
+
+const promptAgentName = (names) => {
+  const combo = buildNameCombo(names);
+  const alert = showAlert('Focus agent', names.join(', '));
+  alert.addButtonWithTitle('Focus');
+  alert.addButtonWithTitle('Cancel');
+  alert.accessoryView = combo;
+  alert.layout;
+  alert.window.initialFirstResponder = combo;
+  if (runFocusedModal(alert) !== $.NSAlertFirstButtonReturn) return '';
+  return combo.stringValue.js.trim();
+};
+
+const focusTabOnTty = (iterm, tty) => {
+  for (const window of iterm.windows()) {
+    for (const tab of window.tabs()) {
+      const session = tab.sessions().find((candidate) => candidate.tty() === tty);
+      if (!session) continue;
+      iterm.activate();
+      window.select();
+      tab.select();
+      session.select();
+      return true;
+    }
+  }
+  return false;
+};
+
+function run(argv) {
+  $.NSApplication.sharedApplication.setActivationPolicy($.NSApplicationActivationPolicyAccessory);
+  installEditMenu();
+  const agents = liveAgents();
+  const query = argv[0] || promptAgentName(agents.map((agent) => agent.name));
+  if (!query) return;
+  const agent = findAgent(agents, query);
+  if (!agent) {
+    runFocusedModal(showAlert(`No single agent matches "${query}"`, agents.map((candidate) => candidate.name).join(', ')));
+    return;
+  }
+  if (!focusTabOnTty(Application('iTerm2'), agent.tty)) {
+    runFocusedModal(showAlert(`"${agent.name}" is not in an iTerm tab`, `It runs on ${agent.tty}.`));
+  }
+}

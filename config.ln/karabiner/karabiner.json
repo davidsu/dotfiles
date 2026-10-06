@@ -27,6 +27,16 @@
             ]
           },
           {
+            "description": "Global: cmd+ctrl+g → focus the iTerm tab of a Claude agent by name",
+            "manipulators": [
+              {
+                "from": { "key_code": "g", "modifiers": { "mandatory": ["command", "control"] } },
+                "to": [{ "shell_command": "/Users/davidsu/.dotfiles/bin/iterm_focus_agent >> $HOME/Library/Logs/iterm_focus_agent.log 2>&1" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
             "description": "Vim layer: ` + hjkl/ui/m,/90/BS (tap ` alone = `)",
             "manipulators": [
               {
