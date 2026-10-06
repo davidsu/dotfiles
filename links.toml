@@ -49,6 +49,9 @@
 "claude/skills/suss-tasks.ln" = [
   "~/.claude/skills/suss-tasks",
 ]
+"claude/skills/suss-slack-post.ln" = [
+  "~/.claude/skills/suss-slack-post",
+]
 "claude/skills/suss-teamup.ln" = [
   "~/.claude/skills/suss-teamup",
   "~/.agents/skills/suss-teamup",

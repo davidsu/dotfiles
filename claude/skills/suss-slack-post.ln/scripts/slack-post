@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+"""Post a Slack message as David from a short markdown draft. Rules: ../SKILL.md."""
+import argparse
+import json
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+from slack_draft import Draft, as_mrkdwn, as_plain, length_notes, lint, preview, read_draft, rich_text_blocks
+from slack_session import slack_api
+
+LATE_PREVIEW_SECONDS = 5
+FILE_SHARE_POLLS = 20
+
+
+def post_text(draft: Draft, channel: str, thread: str | None) -> str:
+    thread_field = {"thread_ts": thread} if thread else {}
+    return slack_api("chat.postMessage", channel=channel, blocks=json.dumps(rich_text_blocks(draft)),
+                     text="\n".join(map(as_plain, draft.lines)), unfurl_links="false", unfurl_media="false",
+                     **thread_field)["ts"]
+
+
+def post_with_image(draft: Draft, channel: str, thread: str | None, image: str) -> str:
+    image_path = Path(image)
+    upload = slack_api("files.getUploadURLExternal", filename=image_path.name, length=str(image_path.stat().st_size))
+    urllib.request.urlopen(urllib.request.Request(upload["upload_url"], data=image_path.read_bytes()), timeout=60)
+    thread_field = {"thread_ts": thread} if thread else {}
+    slack_api("files.completeUploadExternal", files=json.dumps([{"id": upload["file_id"], "title": image_path.stem}]),
+              channel_id=channel, initial_comment="\n".join(map(as_mrkdwn, draft.lines)), **thread_field)
+    return find_message_with_file(channel, thread, upload["file_id"])["ts"]
+
+
+def fetch_message(channel: str, thread: str | None, ts: str) -> dict:
+    history = slack_api("conversations.replies", channel=channel, ts=thread, oldest=ts, inclusive="true", limit="5") \
+        if thread else slack_api("conversations.history", channel=channel, oldest=ts, inclusive="true", limit="1")
+    return next(message for message in history["messages"] if message["ts"] == ts)
+
+
+def find_message_with_file(channel: str, thread: str | None, file_id: str) -> dict:
+    for _ in range(FILE_SHARE_POLLS):
+        time.sleep(1)
+        history = slack_api("conversations.replies", channel=channel, ts=thread, limit="200") if thread \
+            else slack_api("conversations.history", channel=channel, limit="20")
+        shared = [m for m in history["messages"] if any(f["id"] == file_id for f in m.get("files", []))]
+        if shared:
+            return shared[-1]
+    sys.exit(f"slack-post: uploaded {file_id}, but no message shows it after {FILE_SHARE_POLLS}s")
+
+
+def update_message(draft: Draft, channel: str, thread: str | None, ts: str) -> str:
+    file_ids = [file["id"] for file in fetch_message(channel, thread, ts).get("files", [])]
+    file_field = {"file_ids": json.dumps(file_ids)} if file_ids else {}
+    slack_api("chat.update", channel=channel, ts=ts, blocks=json.dumps(rich_text_blocks(draft)),
+              text="\n".join(map(as_plain, draft.lines)), unfurl_links="false", unfurl_media="false", **file_field)
+    return ts
+
+
+def elements_of_type(node, element_type: str) -> list[dict]:
+    if isinstance(node, list):
+        return [found for child in node for found in elements_of_type(child, element_type)]
+    if not isinstance(node, dict):
+        return []
+    own = [node] if node.get("type") == element_type else []
+    return own + elements_of_type(list(node.values()), element_type)
+
+
+def remove_link_previews(channel: str, ts: str, message: dict):
+    for attachment in message.get("attachments", []):
+        slack_api("chat.deleteAttachment", channel=channel, ts=ts, attachment=str(attachment["id"]))
+        print(f"removed a link preview: {attachment.get('title') or attachment.get('from_url', '')}")
+
+
+def verify(draft: Draft, channel: str, thread: str | None, ts: str) -> list[str]:
+    time.sleep(LATE_PREVIEW_SECONDS)
+    remove_link_previews(channel, ts, fetch_message(channel, thread, ts))
+    message = fetch_message(channel, thread, ts)
+    blocks = message.get("blocks", [])
+    links = [link.get("text") or link["url"] for link in elements_of_type(blocks, "link")]
+    tags = elements_of_type(blocks, "user")
+    problems = [f"link previews attached: {len(message['attachments'])}"] if message.get("attachments") else []
+    if len(links) != draft.link_count:
+        problems.append(f"expected {draft.link_count} links, Slack shows {len(links)}: {links}")
+    if len(tags) != len(draft.mentions):
+        problems.append(f"expected {len(draft.mentions)} @mentions, Slack shows {len(tags)}")
+    permalink = slack_api("chat.getPermalink", channel=channel, message_ts=ts)["permalink"]
+    print(f"{'posted' if not problems else 'POSTED WITH PROBLEMS'}: {permalink}")
+    print(f"links: {', '.join(links) or 'none'}")
+    return problems
+
+
+def report(label: str, findings: list[str]):
+    if findings:
+        print("\n".join(f"{label}: {finding}" for finding in findings), file=sys.stderr)
+
+
+def cmd_check(args):
+    draft = read_draft(args.draft)
+    problems = lint(draft, is_signed=not args.unsigned)
+    print(preview(draft))
+    report("note", length_notes(draft))
+    report("lint", problems or ["ok"])
+    sys.exit(1 if problems else 0)
+
+
+def cmd_send(args):
+    draft = read_draft(args.draft)
+    problems = lint(draft, is_signed=not args.unsigned)
+    if problems and not args.force:
+        sys.exit("slack-post: fix the draft first (or pass --force):\n" + "\n".join(problems))
+    if args.update:
+        ts = update_message(draft, args.channel, args.thread, args.update)
+    elif args.image:
+        ts = post_with_image(draft, args.channel, args.thread, args.image)
+    else:
+        ts = post_text(draft, args.channel, args.thread)
+    problems = verify(draft, args.channel, args.thread, ts)
+    print("\n".join(f"verify: {problem}" for problem in problems) or "verify: ok")
+    sys.exit(1 if problems else 0)
+
+
+def build_parser():
+    parser = argparse.ArgumentParser(prog="slack-post")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    check = sub.add_parser("check", help="print the draft as Slack will show it (blockquote) and lint it")
+    check.add_argument("draft", help="draft file, or - for stdin")
+    check.add_argument("--unsigned", action="store_true", help="David asked for no _agent:_ signature")
+    check.set_defaults(func=cmd_check)
+    send = sub.add_parser("send", help="post (or --update) the draft as David, then read it back")
+    send.add_argument("draft", help="draft file, or - for stdin")
+    send.add_argument("--channel", required=True, help="channel id, e.g. C0BR35HS0HK")
+    send.add_argument("--thread", help="thread_ts of the parent message")
+    send.add_argument("--image", help="attach this image (posted as a file with the draft as its comment)")
+    send.add_argument("--update", metavar="TS", help="edit this existing message in place instead of posting")
+    send.add_argument("--unsigned", action="store_true", help="David asked for no _agent:_ signature")
+    send.add_argument("--force", action="store_true", help="send even if lint complains")
+    send.set_defaults(func=cmd_send)
+    return parser
+
+
+if __name__ == "__main__":
+    parsed = build_parser().parse_args()
+    parsed.func(parsed)
