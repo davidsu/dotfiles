@@ -135,7 +135,9 @@ deliver_to_channel() { # subject text author_id author_name — a reply opening 
   text="$(unescape_slack <<<"$2")"
   word="$(first_word "$text")"
   target="$(live_handle_for "$1" "${word#@}")"
-  if [ "$3" = "$SLACK_OWNER" ]; then touch "$(engaged_file "$1")"
+  if [ "$3" = "$SLACK_OWNER" ]; then
+    touch "$(engaged_file "$1")"
+    "$HERE/teamup-focus" on >/dev/null
   else attribution="[slack: $(slack_author_name "$3" "$4")] "; fi
   if [ -n "$target" ]; then
     body="${text#"$word"}"

@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# teamup-focus on [--skip HANDLE] | off | status — while the user is away, keep the screen on an
+# agent at work. `on` starts one background poller; a second `on` changes nothing, so the user or
+# any lead can run it at any time. Every 2 minutes, only when the Mac has had no keyboard or mouse
+# input for 2 minutes, and unless an agent at work is already in front, it brings forward a Chrome
+# tab an agent drives (Playwright puts those in its "Playwright · claude-code" tab group), else the
+# first iTerm tab whose title shows claude's busy spinner. --skip leaves one agent's iTerm tab
+# alone (a lead skips itself).
+set -uo pipefail
+
+readonly PID_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/focus.pid"
+readonly POLL_SECONDS=120
+readonly AWAY_SECONDS=120
+
+seconds_since_input() { ioreg -c IOHIDSystem | awk '/HIDIdleTime/ { print int($NF / 1000000000); exit }'; }
+
+is_user_away() { [ "$(seconds_since_input)" -ge "$AWAY_SECONDS" ]; }
+
+running_poller() { # prints its pid
+  local pid; pid="$(cat "$PID_FILE" 2>/dev/null)"
+  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && echo "$pid"
+}
+
+focus_working_agent() { # skipped handle, may be empty
+  osascript - "$1" <<'OSA' >/dev/null 2>&1
+property drivenTab : "Part of group Playwright"
+
+on isBusy(tabName)
+  repeat with glyph in {"◐", "◓", "◑", "◒"}
+    if tabName starts with glyph then return true
+  end repeat
+  return false
+end isBusy
+
+on isWorkingAgentInFront()
+  tell application "System Events" to set frontApp to first process whose frontmost is true
+  tell application "System Events" to set frontName to name of frontApp
+  if frontName is "iTerm2" then
+    tell application "iTerm2" to return my isBusy(name of current session of current window)
+  end if
+  if frontName is "Google Chrome" then
+    tell application "System Events" to return (name of window 1 of frontApp) contains drivenTab
+  end if
+  return false
+end isWorkingAgentInFront
+
+on focusDrivenChromeTab()
+  tell application "System Events"
+    repeat with chrome in (processes whose name is "Google Chrome")
+      repeat with w in (windows of chrome)
+        set tabElements to entire contents of w
+        repeat with e in tabElements
+          try
+            if role of e is "AXRadioButton" then
+              if (name of e) contains drivenTab then
+                perform action "AXPress" of e
+                perform action "AXRaise" of w
+                set frontmost of chrome to true
+                return true
+              end if
+            end if
+          end try
+        end repeat
+      end repeat
+    end repeat
+  end tell
+  return false
+end focusDrivenChromeTab
+
+on focusBusyItermTab(skipped)
+  tell application "iTerm2"
+    repeat with w in windows
+      repeat with t in tabs of w
+        repeat with s in sessions of t
+          set tabName to name of s
+          if my isBusy(tabName) and tabName does not end with skipped then
+            activate
+            select w
+            tell t to select
+            tell s to select
+            return
+          end if
+        end repeat
+      end repeat
+    end repeat
+  end tell
+end focusBusyItermTab
+
+on run argv
+  if isWorkingAgentInFront() then return
+  if focusDrivenChromeTab() then return
+  focusBusyItermTab(" " & (item 1 of argv) & " (claude)")
+end run
+OSA
+}
+
+poll() { # skipped handle
+  while true; do
+    is_user_away && focus_working_agent "$1"
+    sleep "$POLL_SECONDS"
+  done
+}
+
+turn_on() { # skipped handle
+  local pid
+  pid="$(running_poller)" && { echo "teamup-focus: already on (pid $pid)"; return; }
+  mkdir -p "$(dirname "$PID_FILE")"
+  nohup "$0" __poll "$1" >/dev/null 2>&1 &
+  echo $! > "$PID_FILE"
+  echo "teamup-focus: on (pid $!)${1:+, skipping $1}"
+}
+
+turn_off() {
+  local pid
+  pid="$(running_poller)" || { echo "teamup-focus: already off"; return; }
+  kill "$pid" && rm -f "$PID_FILE" && echo "teamup-focus: off"
+}
+
+case "${1:-}" in
+  on)     if [ "${2:-}" = --skip ]; then turn_on "${3:-}"; else turn_on ""; fi ;;
+  off)    turn_off ;;
+  status) pid="$(running_poller)" && echo "teamup-focus: on (pid $pid)" || echo "teamup-focus: off" ;;
+  __poll) poll "${2:-}" ;;
+  *)      echo "usage: teamup-focus on [--skip HANDLE] | off | status" >&2; exit 2 ;;
+esac
