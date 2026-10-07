@@ -404,7 +404,8 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
    (e.g. `pair-auth`, `handoff-x`) — avoid names starting with `spawn`.
 2. **Join it yourself first**, so you're present when the peer arrives:
    `teamup join {subject} --pwd "$PWD" --doing "spawning a {agent} peer"`.
-3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi|codex} {subject} [--as {handle}] [--color {color}]`
+3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi|codex} {subject} [--as {handle}] [--model {model}] [--color {color}]`
+   (`--model` goes to the agent's own `--model` flag, e.g. `--model fable` for a claude peer on Fable)
    — opens a tab in your `$PWD` running the agent, which joins `{subject}`. claude/pi
    invoke the skill by slash command; codex gets a plain-language prompt naming the skill
    (codex argv is a prompt, not a command dispatcher). **You assign the peer's handle**

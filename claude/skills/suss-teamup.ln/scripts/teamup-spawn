@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # teamup-spawn — launch a cooperating agent in a new terminal tab, joined to a channel.
-#   teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--color COLOR] [--no-steal|--no-color]
+#   teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--model MODEL] [--color COLOR] [--no-steal|--no-color]
 # The tab opens in the caller's terminal (Ghostty or iTerm, via term_spawn).
 #
 # Opens a tab (in DIR, default $PWD) running the agent with an initial prompt that
@@ -159,17 +159,18 @@ if [ "${1:-}" = __boot_iterm ]; then
 fi
 
 agent="${1:-}"; subject="${2:-}"; shift 2 2>/dev/null || true
-dir="$PWD"; no_color=false; handle=""; color=""
+dir="$PWD"; no_color=false; handle=""; color=""; model=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --as)    handle="$2"; shift 2 ;;
     --dir)   dir="$2"; shift 2 ;;
     --color) color="$2"; shift 2 ;;
+    --model) model="$2"; shift 2 ;;
     --no-steal|--no-color) no_color=true; shift ;;
     *) echo "teamup-spawn: unknown flag $1" >&2; exit 1 ;;
   esac
 done
-[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--color $(IFS='|'; echo "${SESSION_COLORS[*]}")] [--no-steal|--no-color]" >&2; exit 1; }
+[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--model MODEL] [--color $(IFS='|'; echo "${SESSION_COLORS[*]}")] [--no-steal|--no-color]" >&2; exit 1; }
 is_session_color() { [[ " ${SESSION_COLORS[*]} " == *" $1 "* ]]; }
 [ -z "$color" ] || is_session_color "$color" || { echo "teamup-spawn: --color must be one of: ${SESSION_COLORS[*]}" >&2; exit 1; }
 
@@ -206,15 +207,16 @@ parent_color() {
 # with no agentColor yet), and pipefail would otherwise make that abort the spawn.
 color="${color:-$(parent_color || true)}"
 color="${color:-${SESSION_COLORS[RANDOM % ${#SESSION_COLORS[@]}]}}"
+model_flag="${model:+--model '$model'}"
 case "$agent" in
-  claude) run="cyc --name '$handle' -- '/suss-teamup $subject'"; inject="/color $color" ;;
+  claude) run="cyc $model_flag --name '$handle' -- '/suss-teamup $subject'"; inject="/color $color" ;;
   # pi takes several argv messages and runs them in order, so it names ITSELF before it
   # joins — no keystroke injection, no focus steal. `/banner` is pi's `/rename`: it sets
   # the session name the handle is derived from AND paints the banner, which is the only
   # place the user can see which peer a tab is.
-  pi)     run="pi '/banner $handle' '/skill:suss-teamup $subject'"; inject="" ;;
+  pi)     run="pi $model_flag '/banner $handle' '/skill:suss-teamup $subject'"; inject="" ;;
   codex)  codex_prompt="Use the suss-teamup skill. Your first action: ~/.claude/skills/suss-teamup/scripts/teamup join $subject --as $handle"
-          run="codex '$codex_prompt'"; inject="" ;;
+          run="codex $model_flag '$codex_prompt'"; inject="" ;;
   *)      echo "teamup-spawn: agent must be 'claude', 'pi', or 'codex'" >&2; exit 1 ;;
 esac
 
@@ -230,11 +232,11 @@ case "$terminal:$agent" in
       nohup "$0" __boot_iterm "$session" claude "$color" >/dev/null 2>&1 &
     inject="" ;;
   iterm:codex)
-    session="$(term_spawn --dir "$dir" --run codex)"
+    session="$(term_spawn --dir "$dir" --run "codex $model_flag")"
     nohup "$0" __boot_iterm "$session" codex "$tab_color" "/rename $handle" "$codex_prompt" >/dev/null 2>&1 & ;;
   *) term_spawn --dir "$dir" --run "$run" >/dev/null ;;
 esac
-echo "spawned $agent on '$subject' as '$handle'."
+echo "spawned $agent${model:+ ($model)} on '$subject' as '$handle'."
 
 if [ -n "$inject" ] && [ "$no_color" != true ]; then
   nohup "$0" __inject_cmd "$subject" "$handle" "$inject" "$baseline" >/dev/null 2>&1 &
