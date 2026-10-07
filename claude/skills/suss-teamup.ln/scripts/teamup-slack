@@ -113,7 +113,7 @@ agent_handles() { # subject
 
 thread_root_text() { # subject
   printf '*teamup · %s* — reply here and every agent on this channel reads it.\nTo make one agent answer before it can go idle, start your reply with its handle, e.g. `@%s your question`. Live handles: %s\nWho is talking: code blocks are the agents; among replies, David appears bare and anyone else (Claude included) is prefixed `[slack: name]`.' \
-    "$1" "$(agent_handles "$1" | head -1)" "$(agent_handles "$1" | paste -sd', ' -)"
+    "$1" "$(agent_handles "$1" | head -1)" "$(agent_handles "$1" | paste -sd, - | sed 's/,/, /g')"
 }
 
 slack_author_name() { # user_id name_from_message
@@ -122,7 +122,7 @@ slack_author_name() { # user_id name_from_message
     jq -r '.user.profile.display_name // .user.real_name // .user.name // empty'
 }
 
-aimed_token() { awk 'NR==1 && $1 ~ /^@/ { print substr($1, 2) }' <<<"$1"; }
+first_word() { awk 'NR==1 { print $1; exit }' <<<"$1"; }
 
 live_handle_for() { # subject typed — exact, else with "." and "-" interchangeable, since the user types them alike
   local typed="${2%[,:;.]}"
@@ -130,20 +130,20 @@ live_handle_for() { # subject typed — exact, else with "." and "-" interchange
   agent_handles "$1" | awk -v want="$(tr . - <<<"$typed")" '{ h = $0; gsub(/\./, "-", h) } h == want { print; found = 1; exit } END { exit !found }'
 }
 
-deliver_to_channel() { # subject text author_id author_name
-  local text token target body attribution=""
+deliver_to_channel() { # subject text author_id author_name — a reply opening with a live handle aims at it, "@" optional
+  local text word target body attribution=""
   text="$(unescape_slack <<<"$2")"
-  token="$(aimed_token "$text")"
-  target="$([ -n "$token" ] && live_handle_for "$1" "$token")"
+  word="$(first_word "$text")"
+  target="$(live_handle_for "$1" "${word#@}")"
   if [ "$3" = "$SLACK_OWNER" ]; then touch "$(engaged_file "$1")"
   else attribution="[slack: $(slack_author_name "$3" "$4")] "; fi
-  if [ -z "$token" ]; then
+  if [ -n "$target" ]; then
+    body="${text#"$word"}"
+    "$TEAMUP" ask "$1" --as "$HANDLE" --to "$target" -- "$attribution${body# }"
+  elif [[ "$word" == @* ]]; then
+    post_to_thread "$1" ":warning: no agent here is called \`${word#@}\` — sent to everyone instead. Live handles: $(agent_handles "$1" | paste -sd, - | sed 's/,/, /g')" || true
     "$TEAMUP" say "$1" --as "$HANDLE" -- "$attribution$text"
-  elif [ -n "$target" ]; then
-    body="${text#@$token }"
-    "$TEAMUP" ask "$1" --as "$HANDLE" --to "$target" -- "$attribution$body"
   else
-    post_to_thread "$1" ":warning: no agent here is called \`$token\` — sent to everyone instead. Live handles: $(agent_handles "$1" | paste -sd', ' -)" || true
     "$TEAMUP" say "$1" --as "$HANDLE" -- "$attribution$text"
   fi
 }

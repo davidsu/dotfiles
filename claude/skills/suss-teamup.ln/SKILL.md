@@ -501,7 +501,8 @@ hook, which only fires *between* turns). It joins as a normal member
   channel message in the thread. Batching a wake's messages into one code block hid
   answers inside a wall of text on a phone.
 - **in** — `conversations.replies` → `say`, or `ask --to {handle}` when the reply starts
-  with a **live** handle, so an aimed reply wakes one agent and trips its Stop hook
+  with a **live** handle (`@` optional, `.` and `-` interchangeable: `lead.7 do X` aims at
+  `lead-7`; the user is often on a phone keyboard), so an aimed reply wakes one agent and trips its Stop hook
   (`asks_for_me=1`) instead of waking the roster. A name no member holds is delivered to
   everyone and answered in the thread with the live handles — aiming at nobody used to
   become a dangling ask. Aiming is **not privacy**: every message lands on the shared
