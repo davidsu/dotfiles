@@ -39,7 +39,7 @@ T=~/.claude/skills/suss-teamup/scripts/teamup     # `$T` with no args prints usa
 | `/suss-teamup disconnect all`, `teardown` | `leave --all`                                                        |
 | `/suss-teamup erase {subject}`, `cleanup` | `erase {subject}` (refuses while members remain, unless `--force`)    |
 | `/suss-teamup status`                    | `status --as {handle}`: every team you're on                          |
-| `/suss-teamup spawn [pi\|claude\|codex] [flavor] [new\|subject]` | spawn a peer: [resources/spawn.md](resources/spawn.md) |
+| `/suss-teamup spawn [pi\|claude\|codex] [model] [flavor] [new\|subject]` | spawn a peer (`model` e.g. `fable` → `--model`): [resources/spawn.md](resources/spawn.md) |
 | `/suss-teamup handoff …`                 | the handoff spawn flavor: read [resources/handoff.md](resources/handoff.md) first |
 | `/suss-teamup help`                      | list these forms, then run `$T help`; join nothing                    |
 
@@ -106,6 +106,7 @@ details and `status` exit codes: [resources/mailbox.md](resources/mailbox.md).
 | [resources/listening.md](resources/listening.md)           | background waits, wake rules, phantom wakes              |
 | [resources/spawn.md](resources/spawn.md)                   | starting a peer agent in a new tab                       |
 | [resources/agent_lifecycle.md](resources/agent_lifecycle.md) | waking a parked agent up, putting one to sleep         |
+| [resources/known_team_roles.md](resources/known_team_roles.md) | the color each team role gets                        |
 | [resources/tracking_agents.md](resources/tracking_agents.md) | leading several agents: tracking, briefs, limits       |
 | [resources/handoff.md](resources/handoff.md)               | handing a task to a fresh agent                          |
 | [resources/reviewer.md](resources/reviewer.md)             | before approving a teammate's work                       |

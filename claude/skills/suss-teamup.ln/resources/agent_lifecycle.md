@@ -8,7 +8,7 @@ session, with its full context, in a new tab. Both are claude-on-iTerm only.
 S=~/.claude/skills/suss-teamup/scripts
 $S/teamup-sleep [--force] <handle>...        # leave its channels, close its tab
 $S/teamup-wake --list                        # who can be woken
-$S/teamup-wake <handle> [--channel C] [--color COLOR]
+$S/teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR]
 ```
 
 ## Putting an agent to sleep
@@ -31,8 +31,11 @@ Don't keep it open to babysit; wake it when the thing it waits for happens.
 
 1. `teamup-wake <handle>` resumes the session in its own directory and has it rejoin its
    channel. It refuses if the session is still running: a session must never run twice.
-   `--color` colors the tab only; it never types into the agent's tab, where keystrokes can
-   collide with the user's.
+   It gives the tab and `/color` the `--color`, else the `--role`'s color
+   ([known_team_roles.md](known_team_roles.md)), else the color the agent had before it
+   slept. `/color` is typed into the new tab until the transcript records it; if the agent
+   never comes up, wake says so and exits 1. The usual cause is a permission prompt the
+   resumed session is stuck on.
 2. Wait for it to print `back on '<channel>'`. A brief posted before the agent rejoins is
    easily missed.
 3. **Brief it on the channel**, `ask --to` it:
@@ -56,7 +59,9 @@ session id, directory and channels in `~/.local/state/suss-teamup/parked.tsv`, a
 the record lives on one machine, the tracking file is shared and durable.
 
 A session that crashed never left, so it has no record; `teamup-wake` then falls back to
-the channel registry, which still holds its session id. Only claude sessions can be woken.
+the channel registry, which still holds its session id. The registry lives in `/tmp`, so
+after a reboot a crashed session can be woken only from the resume line in the tracking file:
+that is why the tracking file keeps one. Only claude sessions can be woken.
 An agent can read its own session id from `$CLAUDE_CODE_SESSION_ID`.
 
 `ask --to <handle>` refuses when that agent isn't on the channel (exit 3) and names the

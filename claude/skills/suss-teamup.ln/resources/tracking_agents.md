@@ -18,7 +18,8 @@ its row when the work starts, keeps it current, and removes it when the work is 
 
 Each unit also has its own task file for its detail. The lead keeps one more file for the
 state of the whole job: what changed, what's next, and a "waiting for the human" table, so
-the human finds every decision they owe in one place.
+the human finds every decision they owe in one place. Its rows are numbered, and a number is
+never reused or dropped: an answered row is marked answered, so the human can tell nothing vanished.
 
 ## Briefing an agent
 

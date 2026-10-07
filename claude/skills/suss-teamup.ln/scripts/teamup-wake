@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
-# teamup-wake <handle> [--channel C] [--color COLOR] — resume a sleeping claude agent in a new iTerm
-# tab, in its own directory, and have it rejoin its channel. Prints once it is back on the channel:
-# brief it only then, since a brief posted before it rejoins is easily missed.
+# teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR] — resume a sleeping claude agent
+# in a new iTerm tab, in its own directory, and have it rejoin its channel. Prints once it is back
+# on the channel: brief it only then, since a brief posted before it rejoins is easily missed.
+# Its tab and /color get --color, else its --role's color, else the color it had before it slept.
 # teamup-wake --list — every agent that can be woken.
 set -uo pipefail
 
+readonly HERE="$(cd "$(dirname "$0")" && pwd)"
 readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
 readonly PARKED="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/parked.tsv"
 readonly REGISTRY="$BASE/.sessions.tsv"
 readonly REJOIN_TIMEOUT_SECONDS=180
+
+source "$HERE/session_colors.sh"
 
 die() { echo "teamup-wake: $*" >&2; exit 1; }
 
@@ -50,32 +54,40 @@ wait_for_join_ping() { # channel handle after-line
   return 1
 }
 
-wake() { # handle channel color
-  local record session_id dir channels channel tab log_lines
+wake_color() { # role session-id
+  if [ -n "$1" ]; then role_color "$1"; else transcript_color "$2"; fi
+}
+
+wake() { # handle channel color role
+  local record session_id dir channels channel tab log_lines color
   record="$(wake_record "$1")"
   [ -n "$record" ] || die "nobody called '$1' can be woken (teamup-wake --list)"
   IFS=$'\t' read -r _ session_id dir channels _ <<<"$record"
   is_claude_session "$session_id" || die "'$1' is not a claude session: only claude agents can be woken"
   channel="${2:-${channels%%,*}}"
   is_session_running "$session_id" && die "'$1' is already running (session $session_id): find its tab instead"
+  color="${3:-$(wake_color "$4" "$session_id")}"
   log_lines="$(wc -l < "$BASE/$channel/channel.tsv" 2>/dev/null || echo 0)"
   tab="$(term_spawn --app iterm --dir "$dir" --run "cyc --resume $session_id -- '/suss-teamup $channel'")"
-  [ -z "$3" ] || "$HOME/.dotfiles/bin/iterm_tab_style" --session "$tab" --color "$3" >/dev/null 2>&1 || true
   echo "waking $1 in $dir (session $session_id) to rejoin '$channel'..."
+  [ -z "$color" ] || "$HERE/teamup-spawn" __boot_iterm "$tab" claude "$color" ||
+    die "$1 did not come up: look at its tab, usually a permission prompt the resumed session is stuck on"
   wait_for_join_ping "$channel" "$1" "$log_lines" && echo "$1 is back on '$channel': brief it now." ||
-    die "$1 did not rejoin '$channel' within ${REJOIN_TIMEOUT_SECONDS}s: look at its tab"
+    die "$1 did not rejoin '$channel' within ${REJOIN_TIMEOUT_SECONDS}s: look at its tab, usually a permission prompt the resumed session is stuck on"
 }
 
 case "${1:-}" in
-  ""|-h|--help) echo "usage: teamup-wake <handle> [--channel C] [--color COLOR] | --list" >&2; exit 2 ;;
+  ""|-h|--help) echo "usage: teamup-wake <handle> [--channel C] [--role lead|owner|keeper|ROLE] [--color COLOR] | --list" >&2; exit 2 ;;
   --list) list_asleep; exit 0 ;;
 esac
-handle="$1"; shift; channel=""; color=""
+handle="$1"; shift; channel=""; color=""; role=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --channel) channel="$2"; shift 2 ;;
+    --role)    role="$2"; shift 2 ;;
     --color)   color="$2"; shift 2 ;;
     *) die "unknown flag $1" ;;
   esac
 done
-wake "$handle" "$channel" "$color"
+[ -z "$color" ] || is_session_color "$color" || die "--color must be one of: ${SESSION_COLORS[*]}"
+wake "$handle" "$channel" "$color" "$role"
