@@ -126,7 +126,8 @@ def line_problems(number: int, line: str) -> list[str]:
 
 def has_bare_url_in_sentence(line: str) -> bool:
     has_bare_url = any(match["bare"] for match in INLINE.finditer(line))
-    return has_bare_url and not re.fullmatch(r"(- )?https?://\S+", line.strip())
+    text_beside_urls = re.sub(r"https?://\S+", "", line)
+    return has_bare_url and re.search(r"[A-Za-z0-9]", text_beside_urls) is not None
 
 
 def preview(draft: Draft) -> str:
