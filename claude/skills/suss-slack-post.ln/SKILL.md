@@ -17,6 +17,7 @@ $S check draft.md                                        # show the draft as Sla
 $S send  draft.md --channel C… [--thread TS]              # post, read back, print the permalink
 $S send  draft.md --channel C… [--thread TS] --image a.png [--image b.png]
 $S send  draft.md --channel C… [--thread TS] --update TS  # edit in place, keeps its files
+$S delete --channel C… --ts TS                            # remove a message, e.g. a trial post
 # --unsigned on check and send when David wants no signature
 ```
 
@@ -56,6 +57,13 @@ Paste `check`'s output **verbatim into your reply**. It is a markdown blockquote
 terminal shows labels and hides URLs, the way Slack will. Never wrap it in a code fence: that
 shows raw markup. If David may be away from your terminal, also put the draft where he can see
 it (e.g. your teamup channel).
+
+## 🧪 Trying out something new
+
+Rarely. A normal post needs no trial: `check` already shows David how it will look. Only when
+you use something `slack-post` has never done (a block type or Slack call it doesn't use yet),
+post one trial in #suss-teamup (`C0BU8PNU5AQ`, David's private channel) and `delete` it once
+done. Never test in a real channel.
 
 ## 🔁 Improve this skill
 

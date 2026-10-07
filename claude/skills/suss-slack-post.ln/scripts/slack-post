@@ -90,7 +90,7 @@ def verify(draft: Draft, channel: str, thread: str | None, ts: str) -> list[str]
     if len(tags) != len(draft.mentions):
         problems.append(f"expected {len(draft.mentions)} @mentions, Slack shows {len(tags)}")
     permalink = slack_api("chat.getPermalink", channel=channel, message_ts=ts)["permalink"]
-    print(f"{'posted' if not problems else 'POSTED WITH PROBLEMS'}: {permalink}")
+    print(f"{'posted' if not problems else 'POSTED WITH PROBLEMS'}: {permalink} (ts {ts})")
     print(f"links: {', '.join(links) or 'none'}")
     return problems
 
@@ -125,6 +125,11 @@ def cmd_send(args):
     sys.exit(1 if problems else 0)
 
 
+def cmd_delete(args):
+    slack_api("chat.delete", channel=args.channel, ts=args.ts)
+    print(f"deleted {args.ts} from {args.channel}")
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="slack-post")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -141,6 +146,10 @@ def build_parser():
     send.add_argument("--unsigned", action="store_true", help="David asked for no _agent:_ signature")
     send.add_argument("--force", action="store_true", help="send even if lint complains")
     send.set_defaults(func=cmd_send)
+    delete = sub.add_parser("delete", help="delete a message David posted, e.g. a trial post")
+    delete.add_argument("--channel", required=True, help="channel id")
+    delete.add_argument("--ts", required=True, help="the message's ts, as send printed it")
+    delete.set_defaults(func=cmd_delete)
     return parser
 
 
