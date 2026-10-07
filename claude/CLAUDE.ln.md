@@ -27,6 +27,18 @@ When referencing a file, use its absolute path (e.g. `/Users/davidsu/projects/ap
 
 Evidence only you saw is not evidence. No pointer → mark the claim unverified. (The user can also demand proof after the fact via `/suss-proof`.)
 
+### Cite sources with clickable links
+A quote, or "X asked / said / answered", links to that comment's permalink,
+This applies to everyday answers too, not only investigations. Any PR, issue, ticket,
+comment, review, Slack message or doc you mention must be a clickable markdown link to the exact
+item, so the user can check it in one click:
+
+- **PR / issue / ticket** → `[#28299](https://github.com/…/pull/28299)`, `[BASE-66214](https://…/browse/BASE-66214)`, never a bare `#28299`
+- **A quote, or "X asked / said / answered"** → link the words to the permalink of that exact message, wherever it lives: a GitHub comment (`…/pull/N#discussion_r…`, `#issuecomment-…`), a Slack message, an email, a doc comment. Never just the PR, channel or thread
+- **A claim about what a thread concluded** → link the comment where it was concluded
+
+If you don't have the URL, fetch it (e.g. `gh api …/comments`, the Slack permalink) before you send the answer. If you can't get it, say the reference is unlinked.
+
 ## Ask When Uncertain
 
 If you're uncertain about requirements, ask for clarification BEFORE implementing. If an attempt fails and you still don't understand, STOP and ask - don't loop through guesses.
