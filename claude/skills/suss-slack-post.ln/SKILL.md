@@ -15,7 +15,7 @@ Everything you post lands under David's name, so it must read like him: short, c
 S=~/.claude/skills/suss-slack-post/scripts/slack-post
 $S check draft.md                                        # show the draft as Slack will, lint it
 $S send  draft.md --channel C… [--thread TS]              # post, read back, print the permalink
-$S send  draft.md --channel C… [--thread TS] --image shot.png
+$S send  draft.md --channel C… [--thread TS] --image a.png [--image b.png]
 $S send  draft.md --channel C… [--thread TS] --update TS  # edit in place, keeps its files
 # --unsigned on check and send when David wants no signature
 ```

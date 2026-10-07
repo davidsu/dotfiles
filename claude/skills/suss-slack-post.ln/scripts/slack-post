@@ -21,14 +21,20 @@ def post_text(draft: Draft, channel: str, thread: str | None) -> str:
                      **thread_field)["ts"]
 
 
-def post_with_image(draft: Draft, channel: str, thread: str | None, image: str) -> str:
+def upload_image(image: str) -> str:
     image_path = Path(image)
     upload = slack_api("files.getUploadURLExternal", filename=image_path.name, length=str(image_path.stat().st_size))
     urllib.request.urlopen(urllib.request.Request(upload["upload_url"], data=image_path.read_bytes()), timeout=60)
+    return upload["file_id"]
+
+
+def post_with_images(draft: Draft, channel: str, thread: str | None, images: list[str]) -> str:
+    file_ids = [upload_image(image) for image in images]
     thread_field = {"thread_ts": thread} if thread else {}
-    slack_api("files.completeUploadExternal", files=json.dumps([{"id": upload["file_id"], "title": image_path.stem}]),
+    files = [{"id": file_id, "title": Path(image).stem} for file_id, image in zip(file_ids, images)]
+    slack_api("files.completeUploadExternal", files=json.dumps(files),
               channel_id=channel, initial_comment="\n".join(map(as_mrkdwn, draft.lines)), **thread_field)
-    return find_message_with_file(channel, thread, upload["file_id"])["ts"]
+    return find_message_with_file(channel, thread, file_ids[0])["ts"]
 
 
 def fetch_message(channel: str, thread: str | None, ts: str) -> dict:
@@ -111,7 +117,7 @@ def cmd_send(args):
     if args.update:
         ts = update_message(draft, args.channel, args.thread, args.update)
     elif args.image:
-        ts = post_with_image(draft, args.channel, args.thread, args.image)
+        ts = post_with_images(draft, args.channel, args.thread, args.image)
     else:
         ts = post_text(draft, args.channel, args.thread)
     problems = verify(draft, args.channel, args.thread, ts)
@@ -130,7 +136,7 @@ def build_parser():
     send.add_argument("draft", help="draft file, or - for stdin")
     send.add_argument("--channel", required=True, help="channel id, e.g. C0BR35HS0HK")
     send.add_argument("--thread", help="thread_ts of the parent message")
-    send.add_argument("--image", help="attach this image (posted as a file with the draft as its comment)")
+    send.add_argument("--image", action="append", help="attach this image; repeat for several (posted as files with the draft as their comment)")
     send.add_argument("--update", metavar="TS", help="edit this existing message in place instead of posting")
     send.add_argument("--unsigned", action="store_true", help="David asked for no _agent:_ signature")
     send.add_argument("--force", action="store_true", help="send even if lint complains")
