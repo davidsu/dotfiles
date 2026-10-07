@@ -134,6 +134,7 @@ expiry(){ printf '%s/%s/.expiry.%s' "$BASE" "$1" "$2"; }  # channel size when th
 # falls back to cwd. Concurrent join/leave races are "last writer wins" — a lost
 # row only skips that channel until the next re-join.
 sessions_file() { printf '%s/.sessions.tsv' "$BASE"; }
+parked_file() { printf '%s/suss-teamup/parked.tsv' "${XDG_STATE_HOME:-$HOME/.local/state}"; }
 session_guid()  { printf '%s' "${TEAMUP_SESSION:-${CLAUDE_CODE_SESSION_ID:-${CODEX_THREAD_ID:-}}}"; }
 
 # Every channel is mirrored to a Slack thread from the moment it has a member, so the
@@ -215,6 +216,26 @@ register_session() { # subject handle pwd
 unregister_session() { # subject handle
   local file; file="$(sessions_file)"; [ -f "$file" ] || return 0
   awk -F'\t' -v s="$1" -v h="$2" '!($2==s && $3==h)' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+}
+
+# How to resume a handle that leaves: session id, cwd and channels, kept outside $BASE so it
+# survives a reboot. Recorded by every leave (by hand, teamup-sleep, the session-end hook);
+# teamup-wake reads it. A session with no GUID (no claude/pi/codex id) can't be resumed.
+park_handle() { # handle — merges channels, since a session's channels may be left one by one
+  local rows sid file channels; file="$(parked_file)"
+  rows="$(awk -F'\t' -v h="$1" '$3==h' "$(sessions_file)" 2>/dev/null)"
+  sid="$(cut -f4 <<<"$rows" | grep -m1 . || true)"
+  [ -n "$sid" ] || return 0
+  mkdir -p "$(dirname "$file")"
+  channels="$( { cut -f2 <<<"$rows"; awk -F'\t' -v h="$1" -v s="$sid" '$1==h && $2==s { gsub(",", "\n", $4); print $4 }' "$file" 2>/dev/null || true; } |
+    grep . | sort -u | paste -sd, -)"
+  unpark_handle "$1"
+  printf '%s\t%s\t%s\t%s\t%s\n' "$1" "$sid" "$(cut -f1 <<<"$rows" | head -1)" "$channels" "$(now)" >> "$file"
+}
+
+unpark_handle() { # handle
+  local file; file="$(parked_file)"; [ -f "$file" ] || return 0
+  awk -F'\t' -v h="$1" '$1!=h' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
 }
 
 unregister_handle() { # handle
@@ -475,6 +496,14 @@ refuse_post_if_unread() { # subject handle
   exit 3
 }
 
+# An ask aimed at a peer who isn't on the channel reaches nobody until someone notices.
+# The human is exempt: their handle may be off the roster while the Slack bridge is down.
+refuse_ask_to_absent_peer() { # subject target
+  [ -z "$2" ] || [ "$2" = "$HUMAN_HANDLE" ] || [ -f "$(mdir "$1")/$2" ] && return 0
+  echo "NOT POSTED — '$2' is not on '$1'. Wake it first: $(dirname "$0")/teamup-wake $2" >&2
+  exit 3
+}
+
 # Block until the channel changes, then return so the caller re-checks. fswatch
 # wakes only on a real change (free for an indefinite watcher); sleep is the
 # universal fallback and is fine for short bounded waits.
@@ -559,6 +588,7 @@ case "$CMD" in
       > "$member"
     append "$SUBJECT" "$HANDLE" ping "joined — doing: ${DOING:-?} @ $PWD_ARG"
     register_session "$SUBJECT" "$HANDLE" "$PWD_ARG"
+    unpark_handle "$HANDLE"
     [ -f "$(cursor "$SUBJECT" "$HANDLE")" ] && show_backlog_since_left "$SUBJECT" "$HANDLE"
     printf '%s' "$(linecount "$(chan "$SUBJECT")")" > "$(cursor "$SUBJECT" "$HANDLE")"
     mirror_to_slack_unless_bridge "$SUBJECT" "$HANDLE"
@@ -632,6 +662,7 @@ case "$CMD" in
     if [ ${#MSG[@]} -gt 0 ]; then text="${MSG[*]}"; else text="$(cat)"; fi
     [ -n "$text" ] || die "nothing to ask"
     refuse_post_if_unread "$SUBJECT" "$HANDLE"
+    refuse_ask_to_absent_peer "$SUBJECT" "$TO"
     [ -n "$TO" ] && text="@$TO $text"
     append "$SUBJECT" "$HANDLE" ask "$text"
     echo "asked${TO:+ @$TO}."
@@ -785,6 +816,7 @@ case "$CMD" in
 
   leave)
     require_handle
+    park_handle "$HANDLE"
     if [ "$ALL" = true ]; then
       subjects="$(channels_of_handle "$HANDLE")"
       [ -n "$subjects" ] || { echo "no channels."; exit 0; }

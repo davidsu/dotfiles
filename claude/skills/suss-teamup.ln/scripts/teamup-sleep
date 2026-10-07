@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# teamup-sleep [--force] <handle>... — put agents to sleep: close each one's iTerm tab and leave its channels.
+# `leave` records how to resume it, so `teamup-wake <handle>` brings it back later.
+# Before running this, the agent has said "ready to sleep": its work is pushed and its
+# browser tabs are closed (resources/agent_lifecycle.md).
+set -uo pipefail
+
+readonly HERE="$(cd "$(dirname "$0")" && pwd)"
+readonly TEAMUP="$HERE/teamup"
+readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
+readonly QUIET_SECONDS=60
+
+close_iterm_tab() { # handle — the tab claude titles "<handle> (claude)", after an optional status glyph
+  osascript - "$1 (claude)" <<'OSA'
+on run argv
+  set wanted to item 1 of argv
+  tell application "iTerm2"
+    repeat with w in windows
+      repeat with t in tabs of w
+        repeat with s in sessions of t
+          set tabName to name of s
+          if tabName is wanted or tabName ends with (" " & wanted) then
+            close s
+            return "closed"
+          end if
+        end repeat
+      end repeat
+    end repeat
+  end tell
+  return "none"
+end run
+OSA
+}
+
+channels_of() { compgen -G "$BASE/*/members/$1" | awk -F/ '{ print $(NF-2) }'; }
+
+last_words() { # handle channel — its latest message, and how many seconds ago
+  awk -F'\t' -v h="$1" '$2==h && ($3=="say"||$3=="ask"||$3=="ack") { at=$1; said=$4 } END { if (at) print at "\t" said }' \
+    "$BASE/$2/channel.tsv"
+}
+
+seconds_since() { echo $(( $(date -u +%s) - $(date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$1" +%s) )); }
+
+is_busy() { # handle — someone is waiting on it, or it spoke a moment ago (maybe mid-push)
+  local channel at said busy=1
+  for channel in $(channels_of "$1"); do
+    "$TEAMUP" status "$channel" --as "$1" >/dev/null 2>&1
+    [ $? -eq 2 ] && { echo "  $1 owes an answer on '$channel'"; busy=0; }
+    IFS=$'\t' read -r at said <<<"$(last_words "$1" "$channel")"
+    [ -n "$at" ] || continue
+    echo "  last said on '$channel' ($(seconds_since "$at")s ago): ${said:0:160}"
+    [ "$(seconds_since "$at")" -lt "$QUIET_SECONDS" ] && busy=0
+  done
+  return $busy
+}
+
+put_to_sleep() { # handle
+  "$TEAMUP" leave --all --as "$1" | tail -1
+  [ "$(close_iterm_tab "$1")" = closed ] && echo "closed the tab of $1" ||
+    echo "teamup-sleep: no iTerm tab titled '$1 (claude)'; close it by hand" >&2
+  echo "resume with: $HERE/teamup-wake $1"
+}
+
+force=false; [ "${1:-}" = --force ] && { force=true; shift; }
+[ $# -gt 0 ] || { echo "usage: teamup-sleep [--force] <handle>..." >&2; exit 2; }
+for handle in "$@"; do
+  if is_busy "$handle" && [ "$force" = false ]; then
+    echo "teamup-sleep: not closing $handle: it is busy (above). Ask it to say 'ready to sleep', or pass --force." >&2
+    continue
+  fi
+  put_to_sleep "$handle"
+done

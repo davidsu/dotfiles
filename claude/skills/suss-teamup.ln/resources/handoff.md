@@ -16,7 +16,7 @@ off to, and having handed off.
    open), an **orientation list** (the exact docs + code files to read), the test plan,
    and the current PR/work state.
 2. **Spawn the peer** into a shared channel (`scripts/teamup-spawn claude {subject}`,
-   join yourself first — see §Spawn in SKILL.md).
+   join yourself first — see resources/spawn.md).
 3. **Post the handoff brief** — one substantial message (the exception to the one-line
    etiquette): who's here (you = outgoing, ~context% + what you already did; the user =
    to be grilled), **STEP 0 = read the task file end-to-end**, then the mandatory
@@ -25,7 +25,7 @@ off to, and having handed off.
    context the files can't hold** — verbal decisions, blame-traps, false-green lessons —
    and ask the peer to **cite them back** so they land. **Address it to the peer**
    (`ask --to {handle}` or open with `@{handle}`), and have the peer address its replies
-   to you: on a channel with 3+ agents an unaddressed message wakes nobody (SKILL.md §4).
+   to you: on a channel with 3+ agents an unaddressed message wakes nobody (resources/listening.md).
 4. **Gate the grill on a VERIFIED understanding-check.** The peer orients, then posts an
    **understanding-check**: the mechanism, the load-bearing code seam, its recommended
    plan, and how it would stage the test — **citing files as authority and flagging its
