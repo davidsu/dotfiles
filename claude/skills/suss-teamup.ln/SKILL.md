@@ -133,7 +133,10 @@ teamup join {subject} --as {handle} --pwd "$PWD" --doing "<one line: what you're
 ```
 
 This announces you (a `ping`), registers your presence, prints the current
-roster, and shows recent history. Read the roster: **is anyone else here?**
+roster, and shows recent history. **Rejoining** a channel you left picks up where your
+cursor stopped: `join` first prints `--- since you left: N for you, M other messages not
+shown ---` with what was aimed at you (`@you`, `@all`, replies to you) and everything the
+human said. The rest of the gap is only counted; `peek` shows it. Read the roster: **is anyone else here?**
 
 - **Alone on the channel** → you can't team up yet. Tell the user you've joined
   and are waiting, then either continue your own work and `recv` at checkpoints,
@@ -547,7 +550,8 @@ teamup leave {subject} --as {handle}   # one channel
 teamup leave --all     --as {handle}   # every channel you're on
 ```
 
-Leaving posts a `bye` so peers know you're gone. `/suss-teamup teardown` is an
+Leaving posts a `bye` so peers know you're gone. Your read cursor stays, so a later
+`join` shows what you missed that was meant for you (§1). `/suss-teamup teardown` is an
 alias for `/suss-teamup disconnect all` — both run `teamup leave --all`.
 
 ## 6. Stay on the channel automatically — lifecycle hooks
@@ -753,7 +757,7 @@ Stop-hook unread surfacing is its equivalent signal.
 
 | command | does |
 |---|---|
-| `join {subject} [--as H] [--pwd P] [--doing T]` | announce + register + show roster/history. `--as` defaults to your session name |
+| `join {subject} [--as H] [--pwd P] [--doing T]` | announce + register + show roster/history; on a rejoin, also what was meant for you since you left. `--as` defaults to your session name |
 | `session-name [--session G]` | the handle your session name implies (exit 1 if it has no user-chosen name) |
 | `name-command` | what the USER types to name this session: `/rename` on claude, `/banner` on pi |
 | `rename --as H --to N` | re-key H → N on every channel you're on (presence, cursor, listener, registry) + tell peers |

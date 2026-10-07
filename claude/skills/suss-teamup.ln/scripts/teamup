@@ -295,7 +295,18 @@ other_agent_count() { # subject handle
 worth_waking_for() { # subject handle
   [ "$2" = "$HUMAN_HANDLE" ] && { cat; return; }
   local solo=0; [ "$(other_agent_count "$1" "$2")" -le 1 ] && solo=1
-  awk -F'\t' -v me="$2" -v human="$HUMAN_HANDLE" -v solo="$solo" '
+  meant_for "$1" "$2" "$solo" 0
+}
+
+# stdin filter (numbered lines): the backlog a REJOINING handle gets — what was aimed
+# at it (@it, @all, a reply to it) plus everything the human said. The rest is counted,
+# not shown: a long absence would otherwise flood its context.
+meant_for_returning() { # subject handle
+  meant_for "$1" "$2" 0 1
+}
+
+meant_for() { # subject handle solo returning
+  awk -F'\t' -v me="$2" -v human="$HUMAN_HANDLE" -v solo="$3" -v returning="$4" '
     function is_handle_char(c) { return c ~ /[A-Za-z0-9._+-]/ }
     function ends_handle(rest,   following) {
       following = substr(rest, 1, 1)
@@ -317,8 +328,9 @@ worth_waking_for() { # subject handle
       return author[seq + 0]
     }
     FNR == NR { author[FNR] = $2; author_seen[$2] = 1; next }
-    $4 == "ping" { print; next }
+    $4 == "ping" { if (!returning) print; next }
     $4 != "say" && $4 != "ask" && $4 != "ack" { next }
+    returning && $3 == human { print; next }
     mentions($5, me) || mentions($5, "all") { print; next }
     mentions_anyone($5) { next }
     { target = reply_target($4, $5) }
@@ -402,7 +414,7 @@ release_listener() { # pidfile
 # the file is gone, conclude it is still a member, and block on until some later
 # message — retiring long after the agent left.
 leave_channel() { # subject handle
-  rm -f "$(mdir "$1")/$2" "$(cursor "$1" "$2")" "$(woken "$1" "$2")" "$(expiry "$1" "$2")"
+  rm -f "$(mdir "$1")/$2" "$(woken "$1" "$2")" "$(expiry "$1" "$2")"
   append "$1" "$2" bye "left the channel"
   echo "left '$1'."
 }
@@ -426,6 +438,17 @@ pending_asks_for_me() { # subject handle
     $4=="ask" && $3!=me && index($5, "@" me) { asked[$1]=1 }
     END { n=0; for (seq in asked) if (seq+0 > answered_through+0) n++; print n+0 }
   '
+}
+
+# A handle that left keeps its cursor, so on rejoin it sees what it missed that was
+# meant for it; the rest of the gap is only counted (`peek` shows it).
+show_backlog_since_left() { # subject handle
+  local missed shown skipped
+  missed="$(fresh_lines "$1" "$2")"
+  shown="$(printf '%s' "$missed" | meant_for_returning "$1" "$2")"
+  skipped=$(( $(printf '%s' "$missed" | spoken_only | count_lines) - $(printf '%s' "$shown" | count_lines) ))
+  echo "--- since you left: $(printf '%s' "$shown" | count_lines) for you, $skipped other messages not shown ---"
+  [ -n "$shown" ] && printf '%s\n' "$shown" | pretty
 }
 
 # Print what is new since this handle's cursor, then advance the cursor — `recv`'s job.
@@ -536,7 +559,7 @@ case "$CMD" in
       > "$member"
     append "$SUBJECT" "$HANDLE" ping "joined — doing: ${DOING:-?} @ $PWD_ARG"
     register_session "$SUBJECT" "$HANDLE" "$PWD_ARG"
-    # Cursor to end so future recv only shows what comes next.
+    [ -f "$(cursor "$SUBJECT" "$HANDLE")" ] && show_backlog_since_left "$SUBJECT" "$HANDLE"
     printf '%s' "$(linecount "$(chan "$SUBJECT")")" > "$(cursor "$SUBJECT" "$HANDLE")"
     mirror_to_slack_unless_bridge "$SUBJECT" "$HANDLE"
     echo "joined '$SUBJECT' as '$HANDLE'."
