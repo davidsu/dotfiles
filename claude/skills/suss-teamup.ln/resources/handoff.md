@@ -16,7 +16,8 @@ off to, and having handed off.
    open), an **orientation list** (the exact docs + code files to read), the test plan,
    and the current PR/work state.
 2. **Spawn the peer** into a shared channel (`scripts/teamup-spawn claude {subject}`,
-   join yourself first — see resources/spawn.md).
+   join yourself first — see resources/spawn.md). Leave out `--role` and `--color`: the
+   successor takes your color, so the user still sees the PR owner, lead or keeper.
 3. **Post the handoff brief** — one substantial message (the exception to the one-line
    etiquette): who's here (you = outgoing, ~context% + what you already did; the user =
    to be grilled), **STEP 0 = read the task file end-to-end**, then the mandatory

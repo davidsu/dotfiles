@@ -14,7 +14,11 @@ Blue, yellow, green, purple and red are never given to "anyone else".
 
 ## Applying it
 
-- **Spawn**: `teamup-spawn … --role lead|owner|keeper|<other>`. No `--role` means "anyone else".
+- **Spawn**: `teamup-spawn … --role lead|owner|keeper|<other>`. With neither `--role` nor
+  `--color`, the new agent takes **the spawner's own color**: a handoff successor carries on
+  as what its predecessor was. A spawner with no color gives "anyone else"'s.
+  So a lead spawning a tester or helper passes `--role tester` (any unreserved role), or the
+  helper comes up blue like the lead.
 - **Wake**: `teamup-wake <handle> --role …` gives the role's color. No `--role` keeps the
   color the session had before it slept, so sleep and wake never change it.
 - `--color` on either overrides the role.

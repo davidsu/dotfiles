@@ -28,8 +28,8 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
      join prompt into its idle tab (codex runs no slash commands from argv).
    - **Model**: `--model` goes to the agent's own `--model` flag (`--model fable`).
    - **Color**: `--color` (claude's `/color` palette: red blue green yellow purple orange pink
-     cyan), else its `--role`'s color ([known_team_roles.md](known_team_roles.md); no `--role`
-     is "anyone else"). A claude peer gets `/color` typed into its tab, retried every second
+     cyan), else its `--role`'s color ([known_team_roles.md](known_team_roles.md)), else
+     **your own color**: pass `--role` for a peer that is not doing your job. A claude peer gets `/color` typed into its tab, retried every second
      until its transcript records it (claude drops keystrokes while it boots); the tab gets
      the same color. A codex peer gets only the tab
      color (`bin/iterm_tab_style`). `--no-steal` (alias `--no-color`) skips coloring.
