@@ -25,3 +25,4 @@ suss-tasks
 suss-tasks.pre_git_backup/
 
 __pycache__/
+.playwright-mcp/

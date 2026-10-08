@@ -43,6 +43,11 @@ If you don't have the URL, fetch it (e.g. `gh api …/comments`, the Slack perma
 
 If you're uncertain about requirements, ask for clarification BEFORE implementing. If an attempt fails and you still don't understand, STOP and ask - don't loop through guesses.
 
+## Commit signature
+
+End every commit message with a last line `agent: <your handle>` (your session name), the same
+signature as Slack posts. No other footers: no "Generated with Claude Code", no "Co-Authored-By".
+
 ## Agent answer header
 
 **CRITICAL** ALLWAYS prefix answers with a full line as follows. This makes it easy for the user to parse the conversation
