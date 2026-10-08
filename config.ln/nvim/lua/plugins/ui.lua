@@ -8,7 +8,7 @@ return {
     event = 'VeryLazy',
     opts = {
       keymaps = { basic = true },
-      options = { delay = 10 },
+      options = { delay = 10, max_delta = { time = 250 } },
     },
   },
 
