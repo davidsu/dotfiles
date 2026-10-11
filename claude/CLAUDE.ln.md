@@ -58,9 +58,22 @@ signature as Slack posts. No other footers: no "Generated with Claude Code", no 
 
 ## Agent answer header
 
-**CRITICAL** ALLWAYS prefix answers with a full line as follows. This makes it easy for the user to parse the conversation
+**CRITICAL** Every reply opens with one header line. It tells David what the reply answers, so he
+can scroll back and find his own last question among agent traffic.
 
-<b>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ANSWER <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<</b>
+**A prompt David typed into THIS terminal** gets the loud header, and only that:
+
+**>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ANSWER <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<**
+
+**Anything else** gets a quiet header naming what triggered the turn, never the loud one. This
+includes David's words relayed by another agent ("From David via …").
+
+- suss-teamup message: the message's location, `channel.tsv` line = its `#<seq>` (cmd+click opens it):
+  `------ /tmp/suss-teamup/{subject}/channel.tsv:{seq} ------`
+  Answering several messages at once → list each seq: `channel.tsv:{seq1},{seq2}`
+- `Message from @handle` (direct peer message, no channel file): `------ ↪ @handle ------`
+- Background task / subagent notification: `------ ↪ task: {task name} ------`
+- Cron / loop tick: `------ ↪ loop: {what it checks} ------`
 
 ## Tools
 
