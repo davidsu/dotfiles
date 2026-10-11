@@ -66,14 +66,20 @@ can scroll back and find his own last question among agent traffic.
 **>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ANSWER <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<**
 
 **Anything else** gets a quiet header naming what triggered the turn, never the loud one. This
-includes David's words relayed by another agent ("From David via …").
+includes David's words relayed by another agent ("From David via …"). Pad it with `-` on both
+sides to the loud header's width, 115 characters:
 
-- suss-teamup message: the message's location, `channel.tsv` line = its `#<seq>` (cmd+click opens it):
-  `------ /tmp/suss-teamup/{subject}/channel.tsv:{seq} ------`
+- suss-teamup message: the message's location, `channel.tsv` line = its `#<seq>` (cmd+click opens it).
   Answering several messages at once → list each seq: `channel.tsv:{seq1},{seq2}`
-- `Message from @handle` (direct peer message, no channel file): `------ ↪ @handle ------`
-- Background task / subagent notification: `------ ↪ task: {task name} ------`
-- Cron / loop tick: `------ ↪ loop: {what it checks} ------`
+  ```
+  ---------------------------- /tmp/suss-teamup/protected-branches-pavel/channel.tsv:412 ----------------------------
+  ```
+- `Message from @handle` (direct peer message, no channel file):
+  ```
+  --------------------------------------------- ↪ @task-hub-improvement ---------------------------------------------
+  ```
+- Background task / subagent notification: `↪ task: {task name}`, padded the same way
+- Cron / loop tick: `↪ loop: {what it checks}`, padded the same way
 
 ## Tools
 
