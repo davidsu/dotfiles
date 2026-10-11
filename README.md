@@ -117,6 +117,12 @@ After running `./installation/install.ts`, complete these manual steps:
   `urlHandlerCommand` requires iTerm ≥ 3.7 (in the stable `iterm2` cask since 3.7.0), and iTerm reads it
   from the first-letter-capitalized defaults key `UrlHandlerCommand` (its advanced-settings
   key convention).
+- **Restart without losing tabs:** run `iterm_tabs save` before quitting iTerm, and
+  `iterm_tabs restore` in the new window. It records each tab of the current window into
+  `~/.local/state/iterm-tabs.tsv`. For a Claude tab that's its session, folder, `/color` and
+  suss-teamup channels; for a shell tab, its folder and running command. Restore resumes
+  each agent (`cyc --resume`), recolors it, has it rejoin its channels, and skips sessions
+  still running.
 
 ### 3. Shell / dev environment
 

@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+readonly TEAMUP_SCRIPTS="$HOME/.claude/skills/suss-teamup/scripts"
+readonly TERM_SPAWN="$HOME/.dotfiles/bin/term_spawn"
+readonly TEAMUP_SESSIONS="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}/.sessions.tsv"
+readonly SNAPSHOT="${SNAPSHOT:-$HOME/.local/state/iterm-tabs.tsv}"
+
+source "$TEAMUP_SCRIPTS/session_colors.sh"
+
+iterm_ttys_in_tab_order() {
+  osascript -e 'set out to ""
+tell application "iTerm2" to repeat with t in tabs of current window
+  set out to out & (tty of first session of t) & linefeed
+end repeat
+return out' | sed 's|^/dev/||' | grep -v '^$'
+}
+
+claude_record_on_tty() {
+  local tty="$1" record
+  for record in "$HOME"/.claude/sessions/*.json; do
+    [[ "$(ps -o tty= -p "$(basename "$record" .json)" 2>/dev/null | tr -d ' ')" == "$tty" ]] && cat "$record" && return
+  done
+}
+
+channels_of_session() { awk -F'\t' -v sid="$1" '$4 == sid { print $2 }' "$TEAMUP_SESSIONS" 2>/dev/null | sort -u | xargs; }
+
+foreground_pid_on_tty() { ps -t "$1" -o pid=,stat= | awk '$2 ~ /\+/ { pid = $1 } END { print pid }'; }
+
+shell_pid_on_tty() { ps -t "$1" -o pid=,comm= | awk '$2 ~ /^-?zsh$/ { print $1; exit }'; }
+
+cwd_of_pid() { lsof -a -d cwd -p "$1" -Fn 2>/dev/null | sed -n 's/^n//p'; }
+
+rerunnable_command() {
+  local pid="$1" comm
+  comm="$(ps -o comm= -p "$pid")"
+  case "$comm" in
+    *zsh) ;;
+    nvim) printf 'nvim %q' "$(ps -o args= -p "$pid" | awk '{ print $NF }')" ;;
+    *) ps -o args= -p "$pid" ;;
+  esac
+}
+
+record_agent_tab() {
+  local record="$1" session_id
+  session_id="$(jq -r .sessionId <<<"$record")"
+  printf 'agent|%s|%s|%s|%s|%s\n' "$(jq -r '.name // empty' <<<"$record")" "$(jq -r .cwd <<<"$record")" \
+    "$session_id" "$(transcript_color "$session_id")" "$(channels_of_session "$session_id")"
+}
+
+record_shell_tab() {
+  local tty="$1"
+  printf 'shell||%s|||%s\n' "$(cwd_of_pid "$(shell_pid_on_tty "$tty")")" "$(rerunnable_command "$(foreground_pid_on_tty "$tty")")"
+}
+
+save_tabs() {
+  local tty record
+  mkdir -p "$(dirname "$SNAPSHOT")"
+  for tty in $(iterm_ttys_in_tab_order); do
+    record="$(claude_record_on_tty "$tty")"
+    if [[ -n "$record" ]]; then record_agent_tab "$record"; else record_shell_tab "$tty"; fi
+  done >"$SNAPSHOT"
+  cat "$SNAPSHOT"
+  echo "saved $(wc -l <"$SNAPSHOT" | tr -d ' ') tabs to $SNAPSHOT"
+}
+
+is_session_running() {
+  local session_id="$1" record
+  for record in "$HOME"/.claude/sessions/*.json; do
+    [[ "$(jq -r '.sessionId // empty' "$record" 2>/dev/null)" == "$session_id" ]] &&
+      kill -0 "$(basename "$record" .json)" 2>/dev/null && return 0
+  done
+  return 1
+}
+
+rejoin_prompt() {
+  local handle="$1" channels="$2"
+  [[ -z "$channels" ]] && return
+  printf "iTerm was restarted and this session was resumed. As '%s', rejoin your suss-teamup channels by running %s/teamup join <channel> --as %s for each of: %s. Then recv what you missed, re-arm your background wait, and carry on." \
+    "$handle" "$TEAMUP_SCRIPTS" "$handle" "$channels"
+}
+
+resume_command() {
+  local handle="$1" session_id="$2" channels="$3" prompt
+  prompt="$(rejoin_prompt "$handle" "$channels")"
+  printf 'cyc --resume %s' "$session_id"
+  [[ -n "$prompt" ]] && printf ' -- %q' "$prompt"
+}
+
+open_agent_tab() {
+  local handle="$1" dir="$2" session_id="$3" color="$4" channels="$5" tab
+  if is_session_running "$session_id"; then
+    echo "skip $handle: already running" >&2
+    return 1
+  fi
+  tab="$("$TERM_SPAWN" --app iterm --dir "$dir" --run "$(resume_command "$handle" "$session_id" "$channels")")"
+  "$TEAMUP_SCRIPTS/teamup-spawn" __boot_iterm "$tab" claude "$color" &&
+    echo "ok   $handle ($color)${channels:+ -> $channels}" ||
+    echo "FAIL $handle: never came up, look at its tab" >&2 &
+}
+
+open_shell_tab() {
+  local dir="$1" command="$2"
+  if [[ -n "$command" ]]; then
+    "$TERM_SPAWN" --app iterm --dir "$dir" --run "$command" >/dev/null
+  else
+    "$TERM_SPAWN" --app iterm --dir "$dir" >/dev/null
+  fi
+  echo "ok   shell in $dir${command:+ running $command}"
+}
+
+restore_tabs() {
+  local kind handle dir session_id color extra
+  while IFS='|' read -r -u 3 kind handle dir session_id color extra; do
+    case "$kind" in
+      agent) open_agent_tab "$handle" "$dir" "$session_id" "$color" "$extra" ;;
+      shell) open_shell_tab "$dir" "$extra" ;;
+    esac
+    sleep 1
+  done 3<"$SNAPSHOT"
+  wait
+  echo "done. Close the tab you ran this from, so the restored tabs are the only ones left."
+}
+
+case "${1:-}" in
+  save) save_tabs ;;
+  restore) restore_tabs ;;
+  *) echo "usage: iterm_tabs save|restore" >&2; exit 1 ;;
+esac
