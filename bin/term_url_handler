@@ -24,6 +24,7 @@ elif [[ "$url" =~ ^https?://\$HOME/(.+)$ ]] || [[ "$url" =~ ^https?://~/.(.+)$ ]
 else
   open_with_macos
 fi
-[[ -e "$path" ]] || open_with_macos
+without_line_suffix() { [[ "$1" =~ ^(.+)(:[0-9]+){1,2}$ ]] && echo "${BASH_REMATCH[1]}" || echo "$1"; }
+[[ -e "$(without_line_suffix "$path")" ]] || open_with_macos
 
 exec "$HOME/.dotfiles/bin/term_open_file" --app iterm "$path"

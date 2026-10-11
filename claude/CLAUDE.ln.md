@@ -66,17 +66,22 @@ can scroll back and find his own last question among agent traffic.
 **>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ANSWER <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<**
 
 **Anything else** gets a quiet header naming what triggered the turn, never the loud one. This
-includes David's words relayed by another agent ("From David via …"). Pad it with `-` on both
-sides to the loud header's width, 115 characters:
+includes David's words relayed by another agent ("From David via …"). When the trigger is a
+message, the header is a markdown link to the line holding that message: cmd+click opens it in
+nvim at that line, so David can read the question. Pad with `-` on both sides so the visible
+line is 115 characters, the loud header's width.
 
-- suss-teamup message: the message's location, `channel.tsv` line = its `#<seq>` (cmd+click opens it).
-  Answering several messages at once → list each seq: `channel.tsv:{seq1},{seq2}`
+- suss-teamup message, `[@sender:channel](file:///tmp/suss-teamup/{channel}/channel.tsv:{seq})`.
+  The line number is the message's `#<seq>`. A teamup listener (`teamup wait`) finishing is a
+  teamup message, not a task: link the message(s) it woke you for, one link each.
   ```
-  ---------------------------- /tmp/suss-teamup/protected-branches-pavel/channel.tsv:412 ----------------------------
+  ---------------------------------------- [@lead.12:task_links](file:///tmp/suss-teamup/task_links/channel.tsv:39) ----------------------------------------
   ```
-- `Message from @handle` (direct peer message, no channel file):
+- `Message from @handle` (direct peer message), `[@sender](file://{transcript}:{line})`: the line
+  of your own transcript holding it. Find it with
+  `t=$(ls ~/.claude/projects/*/"$CLAUDE_CODE_SESSION_ID".jsonl); echo "$t:$(rg -n --no-config '"role":"user","content":"Another Claude session sent a message' "$t" | tail -1 | cut -d: -f1)"`
   ```
-  --------------------------------------------- ↪ @task-hub-improvement ---------------------------------------------
+  ---------------------------------------------- [@task-hub-improvement](file:///Users/davidsu/.claude/projects/{project}/{session-id}.jsonl:{line}) ----------------------------------------------
   ```
 - Background task / subagent notification: `↪ task: {task name}`, padded the same way
 - Cron / loop tick: `↪ loop: {what it checks}`, padded the same way
