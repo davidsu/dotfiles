@@ -32,10 +32,10 @@ What this task is about...
 | `open`        | Not started yet                  |
 | `in_progress` | Currently being worked on        |
 | `blocked`     | Waiting on something else        |
-| `ready`       | Work done, awaiting David's OK   |
+| `ready`       | Work done, waiting on review     |
 | `closed`      | Done                             |
 
-`ready` is David's call: agents never set it themselves. It maps 1:1 to b44sync's `ready`.
+The task owner sets `ready` once only review remains.
 
 ### Minimal Task
 
@@ -165,36 +165,35 @@ suss-tasks/audit-slug-refs/backend-check.md#runtime-store -> confirms no backend
 
 **Place references after the content they support** — never in a footer section.
 
-## Code References — Root-Relative Markdown Links
+## Code References — GitHub Permalinks
 
-Reference code with **GitHub-style markdown links whose path starts with `/`**. The
-leading `/` makes GitHub resolve the link from the **repository root**, so the link
-renders as a clickable, line-highlighted link for colleagues on GitHub **and** keeps
-working when the task file is moved (e.g. into `suss-tasks/done/`).
+Task files live outside the repo they describe, and the code may sit in any worktree or
+branch. So every reference to code is a **full GitHub URL pinned to a pushed commit sha**:
+it opens from any preview, on GitHub, and wherever the task is synced, and keeps pointing
+at the lines you read even after the branch moves or is deleted.
 
 ```markdown
-[reduceSandboxSlot](/frontend/.../sandbox.reducer.ts#L90)          single line
-[recomputeStatus](/frontend/.../sandbox.reducer.ts#L10-L26)        line range
-[validate_final_state](/backend/.../background_validation.py#L86)  any source file
+[reduceSandboxSlot](https://github.com/<owner>/<repo>/blob/<sha>/frontend/.../sandbox.reducer.ts#L90)
+[recomputeStatus](https://github.com/<owner>/<repo>/blob/<sha>/frontend/.../sandbox.reducer.ts#L10-L26)
+[#1234](https://github.com/<owner>/<repo>/pull/1234)
 ```
-
-In editor (`gd` on the link) this opens the file, highlights the range, and centers
-the viewport — the same link works in Neovim and on GitHub. To read a doc in the
-browser, use `:TaskPreview` (not `:MarkdownPreview`): it previews a copy with these
-root-relative links rewritten to local `file://` paths, so they open instead of 404ing.
 
 **Rules:**
 
-1. **Always start the path with `/`** — repo-root-relative, so it survives moving the `.md`
-2. **Line fragment is `#L<line>` or `#L<start>-L<end>`** (capital `L`, dash between)
-3. **No column anchors** — GitHub does not support `#L31C5`; line/range only
-4. **Linking to lines in another `.md`** needs `?plain=1`: `[x](/suss-tasks/foo.md?plain=1#L14)`
-5. **Multiple discrete lines** = multiple links (e.g. `#L31` and `#L71`), not `#L31,L71`
-6. Verify the path exists and the line numbers are accurate before writing
+1. **Pin to the sha you verified the lines at** — the PR head for code a PR changes, the default branch's HEAD otherwise; it must be pushed (an unpushed commit 404s), never a branch name (deleted on merge)
+2. **Moving a link to a newer sha re-dates the claim** — re-read the lines at that sha first; they drift, and the claim may no longer hold. Old text with no recorded sha: re-read at today's default-branch HEAD and pin to that
+3. **A PR, issue or commit is always a link** — `[#1234](…/pull/1234)`, never a bare `#1234`
+4. **A file is never a bare path** — not `` `src/foo.ts` ``, not `` `foo.ts` ``; link it. Backticks are for identifiers (`useFoo`, `mainOnly`)
+5. **Short link text** — `[foo.ts](…)` or `[#1234](…)`, never the raw URL as text
+6. **Line fragment is `#L<line>` or `#L<start>-L<end>`** (capital `L`, dash between); no column anchors (`#L31C5`)
+7. **Multiple discrete lines** = multiple links (e.g. `#L31` and `#L71`), not `#L31,L71`
+8. **Linking to lines in another task `.md`** needs `?plain=1`: `[x](sibling.md?plain=1#L14)`
+9. Verify the path exists at that sha and the line numbers are accurate before writing
+10. **A path on this machine** (`~/…`, `/Users/…`, `/tmp/…`) has no URL: write it absolute, in backticks, never relative (`compose.mjs` reads as a repo file)
 
 ### Reference-style links — for table cells (keep the reading area narrow)
 
-Inline links are fine in prose. But inside **table cells** a full path is 200+ chars, which
+Inline links are fine in prose. But inside **table cells** a full URL is 100+ chars, which
 blows the column out and makes the table unreadable (see "Markdown Table Alignment"). Use a
 **reference-style link** instead: a short token in the cell, with the long path collected in a
 refs block at the **bottom of the file**.
@@ -205,18 +204,18 @@ refs block at the **bottom of the file**.
 | P1 | data-driven URL recompute       | [reduceSandboxSlot][p1] recomputes url |
 
 <!-- code refs -->
-[p1]: /frontend/.../appPreviewStore/sandbox.reducer.ts#L90
+[p1]: https://github.com/<owner>/<repo>/blob/<sha>/frontend/.../sandbox.reducer.ts#L90
 ```
 
 `gd` on `[reduceSandboxSlot][p1]` (cursor on either bracket) resolves the `[p1]:` definition and
-jumps to the file — same as an inline link. GitHub renders it as a normal clickable link, and the
+opens the target — same as an inline link. GitHub renders it as a normal clickable link, and the
 `[p1]: …` definition lines are invisible in the rendered view.
 
 **Rules:**
 
 1. **Cell holds a short token** — `[human label][key]`; the `key` is a terse slug (`p1`, `p2b`, `fe_audit`)
-2. **All definitions go in ONE block at the very bottom**, under a `<!-- code refs -->` comment, after the authorship footer
-3. **Definition format**: `[key]: /repo-root-relative-path#L<line>` — same path rules as inline links above
+2. **All definitions go in ONE block, the last one in the file**, under a `<!-- code refs -->` comment, after the authorship footer. The sync tool's tracking line may land before or after it; leave it where it is
+3. **Definition format**: `[key]: <permalink>` — same rules as inline links above
 4. **Keys are unique, lowercase, and use `_` not `-` as the separator** (`r_wtfa`, `g_sync_status`) — Vim's `iskeyword` excludes `-`, so `*`/`#`/`gd`-style word motions treat a `-`-joined token as several words; `_` keeps the whole key one word so `*` on it jumps between its uses
 5. Reuse one key if the same location is cited from multiple cells
 5. Verify each `[key]` has exactly one matching `[key]: …` definition
