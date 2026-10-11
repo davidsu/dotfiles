@@ -220,6 +220,24 @@ opens the target — same as an inline link. GitHub renders it as a normal click
 5. Reuse one key if the same location is cited from multiple cells
 5. Verify each `[key]` has exactly one matching `[key]: …` definition
 
+## Videos
+
+A video is a **link to a public URL**, never a local path or a file committed to the repo: a
+URL is the one form that opens in the raw file, every markdown preview, GitHub and the task
+board alike.
+
+```markdown
+[▶ tap shows the toast](https://media.example.com/…/tap_toast.mp4)
+```
+
+**Rules:**
+
+1. **Get the URL from the task sync tool** — for b44sync, `suss-sync-tasks` `upload` prints the line to paste; its `push` also attaches the video to the board task
+2. **The URL is world-readable** — record only test or staff apps; never customer data, tokens or real emails
+3. **MP4 (H.264)** — other formats may not play everywhere; convert first (`ffmpeg -i in.webm -c:v libx264 -pix_fmt yuv420p out.mp4`)
+4. **Link text says what the video shows**, starting with `▶`
+5. **Next to the claim it proves** — like any reference, not in a footer
+
 ## Markdown Table Alignment
 
 All markdown tables MUST have columns padded to consistent widths. This is critical for readability in neovim and terminal viewers that render markdown as-is.
