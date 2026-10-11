@@ -43,6 +43,14 @@ If you don't have the URL, fetch it (e.g. `gh api …/comments`, the Slack perma
 
 If you're uncertain about requirements, ask for clarification BEFORE implementing. If an attempt fails and you still don't understand, STOP and ask - don't loop through guesses.
 
+## Broken `suss-*` skills
+
+The `suss-*` skills are David's own and meant to improve as they're used. If one breaks or misleads
+you (a wrong step, a stale path, a rule that fights the task), don't quietly work around it. Tell
+David in one line what broke and suggest spawning an agent in the skill's repo (`readlink` the
+skill dir in `~/.claude/skills/`) to fix it with him. Don't fix it yourself mid-task, and don't
+raise it for style nits.
+
 ## Commit signature
 
 End every commit message with a last line `agent: <your handle>` (your session name), the same
