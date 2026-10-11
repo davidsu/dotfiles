@@ -15,4 +15,6 @@ Tasks live in the git repo `base44-dev/suss-tasks` (clone: `~/Developer/suss-tas
 
 **Finding a task from another project**: every project's tasks are in that one clone, so you never need that project checked out. `ls ~/Developer/suss-tasks` lists the project folders (`apper/`, `cli/`, `dotfiles/`, `vite-plugin/`, `weekly/`, …); search across all of them with `rg <pattern> ~/Developer/suss-tasks`. Read them there directly.
 
+**Every task gets its own directory with an `epic.md`** — never a single loose `.md` file under `suss-tasks/<project>/`.
+
 **CRITICAL**: Read [WRITING.md](resources/WRITING.md) before creating or updating any task file.
