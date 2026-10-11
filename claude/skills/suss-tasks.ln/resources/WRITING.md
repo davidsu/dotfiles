@@ -68,7 +68,7 @@ Reproduces on any path with spaces — e.g., `~/Library/Application Support/`.
 
 ## Directory Structure
 
-Tasks live under `suss-tasks/` at the project root. Epics are directories. Tasks are files.
+Tasks live under `suss-tasks/` at the project root. Epics are directories. Tasks are files inside them — there are no standalone task files.
 
 ```
 suss-tasks/
@@ -83,26 +83,27 @@ suss-tasks/
 ├── improve_statusline/
 │   ├── epic.md
 │   └── add_git_branch.md
-└── fix_mru_crash.md                # standalone task (no directory)
+└── fix_mru_crash/                  # even a single task gets its own directory
+    └── epic.md
 ```
 
 **Rules:**
 
-1. **Directories group tasks** — an `epic.md` inside describes the group
+1. **Every task lives in a directory with an `epic.md`** — never a bare `.md` file directly under `suss-tasks/`. A one-off task is a directory whose `epic.md` is the task; sub-tasks are added next to it later
 2. **Tasks are `.md` files** — the filename is the task name
-3. **Standalone tasks** go directly under `suss-tasks/`
-4. **Nesting is unlimited** — directories can contain directories
-5. **`snake_case` or `camelCase`** for filenames and directories — never kebab-case
+3. **Nesting is unlimited** — directories can contain directories
+4. **`snake_case` or `camelCase`** for filenames and directories — never kebab-case
 
 ## Creating Tasks
 
 Just write the file. No CLI, no commands.
 
 ```bash
-# Standalone task
-Write suss-tasks/fix_mru_crash.md
+# One-off task — still a directory with an epic.md
+mkdir -p suss-tasks/fix_mru_crash
+Write suss-tasks/fix_mru_crash/epic.md
 
-# Task under an epic (create directory if needed)
+# Task under an epic
 mkdir -p suss-tasks/migrate_to_suss_tasks
 Write suss-tasks/migrate_to_suss_tasks/create_skill.md
 ```
@@ -237,6 +238,7 @@ board alike.
 3. **WebM or MP4** — the board lists videos as attachments that open in a browser tab, which plays both; no conversion needed
 4. **Link text says what the video shows**, starting with `▶`
 5. **Next to the claim it proves** — like any reference, not in a footer
+6. **Optional thumbnail** — `attach` a poster PNG (one frame: `ffmpeg -ss 5 -i v.webm -frames:v 1 poster.png`) and wrap it: `[![▶ what it shows](poster_url)](video_url)` renders a clickable thumbnail on the board and on GitHub
 
 ## Markdown Table Alignment
 
