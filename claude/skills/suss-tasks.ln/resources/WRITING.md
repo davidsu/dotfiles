@@ -232,7 +232,7 @@ board alike.
 
 **Rules:**
 
-1. **Get the URL from the task sync tool** — for b44sync, `suss-sync-tasks` `upload` prints the line to paste; its `push` also attaches the video to the board task
+1. **Get the URL from the task sync tool** — for b44sync, `suss-sync-tasks` `attach <task.md> <video>` uploads it, attaches it to the board task and prints the line to paste
 2. **The URL is world-readable** — record only test or staff apps; never customer data, tokens or real emails
 3. **MP4 (H.264)** — other formats may not play everywhere; convert first (`ffmpeg -i in.webm -c:v libx264 -pix_fmt yuv420p out.mp4`)
 4. **Link text says what the video shows**, starting with `▶`
