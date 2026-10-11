@@ -69,7 +69,7 @@ can scroll back and find his own last question among agent traffic.
 includes David's words relayed by another agent ("From David via …"). When the trigger is a
 message, the header is a markdown link to the line holding that message: cmd+click opens it in
 nvim at that line, so David can read the question. Pad with `-` on both sides so the visible
-line is 115 characters, the loud header's width.
+line is 115 characters, the loud header's width. Never more: it must fit on one line.
 
 - suss-teamup message, `[@sender:channel](file:///tmp/suss-teamup/{channel}/channel.tsv:{seq})`.
   The line number is the message's `#<seq>`. A teamup listener (`teamup wait`) finishing is a
