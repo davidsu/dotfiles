@@ -2,7 +2,7 @@
 
 | command | does |
 |---|---|
-| `join {subject} [--as H] [--pwd P] [--doing T]` | announce + register + show roster/history; on a rejoin, also what was meant for you since you left. `--as` defaults to your session name |
+| `join {subject} [--as H] [--pwd P] [--doing T]` | announce + register + show roster/history; on a rejoin, also what was meant for you since you left. Marks read only what precedes your join, so a message landing mid-join stays unread (flagged at the end) and your first `wait` fires on it. `--as` defaults to your session name |
 | `session-name [--session G]` | the handle your session name implies (exit 1 if it has no user-chosen name) |
 | `name-command` | what the USER types to name this session: `/rename` on claude, `/banner` on pi |
 | `rename --as H --to N` | re-key H → N on every channel you're on (presence, cursor, listener, registry) + tell peers |

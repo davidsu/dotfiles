@@ -472,6 +472,20 @@ show_backlog_since_left() { # subject handle
   [ -n "$shown" ] && printf '%s\n' "$shown" | pretty
 }
 
+# A join marks read only what came before its own ping. Marking the whole channel read
+# would swallow a brief that lands in the instant between the ping and the cursor write:
+# the lead sees the ping and asks at once, and no wait ever fires for an ask already read.
+mark_read_through_own_join() { # subject handle
+  numbered "$1" | awk -F'\t' -v me="$2" '$3==me && $4=="ping" { seq=$1 } END { print seq+0 }' \
+    > "$(cursor "$1" "$2")"
+}
+
+report_arrived_while_joining() { # subject handle
+  local arrived; arrived="$(fresh_lines "$1" "$2" | meant_for_returning "$1" "$2" | count_lines)"
+  [ "$arrived" -gt 0 ] || return 0
+  echo "--- $arrived for you arrived while joining, still unread: teamup recv $1 --as $2 ---"
+}
+
 # Print what is new since this handle's cursor, then advance the cursor — `recv`'s job.
 read_unread() { # subject handle
   local fresh unread pending senders
@@ -599,13 +613,14 @@ case "$CMD" in
     register_session "$SUBJECT" "$HANDLE" "$PWD_ARG"
     unpark_handle "$HANDLE"
     [ -f "$(cursor "$SUBJECT" "$HANDLE")" ] && show_backlog_since_left "$SUBJECT" "$HANDLE"
-    printf '%s' "$(linecount "$(chan "$SUBJECT")")" > "$(cursor "$SUBJECT" "$HANDLE")"
+    mark_read_through_own_join "$SUBJECT" "$HANDLE"
     mirror_to_slack_unless_bridge "$SUBJECT" "$HANDLE"
     echo "joined '$SUBJECT' as '$HANDLE'."
     echo "--- on channel now ---"
     "$0" roster "$SUBJECT"
     echo "--- recent ---"
     "$0" peek "$SUBJECT" --last "$LAST"
+    report_arrived_while_joining "$SUBJECT" "$HANDLE"
     ;;
 
   # For a hook or an agent that has to tell the USER how to name this session.
