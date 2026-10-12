@@ -29,7 +29,11 @@ pid_file() { printf '%s/%s/.slack.pid' "$BASE" "$1"; }
 log_file() { printf '%s/%s/.slack.log' "$BASE" "$1"; }
 broken_file() { printf '%s/%s/.slack.broken' "$BASE" "$1"; }
 
-keychain_secret() { security find-generic-password -a "$USER" -s "$1" -w 2>/dev/null; }
+keychain_secret() {
+  command -v security >/dev/null ||
+    { cat "${XDG_CONFIG_HOME:-$HOME/.config}/suss-teamup/$1" 2>/dev/null; return; }
+  security find-generic-password -a "$USER" -s "$1" -w 2>/dev/null
+}
 
 slack_api() { # method [curl data args...]
   local method="$1"; shift

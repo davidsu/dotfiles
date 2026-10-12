@@ -88,7 +88,8 @@ because a user-session token posts as the user, so bridge posts and phone replie
 one author. Both directions are exact, no heuristics.
 
 **Auth is the user's Slack web session** — the same `slack-mcp-xoxc` / `slack-mcp-xoxd`
-keychain items the Slack MCP uses. No Slack app, therefore no Events API: the inbound
+keychain items the Slack MCP uses (on Linux, which has no `security`: files of those names
+in `${XDG_CONFIG_HOME:-~/.config}/suss-teamup/`, chmod 600). No Slack app, therefore no Events API: the inbound
 side polls (`$TEAMUP_SLACK_POLL`, default 10s — Tier-3, one poller per channel), asking
 only for replies newer than the newest one it knows minus a 60s margin (`oldest=`), so a
 busy thread costs a few KB per poll instead of the last 50 code blocks. Those tokens
