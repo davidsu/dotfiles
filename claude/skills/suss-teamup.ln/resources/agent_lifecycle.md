@@ -21,9 +21,17 @@ $S/teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR]
 2. **Whoever sleeps it verifies first.** Check the pushed commit and the task file yourself
    (`git log origin/…`, the file on disk). Never take "done" on the agent's word.
 3. Run `teamup-sleep <handle>`. It `leave`s every channel, which records how to resume the
-   agent, and closes the iTerm tab titled `<handle> (claude)`. It refuses while a peer is
-   waiting on the agent's answer or the agent spoke in the last minute (it may be mid-push),
-   and prints what the agent last said; `--force` overrides.
+   agent, and closes the iTerm tab titled `<handle> (claude)`. It refuses, and says why, while:
+   - the agent's tab has keyboard focus (the current tab of iTerm's front window): David is
+     looking at it
+   - David messaged it in the last 5 minutes: a prompt typed in its terminal (the last
+     `origin.kind == "human"` turn of its transcript, not counting the `/suss-teamup` that
+     spawn and wake type), or a channel message from `david` naming `@<handle>` (which
+     includes `ask --to <handle>`)
+   - a peer is waiting on the agent's answer
+   - the agent spoke in the last minute (it may be mid-push)
+
+   It prints what the agent last said. `--force` overrides, and still prints the reasons.
 
 An agent goes to sleep as soon as it is waiting on a reviewer, a human or another agent.
 Don't keep it open to babysit; wake it when the thing it waits for happens.

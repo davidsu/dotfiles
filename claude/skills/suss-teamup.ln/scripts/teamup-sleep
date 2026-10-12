@@ -8,7 +8,9 @@ set -uo pipefail
 readonly HERE="$(cd "$(dirname "$0")" && pwd)"
 readonly TEAMUP="$HERE/teamup"
 readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
+readonly REGISTRY="$BASE/.sessions.tsv"
 readonly QUIET_SECONDS=60
+readonly DAVID_QUIET_SECONDS=300
 
 close_iterm_tab() { # handle — the tab claude titles "<handle> (claude)", after an optional status glyph
   osascript - "$1 (claude)" <<'OSA'
@@ -39,10 +41,60 @@ last_words() { # handle channel — its latest message, and how many seconds ago
     "$BASE/$2/channel.tsv"
 }
 
-seconds_since() { echo $(( $(date -u +%s) - $(date -u -j -f '%Y-%m-%dT%H:%M:%SZ' "$1" +%s) )); }
+seconds_since() { local at="${1%.*}"; echo $(( $(date -u +%s) - $(date -u -j -f '%Y-%m-%dT%H:%M:%S' "${at%Z}" +%s) )); }
 
-is_busy() { # handle — someone is waiting on it, or it spoke a moment ago (maybe mid-push)
+focused_tab_name() {
+  osascript -e 'tell application "iTerm2" to name of current session of current window' 2>/dev/null
+}
+
+is_focused() { # handle — David is looking at its tab right now
+  local wanted="$1 (claude)" tab; tab="$(focused_tab_name)"
+  [ "$tab" = "$wanted" ] || [[ "$tab" == *" $wanted" ]]
+}
+
+transcript_of() { # handle — the claude transcript of its running session
+  local session_id
+  session_id="$(awk -F'\t' -v h="$1" '$3==h && $4!="" { sid=$4 } END { print sid }' "$REGISTRY" 2>/dev/null)"
+  [ -n "$session_id" ] && compgen -G "$HOME/.claude/projects/*/$session_id.jsonl" | head -1
+}
+
+last_typed_prompt_at() { # handle — the last prompt David typed in its terminal; spawn/wake boots type /suss-teamup
+  local transcript; transcript="$(transcript_of "$1")"
+  [ -n "$transcript" ] || return 0
+  jq -rR 'fromjson? | select(.type=="user" and .origin.kind=="human")
+    | select((.message.content | if type=="string" then . else (.[0].text // "") end) | contains("<command-name>/suss-teamup") | not)
+    | .timestamp' "$transcript" 2>/dev/null | tail -1
+}
+
+last_slack_dm_at() { # handle — David's last channel message naming it (@handle, ask --to)
+  local channel_log
+  for channel_log in "$BASE"/*/channel.tsv; do
+    awk -F'\t' -v mention="@$1" '$2=="david" && ($3=="say"||$3=="ask") {
+      rest = $4
+      while ((i = index(rest, mention))) {
+        rest = substr(rest, i + length(mention))
+        if (rest !~ /^[A-Za-z0-9_-]/ && rest !~ /^\.[A-Za-z0-9]/) { print $1; break }
+      }
+    }' "$channel_log"
+  done | sort | tail -1
+}
+
+is_david_message_recent() { # handle where at — prints it when it is within DAVID_QUIET_SECONDS
+  [ -n "$3" ] && [ "$(seconds_since "$3")" -lt "$DAVID_QUIET_SECONDS" ] || return 1
+  echo "  David messaged $1 $(seconds_since "$3")s ago ($2)"
+}
+
+david_spoke_lately() { # handle
+  local spoke=1
+  is_david_message_recent "$1" "typed in its terminal" "$(last_typed_prompt_at "$1")" && spoke=0
+  is_david_message_recent "$1" "on a channel" "$(last_slack_dm_at "$1")" && spoke=0
+  return $spoke
+}
+
+is_busy() { # handle — David is on it, someone is waiting on it, or it spoke a moment ago (maybe mid-push)
   local channel at said busy=1
+  is_focused "$1" && { echo "  $1's tab has keyboard focus: David is looking at it"; busy=0; }
+  david_spoke_lately "$1" && busy=0
   for channel in $(channels_of "$1"); do
     "$TEAMUP" status "$channel" --as "$1" >/dev/null 2>&1
     [ $? -eq 2 ] && { echo "  $1 owes an answer on '$channel'"; busy=0; }
@@ -64,9 +116,12 @@ put_to_sleep() { # handle
 force=false; [ "${1:-}" = --force ] && { force=true; shift; }
 [ $# -gt 0 ] || { echo "usage: teamup-sleep [--force] <handle>..." >&2; exit 2; }
 for handle in "$@"; do
-  if is_busy "$handle" && [ "$force" = false ]; then
-    echo "teamup-sleep: not closing $handle: it is busy (above). Ask it to say 'ready to sleep', or pass --force." >&2
-    continue
+  if is_busy "$handle"; then
+    [ "$force" = true ] || {
+      echo "teamup-sleep: not closing $handle: it is busy (above). Ask it to say 'ready to sleep', or pass --force." >&2
+      continue
+    }
+    echo "teamup-sleep: --force: closing $handle although it is busy (above)" >&2
   fi
   put_to_sleep "$handle"
 done
