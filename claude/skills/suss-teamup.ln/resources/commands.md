@@ -7,7 +7,7 @@
 | `name-command` | what the USER types to name this session: `/rename` on claude, `/banner` on pi |
 | `rename --as H --to N` | re-key H → N on every channel you're on (presence, cursor, listener, registry) + tell peers |
 | `say {subject} --as H -- <text>` | post a message (alias: `send`). Refuses (exit `3`, shows what's new, marks it read) if anything arrived since your last read — resend after reading. Same for `ask`/`ack` |
-| `ask {subject} --as H [--to P] -- <question>` | post a question; `--to` aims it at peer `P` (shows as their `asks_for_me`) |
+| `ask {subject} --as H [--to P] -- <question>` | post a question; `--to` aims it at peer `P` (shows as their `asks_for_me`); queued if `P` is asleep, refused if `P` is unknown |
 | `ack {subject} --as H [--re <seq>] -- [note]` | answer/clear an ask (default `--re` = latest peer msg); any message from you also clears it |
 | `recv {subject} --as H` | summary line + peers' messages since last read (non-blocking); join/leave pings print as context but aren't counted as unread. **The only reader that advances the cursor.** |
 | `status {subject} --as H` | summary line only (incl. `listener=live\|none`); cursor untouched; exit `0`=clean `1`=unread `2`=ask-for-you |

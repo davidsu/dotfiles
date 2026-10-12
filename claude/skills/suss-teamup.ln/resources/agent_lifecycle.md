@@ -8,6 +8,7 @@ session, with its full context, in a new tab. Both are claude-on-iTerm only.
 S=~/.claude/skills/suss-teamup/scripts
 $S/teamup-sleep [--force] <handle>...        # leave its channels, close its tab
 $S/teamup-wake --list                        # who can be woken
+$S/teamup-wake --asleep <handle>             # exit 0 if it can be woken
 $S/teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR]
 ```
 
@@ -29,22 +30,26 @@ Don't keep it open to babysit; wake it when the thing it waits for happens.
 
 ## Waking an agent
 
-1. `teamup-wake <handle>` resumes the session in its own directory and has it rejoin its
-   channel. It refuses if the session is still running: a session must never run twice.
+**Post the brief first, then wake.** The agent sees the brief the moment it rejoins, so
+nobody waits on an "awaiting lead" round trip.
+
+1. **Brief it on the channel**, `ask --to` it, while it still sleeps:
+   - one job; the exact trigger (the commit, run, comment or message that changed)
+   - what to do, and what NOT to do
+   - the end condition, usually "then say ready to sleep"
+
+   `ask` queues it and prints `queued for <handle> (asleep)` with the wake command. On
+   rejoin the agent sees everything aimed at it while it slept, so the brief can point at
+   those messages instead of repeating them.
+2. `teamup-wake <handle> [--channel C]` prints what is waiting for the agent on the channel
+   (`unread=N asks_for_me=M`), then resumes the session in its own directory and has it
+   rejoin that channel. It refuses if the session is still running: a session must never run twice.
    It gives the tab and `/color` the `--color`, else the `--role`'s color
    ([known_team_roles.md](known_team_roles.md)), else the color the agent had before it
    slept. `/color` is typed into the new tab until the transcript records it; if the agent
    never comes up, wake says so and exits 1. The usual cause is a permission prompt the
    resumed session is stuck on.
-2. Wait for it to print `back on '<channel>'`. A brief posted before the agent rejoins is
-   easily missed.
-3. **Brief it on the channel**, `ask --to` it:
-   - one job; the exact trigger (the commit, run, comment or message that changed)
-   - what to do, and what NOT to do
-   - the end condition, usually "then say ready to sleep"
-
-   On rejoin the agent already sees what was aimed at it while it slept, so the brief can
-   point at those messages instead of repeating them.
+3. Wait for it to print `back on '<channel>'`.
 4. Confirm it took the brief (an `ack`, or its plan) before you count it as working.
 
 After quitting iTerm, `teamup-wake --list` shows everyone the session-end hook recorded;
@@ -64,5 +69,6 @@ after a reboot a crashed session can be woken only from the resume line in the t
 that is why the tracking file keeps one. Only claude sessions can be woken.
 An agent can read its own session id from `$CLAUDE_CODE_SESSION_ID`.
 
-`ask --to <handle>` refuses when that agent isn't on the channel (exit 3) and names the
-`teamup-wake` command, so a question never lands on an empty seat.
+`ask --to <handle>` to an agent off the channel is queued only when it was on this channel
+and `teamup-wake` can resume it. Any other absent handle is refused (exit 3): a typo or an
+agent that can't come back would leave the question on an empty seat.

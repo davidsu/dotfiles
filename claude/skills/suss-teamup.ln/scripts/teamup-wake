@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR] — resume a sleeping claude agent
-# in a new iTerm tab, in its own directory, and have it rejoin its channel. Prints once it is back
-# on the channel: brief it only then, since a brief posted before it rejoins is easily missed.
+# in a new iTerm tab, in its own directory, and have it rejoin its channel. Prints what is waiting
+# for it there, then once it is back: post its brief BEFORE waking it, it sees the brief on rejoin.
 # Its tab and /color get --color, else its --role's color, else the color it had before it slept.
 # teamup-wake --list — every agent that can be woken.
+# teamup-wake --asleep <handle> — exit 0 if that agent can be woken.
 set -uo pipefail
 
 readonly HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -45,6 +46,18 @@ list_asleep() {
   [ -n "$found" ] || echo "nobody is asleep."
 }
 
+can_wake() { # handle
+  local session_id
+  IFS=$'\t' read -r _ session_id _ <<<"$(wake_record "$1")"
+  [ -n "$session_id" ] && is_claude_session "$session_id" && ! is_session_running "$session_id"
+}
+
+print_waiting_messages() { # handle channel
+  local summary; summary="$("$HERE/teamup" status "$2" --as "$1" 2>/dev/null)"
+  summary="${summary#summary: }"
+  echo "waiting for $1 on '$2': ${summary%% listener=*}"
+}
+
 wait_for_join_ping() { # channel handle after-line
   for _ in $(seq 1 "$REJOIN_TIMEOUT_SECONDS"); do
     awk -F'\t' -v h="$2" -v after="$3" 'NR > after && $2==h && $3=="ping" { found=1 } END { exit !found }' \
@@ -68,17 +81,19 @@ wake() { # handle channel color role
   is_session_running "$session_id" && die "'$1' is already running (session $session_id): find its tab instead"
   color="${3:-$(wake_color "$4" "$session_id")}"
   log_lines="$(wc -l < "$BASE/$channel/channel.tsv" 2>/dev/null || echo 0)"
+  print_waiting_messages "$1" "$channel"
   tab="$(term_spawn --app iterm --dir "$dir" --run "cyc --resume $session_id -- '/suss-teamup $channel'")"
   echo "waking $1 in $dir (session $session_id) to rejoin '$channel'..."
   [ -z "$color" ] || "$HERE/teamup-spawn" __boot_iterm "$tab" claude "$color" ||
     die "$1 did not come up: look at its tab, usually a permission prompt the resumed session is stuck on"
-  wait_for_join_ping "$channel" "$1" "$log_lines" && echo "$1 is back on '$channel': brief it now." ||
+  wait_for_join_ping "$channel" "$1" "$log_lines" && echo "$1 is back on '$channel'." ||
     die "$1 did not rejoin '$channel' within ${REJOIN_TIMEOUT_SECONDS}s: look at its tab, usually a permission prompt the resumed session is stuck on"
 }
 
 case "${1:-}" in
-  ""|-h|--help) echo "usage: teamup-wake <handle> [--channel C] [--role lead|owner|keeper|ROLE] [--color COLOR] | --list" >&2; exit 2 ;;
+  ""|-h|--help) echo "usage: teamup-wake <handle> [--channel C] [--role lead|owner|keeper|ROLE] [--color COLOR] | --list | --asleep <handle>" >&2; exit 2 ;;
   --list) list_asleep; exit 0 ;;
+  --asleep) can_wake "${2:-}"; exit ;;
 esac
 handle="$1"; shift; channel=""; color=""; role=""
 while [ $# -gt 0 ]; do

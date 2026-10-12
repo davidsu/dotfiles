@@ -496,11 +496,20 @@ refuse_post_if_unread() { # subject handle
   exit 3
 }
 
-# An ask aimed at a peer who isn't on the channel reaches nobody until someone notices.
 # The human is exempt: their handle may be off the roster while the Slack bridge is down.
-refuse_ask_to_absent_peer() { # subject target
-  [ -z "$2" ] || [ "$2" = "$HUMAN_HANDLE" ] || [ -f "$(mdir "$1")/$2" ] && return 0
-  echo "NOT POSTED — '$2' is not on '$1'. Wake it first: $(dirname "$0")/teamup-wake $2" >&2
+is_off_channel() { # subject target
+  [ -n "$2" ] && [ "$2" != "$HUMAN_HANDLE" ] && [ ! -f "$(mdir "$1")/$2" ]
+}
+
+wake_command() { printf '%s/teamup-wake %s --channel %s' "$(dirname "$0")" "$1" "$2"; } # handle subject
+
+# An ask to an agent that slept off this channel is queued: it sees the ask on rejoin, so
+# the lead posts the brief first and wakes it second. Any other absent handle is a typo or
+# an agent that can't come back, and its ask would reach nobody.
+refuse_ask_nobody_can_read() { # subject target
+  is_off_channel "$1" "$2" || return 0
+  has_spoken "$1" "$2" && "$(dirname "$0")/teamup-wake" --asleep "$2" && return 0
+  echo "NOT POSTED — '$2' is not on '$1' and is not one of its agents asleep (teamup-wake --list)." >&2
   exit 3
 }
 
@@ -662,10 +671,14 @@ case "$CMD" in
     if [ ${#MSG[@]} -gt 0 ]; then text="${MSG[*]}"; else text="$(cat)"; fi
     [ -n "$text" ] || die "nothing to ask"
     refuse_post_if_unread "$SUBJECT" "$HANDLE"
-    refuse_ask_to_absent_peer "$SUBJECT" "$TO"
+    refuse_ask_nobody_can_read "$SUBJECT" "$TO"
     [ -n "$TO" ] && text="@$TO $text"
     append "$SUBJECT" "$HANDLE" ask "$text"
-    echo "asked${TO:+ @$TO}."
+    if is_off_channel "$SUBJECT" "$TO"; then
+      echo "queued for $TO (asleep): wake it with $(wake_command "$TO" "$SUBJECT")"
+    else
+      echo "asked${TO:+ @$TO}."
+    fi
     ;;
 
   ack)

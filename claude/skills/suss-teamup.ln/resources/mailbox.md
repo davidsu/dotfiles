@@ -40,6 +40,11 @@ This is a dumb, readable mailbox any agent (Codex / Gemini / Claude) can follow.
   teamup ask {subject} --as {handle} --to {peer} -- "review PR #5 before I rebase?"
   ```
 
+  A peer that slept off the channel still gets it: the ask is **queued** (`queued for
+  {peer} (asleep)`, with the `teamup-wake` command to run next), counts in its
+  `asks_for_me`, and is shown to it on rejoin. A handle that is neither on the channel nor
+  asleep from it is refused (exit `3`): resources/agent_lifecycle.md.
+
 - **Clear an ask** — you don't need a special command: **any** later message
   from you (a `say`, your next `ask`, anything) counts as answering it. `ack` is
   just a tidy way to do it with an explicit reference, defaulting to the latest
