@@ -17,10 +17,14 @@ close_iterm_tab() { # handle — the tab claude titles "<handle> (claude)", afte
 on run argv
   set wanted to item 1 of argv
   tell application "iTerm2"
-    repeat with w in windows
-      repeat with t in tabs of w
-        repeat with s in sessions of t
-          set tabName to name of s
+    repeat with w in (get windows)
+      repeat with t in (get tabs of w)
+        repeat with s in (get sessions of t)
+          try
+            set tabName to name of s
+          on error
+            set tabName to ""
+          end try
           if tabName is wanted or tabName ends with (" " & wanted) then
             close s
             return "closed"
@@ -47,9 +51,13 @@ focused_tab_name() {
   osascript -e 'tell application "iTerm2" to name of current session of current window' 2>/dev/null
 }
 
-is_focused() { # handle — David is looking at its tab right now
+seconds_since_input() { ioreg -c IOHIDSystem | awk '/HIDIdleTime/ { print int($NF / 1000000000); exit }'; }
+
+is_david_at_the_mac() { [ "$(seconds_since_input)" -lt 120 ]; }
+
+is_focused() { # handle — David is looking at its tab right now (while he is away, teamup-focus put it there)
   local wanted="$1 (claude)" tab; tab="$(focused_tab_name)"
-  [ "$tab" = "$wanted" ] || [[ "$tab" == *" $wanted" ]]
+  is_david_at_the_mac && { [ "$tab" = "$wanted" ] || [[ "$tab" == *" $wanted" ]]; }
 }
 
 transcript_of() { # handle — the claude transcript of its running session

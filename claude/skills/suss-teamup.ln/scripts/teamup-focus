@@ -8,14 +8,18 @@
 # (updatedAt in ~/.claude/sessions/*.json), re-selecting it each tick even when it is already in
 # front, a no-op. It never picks Chrome: a Playwright tab keeps its tab
 # group long after its agent stopped driving it. --skip leaves one agent's tab alone (a lead skips
-# itself). Every tick that acts, and every osascript error, goes to focus.log next to the pid file.
-# `on` takes the pid file with an atomic create, and only the poller named in it acts: one that
-# still lost a race between two `on`s quits on its next tick. `off` stops every poller.
+# itself). A tab that closes mid-tick is skipped. Every tick while the user is away logs what it
+# focused or kept to focus.log next to the pid file, and so does every osascript error.
+# `on` and `off` run one at a time (a mkdir lock, broken after 10 s if its holder died), so any
+# number of concurrent calls leaves exactly one poller, or none. `off` stops every poller, even
+# ones not in the pid file. Backstop: a poller not named in the pid file quits before it acts.
 set -uo pipefail
 
 readonly STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup"
 readonly PID_FILE="$STATE_DIR/focus.pid"
 readonly LOG_FILE="$STATE_DIR/focus.log"
+readonly LOCK_DIR="$STATE_DIR/focus.lock"
+readonly STALE_LOCK_SECONDS=10
 readonly CLAUDE_SESSIONS_DIR="$HOME/.claude/sessions"
 readonly AWAY_SECONDS=120
 readonly MAX_SECONDS_WITHOUT_WORKING_AGENT=180
@@ -53,23 +57,33 @@ on isBusy(tabName)
   return false
 end isBusy
 
-on isBusyAgentInFront()
+on busyAgentTabInFront()
   tell application "System Events" to set frontName to name of first process whose frontmost is true
-  if frontName is not "iTerm2" then return false
-  tell application "iTerm2" to return my isBusy(name of current session of current window)
-end isBusyAgentInFront
+  if frontName is not "iTerm2" then return ""
+  tell application "iTerm2" to set frontTab to name of current session of current window
+  if my isBusy(frontTab) then return frontTab
+  return ""
+end busyAgentTabInFront
 
 on isWanted(tabName, wantedSuffix, skippedSuffix)
   if wantedSuffix is "" then return my isBusy(tabName) and tabName does not end with skippedSuffix
   return tabName ends with wantedSuffix
 end isWanted
 
+on nameOrBlank(s)
+  try
+    tell application "iTerm2" to return name of s
+  on error
+    return ""
+  end try
+end nameOrBlank
+
 on focusFirstTab(wantedSuffix, skippedSuffix)
   tell application "iTerm2"
-    repeat with w in windows
-      repeat with t in tabs of w
-        repeat with s in sessions of t
-          set tabName to name of s
+    repeat with w in (get windows)
+      repeat with t in (get tabs of w)
+        repeat with s in (get sessions of t)
+          set tabName to my nameOrBlank(s)
           if my isWanted(tabName, wantedSuffix, skippedSuffix) then
             activate
             select w
@@ -85,7 +99,8 @@ on focusFirstTab(wantedSuffix, skippedSuffix)
 end focusFirstTab
 
 on run argv
-  if isBusyAgentInFront() then return ""
+  set keptTab to busyAgentTabInFront()
+  if keptTab is not "" then return "kept " & keptTab
   set skippedSuffix to agentTitleSuffix(item 1 of argv)
   set wantedSuffixes to {""}
   repeat with handle in paragraphs of (item 2 of argv)
@@ -110,29 +125,35 @@ poll() { # skipped handle
   done
 }
 
-claim_pid_file() { (set -o noclobber; echo "$1" > "$PID_FILE") 2>/dev/null; }
+lock_age_seconds() { echo $(( $(date +%s) - $(stat -f %m "$LOCK_DIR" 2>/dev/null || date +%s) )); }
 
-remove_stale_pid_file() { running_poller >/dev/null || rm -f "$PID_FILE"; }
-
-turn_on() { # skipped handle
-  local pid
-  pid="$(running_poller)" && { echo "teamup-focus: already on (pid $pid)"; return; }
-  mkdir -p "$STATE_DIR"
-  nohup "$0" __poll "$1" >/dev/null 2>&1 &
-  pid=$!
-  claim_pid_file "$pid" || { remove_stale_pid_file; claim_pid_file "$pid"; } || {
-    kill "$pid"; wait "$pid" 2>/dev/null
-    echo "teamup-focus: already on (pid $(running_poller))"; return
-  }
-  echo "teamup-focus: on (pid $pid)${1:+, skipping $1}, log $LOG_FILE"
+with_lock() { # command...
+  until mkdir "$LOCK_DIR" 2>/dev/null; do
+    [[ "$(lock_age_seconds)" -gt "$STALE_LOCK_SECONDS" ]] && rmdir "$LOCK_DIR" 2>/dev/null
+    sleep 0.05
+  done
+  trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
+  "$@"
 }
 
-turn_off() {
-  local count; count="$(pgrep -f "teamup-focus __poll" | wc -l | tr -d ' ')"
+start_poller() { # skipped handle
+  local pid
+  pid="$(running_poller)" && { echo "teamup-focus: already on (pid $pid)"; return; }
+  nohup "$0" __poll "$1" >/dev/null 2>&1 &
+  echo "$!" > "$PID_FILE"
+  echo "teamup-focus: on (pid $!)${1:+, skipping $1}, log $LOG_FILE"
+}
+
+stop_pollers() {
+  local count; count="$(pgrep -P 1 -f "teamup-focus __poll" | wc -l | tr -d ' ')"
   rm -f "$PID_FILE"
   pkill -f "teamup-focus __poll"
   echo "teamup-focus: off (stopped $count poller(s))"
 }
+
+turn_on() { mkdir -p "$STATE_DIR"; with_lock start_poller "$1"; }
+
+turn_off() { mkdir -p "$STATE_DIR"; with_lock stop_pollers; }
 
 case "${1:-}" in
   on)     if [[ "${2:-}" = --skip ]]; then turn_on "${3:-}"; else turn_on ""; fi ;;

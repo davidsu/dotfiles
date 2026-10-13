@@ -1,0 +1,258 @@
+#!/usr/bin/env bash
+# teamup-focus-stress lifecycle|focus [--skip HANDLE] — stress teamup-focus like a power user.
+#   lifecycle: hammer `on`/`off` the way the user and every Slack bridge at once would; after each
+#     sequence exactly one poller (or none) is alive and the pid file names it. Touches no window.
+#   focus: only while the user is away (exits 2, VOID, the moment they come back). A fresh poller
+#     skipping HANDLE must bring a claude tab back in front from Finder and from Chrome, prefer a
+#     busy tab (a fake agent window it opens), drop that tab once it goes idle or closes, never
+#     pick HANDLE's tab, log no errors, keep acting every tick while windows open and close every
+#     second, let teamup-sleep find and close a tab amid that churn, and do nothing while the
+#     user is active (synthetic input).
+#     Closes every window it opened.
+# Both end with one poller on, skipping HANDLE. PASS/FAIL per check; exits 1 if any failed.
+set -uo pipefail
+
+readonly HERE="$(cd "$(dirname "$0")" && pwd)"
+readonly FOCUS="$HERE/teamup-focus"
+readonly STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup"
+readonly PID_FILE="$STATE_DIR/focus.pid"
+readonly LOCK_DIR="$STATE_DIR/focus.lock"
+readonly LOG_FILE="$STATE_DIR/focus.log"
+readonly AWAY_SECONDS=120
+readonly TICK_TIMEOUT_SECONDS=75
+readonly CHECK_SECONDS=3
+readonly FAKE_AGENT="stress.fake"
+failures=0
+
+pass() { echo "PASS $1"; }
+
+fail() { echo "FAIL $1"; failures=$((failures + 1)); }
+
+pollers() { pgrep -P 1 -f "teamup-focus __poll" | sort; }
+
+poller_count() { pollers | wc -l | tr -d ' '; }
+
+concurrently() { # times command...
+  local times="$1"; shift
+  for ((run = 0; run < times; run++)); do "$@" >/dev/null 2>&1 & done
+  wait
+}
+
+report() { # expected-count sequence
+  local count; count="$(poller_count)"
+  local recorded; recorded="$(cat "$PID_FILE" 2>/dev/null)"
+  if [[ "$count" == "$1" ]] && [[ "$1" == 0 || "$recorded" == "$(pollers)" ]]; then
+    pass "$2: $count poller(s)${recorded:+, pid file $recorded}"
+  else
+    fail "$2: $count poller(s) [$(pollers | paste -sd ' ' -)], pid file '${recorded}', expected $1"
+  fi
+}
+
+bridge_burst() { # skipped handle — one bridge relaying 20 owner replies in quick succession
+  for ((reply = 0; reply < 20; reply++)); do "$FOCUS" on --skip "$1"; sleep "0.0$((RANDOM % 5))"; done
+}
+
+on_or_off_at_random() { # skipped handle
+  if ((RANDOM % 2)); then "$FOCUS" on --skip "$1"; else "$FOCUS" off; fi
+}
+
+run_lifecycle() { # skipped handle
+  local skip="$1" first
+  "$FOCUS" off >/dev/null
+  concurrently 50 "$FOCUS" on --skip "$skip"; report 1 "50 concurrent on, clean start"
+
+  first="$(cat "$PID_FILE")"
+  for ((call = 0; call < 10; call++)); do "$FOCUS" on --skip "$skip" >/dev/null; done
+  [[ "$(cat "$PID_FILE")" == "$first" ]] || fail "10 sequential on changed the poller"
+  report 1 "10 sequential on keep pid $first"
+
+  "$FOCUS" off >/dev/null; echo 99999 > "$PID_FILE"
+  concurrently 50 "$FOCUS" on --skip "$skip"; report 1 "50 concurrent on over a stale pid file"
+
+  kill -9 "$(cat "$PID_FILE")"; sleep 0.2
+  concurrently 50 "$FOCUS" on --skip "$skip"; report 1 "50 concurrent on after kill -9 of the poller"
+
+  "$FOCUS" off >/dev/null; mkdir -p "$LOCK_DIR"; touch -t "$(date -v-1M +%Y%m%d%H%M.%S)" "$LOCK_DIR"
+  concurrently 20 "$FOCUS" on --skip "$skip"; report 1 "20 concurrent on over a stale lock (holder died)"
+
+  concurrently 40 on_or_off_at_random "$skip"
+  report "$(poller_count)" "40 concurrent random on/off (0 or 1 allowed, must match pid file)"
+  [[ "$(poller_count)" -le 1 ]] || fail "random on/off left $(poller_count) pollers"
+
+  "$FOCUS" off >/dev/null
+  concurrently 10 bridge_burst "$skip"; report 1 "10 bridges x 20 replies each, 200 on calls"
+
+  "$FOCUS" off >/dev/null
+  concurrently 25 "$FOCUS" on --skip "$skip" & concurrently 25 "$HERE/../../../../bin/teamup-focus" on --skip "$skip"
+  wait; report 1 "50 concurrent on via two paths (skill script and bin symlink)"
+
+  concurrently 20 "$FOCUS" off; report 0 "20 concurrent off"
+  "$FOCUS" off >/dev/null; "$FOCUS" off >/dev/null; report 0 "off twice more (idempotent)"
+
+  "$FOCUS" on --skip "$skip" >/dev/null; report 1 "final on, skipping $skip"
+}
+
+seconds_since_input() { ioreg -c IOHIDSystem | awk '/HIDIdleTime/ { print int($NF / 1000000000); exit }'; }
+
+void_unless_user_away() {
+  local idle; idle="$(seconds_since_input)"
+  [[ "$idle" -ge "$AWAY_SECONDS" ]] && return
+  echo "VOID: the user is at the Mac (idle ${idle}s); stopped touching focus"
+  close_fake_agents
+  exit 2
+}
+
+front_app() { osascript -e 'tell application "System Events" to name of first process whose frontmost is true'; }
+
+front_tab() { osascript -e 'tell application "iTerm2" to name of current session of current window'; }
+
+is_busy_title() { case "$1" in ◐* | ◓* | ◑* | ◒*) return 0 ;; esac; return 1; }
+
+is_claude_tab_in_front() {
+  local tab; tab="$(front_tab)"
+  [[ "$(front_app)" == iTerm2 && "$tab" == *"(claude)" && "$tab" != *" $skip (claude)" ]]
+}
+
+is_busy_claude_tab_in_front() { is_claude_tab_in_front && is_busy_title "$(front_tab)"; }
+
+is_live_claude_tab_in_front() { is_claude_tab_in_front && [[ "$(front_tab)" != *" $FAKE_AGENT (claude)" ]]; }
+
+expect_front_within_a_tick() { # check predicate
+  local elapsed
+  for ((elapsed = 0; elapsed <= TICK_TIMEOUT_SECONDS; elapsed += CHECK_SECONDS)); do
+    void_unless_user_away
+    "$2" && { pass "$1 after ~${elapsed}s: '$(front_tab)'"; return; }
+    sleep "$CHECK_SECONDS"
+  done
+  fail "$1: after ${TICK_TIMEOUT_SECONDS}s front is $(front_app) '$(front_tab)'"
+}
+
+bring_forward() { osascript -e "tell application \"$1\" to activate"; }
+
+make_fake_claude() { # prints a dir with `claude` (a sleep, so iTerm names the job claude) and `agent`
+  local dir; dir="$(mktemp -d)"
+  cp /bin/sleep "$dir/claude" && codesign -f -s - "$dir/claude" 2>/dev/null
+  printf '#!/bin/bash\nprintf "\\033]0;%%s\\007" "$1"\nexec "%s/claude" "${2:-3600}"\n' "$dir" > "$dir/agent"
+  chmod +x "$dir/agent"
+  echo "$dir"
+}
+
+open_fake_agent() { # title [seconds] — a new iTerm window whose tab reads "<title> (claude)"; prints its tty
+  osascript - "$fake_dir/agent '$1' ${2:-3600}" <<'OSA'
+on run argv
+  tell application "iTerm2"
+    set fakeWindow to (create window with default profile command (item 1 of argv))
+    delay 1
+    return tty of current session of fakeWindow
+  end tell
+end run
+OSA
+}
+
+retitle_fake_agent() { printf '\033]0;%s\007' "$2" > "$1"; } # tty title
+
+close_fake_agents() { [[ -n "${fake_dir:-}" ]] && pkill -f "$fake_dir/claude"; sleep 1; }
+
+churn_fake_agents() { # seconds — a fake busy agent opens every second and closes itself 5 s later
+  local stop_at=$((SECONDS + $1))
+  while ((SECONDS < stop_at)); do
+    void_unless_user_away
+    open_fake_agent "◒ $FAKE_AGENT" 5 >/dev/null &
+    sleep 1
+  done
+  wait; sleep 6
+}
+
+expect_every_tick_acted_during_churn() {
+  local log_start; log_start="$(wc -l < "$LOG_FILE")"
+  churn_fake_agents 150
+  local churn_log; churn_log="$(tail -n +"$((log_start + 1))" "$LOG_FILE")"
+  local ticks; ticks="$(rg --no-config -c ' (focused|kept) ' <<<"$churn_log")"
+  local errors; errors="$(rg --no-config -v ' (focused|kept) ' <<<"$churn_log")"
+  [[ -z "$errors" && "${ticks:-0}" -ge 2 ]] \
+    && pass "150 s of windows opening/closing every second: ${ticks} tick(s) acted, no errors" \
+    || fail "window churn: ${ticks:-0} tick(s) acted, errors: ${errors:-none}"
+}
+
+expect_sleep_closes_tabs_during_churn() { # teamup-sleep's tab lookup, the same window walk
+  local round closed=0 output
+  churn_fake_agents 40 &
+  for ((round = 1; round <= 5; round++)); do
+    open_fake_agent "✳ stress.victim$round" >/dev/null
+    sleep 2
+    output="$("$HERE/teamup-sleep" "stress.victim$round" 2>&1)"
+    [[ "$output" == *"closed the tab of stress.victim$round"* ]] && closed=$((closed + 1)) || echo "  round $round: $output"
+  done
+  wait
+  [[ "$closed" == 5 ]] && pass "teamup-sleep closed 5/5 fake agent tabs while windows churned" \
+    || fail "teamup-sleep closed $closed/5 fake agent tabs while windows churned"
+}
+
+synthesize_user_input() { # a zero-distance mouse move: resets HIDIdleTime like a real touch
+  osascript -l JavaScript -e 'ObjC.import("CoreGraphics");
+    $.CGEventPost($.kCGHIDEventTap, $.CGEventCreateMouseEvent(null, $.kCGEventMouseMoved,
+      $.CGEventGetLocation($.CGEventCreate(null)), 0))' >/dev/null
+}
+
+expect_no_action_while_user_active() {
+  local log_lines; log_lines="$(wc -l < "$LOG_FILE")"
+  bring_forward Finder
+  local fronts=""
+  for ((elapsed = 0; elapsed <= TICK_TIMEOUT_SECONDS; elapsed += CHECK_SECONDS)); do
+    synthesize_user_input; sleep "$CHECK_SECONDS"
+    fronts+="$(date +%T)=$(front_app) "
+  done
+  if [[ "$(front_app)" == Finder && "$(wc -l < "$LOG_FILE")" == "$log_lines" ]]; then
+    pass "user active ${TICK_TIMEOUT_SECONDS}s: Finder kept, poller logged nothing"
+  else
+    fail "user active: log grew $(( $(wc -l < "$LOG_FILE") - log_lines )) line(s), fronts: $fronts"
+  fi
+}
+
+expect_log_clean_since() { # line count at start
+  local errors; errors="$(tail -n +"$(($1 + 1))" "$LOG_FILE" | rg --no-config -v '^\S+ \S+ (focused |kept |no claude tab)')"
+  [[ -z "$errors" ]] && pass "focus.log: no errors, $(tail -n +"$(($1 + 1))" "$LOG_FILE" | wc -l | tr -d ' ') action line(s)" \
+    || fail "focus.log errors: $errors"
+}
+
+expect_fake_agents_closed() {
+  local left; left="$(osascript -e 'tell application "iTerm2" to get name of sessions of tabs of windows' | rg --no-config -c "stress\.(fake|victim)")"
+  [[ -z "$left" ]] && pass "every fake agent window closed" || fail "$left fake agent window(s) left open"
+}
+
+run_focus() {
+  local log_start fake_tty
+  void_unless_user_away
+  fake_dir="$(make_fake_claude)"
+  log_start="$(wc -l < "$LOG_FILE" 2>/dev/null || echo 0)"
+  "$FOCUS" off >/dev/null; "$FOCUS" on --skip "$skip" >/dev/null
+
+  bring_forward Finder; expect_front_within_a_tick "from Finder" is_claude_tab_in_front
+  bring_forward "Google Chrome"; echo "  chrome front window: $(osascript -e 'tell application "Google Chrome" to title of active tab of front window')"
+  expect_front_within_a_tick "from Chrome" is_claude_tab_in_front
+
+  fake_tty="$(open_fake_agent "◐ $FAKE_AGENT")"
+  bring_forward Finder; expect_front_within_a_tick "a fake busy agent opened" is_busy_claude_tab_in_front
+  retitle_fake_agent "$fake_tty" "✳ $FAKE_AGENT"
+  bring_forward Finder; expect_front_within_a_tick "the fake agent went idle (no session file)" is_live_claude_tab_in_front
+  retitle_fake_agent "$fake_tty" "◑ $FAKE_AGENT"; close_fake_agents
+  bring_forward Finder; expect_front_within_a_tick "the busy fake agent's window closed" is_live_claude_tab_in_front
+
+  expect_log_clean_since "$log_start"
+  expect_every_tick_acted_during_churn
+  expect_sleep_closes_tabs_during_churn
+  expect_fake_agents_closed
+  expect_no_action_while_user_active
+  rm -rf "$fake_dir"
+}
+
+mode="${1:-}"
+[[ "${2:-}" == --skip ]] && skip="${3:-}" || skip=""
+echo "teamup-focus-stress $mode $(date '+%F %T'), code at $FOCUS${skip:+, skipping $skip}"
+case "$mode" in
+  lifecycle) run_lifecycle "$skip" ;;
+  focus)     run_focus ;;
+  *)         echo "usage: teamup-focus-stress lifecycle|focus [--skip HANDLE]" >&2; exit 2 ;;
+esac
+echo "failures: $failures"
+[[ "$failures" == 0 ]]
