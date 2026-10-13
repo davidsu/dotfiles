@@ -88,4 +88,19 @@ printf 9.000000 > "$(thread_file never_engaged_test)"
 unfollow_unless_engaged never_engaged_test
 grep -qx subscriptions.thread.remove "$SUSS_TEAMUP_DIR/unfollow_calls" && echo "ok   other threads are still unfollowed" || { echo "FAIL shared thread not unfollowed"; fails=1; }
 
+slack_api() { # fake: the thread has one reply, the channel has a join notice, a top-level message and that reply broadcast
+  case "$1" in
+    conversations.replies) echo '{"ok":true,"messages":[{"ts":"5.0","user":"U_OWNER","text":"in thread"}]}' ;;
+    conversations.history) echo '{"ok":true,"messages":[{"ts":"4.0","user":"U_OWNER","subtype":"channel_join","text":"joined"},{"ts":"5.0","user":"U_OWNER","text":"in thread"},{"ts":"6.0","user":"U_OWNER","text":"top level"}]}' ;;
+  esac
+}
+merged="$(fetch_unseen_replies suss-lead 1.0)"
+expect_text "a dedicated channel relays its thread and its top level, once each" \
+  "$(jq -r '[.ok] + [.messages[].ts] | join(" ")' <<<"$merged")" "true 4.0 5.0 6.0"
+expect_text "the shared channel reads only the thread" \
+  "$(fetch_unseen_replies "$SUBJECT" 1.0 | jq -r '[.messages[].ts] | join(" ")')" "5.0"
+deliver_to_channel() { echo "$2" >> "$SUSS_TEAMUP_DIR/delivered"; }
+deliver_unseen_replies never_engaged_test 1.0 "$merged"
+expect_text "join notices are not delivered" "$(paste -sd, - < "$SUSS_TEAMUP_DIR/delivered")" "in thread,top level"
+
 exit "$fails"
