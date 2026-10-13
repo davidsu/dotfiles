@@ -11,7 +11,7 @@ description: >
 
 Load this skill before creating or updating tasks in `suss-tasks/`.
 
-Tasks live in the git repo `base44-dev/suss-tasks` (clone: `~/Developer/suss-tasks`, one folder per project); each checkout's `suss-tasks/` is a symlink into it. Edit as usual; commit+push in the clone so other machines and Slack-side agents see it.
+Tasks live in the git repo `base44-dev/suss-tasks` (clone: `~/Developer/suss-tasks`, one folder per project); each checkout's `suss-tasks/` is a symlink into it. Edit as usual, then publish with `~/Developer/suss-tasks/bin/sync "<commit message>" <paths…>` (paths relative to the clone root; no paths = pull only) so other machines and Slack-side agents see it. Never `git pull` / `git push` by hand in that clone: many agents share it, and concurrent pulls corrupt `FETCH_HEAD` ("Cannot rebase onto multiple branches"); `bin/sync` takes a lock, commits only the paths you name, rebases and pushes.
 
 **Finding a task from another project**: every project's tasks are in that one clone, so you never need that project checked out. `ls ~/Developer/suss-tasks` lists the project folders (`apper/`, `cli/`, `dotfiles/`, `vite-plugin/`, `weekly/`, …); search across all of them with `rg <pattern> ~/Developer/suss-tasks`. Read them there directly.
 
