@@ -21,6 +21,8 @@ mkdir -p "$THREAD_STATE"
 
 die() { echo "teamup-slack: $*" >&2; exit 1; }
 
+source "$HERE/slack_session.sh"
+
 is_throwaway() { [ -f "$BASE/$1/.slack.throwaway" ]; }
 
 thread_state_dir() { # subject — a throwaway channel's thread dies with the channel
@@ -36,14 +38,6 @@ pid_file() { printf '%s/%s/.slack.pid' "$BASE" "$1"; }
 log_file() { printf '%s/%s/.slack.log' "$BASE" "$1"; }
 broken_file() { printf '%s/%s/.slack.broken' "$BASE" "$1"; }
 
-keychain_secret() { security find-generic-password -a "$USER" -s "$1" -w 2>/dev/null; }
-
-slack_api() { # method [curl data args...]
-  local method="$1"; shift
-  curl -s --max-time 20 -X POST "https://slack.com/api/$method" \
-    -H "Cookie: d=$SLACK_COOKIE" --data-urlencode "token=$SLACK_TOKEN" "$@"
-}
-
 dedicated_channel_file() { printf '%s.%s' "$CHANNEL_FILE" "$1"; }
 has_dedicated_slack_channel() { ! is_throwaway "$1" && [ -f "$(dedicated_channel_file "$1")" ]; }
 slack_route_of() { is_throwaway "$1" && echo throwaway || echo "$1"; }
@@ -53,18 +47,10 @@ slack_channel_of() { # subject
 }
 
 load_slack_session() { # subject
-  SLACK_TOKEN="$(keychain_secret slack-mcp-xoxc)"
-  SLACK_COOKIE="$(keychain_secret slack-mcp-xoxd)"
-  [ -n "$SLACK_TOKEN" ] && [ -n "$SLACK_COOKIE" ] ||
-    die "no Slack session in the keychain (slack-mcp-xoxc / slack-mcp-xoxd)"
-  local identity; identity="$(slack_api auth.test)"
-  [ "$(jq -r '.ok' <<<"$identity")" = true ] ||
-    die "Slack rejected the session: $(jq -r '.error // "unreachable"' <<<"$identity") — re-copy the xoxc/xoxd tokens into the keychain"
-  SLACK_OWNER="$(jq -r '.user_id' <<<"$identity")"
-  SLACK_TEAM_URL="$(jq -r '.url' <<<"$identity")"
+  load_slack_credentials
   SLACK_DESTINATION="${TEAMUP_SLACK_CHANNEL:-$(slack_channel_of "$1")}"
   [ -n "$SLACK_DESTINATION" ] ||
-    SLACK_DESTINATION="$(open_self_dm "$(jq -r '.user_id' <<<"$identity")")"
+    SLACK_DESTINATION="$(open_self_dm "$SLACK_OWNER")"
   [ -n "$SLACK_DESTINATION" ] || die "could not resolve a Slack destination"
 }
 

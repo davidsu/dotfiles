@@ -35,3 +35,5 @@ Separate scripts in `scripts/`:
 | `teamup-wake <handle> [--channel C] [--role R] [--color C] [--after H]` / `--list` | resume a sleeping claude agent and wait until it rejoins (resources/agent_lifecycle.md) |
 | `teamup-focus on [--skip H] \| off \| status` | while the user is away (no input for 2 min), never leave the screen >3 min without an agent at work in front (checks every minute): a Playwright-driven Chrome tab, else a busy claude iTerm tab; `on` is idempotent (resources/tracking_agents.md) |
 | `teamup-slack on\|off [subject] \| status \| url <subject>` | the Slack mirror (resources/slack_mirror.md) |
+| `teamup-slack-watch on <name> <subject> <handle> <query> [skip-regex] \| off <name> \| status` | Slack search hits → a teamup channel (resources/slack_mirror.md) |
+| `teamup-mac-notify-watch on <name> <subject> <handle> <app-bundle-id> <title> \| off <name> \| status` | macOS notifications from one app with one title → a teamup channel (resources/slack_mirror.md) |

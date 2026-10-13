@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+# teamup-slack-watch on <name> <subject> <handle> <query> [skip-regex] | off <name> | status
+# Delivers every new Slack message matching a search query to a teamup channel, aimed at one agent.
+# Each watch posts under its own name, so several can share one inbox channel.
+set -uo pipefail
+
+unset CLAUDE_CODE_SESSION_ID TEAMUP_SESSION CODEX_THREAD_ID TEAMUP_SESSION_NAME
+export TEAMUP_SLACK=off
+
+readonly HERE="$(cd "$(dirname "$0")" && pwd)"
+readonly TEAMUP="$HERE/teamup"
+readonly POLL_SECONDS="${TEAMUP_WATCH_POLL:-60}"
+readonly WATCH_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/slack/watch"
+readonly REPORT_DOWN_AFTER_FAILED_POLLS=10
+readonly MAX_TEXT_CHARS=600
+mkdir -p "$WATCH_STATE"
+
+die() { echo "teamup-slack-watch: $*" >&2; exit 1; }
+
+source "$HERE/slack_session.sh"
+
+seen_file() { printf '%s/%s.seen' "$WATCH_STATE" "$1"; }
+config_file() { printf '%s/%s.config' "$WATCH_STATE" "$1"; }
+pid_file() { printf '%s/%s.pid' "$WATCH_STATE" "$1"; }
+log_file() { printf '%s/%s.log' "$WATCH_STATE" "$1"; }
+
+search_newest_matches() { # query
+  slack_api search.messages --data-urlencode "query=$1" \
+    --data-urlencode sort=timestamp --data-urlencode sort_dir=desc --data-urlencode count=20
+}
+
+mirror_channel_ids() { cat "$HERE"/../slack-channel "$HERE"/../slack-channel.* 2>/dev/null | jq -R . | jq -sc .; }
+
+matches_outside_mirror() { # search-json — agents quote the query on the mirror channels; those are not news
+  jq -r --argjson mirrors "$(mirror_channel_ids)" --argjson max "$MAX_TEXT_CHARS" --arg skip "$SKIP" '
+    def readable: if .text != "" then .text else [.attachments[]? | .pretext, .title | strings] | join(" · ") end;
+    .messages.matches | reverse | .[] | select(.channel.id | IN($mirrors[]) | not) |
+    (readable | gsub("[\n\t]"; " ")) as $text | select($skip == "" or ($text | test($skip) | not)) |
+    [(.channel.id + ":" + .ts), .permalink, .channel.name, (.username // .user), $text[0:$max]] | join("\u001f")' <<<"$1"
+}
+
+tell_target() { # text — the running watch's NAME, SUBJECT, TARGET and SKIP are set by run_watch
+  "$TEAMUP" recv "$SUBJECT" --as "$NAME" >/dev/null
+  "$TEAMUP" say "$SUBJECT" --as "$NAME" -- "@$TARGET $1" >/dev/null ||
+    { echo "$(date '+%F %T') say refused on $SUBJECT"; return 1; }
+}
+
+deliver_unseen_matches() { # search-json
+  local key permalink channel author text
+  while IFS=$'\x1f' read -r key permalink channel author text; do
+    grep -qxF "$key" "$(seen_file "$NAME")" && continue
+    tell_target "new in #$channel from $author: $text — $permalink" && echo "$key" >> "$(seen_file "$NAME")"
+  done < <(matches_outside_mirror "$1")
+}
+
+mark_all_seen() { # search-json — the first poll sets the baseline instead of replaying history
+  matches_outside_mirror "$1" | cut -d$'\x1f' -f1 > "$(seen_file "$NAME")"
+}
+
+report_down_once() { # error
+  echo "$(date '+%F %T') search failed: $1"
+  (( ++FAILED_POLLS >= REPORT_DOWN_AFTER_FAILED_POLLS )) && [ -z "$REPORTED_DOWN" ] || return 0
+  tell_target "Slack search failed $FAILED_POLLS polls in a row ($1) — no new matches are arriving." && REPORTED_DOWN=1
+}
+
+report_recovered() {
+  [ -n "$REPORTED_DOWN" ] || return 0
+  echo "$(date '+%F %T') search recovered"
+  tell_target "Slack search is back — matches are arriving again." && REPORTED_DOWN=""
+}
+
+poll_forever() { # query
+  local result
+  FAILED_POLLS=0 REPORTED_DOWN=""
+  while true; do
+    result="$(search_newest_matches "$1")"
+    if [ "$(jq -r '.ok' <<<"$result" 2>/dev/null)" = true ]; then
+      FAILED_POLLS=0
+      report_recovered
+      [ -f "$(seen_file "$NAME")" ] || mark_all_seen "$result"
+      deliver_unseen_matches "$result"
+    else
+      report_down_once "$(jq -r '.error // "unreachable"' <<<"${result:-null}" 2>/dev/null || echo "truncated response")"
+    fi
+    sleep "$POLL_SECONDS"
+  done
+}
+
+is_watching() { # name
+  local pid; pid="$(cat "$(pid_file "$1")" 2>/dev/null || true)"
+  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+}
+
+start_watch() { # name subject handle query [skip-regex]
+  [ -n "${4:-}" ] || die "usage: teamup-slack-watch on <name> <subject> <handle> <query> [skip-regex]"
+  is_watching "$1" && { echo "'$1' is already watching (pid $(cat "$(pid_file "$1")"))."; return 0; }
+  load_slack_credentials
+  printf '%s\t%s\t%s\t%s\n' "$2" "$3" "$4" "${5:-}" > "$(config_file "$1")"
+  "$TEAMUP" join "$2" --as "$1" --pwd "slack-watch" --doing "Slack search '$4' → @$3" >/dev/null
+  nohup "$0" __run "$1" >> "$(log_file "$1")" 2>&1 &
+  echo $! > "$(pid_file "$1")"
+  echo "'$1' watching Slack for '$4' → @$3 on '$2' (pid $!); log: $(log_file "$1")"
+}
+
+run_watch() { # name
+  local query
+  NAME="$1"
+  IFS=$'\t' read -r SUBJECT TARGET query SKIP < "$(config_file "$NAME")"
+  load_slack_credentials
+  poll_forever "$query"
+}
+
+stop_watch() { # name
+  local subject
+  is_watching "$1" && kill "$(cat "$(pid_file "$1")")" 2>/dev/null
+  rm -f "$(pid_file "$1")"
+  IFS=$'\t' read -r subject _ < "$(config_file "$1")"
+  "$TEAMUP" leave "$subject" --as "$1" >/dev/null 2>&1 || true
+  echo "stopped '$1'."
+}
+
+print_status() {
+  local config name state
+  for config in "$WATCH_STATE"/*.config; do
+    [ -f "$config" ] || continue
+    name="$(basename "$config" .config)"
+    is_watching "$name" && state="watching (pid $(cat "$(pid_file "$name")"))" || state="stopped"
+    printf '  %s — %s: %s\n' "$name" "$state" "$(tr '\t' ' ' < "$config")"
+  done
+}
+
+case "${1:-}" in
+  on)     start_watch "${2:-}" "${3:-}" "${4:-}" "${5:-}" "${6:-}" ;;
+  off)    [ -n "${2:-}" ] || die "usage: teamup-slack-watch off <name>"; stop_watch "$2" ;;
+  status) print_status ;;
+  __run)  run_watch "$2" ;;
+  *) echo "usage: teamup-slack-watch on <name> <subject> <handle> <query> [skip-regex] | off <name> | status" >&2; exit 2 ;;
+esac

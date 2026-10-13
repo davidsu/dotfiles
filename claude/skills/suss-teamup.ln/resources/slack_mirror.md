@@ -37,6 +37,17 @@ was edited may log a syntax error on its way out (bash reads the script lazily);
 harmless. Sweep what is live and how stale it is:
 `for p in "$SUSS_TEAMUP_DIR"/*/.slack.pid; do pid=$(cat "$p"); kill -0 "$pid" 2>/dev/null && echo "$p $pid $(ps -o lstart= -p "$pid")"; done`
 
+**Slack search watcher** — `scripts/teamup-slack-watch on {name} {subject} {handle} {query} [skip-regex]` polls
+`search.messages` every 60s (`$TEAMUP_WATCH_POLL`) under the same session and says each new
+hit on `{subject}` as `@{handle} new in #channel from author: text — permalink`, so an agent
+wakes on a file event instead of polling Slack. A bot post with no text shows its attachments' pretext and title, and a hit matching `skip-regex` is dropped. Its first poll only records the baseline, and
+hits in every mirror channel (`slack-channel`, `slack-channel.*`) are skipped. Each watch joins under its own `{name}`, so several share one inbox, and it joins with
+`TEAMUP_SLACK=off`, which keeps raw hits out of Slack. State, pid and log: `~/.local/state/suss-teamup/slack/watch/{name}.*`. Used by the `slack.digest` agent
+(suss-tasks `dotfiles/slack_digest/epic.md`).
+Its sibling `scripts/teamup-mac-notify-watch` does the same for macOS notifications. It reads
+Notification Center's sqlite db every 5s and says each new notification from one app with one
+exact title. That covers WhatsApp Web in Brave: the title is the group, the body `~ sender: text`.
+
 **suss-tasks mirror** — `scripts/teamup-tasks-sync` (run on demand) uploads every active
 task file (`~/projects/*/suss-tasks/**/*.md`, `done/` excluded) into the same Slack
 channel: one `suss-tasks · {project}` thread per project, each file titled
