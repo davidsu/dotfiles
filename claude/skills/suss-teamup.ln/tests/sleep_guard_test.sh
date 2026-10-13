@@ -27,5 +27,7 @@ expect_last_dm "the newest of David's own lines wins over a relayed one" \
   '2026-10-13T09:00:00Z\tdavid\tsay\t@owner.x first\n2026-10-13T09:05:00Z\tdavid\tsay\t[coder.lead.18] @owner.x relayed\n' "2026-10-13T09:00:00Z"
 expect_last_dm "David quoting brackets mid-sentence still counts" \
   '2026-10-13T09:00:00Z\tdavid\tsay\t@owner.x see [this] note\n' "2026-10-13T09:00:00Z"
+expect_last_dm "David's top-level Slack message (tagged [top] by the bridge) counts" \
+  '2026-10-13T09:00:00Z\tdavid\tsay\t@owner.x please look [top]\n' "2026-10-13T09:00:00Z"
 
 exit "$fails"

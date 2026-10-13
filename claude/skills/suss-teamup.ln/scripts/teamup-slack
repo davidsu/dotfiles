@@ -17,6 +17,7 @@ readonly RETIRE_AFTER_EMPTY_SECONDS=120
 readonly REPORT_DOWN_AFTER_SECONDS=300
 readonly LATE_REPLY_MARGIN_SECONDS=60
 readonly ADOPTABLE_ROOT_MAX_AGE_SECONDS=86400
+readonly TOP_LEVEL_TAG=" [top]"   # same suffix `teamup --top` writes: this line goes to the channel's top level, not the thread
 mkdir -p "$THREAD_STATE"
 
 die() { echo "teamup-slack: $*" >&2; exit 1; }
@@ -41,6 +42,7 @@ broken_file() { printf '%s/%s/.slack.broken' "$BASE" "$1"; }
 dedicated_channel_file() { printf '%s.%s' "$CHANNEL_FILE" "$1"; }
 has_dedicated_slack_channel() { ! is_throwaway "$1" && [ -f "$(dedicated_channel_file "$1")" ]; }
 slack_route_of() { is_throwaway "$1" && echo throwaway || echo "$1"; }
+has_own_slack_channel() { [ -f "$(dedicated_channel_file "$(slack_route_of "$1")")" ]; } # dedicated or throwaway: top-level posts are not noise for other channels
 
 slack_channel_of() { # subject
   cat "$(dedicated_channel_file "$(slack_route_of "$1")")" 2>/dev/null || cat "$CHANNEL_FILE" 2>/dev/null || true
@@ -58,20 +60,24 @@ open_self_dm() { # user_id
   slack_api conversations.open --data-urlencode "users=$1" | jq -r '.channel.id // empty'
 }
 
-post_thread_root() { # text
+post_to_channel() { # text [thread_ts] → ts
   slack_api chat.postMessage \
     --data-urlencode "channel=$SLACK_DESTINATION" \
+    ${2:+--data-urlencode "thread_ts=$2"} \
     --data-urlencode "text=$1" | jq -r '.ts // empty'
 }
 
+record_posted() { # subject ts — an own post comes back on the inbound poll and must be skipped there
+  [ -n "$2" ] || return 1
+  echo "$2" >> "$(posted_file "$1")"
+}
+
+post_top_level() { # subject text — where the user reads the channel, not the thread
+  record_posted "$1" "$(post_to_channel "$2")"
+}
+
 post_to_thread() { # subject text
-  local ts
-  ts="$(slack_api chat.postMessage \
-    --data-urlencode "channel=$SLACK_DESTINATION" \
-    --data-urlencode "thread_ts=$(cat "$(thread_file "$1")")" \
-    --data-urlencode "text=$2" | jq -r '.ts // empty')"
-  [ -n "$ts" ] || return 1
-  echo "$ts" >> "$(posted_file "$1")"
+  record_posted "$1" "$(post_to_channel "$2" "$(cat "$(thread_file "$1")")")" || return 1
   unfollow_unless_engaged "$1"
 }
 
@@ -84,17 +90,23 @@ unfollow_unless_engaged() { # subject
 
 as_code_block() { printf '```\n%s\n```' "$1"; }
 
-post_code_block() { # subject multiline-text — chunked, or Slack splits the post itself and the fragments' ts go unrecorded
-  local line chunk=""
+post_code_block() { # subject multiline-text [poster] — chunked, or Slack splits the post itself and the fragments' ts go unrecorded
+  local line chunk="" poster="${3:-post_to_thread}"
   while IFS= read -r line; do
     if [ -n "$chunk" ] && [ $(( ${#chunk} + ${#line} )) -gt 3500 ]; then
-      post_to_thread "$1" "$(as_code_block "$chunk")"
+      "$poster" "$1" "$(as_code_block "$chunk")"
       chunk=""
     fi
     chunk="${chunk:+$chunk
 }$line"
   done <<<"$2"
-  [ -n "$chunk" ] && post_to_thread "$1" "$(as_code_block "$chunk")"
+  [ -n "$chunk" ] && "$poster" "$1" "$(as_code_block "$chunk")"
+}
+
+is_top_level_line() { [[ "$1" == *"$TOP_LEVEL_TAG" ]]; }
+
+poster_for() { # subject recv-line — a [top] line goes to the top level of a Slack channel this channel owns; everything else to the thread
+  is_top_level_line "$2" && has_own_slack_channel "$1" && echo post_top_level || echo post_to_thread
 }
 
 root_text_prefix() { printf '*teamup · %s* ' "$1"; }
@@ -118,7 +130,7 @@ adopt_existing_thread() { # subject
 }
 
 open_new_thread() { # subject
-  local root; root="$(post_thread_root "$(thread_root_text "$1")")"
+  local root; root="$(post_to_channel "$(thread_root_text "$1")")"
   [ -n "$root" ] || die "could not open a Slack thread for '$1'"
   printf '%s' "$root" > "$(thread_file "$1")"
   unfollow_unless_engaged "$1"
@@ -222,11 +234,12 @@ deliver_text() { # subject text attribution — a text opening with a live handl
   fi
 }
 
-deliver_to_channel() { # subject text author_id author_name
+deliver_to_channel() { # subject text author_id author_name [origin: top|thread] — a top-level message is tagged so an agent can answer in kind
   local text attribution=""
   text="$(unescape_slack <<<"$2")"
   is_bridge_notice "$text" && return 0
   is_agent_code_block "$text" && { deliver_agent_code_block "$1" "$text"; return; }
+  [ "${5:-thread}" = top ] && text="$text$TOP_LEVEL_TAG"
   if [ "$3" = "$SLACK_OWNER" ]; then
     touch "$(engaged_file "$1")"
     "$HERE/teamup-focus" on >/dev/null
@@ -252,7 +265,7 @@ mirror_channel_to_slack() { # subject
   local message
   while "$TEAMUP" wait "$1" --as "$HANDLE" --timeout 0 >/dev/null 2>&1; do
     while IFS= read -r message; do
-      post_code_block "$1" "$(with_reply_crossback "$1" "$message")"
+      post_code_block "$1" "$(with_reply_crossback "$1" "$message")" "$(poster_for "$1" "$message")"
     done < <("$TEAMUP" recv "$1" --as "$HANDLE" | sed 1d | grep '^  #')
   done
 }
@@ -309,21 +322,21 @@ fetch_channel_messages() { # oldest
     --data-urlencode "channel=$SLACK_DESTINATION" --data-urlencode "oldest=$1" --data-urlencode "limit=200"
 }
 
-fetch_unseen_replies() { # subject root — a dedicated channel also relays what the user types outside the thread
+fetch_unseen_replies() { # subject root — a channel with a Slack channel of its own also relays what the user types outside the thread
   local oldest; oldest="$(newest_known_reply "$1" "$2")"
-  has_dedicated_slack_channel "$1" || { fetch_thread_replies "$2" "$oldest"; return; }
+  has_own_slack_channel "$1" || { fetch_thread_replies "$2" "$oldest"; return; }
   jq -s '{ok: all(.[]; .ok == true), messages: (map(.messages // []) | add | unique_by(.ts))}' \
     <(fetch_thread_replies "$2" "$oldest") <(fetch_channel_messages "$oldest")
 }
 
-deliver_unseen_replies() { # subject root replies
-  local skip ts author author_name text
+deliver_unseen_replies() { # subject root replies — a message is top-level when it is not a reply (no thread_ts, or it roots its own thread)
+  local skip ts author author_name origin text
   skip="$(cat "$(posted_file "$1")" "$(relayed_file "$1")" 2>/dev/null)"
-  while IFS=$'\x1f' read -r ts author author_name text; do
+  while IFS=$'\x1f' read -r ts author author_name origin text; do
     grep -qxF "$ts" <<<"$skip" && continue
-    deliver_to_channel "$1" "$text" "$author" "$author_name" && echo "$ts" >> "$(relayed_file "$1")"
+    deliver_to_channel "$1" "$text" "$author" "$author_name" "$origin" && echo "$ts" >> "$(relayed_file "$1")"
   done < <(jq -r --arg root "$2" '.messages[] | select(.ts != $root and ((.subtype // "") | startswith("channel_") | not)) |
-    [(.ts), (.user // .bot_id), (.bot_profile.name // .username // ""), (.text | gsub("[\n\t]"; " "))] | join("\u001f")' <<<"$3")
+    [(.ts), (.user // .bot_id), (.bot_profile.name // .username // ""), (if (.thread_ts // .ts) == .ts then "top" else "thread" end), (.text | gsub("[\n\t]"; " "))] | join("\u001f")' <<<"$3")
 }
 
 relay_slack_replies() { # subject

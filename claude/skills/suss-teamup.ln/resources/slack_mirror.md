@@ -143,6 +143,21 @@ Today: teamup `suss-lead` → private **#suss-lead** (`C0C9NE59T24`), the leads'
 the user (`suss-workflows` recipe `lead_role.md`). Repointing a live channel: `off`, move its
 `{subject}.*` thread state aside, `on`.
 
+**Thread or top level — the agent decides per message.** The user reads a dedicated channel at
+its top level, so an answer buried in the mirror thread is missed. `teamup say|ask|ack … --top`
+appends ` [top]` to the line, and the bridge posts that line at the channel's top level (no
+`thread_ts`, same code block, so the loop guards above still drop it when it comes back);
+everything else stays in the thread. The tag is a suffix because a leading `[x]` already means
+"relayed from agent x" (`teamup-sleep`'s guard, the reply cross-back). `--top` is allowed only
+where the teamup channel owns its Slack channel — a `slack-channel.{subject}` file or
+`--throwaway` — and is refused (exit 2) elsewhere: a top-level post in the shared #suss-teamup
+would be noise for every other channel. Inbound is symmetric: a message the user types at the
+top level arrives with the ` [top]` suffix, a thread reply without, so an agent answers in kind.
+Rule of thumb for a lead: answer a `[top]` message with `--top`; status for David goes `--top`;
+routine chatter and agent-to-agent traffic stay in the thread. A throwaway channel also relays
+#suss-throwaway's top level, so a live test can round-trip there.
+`tests/toplevel_posting_test.sh` covers the CLI, both bridge directions and the refusal.
+
 **Throwaway channels** — `join --throwaway` touches `.slack.throwaway` in the channel dir, and the
 bridge then mirrors into private **#suss-throwaway** (`C0C8PB41Z37`, file `slack-channel.throwaway`)
 instead: agents-only channels (tests, probes) stay out of the user's #suss-teamup. Their thread

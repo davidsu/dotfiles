@@ -83,6 +83,7 @@ set -eo pipefail
 
 readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
 readonly DEFAULT_WAIT=110   # seconds; stays under the default 120s Bash budget
+readonly TOP_LEVEL_TAG=" [top]"   # body suffix: the Slack bridge posts this line at the channel's top level, not in the thread
 readonly CLAUDE_SESSIONS="$HOME/.claude/sessions"
 readonly STANDBY_POLL=2      # seconds between ownership re-checks by a standby listener
 readonly CONFIRM_DELAY=1     # seconds an idle listener defers to a foreground reader before firing
@@ -96,9 +97,11 @@ usage:
   teamup rename --as <handle> --to <new>                  # re-key your identity on every channel you're on (after a rename)
   teamup session-name [--session <guid>]                  # the handle this session's name implies; exit 1 if it has no chosen name
   teamup name-command                                     # what the USER types to name this session (/rename on claude, /banner on pi)
-  teamup say    <subject> --as <handle> <message...>      (alias: send; say/ask/ack refuse with exit 3 until you have read what's new)
-  teamup ask    <subject> --as <handle> [--to <handle>] <question...>  # a question that needs an answer
-  teamup ack    <subject> --as <handle> [--re <seq>] [note...]         # answer/clear an ask (default: latest peer msg)
+  teamup say    <subject> --as <handle> [--top] <message...>      (alias: send; say/ask/ack refuse with exit 3 until you have read what's new)
+  teamup ask    <subject> --as <handle> [--to <handle>] [--top] <question...>  # a question that needs an answer
+  teamup ack    <subject> --as <handle> [--re <seq>] [--top] [note...]         # answer/clear an ask (default: latest peer msg)
+                                                          # --top: the Slack mirror posts this line at the channel's top level (suffix " [top]"); only where
+                                                          # the channel has a Slack channel of its own (slack-channel.<subject>, or --throwaway), exit 2 elsewhere
   teamup recv   <subject> --as <handle>                   # new msgs from others + summary line, non-blocking
   teamup status <subject> --as <handle>                   # summary only; exit 0=clean 1=unread 2=ask-for-me (cursor untouched)
   teamup status --as <handle>                             # no subject: list every team this handle is on + member count
@@ -527,6 +530,24 @@ refuse_ask_nobody_can_read() { # subject target
   exit 3
 }
 
+# A top-level Slack post only makes sense where this one channel owns the Slack channel: in the
+# shared #suss-teamup it would be noise for every other channel, so the flag is refused, not ignored.
+own_slack_channel_file() { # subject
+  local route="$1"; [ -f "$BASE/$1/.slack.throwaway" ] && route=throwaway
+  printf '%s/../slack-channel.%s' "$(dirname "$0")" "$route"
+}
+
+refuse_top_without_own_slack_channel() { # subject
+  $TOP || return 0
+  [ -f "$(own_slack_channel_file "$1")" ] && return 0
+  echo "NOT POSTED — --top needs a Slack channel of its own: '$1' has no slack-channel.$1 and was not joined --throwaway, so it mirrors into the shared #suss-teamup thread, where a top-level post would be noise for every channel." >&2
+  exit 2
+}
+
+with_top_tag() { # body
+  printf '%s' "$1"; $TOP && printf '%s' "$TOP_LEVEL_TAG"; true
+}
+
 # Block until the channel changes, then return so the caller re-checks. fswatch
 # wakes only on a real change (free for an indefinite watcher); sleep is the
 # universal fallback and is fine for short bounded waits.
@@ -567,7 +588,7 @@ ensure_member() { # subject
 # ---- arg parsing --------------------------------------------------------------
 CMD="${1:-}"; shift || usage
 SUBJECT=""; HANDLE=""; PWD_ARG="$PWD"; DOING=""; TIMEOUT="$DEFAULT_WAIT"; LAST=20; ALL=false; FORCE=false
-TO=""; RE=""; SID=""; THROWAWAY=false
+TO=""; RE=""; SID=""; THROWAWAY=false; TOP=false
 MSG=()
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -582,6 +603,7 @@ while [ $# -gt 0 ]; do
     --all)     ALL=true; shift ;;
     --force)   FORCE=true; shift ;;
     --throwaway) THROWAWAY=true; shift ;;
+    --top)     TOP=true; shift ;;
     --) shift; MSG+=("$@"); break ;;
     -*) die "unknown flag: $1 (put free-form message text after -- )" ;;
     *) if [ -z "$SUBJECT" ]; then SUBJECT="$1"; else MSG+=("$1"); fi; shift ;;
@@ -673,8 +695,9 @@ case "$CMD" in
     [ -n "$SUBJECT" ] || usage; require_handle; ensure_member "$SUBJECT"
     if [ ${#MSG[@]} -gt 0 ]; then text="${MSG[*]}"; else text="$(cat)"; fi
     [ -n "$text" ] || die "nothing to say"
+    refuse_top_without_own_slack_channel "$SUBJECT"
     refuse_post_if_unread "$SUBJECT" "$HANDLE"
-    append "$SUBJECT" "$HANDLE" say "$text"
+    append "$SUBJECT" "$HANDLE" say "$(with_top_tag "$text")"
     echo "sent."
     ;;
 
@@ -687,10 +710,11 @@ case "$CMD" in
     [ -n "$SUBJECT" ] || usage; require_handle; ensure_member "$SUBJECT"
     if [ ${#MSG[@]} -gt 0 ]; then text="${MSG[*]}"; else text="$(cat)"; fi
     [ -n "$text" ] || die "nothing to ask"
+    refuse_top_without_own_slack_channel "$SUBJECT"
     refuse_post_if_unread "$SUBJECT" "$HANDLE"
     refuse_ask_nobody_can_read "$SUBJECT" "$TO"
     [ -n "$TO" ] && text="@$TO $text"
-    append "$SUBJECT" "$HANDLE" ask "$text"
+    append "$SUBJECT" "$HANDLE" ask "$(with_top_tag "$text")"
     if is_off_channel "$SUBJECT" "$TO"; then
       echo "queued for $TO (asleep): wake it with $(wake_command "$TO" "$SUBJECT")"
     else
@@ -700,11 +724,12 @@ case "$CMD" in
 
   ack)
     [ -n "$SUBJECT" ] || usage; require_handle
+    refuse_top_without_own_slack_channel "$SUBJECT"
     refuse_post_if_unread "$SUBJECT" "$HANDLE"
     seq="$RE"; [ -n "$seq" ] || seq="$(latest_peer_seq "$SUBJECT" "$HANDLE")"
     [ -n "$seq" ] || die "nothing to ack — no peer messages yet"
     note="${MSG[*]}"
-    append "$SUBJECT" "$HANDLE" ack "re:#$seq${note:+ $note}"
+    append "$SUBJECT" "$HANDLE" ack "$(with_top_tag "re:#$seq${note:+ $note}")"
     echo "acked #$seq."
     ;;
 

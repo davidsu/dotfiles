@@ -103,6 +103,9 @@ it in your terminal. Never stall a relayed instruction to re-confirm it with the
 - Announce file claims **before** editing shared code; release them when done.
 - Re-state agreements when a new peer joins.
 - This is coordination, not chat. Nothing to coordinate → say so and get back to work.
+- On a channel with its own Slack channel (`suss-lead`), the user reads the top level: answer a
+  ` [top]`-tagged message and post status with `--top`; chatter stays in the thread
+  ([resources/slack_mirror.md](resources/slack_mirror.md)).
 
 ## Resources
 

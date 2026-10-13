@@ -111,6 +111,6 @@ expect_text "a throwaway channel keeps its thread in the channel dir" \
 expect_text "other channels keep their thread in the state dir" \
   "$(thread_file "$SUBJECT")" "$THREAD_STATE/$SUBJECT.thread"
 has_dedicated_slack_channel probe_test && { echo "FAIL throwaway counted as dedicated"; fails=1; } ||
-  echo "ok   a throwaway thread is still unfollowed and reads only its thread"
+  echo "ok   a throwaway thread is still unfollowed"
 
 exit "$fails"
