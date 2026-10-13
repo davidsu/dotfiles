@@ -44,11 +44,11 @@
             ]
           },
           {
-            "description": "Global: cmd+ctrl+g → focus the iTerm tab of a Claude agent by name",
+            "description": "Global: cmd+ctrl+g → floating fzf picker of the live Claude agents; Enter focuses its iTerm tab",
             "manipulators": [
               {
                 "from": { "key_code": "g", "modifiers": { "mandatory": ["command", "control"] } },
-                "to": [{ "shell_command": "$HOME/.dotfiles/bin/iterm_focus_agent >> $HOME/Library/Logs/iterm_focus_agent.log 2>&1" }],
+                "to": [{ "shell_command": "$HOME/.dotfiles/bin/iterm_agent_picker >> $HOME/Library/Logs/iterm_agent_picker.log 2>&1" }],
                 "type": "basic"
               }
             ]

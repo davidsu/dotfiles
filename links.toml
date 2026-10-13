@@ -98,6 +98,9 @@
 "iterm2/dynamic-profiles/ghostty.ln.json" = [
   "~/Library/Application Support/iTerm2/DynamicProfiles/ghostty.json",
 ]
+"iterm2/dynamic-profiles/agent-picker.ln.json" = [
+  "~/Library/Application Support/iTerm2/DynamicProfiles/agent-picker.json",
+]
 "launchd/com.davidsu.iterm-focus-history.ln.plist" = [
   "~/Library/LaunchAgents/com.davidsu.iterm-focus-history.plist",
 ]

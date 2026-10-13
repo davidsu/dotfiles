@@ -356,13 +356,23 @@ Cmd+Ctrl+R → Name + color the Claude Code or Codex session in the current tab 
 > `/rename` name leads the footer. Codex can't show custom text there or above the prompt.
 
 ```
-Cmd+Ctrl+G → Focus the iTerm tab of a Claude agent by name (works from any app)
+Cmd+Ctrl+G → Floating fzf picker of the live Claude agents; Enter focuses its iTerm tab (works from any app)
 ```
-> Runs `bin/iterm_focus_agent` (JXA). The dialog's combo box lists live Claude session names
-> (from `~/.claude/sessions/*.json`) with type-ahead completion; an exact name wins, else a unique
-> case-insensitive substring. Maps the session's pid to its tty, then selects the iTerm window, tab and pane on it.
-> Also callable from a shell as `findagent` (dialog) or `findagent row5-plan-card` (alias for `iterm_focus_agent`).
-> Errors go to `~/Library/Logs/iterm_focus_agent.log`.
+> Runs `bin/iterm_agent_picker`: opens a chromeless centered iTerm window (the `Agent Picker` dynamic profile,
+> `iterm2/dynamic-profiles/agent-picker.ln.json`: `Window Type` 19 = centered with no title bar, `Disable Window Resizing`,
+> `Close Sessions On End` 1 = the window goes when its command ends; the tab bar is hidden since the window has one tab) running
+> `iterm_agent_picker --pick`: an fzf over `iterm_focus_agent --list` (live Claude session names from `~/.claude/sessions/*.json`),
+> each row a `■` block + the name in the agent's `/color`, inside fzf's rounded border; the preview pane (up, 60%) shows what is
+> on that agent's iTerm tab right now (read-only AppleScript `contents` of the session on its tty). Same keys as every other
+> fzf here: type to filter, `ctrl-j` / `ctrl-k` (fzf's defaults) or arrows move, Enter runs `iterm_focus_agent <name>`,
+> Esc closes the window. Errors go to `~/Library/Logs/iterm_agent_picker.log`.
+> Known iTerm nit: closing the picker within 3 s of opening (iTerm's `shortLivedSessionDuration` advanced setting) shows
+> "A session ended very soon after starting" once; tick "Suppress this message permanently" (it is stored per profile GUID as
+> `NeverWarnAboutShortLivedSessions_<GUID>`).
+>
+> `bin/iterm_focus_agent <name>` (JXA) is the focus backend and still works on its own: an exact name wins, else a unique
+> case-insensitive substring; with no argument it shows the old NSAlert combo box. Maps the session's pid to its tty,
+> then selects the iTerm window, tab and pane on it. Shell alias `findagent` = `iterm_focus_agent`.
 
 ```
 Cmd+[ / Cmd+] → Back / forward through the iTerm tabs and panes you focused (like a browser)

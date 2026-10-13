@@ -1,0 +1,16 @@
+{
+  "Profiles": [
+    {
+      "Name": "Agent Picker",
+      "Guid": "6C2E8A14-9D3B-4F7E-B1A5-2E8D4C6F0B31",
+      "Dynamic Profile Parent Name": "Ghostty",
+      "Window Type": 19,
+      "Columns": 110,
+      "Rows": 40,
+      "Transparency": 0.08,
+      "Blur": true,
+      "Disable Window Resizing": true,
+      "Close Sessions On End": 1
+    }
+  ]
+}

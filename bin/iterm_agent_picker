@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# iterm_agent_picker — cmd+ctrl+g: a floating iTerm window listing the live Claude agents in fzf.
+# Each row is a colored block + the name in the agent's /color; the preview pane shows what is on that
+# agent's tab right now (its iTerm screen). ctrl+j / ctrl+k move (fzf's defaults, like telescope), typing
+# filters, Enter focuses that agent's tab (bin/iterm_focus_agent), Esc closes the window.
+#   iterm_agent_picker                 open the floating window (the "Agent Picker" dynamic profile) running --pick
+#   iterm_agent_picker --pick          the picker itself: what runs inside that window
+#   iterm_agent_picker --preview TTY   print the screen of the iTerm session on TTY (fzf's preview command)
+set -euo pipefail
+export PATH="/opt/homebrew/bin:$PATH"
+
+readonly PICKER_PROFILE="Agent Picker"
+readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
+readonly FOCUS_AGENT="$(dirname "$SELF")/iterm_focus_agent"
+readonly ROW_MARK="■ "
+source "$HOME/.claude/skills/suss-teamup/scripts/session_colors.sh"
+
+open_picker_window() {
+  osascript - "$PICKER_PROFILE" "$SELF --pick" <<'OSA'
+on run argv
+  tell application "iTerm2"
+    create window with profile (item 1 of argv) command (item 2 of argv)
+    activate
+  end tell
+end run
+OSA
+}
+
+screen_of_tty() {
+  osascript - "$1" <<'OSA'
+on run argv
+  tell application "iTerm2"
+    repeat with w in windows
+      repeat with t in tabs of w
+        repeat with s in sessions of t
+          if (tty of s) is (item 1 of argv) then return contents of s
+        end repeat
+      end repeat
+    end repeat
+  end tell
+  return "(not in an iTerm tab)"
+end run
+OSA
+}
+
+ansi_code_of() {
+  case "$1" in
+    red) echo 31 ;;
+    green) echo 32 ;;
+    yellow) echo 33 ;;
+    blue) echo 34 ;;
+    purple) echo 35 ;;
+    cyan) echo 36 ;;
+    orange) echo '38;5;208' ;;
+    pink) echo '38;5;213' ;;
+    *) echo 0 ;;
+  esac
+}
+
+tinted_agent_rows() {
+  local name session_id tty
+  while IFS=$'\t' read -r name session_id tty; do
+    printf '\e[%sm%s%s\e[0m\t%s\n' "$(ansi_code_of "$(transcript_color "$session_id")")" "$ROW_MARK" "$name" "$tty"
+  done < <("$FOCUS_AGENT" --list)
+}
+
+pick_agent() {
+  local picked
+  picked="$(tinted_agent_rows | fzf --ansi --layout=reverse --no-info --border=rounded --border-label=' Agents ' --delimiter=$'\t' --with-nth=1 --accept-nth=1 \
+    --prompt='Agent> ' --header='CTRL-j/k: move | ENTER: focus | ESC: close' \
+    --preview="$SELF --preview {2}" --preview-window='up:60%:wrap:follow')"
+  echo "${picked#"$ROW_MARK"}"
+}
+
+case "${1:-}" in
+  "") open_picker_window ;;
+  --pick) agent="$(pick_agent)" && exec "$FOCUS_AGENT" "$agent" ;;
+  --preview) screen_of_tty "$2" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' ;;
+  *) echo "usage: iterm_agent_picker [--pick | --preview TTY]" >&2; exit 1 ;;
+esac

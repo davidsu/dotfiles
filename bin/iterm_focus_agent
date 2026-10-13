@@ -2,6 +2,7 @@
 // iterm_focus_agent [name] — focus the iTerm tab running the Claude session with that name (its /rename).
 // No argument: a dialog lists the live agent names, with type-ahead completion.
 // The name matches exactly, else by a unique case-insensitive substring.
+// iterm_focus_agent --list — print the live agents, one `name<TAB>sessionId<TAB>tty` per line, and exit (bin/iterm_agent_picker's source).
 ObjC.import('Cocoa');
 
 const SESSIONS_DIR = `${$.NSHomeDirectory().js}/.claude/sessions`;
@@ -33,7 +34,7 @@ const liveAgents = () => {
   const ttys = ttyByPid();
   return sessionRecords()
     .filter((record) => ttys[record.pid])
-    .map((record) => ({ name: record.name, tty: ttys[record.pid] }))
+    .map((record) => ({ name: record.name, sessionId: record.sessionId, tty: ttys[record.pid] }))
     .sort((left, right) => left.name.localeCompare(right.name));
 };
 
@@ -110,7 +111,10 @@ const focusTabOnTty = (iterm, tty) => {
   return false;
 };
 
+const agentListing = (agents) => agents.map((agent) => `${agent.name}\t${agent.sessionId}\t${agent.tty}`).join('\n');
+
 function run(argv) {
+  if (argv[0] === '--list') return agentListing(liveAgents());
   $.NSApplication.sharedApplication.setActivationPolicy($.NSApplicationActivationPolicyAccessory);
   installEditMenu();
   const agents = liveAgents();
