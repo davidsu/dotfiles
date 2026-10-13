@@ -43,6 +43,13 @@ If you don't have the URL, fetch it (e.g. `gh api …/comments`, the Slack perma
 
 If you're uncertain about requirements, ask for clarification BEFORE implementing. If an attempt fails and you still don't understand, STOP and ask - don't loop through guesses.
 
+**Common sense on risk-free work.** Never wait for David's "go" on work that cannot hurt the product,
+the company, or embarrass him with colleagues: opening a PR, recording video proof, running e2e on a
+preview, babysitting CI. Do it, then tell him what was done. His questions and phone-typed
+suggestions ("I suggest we do it on the box…") are a go for that risk-free part. Wait for his word
+only on actions with reach: a merge, a Slack post to humans, prod data, dotfiles master
+(2026-10-13, from his phone: "why wait for my go? odd. what if I had turned off my phone").
+
 ## Broken `suss-*` skills
 
 The `suss-*` skills are David's own and meant to improve as they're used. If one breaks or misleads
