@@ -11,7 +11,8 @@ trap 'rm -rf "$SUSS_TEAMUP_DIR"' EXIT
 
 source "$TESTS_DIR/../scripts/teamup-slack"
 SLACK_OWNER=U_OWNER
-post_to_thread() { :; }
+readonly THREAD_POSTS="$SUSS_TEAMUP_DIR/thread_posts"
+post_to_thread() { printf '%s\n' "$2" >> "$THREAD_POSTS"; }
 
 mkdir -p "$SUSS_TEAMUP_DIR/$SUBJECT/members"
 printf '2026-10-13T07:00:15Z\tlaptop.lead\tsay\t@dotfiles.laptop welcome\n2026-10-13T07:00:17Z\tdavid\tsay\techo\n' > "$CHANNEL"
@@ -23,6 +24,9 @@ expect_lines() { # label expected
   [ "$got" = "$2" ] && echo "ok   $1" || { echo "FAIL $1: $got lines, expected $2"; fails=1; }
 }
 last_line() { tail -1 "$CHANNEL"; }
+expect_no_warning() { # label
+  grep -q '^:warning:' "$THREAD_POSTS" 2>/dev/null && { echo "FAIL $1: $(grep '^:warning:' "$THREAD_POSTS")"; fails=1; } || echo "ok   $1"
+}
 
 deliver_to_channel "$SUBJECT" '```   #1 [07:00:15] laptop.lead (say) @dotfiles.laptop welcome ```' U_OWNER '' >/dev/null
 expect_lines "own mirrored block is dropped" 2
@@ -31,17 +35,26 @@ deliver_to_channel "$SUBJECT" '```   #1 [07:00:15] box.agent (say) @dotfiles.lap
 expect_lines "remote block aimed here is delivered" 3
 grep -qF $'\tdavid\task\t@dotfiles.laptop [box.agent] from the box' <(last_line) && echo "ok   delivered as an ask to the local handle, attributed" || { echo "FAIL attribution: $(last_line)"; fails=1; }
 
+deliver_to_channel "$SUBJECT" '```   #5 [07:00:40] box.agent (say) @box.other heads up, @dotfiles.laptop take the laptop half ```' U_OWNER '' >/dev/null
+expect_lines "remote line aimed at the other machine's agent but naming one here is delivered" 4
+grep -qF $'\tdavid\tsay\t[box.agent] @box.other heads up, @dotfiles.laptop take the laptop half' <(last_line) && echo "ok   delivered to everyone, attributed" || { echo "FAIL remote-handle delivery: $(last_line)"; fails=1; }
+expect_no_warning "no warning about a handle that lives on the other machine"
+
+deliver_to_channel "$SUBJECT" '@dotfiles.laptp did you see it' U_OWNER '' >/dev/null
+expect_lines "a human's typo is still delivered to everyone" 5
+grep -qF 'no agent here is called `dotfiles.laptp`' "$THREAD_POSTS" && echo "ok   the human is warned about the typo" || { echo "FAIL no typo warning: $(cat "$THREAD_POSTS" 2>/dev/null)"; fails=1; }
+
 deliver_to_channel "$SUBJECT" '```   #7 [07:01:00] box.agent (say) @all heads up   #8 [07:01:01] box.agent (say) @box.other private ```' U_OWNER '' >/dev/null
-expect_lines "@all delivered, remote-only mention dropped" 4
+expect_lines "@all delivered, remote-only mention dropped" 6
 
 deliver_to_channel "$SUBJECT" ':warning: the Slack session died (x)' U_OWNER '' >/dev/null
-expect_lines "bridge notice is dropped" 4
+expect_lines "bridge notice is dropped" 6
 
 deliver_to_channel "$SUBJECT" 'plain reply from a phone' U_OTHER 'Someone' >/dev/null
-expect_lines "plain reply still delivered" 5
+expect_lines "plain reply still delivered" 7
 
 deliver_to_channel "$SUBJECT" '``` my own pasted log line 1 line 2 ```' U_OWNER '' >/dev/null
-expect_lines "owner's own code block is delivered" 6
+expect_lines "owner's own code block is delivered" 8
 grep -qF $'\tdavid\tsay\t``` my own pasted log' <(last_line) && echo "ok   delivered as a say from david" || { echo "FAIL own block: $(last_line)"; fails=1; }
 
 

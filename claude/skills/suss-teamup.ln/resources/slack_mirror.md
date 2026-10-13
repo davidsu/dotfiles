@@ -105,7 +105,10 @@ author). The bridge's own notices (`:warning:`, `:white_check_mark:`, the retire
 dropped the same way. A code block that matches nothing local was mirrored by **another
 machine's** bridge into the same thread (the Coder box and the laptop share one thread per
 channel name): it is delivered, attributed `[{handle}]`, only when it says `@all` or names a
-live local handle; everything else from the other machine stays in Slack. Plain replies are
+live local handle; everything else from the other machine stays in Slack. Such a line may open
+with a handle that lives only on the other machine (`@shahar.preview …, @coder.lead.19 …`): it
+goes to everyone here, silently. The `:warning: no agent here is called …` notice is reserved
+for a reply a person typed (a typo in Slack), where retyping fixes it. Plain replies are
 delivered as before. Two more rules make the shared thread work across machines: `open_thread`
 first looks for a root younger than a day whose text starts with `*teamup · {subject}* ` among the
 channel's last 200 top-level messages (`conversations.history`, `oldest=`) and adopts it instead of

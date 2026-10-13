@@ -197,7 +197,7 @@ mentions_someone_here() { # subject body — @all or @{live local handle}
 deliver_remote_message() { # subject seq clock handle type body — another machine's agent, via the shared thread
   is_local_message "$1" "$2" "$3" "$4" "$5" && return 0
   mentions_someone_here "$1" "$6" || return 0
-  deliver_text "$1" "$6" "[$4] "
+  deliver_text "$1" "$6" "[$4] " ignore_unknown_handle
 }
 
 deliver_agent_code_block() { # subject text
@@ -221,7 +221,13 @@ ask_each() { # subject handles text
   done <<<"$2"
 }
 
-deliver_text() { # subject text attribution — a text opening with a live handle aims at it, "@" optional; "lead" aims at every lead*
+warn_unknown_handle() { # subject handle — a person mistyped it and can retype
+  post_to_thread "$1" ":warning: no agent here is called \`$2\` — sent to everyone instead. Live handles: $(agent_handles "$1" | paste -sd, - | sed 's/,/, /g')" || true
+}
+
+ignore_unknown_handle() { :; } # an agent on the other machine named a handle live on its own roster
+
+deliver_text() { # subject text attribution on_unknown_handle — a text opening with a live handle aims at it, "@" optional; "lead" aims at every lead*; any other @handle goes to everyone
   local word target body leads
   word="$(first_word "$2")"
   body="${2#"$word"}"
@@ -232,12 +238,10 @@ deliver_text() { # subject text attribution — a text opening with a live handl
   target="$(live_handle_for "$1" "${word#@}")"
   if [ -n "$target" ]; then
     "$TEAMUP" ask "$1" --as "$HANDLE" --to "$target" -- "$3${body# }"
-  elif [[ "$word" == @* ]]; then
-    post_to_thread "$1" ":warning: no agent here is called \`${word#@}\` — sent to everyone instead. Live handles: $(agent_handles "$1" | paste -sd, - | sed 's/,/, /g')" || true
-    "$TEAMUP" say "$1" --as "$HANDLE" -- "$3$2"
-  else
-    "$TEAMUP" say "$1" --as "$HANDLE" -- "$3$2"
+    return
   fi
+  [[ "$word" == @* ]] && "$4" "$1" "${word#@}"
+  "$TEAMUP" say "$1" --as "$HANDLE" -- "$3$2"
 }
 
 deliver_to_channel() { # subject text author_id author_name [origin: top|thread] — a top-level message is tagged so an agent can answer in kind
@@ -250,7 +254,7 @@ deliver_to_channel() { # subject text author_id author_name [origin: top|thread]
     touch "$(engaged_file "$1")"
     "$HERE/teamup-focus" on >/dev/null
   else attribution="[slack: $(slack_author_name "$3" "$4")] "; fi
-  deliver_text "$1" "$text" "$attribution"
+  deliver_text "$1" "$text" "$attribution" warn_unknown_handle
 }
 
 remote_author_of_line() { # subject seq — the other machine's agent that line N arrived from, if any
