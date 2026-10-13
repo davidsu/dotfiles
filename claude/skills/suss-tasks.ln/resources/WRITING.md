@@ -228,7 +228,7 @@ URL is the one form that opens in the raw file, every markdown preview, GitHub a
 board alike.
 
 ```markdown
-[▶ tap shows the toast](https://media.example.com/…/tap_toast.mp4)
+[![▶ tap shows the toast](https://media.example.com/…/tap_toast_poster.png)](https://media.example.com/…/tap_toast.mp4)
 ```
 
 **Rules:**
@@ -238,7 +238,8 @@ board alike.
 3. **WebM or MP4** — the board lists videos as attachments that open in a browser tab, which plays both; no conversion needed
 4. **Link text says what the video shows**, starting with `▶`
 5. **Next to the claim it proves** — like any reference, not in a footer
-6. **Optional thumbnail** — `attach` a poster PNG (one frame: `ffmpeg -ss 5 -i v.webm -frames:v 1 poster.png`) and wrap it: `[![▶ what it shows](poster_url)](video_url)` renders a clickable thumbnail on the board and on GitHub
+6. **Always a thumbnail** — a bare `▶` link reads as text and nobody notices it is a video. `attach` a poster PNG and wrap the link in it: `[![▶ what it shows](poster_url)](video_url)` renders a clickable thumbnail on the board and on GitHub
+7. **The poster shows the proof** — the frame where the claim is visible (`ffmpeg -ss 5 -i v.webm -frames:v 1 poster.png`), with a play button drawn on it, placed so it covers nothing that matters
 
 ## Markdown Table Alignment
 
