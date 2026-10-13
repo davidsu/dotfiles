@@ -28,7 +28,18 @@ Rules:
   only when the task names Brave.
 - Use `mcp__playwright-chrome-anon__*` when the task needs a logged-out /
   clean-profile browser (e.g. testing signup or incognito-like behavior).
-- Use Playwright over claude-in-chrome for everything.
+- Use Playwright over claude-in-chrome for everything, except file uploads.
+
+File uploads (e.g. attaching to a GitHub comment) need `mcp__claude-in-chrome__file_upload`.
+Playwright's `browser_file_upload` only reads files under the project dir (not the scratchpad),
+and in extension mode setting them fails anyway (`DOM.setFileInputFiles: Not allowed`).
+
+- A hidden input (GitHub's `#fc-new_comment_field`) won't show up in `find`: un-hide it via
+  `javascript_tool` and give it an `aria-label`, then `find` it and `file_upload` to it.
+- GitHub: poll the textarea's value for the `github.com/user-attachments/assets/...` URL.
+  Clear the textarea afterwards unless you're meant to post.
+- Video: upload H.264 `.mp4` (`avconvert --preset Preset1920x1080 -s in.mov -o out.mp4`).
+  A `.mov` was rejected (`is-bad-file`).
 
 Tabs (extension mode, `playwright-chrome`/`playwright-brave`):
 
