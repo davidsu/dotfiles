@@ -60,8 +60,16 @@ on_or_off_at_random() { # skipped handle
   if ((RANDOM % 2)); then "$FOCUS" on --skip "$1"; else "$FOCUS" off; fi
 }
 
+expect_tick_guards_against_launching_iterm() { # static: the tick's first statement, since a test needs iTerm2 down
+  local first; first="$(awk '/^on run argv/ { getline; print; exit }' "$FOCUS" | sed 's/^ *//')"
+  [[ "$first" == 'if application "iTerm2" is not running then return'* ]] \
+    && pass "a tick checks iTerm2 is running before addressing it (never launches it)" \
+    || fail "the tick's first statement is not the iTerm2-running guard: '$first'"
+}
+
 run_lifecycle() { # skipped handle
   local skip="$1" first
+  expect_tick_guards_against_launching_iterm
   "$FOCUS" off >/dev/null
   concurrently 50 "$FOCUS" on --skip "$skip"; report 1 "50 concurrent on, clean start"
 
