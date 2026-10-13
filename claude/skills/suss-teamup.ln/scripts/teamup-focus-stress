@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# teamup-focus-stress lifecycle|focus [--skip HANDLE] — stress teamup-focus like a power user.
+# teamup-focus-stress lifecycle|focus|focus-tail [--skip HANDLE] — stress teamup-focus like a power user.
 #   lifecycle: hammer `on`/`off` the way the user and every Slack bridge at once would; after each
 #     sequence exactly one poller (or none) is alive and the pid file names it. Touches no window.
 #   focus: opens windows, so only in a hands-off window David grants (idle ≥ 120 s means not
@@ -11,7 +11,9 @@
 #     closes, never pick HANDLE's tab, log no errors, keep acting every tick while windows open and
 #     close every second, let teamup-sleep close a tab amid that churn, and do nothing while the
 #     user is active (synthetic input). Closes every window it opened.
-# Both end with one poller on, skipping HANDLE. PASS/FAIL per check; exits 1 if any failed.
+#   focus-tail: the focus checks after the 3-minute bound, plus the busy hand-back, for a run
+#     that was voided midway.
+# All end with one poller on, skipping HANDLE. PASS/FAIL per check; exits 1 if any failed.
 set -uo pipefail
 
 readonly HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -108,6 +110,8 @@ front_app() { osascript -e 'tell application "System Events" to name of first pr
 
 front_tab() { osascript -e 'tell application "iTerm2" to name of current session of current window'; }
 
+front_window_id() { osascript -e 'tell application "iTerm2" to id of current window'; }
+
 is_busy_title() { case "$1" in ◐* | ◓* | ◑* | ◒*) return 0 ;; esac; return 1; }
 
 is_claude_tab_in_front() {
@@ -133,7 +137,7 @@ expect_terminal_stays() { # check seconds — no tick hands the screen back to a
   local started=$SECONDS left_for=""
   while ((SECONDS - started <= $2)); do
     void_unless_user_away
-    is_claude_tab_in_front || left_for+="$(date +%T)=$(front_app) "
+    is_claude_tab_in_front || left_for+="$(date +%T)=$(front_app):'$(front_tab)'@window $(front_window_id) "
     sleep "$CHECK_SECONDS"
   done
   [[ -z "$left_for" ]] && pass "$1: a claude tab stayed in front for $2 s" || fail "$1: front left the terminal: $left_for"
@@ -310,31 +314,40 @@ expect_fake_agents_closed() {
   [[ -z "$left" ]] && pass "every fake agent window closed" || fail "$left fake agent window(s) left open"
 }
 
-run_focus() {
-  local log_start fake_tty
+start_focus_run() {
   void_unless_user_away
   fake_dir="$(make_fake_claude)"
   log_start="$(wc -l < "$LOG_FILE" 2>/dev/null || echo 0)"
   "$FOCUS" off >/dev/null; "$FOCUS" on --skip "$skip" >/dev/null
+}
 
+check_hand_back_with_a_busy_tab() {
   fake_tty="$(open_fake_agent "◐ $FAKE_AGENT")"
   expect_terminal_takes_over_from_chrome "a busy tab exists"
   close_fake_agents
+}
+
+check_hand_back_with_no_busy_tab() {
   if wait_until_no_busy_tab 300; then expect_terminal_takes_over_from_chrome "no busy tab"
   else fail "DAVID'S CHECK, no busy tab: tabs stayed busy for 300 s: $(non_skipped_busy_tabs | paste -sd '|' -)"; fi
-  expect_3_minute_bound_at_worst_phase
+}
 
+check_from_finder_and_chrome() {
   bring_forward Finder; expect_front_within_a_tick "from Finder" is_claude_tab_in_front
   bring_forward "Google Chrome"; echo "  chrome front window: $(osascript -e 'tell application "Google Chrome" to title of active tab of front window')"
   expect_front_within_a_tick "from Chrome" is_claude_tab_in_front
+}
 
+check_fake_agent_busy_idle_closed() {
   fake_tty="$(open_fake_agent "◐ $FAKE_AGENT")"
   bring_forward Finder; expect_front_within_a_tick "a fake busy agent opened" is_busy_claude_tab_in_front
   retitle_fake_agent "$fake_tty" "✳ $FAKE_AGENT"
   bring_forward Finder; expect_front_within_a_tick "the fake agent went idle (no session file)" is_live_claude_tab_in_front
   retitle_fake_agent "$fake_tty" "◑ $FAKE_AGENT"; close_fake_agents
   bring_forward Finder; expect_front_within_a_tick "the busy fake agent's window closed" is_live_claude_tab_in_front
+}
 
+finish_focus_run() {
   expect_log_clean_since "$log_start"
   expect_every_tick_acted_during_churn
   expect_sleep_closes_tabs_during_churn
@@ -343,13 +356,32 @@ run_focus() {
   rm -rf "$fake_dir"
 }
 
+run_focus() {
+  start_focus_run
+  check_hand_back_with_a_busy_tab
+  check_hand_back_with_no_busy_tab
+  expect_3_minute_bound_at_worst_phase
+  check_from_finder_and_chrome
+  check_fake_agent_busy_idle_closed
+  finish_focus_run
+}
+
+run_focus_tail() { # what a voided run left out: the busy hand-back, then everything after the bound
+  start_focus_run
+  check_hand_back_with_a_busy_tab
+  check_from_finder_and_chrome
+  check_fake_agent_busy_idle_closed
+  finish_focus_run
+}
+
 mode="${1:-}"
 [[ "${2:-}" == --skip ]] && skip="${3:-}" || skip=""
 echo "teamup-focus-stress $mode $(date '+%F %T'), code at $FOCUS${skip:+, skipping $skip}"
 case "$mode" in
   lifecycle) run_lifecycle "$skip" ;;
-  focus)     run_focus ;;
-  *)         echo "usage: teamup-focus-stress lifecycle|focus [--skip HANDLE]" >&2; exit 2 ;;
+  focus)      run_focus ;;
+  focus-tail) run_focus_tail ;;
+  *)          echo "usage: teamup-focus-stress lifecycle|focus|focus-tail [--skip HANDLE]" >&2; exit 2 ;;
 esac
 echo "failures: $failures"
 [[ "$failures" == 0 ]]

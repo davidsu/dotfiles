@@ -11,7 +11,8 @@
 # (updatedAt in ~/.claude/sessions/*.json), re-selecting it each tick even when it is already in
 # front, a no-op. It never picks Chrome: a Playwright tab keeps its tab
 # group long after its agent stopped driving it. --skip leaves one agent's tab alone (a lead skips
-# itself). A tab that closes mid-tick is skipped. Every tick while the user is away logs what it
+# itself). It never launches iTerm2: while the app is not running a tick does nothing. A tab that
+# closes mid-tick is skipped. Every tick while the user is away logs what it
 # focused or kept to focus.log next to the pid file, and so does every osascript error.
 # `on` and `off` run one at a time (a mkdir lock, broken after 10 s if its holder died), so any
 # number of concurrent calls leaves exactly one poller, or none. `off` stops every poller, even
@@ -103,6 +104,7 @@ on focusFirstTab(wantedSuffix, skippedSuffix)
 end focusFirstTab
 
 on run argv
+  if application "iTerm2" is not running then return "iTerm2 not running: left alone"
   set keptTab to busyAgentTabInFront()
   if keptTab is not "" then return "kept " & keptTab
   set skippedSuffix to agentTitleSuffix(item 1 of argv)
