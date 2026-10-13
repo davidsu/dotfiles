@@ -1,0 +1,40 @@
+#!/usr/bin/env -S uv run --quiet --with iterm2 python
+# iterm_tab_move_after — put the iTerm tab holding one session immediately to the right of another tab.
+#   iterm_tab_move_after <session-id> <anchor>
+# <anchor> is an iTerm session id (the UUID, as term_spawn prints it) or an agent handle, matched
+# against the tab title "<handle> (claude)" with any status glyph in front. AppleScript cannot
+# reorder tabs; this uses the iTerm2 Python API (Window.async_set_tabs), which needs
+# Preferences → General → Magic → Enable Python API. The selected tab stays selected.
+import sys
+
+import iterm2
+
+
+def holds_session(tab, session_id):
+    return any(session.session_id == session_id for session in tab.sessions)
+
+
+async def holds_handle(tab, handle):
+    title = await tab.current_session.async_get_variable("session.name") or ""
+    return title == f"{handle} (claude)" or title.endswith(f" {handle} (claude)")
+
+
+async def find_tab(app, anchor):
+    for window in app.terminal_windows:
+        for tab in window.tabs:
+            if holds_session(tab, anchor) or await holds_handle(tab, anchor):
+                return tab
+    sys.exit(f"iterm_tab_move_after: no tab holds '{anchor}'")
+
+
+async def move_after(connection):
+    session_id, anchor = sys.argv[1:3]
+    app = await iterm2.async_get_app(connection)
+    moved, anchor_tab = await find_tab(app, session_id), await find_tab(app, anchor)
+    window = anchor_tab.window
+    tabs = [tab for tab in window.tabs if tab.tab_id != moved.tab_id]
+    tabs.insert(tabs.index(anchor_tab) + 1, moved)
+    await window.async_set_tabs(tabs)
+
+
+iterm2.run_until_complete(move_after)

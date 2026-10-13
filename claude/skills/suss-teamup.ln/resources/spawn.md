@@ -19,8 +19,13 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
    (e.g. `pair-auth`, `handoff-x`) — avoid names starting with `spawn`.
 2. **Join it yourself first**, so you're present when the peer arrives:
    `teamup join {subject} --pwd "$PWD" --doing "spawning a {agent} peer"`.
-3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi|codex} {subject} [--as {handle}] [--model {model}] [--role {role}] [--color {color}] [--no-steal]`.
+3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi|codex} {subject} [--as {handle}] [--model {model}] [--role {role}] [--color {color}] [--after {handle}] [--no-steal]`.
    It opens an iTerm tab in your `$PWD` running the agent, which joins `{subject}`.
+   - **Tab position**: immediately right of your own tab (the one the command runs in,
+     `$ITERM_SESSION_ID`), so a lead's team sits next to it; `--after {handle}` (or env
+     `TEAMUP_AFTER_HANDLE`) puts it right of that agent's tab instead. Moved via the iTerm2
+     Python API (`bin/iterm_tab_move_after`), which needs Preferences → General → Magic →
+     Enable Python API; without it the tab stays at the far right.
    - **Handle**: you assign it (`--as`, default `{subject}.peer{n}`, checked free against the
      roster), and it is final. Make it descriptive (`apper.test.runner`): it is how the user
      finds the session. A claude peer launches with `--name {handle}`; a pi peer gets a leading

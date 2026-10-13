@@ -30,8 +30,8 @@ Separate scripts in `scripts/`:
 
 | script | does |
 |---|---|
-| `teamup-spawn <claude\|pi\|codex> <subject> [--as H] [--dir D] [--model M] [--role R] [--color C] [--no-steal]` | start a peer in a new iTerm tab, joined to `<subject>` (resources/spawn.md) |
+| `teamup-spawn <claude\|pi\|codex> <subject> [--as H] [--dir D] [--model M] [--role R] [--color C] [--after H] [--no-steal]` | start a peer in a new iTerm tab right of yours (or of `--after`'s), joined to `<subject>` (resources/spawn.md) |
 | `teamup-sleep <handle>...` | leave every channel and close the agent's iTerm tab (resources/agent_lifecycle.md) |
-| `teamup-wake <handle> [--channel C] [--role R] [--color C]` / `--list` | resume a sleeping claude agent and wait until it rejoins (resources/agent_lifecycle.md) |
+| `teamup-wake <handle> [--channel C] [--role R] [--color C] [--after H]` / `--list` | resume a sleeping claude agent and wait until it rejoins (resources/agent_lifecycle.md) |
 | `teamup-focus on [--skip H] \| off \| status` | while the user is away (no input for 2 min), never leave the screen >3 min without an agent at work in front (checks every minute): a Playwright-driven Chrome tab, else a busy claude iTerm tab; `on` is idempotent (resources/tracking_agents.md) |
 | `teamup-slack on\|off [subject] \| status \| url <subject>` | the Slack mirror (resources/slack_mirror.md) |

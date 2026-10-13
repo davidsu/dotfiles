@@ -9,7 +9,7 @@ S=~/.claude/skills/suss-teamup/scripts
 $S/teamup-sleep [--force] <handle>...        # leave its channels, close its tab
 $S/teamup-wake --list                        # who can be woken
 $S/teamup-wake --asleep <handle>             # exit 0 if it can be woken
-$S/teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR]
+$S/teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR] [--after HANDLE]
 ```
 
 ## Putting an agent to sleep
@@ -50,7 +50,8 @@ nobody waits on an "awaiting lead" round trip.
    rejoin the agent sees everything aimed at it while it slept, so the brief can point at
    those messages instead of repeating them.
 2. `teamup-wake <handle> [--channel C]` prints what is waiting for the agent on the channel
-   (`unread=N asks_for_me=M`), then resumes the session in its own directory and has it
+   (`unread=N asks_for_me=M`), then resumes the session in its own directory, in a tab
+   immediately right of yours (or of `--after HANDLE`'s, see spawn.md → Tab position), and has it
    rejoin that channel. It refuses if the session is still running: a session must never run twice.
    It gives the tab and `/color` the `--color`, else the `--role`'s color
    ([known_team_roles.md](known_team_roles.md)), else the color the agent had before it

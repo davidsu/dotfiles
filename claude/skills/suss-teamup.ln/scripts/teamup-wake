@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR] — resume a sleeping claude agent
-# in a new iTerm tab, in its own directory, and have it rejoin its channel. Prints what is waiting
+# teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR] [--after HANDLE] — resume a sleeping claude agent
+# in a new iTerm tab, in its own directory, and have it rejoin its channel. The tab lands immediately right
+# of the caller's own tab (the tab this command runs in, $ITERM_SESSION_ID), or of --after HANDLE's tab
+# (env TEAMUP_AFTER_HANDLE). Prints what is waiting
 # for it there, then once it is back: post its brief BEFORE waking it, it sees the brief on rejoin.
 # Its tab and /color get --color, else its --role's color, else the color it had before it slept.
 # teamup-wake --list — every agent that can be woken.
@@ -71,8 +73,8 @@ wake_color() { # role session-id
   if [ -n "$1" ]; then role_color "$1"; else transcript_color "$2"; fi
 }
 
-wake() { # handle channel color role
-  local record session_id dir channels channel tab log_lines color
+wake() { # handle channel color role after
+  local record session_id dir channels channel tab log_lines color after="$5"
   record="$(wake_record "$1")"
   [ -n "$record" ] || die "nobody called '$1' can be woken (teamup-wake --list)"
   IFS=$'\t' read -r _ session_id dir channels _ <<<"$record"
@@ -82,7 +84,7 @@ wake() { # handle channel color role
   color="${3:-$(wake_color "$4" "$session_id")}"
   log_lines="$(wc -l < "$BASE/$channel/channel.tsv" 2>/dev/null || echo 0)"
   print_waiting_messages "$1" "$channel"
-  tab="$(term_spawn --app iterm --dir "$dir" --run "cyc --resume $session_id -- '/suss-teamup $channel'")"
+  tab="$(term_spawn --app iterm --dir "$dir" --run "cyc --resume $session_id -- '/suss-teamup $channel'" ${after:+--after "$after"})"
   echo "waking $1 in $dir (session $session_id) to rejoin '$channel'..."
   [ -z "$color" ] || "$HERE/teamup-spawn" __boot_iterm "$tab" claude "$color" ||
     die "$1 did not come up: look at its tab, usually a permission prompt the resumed session is stuck on"
@@ -91,18 +93,19 @@ wake() { # handle channel color role
 }
 
 case "${1:-}" in
-  ""|-h|--help) echo "usage: teamup-wake <handle> [--channel C] [--role lead|owner|keeper|ROLE] [--color COLOR] | --list | --asleep <handle>" >&2; exit 2 ;;
+  ""|-h|--help) echo "usage: teamup-wake <handle> [--channel C] [--role lead|owner|keeper|ROLE] [--color COLOR] [--after HANDLE] | --list | --asleep <handle>" >&2; exit 2 ;;
   --list) list_asleep; exit 0 ;;
   --asleep) can_wake "${2:-}"; exit ;;
 esac
-handle="$1"; shift; channel=""; color=""; role=""
+handle="$1"; shift; channel=""; color=""; role=""; after="${TEAMUP_AFTER_HANDLE:-${ITERM_SESSION_ID:-}}"; after="${after#*:}"
 while [ $# -gt 0 ]; do
   case "$1" in
     --channel) channel="$2"; shift 2 ;;
     --role)    role="$2"; shift 2 ;;
     --color)   color="$2"; shift 2 ;;
+    --after)   after="$2"; shift 2 ;;
     *) die "unknown flag $1" ;;
   esac
 done
 [ -z "$color" ] || is_session_color "$color" || die "--color must be one of: ${SESSION_COLORS[*]}"
-wake "$handle" "$channel" "$color" "$role"
+wake "$handle" "$channel" "$color" "$role" "$after"
