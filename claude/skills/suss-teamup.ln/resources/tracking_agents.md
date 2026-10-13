@@ -51,7 +51,8 @@ even where it's wrong. Hand it the question and the sources.
 - **Keep an agent at work on screen** while the human is away: run
   `scripts/teamup-focus on --skip <your handle>` when the job starts. It is idempotent (a second
   `on` changes nothing; the human can run it too) and acts only after 2 minutes without keyboard
-  or mouse input, so it never takes focus from the human. When nothing at work is in front, it
+  or mouse input, so it never takes focus from the human. From then on the screen is never more
+  than 3 minutes without an agent at work in front: every minute, when nothing at work is, it
   brings forward a Chrome tab an agent drives, else a busy agent's iTerm tab. The Slack
   bridge also turns it on when the human replies from Slack.
 - **Keep a timer** (e.g. a cron every 30 minutes) running a fixed list of checks: open review

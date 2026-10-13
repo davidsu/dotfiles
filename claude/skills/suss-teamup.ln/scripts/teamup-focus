@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
 # teamup-focus on [--skip HANDLE] | off | status — while the user is away, keep the screen on an
 # agent at work. `on` starts one background poller; a second `on` changes nothing, so the user or
-# any lead can run it at any time. Every 2 minutes, only when the Mac has had no keyboard or mouse
-# input for 2 minutes, and unless an agent at work is already in front, it brings forward a Chrome
-# tab an agent drives (Playwright puts those in its "Playwright · claude-code" tab group), else the
-# first iTerm tab whose title shows claude's busy spinner. --skip leaves one agent's iTerm tab
-# alone (a lead skips itself).
+# any lead can run it at any time. Once the Mac has had no keyboard or mouse input for 2 minutes,
+# the screen is never more than 3 minutes without an agent at work in front: every minute, unless
+# one already is, it brings forward a Chrome tab an agent drives (Playwright puts those in its
+# "Playwright · claude-code" tab group), else the first iTerm tab whose title shows claude's busy
+# spinner. --skip leaves one agent's iTerm tab alone (a lead skips itself).
 set -uo pipefail
 
 readonly PID_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/focus.pid"
-readonly POLL_SECONDS=120
 readonly AWAY_SECONDS=120
+readonly MAX_SECONDS_WITHOUT_WORKING_AGENT=180
+readonly POLL_SECONDS=$((MAX_SECONDS_WITHOUT_WORKING_AGENT - AWAY_SECONDS))
 
 seconds_since_input() { ioreg -c IOHIDSystem | awk '/HIDIdleTime/ { print int($NF / 1000000000); exit }'; }
 
