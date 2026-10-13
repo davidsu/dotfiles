@@ -5,7 +5,7 @@ set -uo pipefail
 
 unset CLAUDE_CODE_SESSION_ID TEAMUP_SESSION CODEX_THREAD_ID TEAMUP_SESSION_NAME
 
-readonly HERE="$(cd "$(dirname "$0")" && pwd)"
+readonly HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly TEAMUP="$HERE/teamup"
 readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
 readonly HANDLE="${TEAMUP_SLACK_HANDLE:-david}"
@@ -134,24 +134,65 @@ live_handle_for() { # subject typed — exact, else with "." and "-" interchange
   agent_handles "$1" | awk -v want="$(tr . - <<<"$typed")" '{ h = $0; gsub(/\./, "-", h) } h == want { print; found = 1; exit } END { exit !found }'
 }
 
-deliver_to_channel() { # subject text author_id author_name — a reply opening with a live handle aims at it, "@" optional
-  local text word target body attribution=""
-  text="$(unescape_slack <<<"$2")"
-  word="$(first_word "$text")"
+is_agent_code_block() { [[ "$1" == '```'* ]] && grep -qE '#[0-9]+ \[[0-9:]{8}\] [^ ]+ \([a-z]+\) ' <<<"$1"; }
+
+is_bridge_notice() { [[ "$1" == ':warning: '* || "$1" == ':white_check_mark: '* || "$1" == '_channel is empty'* ]]; }
+
+split_agent_messages() { # flattened-code-block → one "seq clock handle type body" line per message
+  sed 's/^``` *//; s/ *```$//' <<<"$1" |
+    awk '{ gsub(/ +#[0-9]+ \[[0-9:]+\] [^ ]+ \([a-z]+\) /, "\n&"); print }' |
+    sed -E 's/^ *#([0-9]+) \[([0-9:]+)\] ([^ ]+) \(([a-z]+)\) ?/\1 \2 \3 \4 /; /^$/d'
+}
+
+is_local_message() { # subject seq clock handle type — true when this machine's channel holds that very line
+  awk -F'\t' -v seq="$2" -v clock="$3" -v from="$4" -v type="$5" \
+    'NR == seq { found = (substr($1, 12, 8) == clock && $2 == from && $3 == type) } END { exit !found }' \
+    "$BASE/$1/channel.tsv" 2>/dev/null
+}
+
+mentions_someone_here() { # subject body — @all or @{live local handle}
+  local handles; handles="$(agent_handles "$1" | sed 's/[.]/\\./g' | paste -sd'|' -)"
+  grep -qE "(^|[^[:alnum:]])@(all${handles:+|$handles})([^[:alnum:]_-]|$)" <<<"$2"
+}
+
+deliver_remote_message() { # subject seq clock handle type body — another machine's agent, via the shared thread
+  is_local_message "$1" "$2" "$3" "$4" "$5" && return 0
+  mentions_someone_here "$1" "$6" || return 0
+  deliver_text "$1" "$6" "[$4] "
+}
+
+deliver_agent_code_block() { # subject text
+  local seq clock handle type body
+  while read -r seq clock handle type body; do
+    deliver_remote_message "$1" "$seq" "$clock" "$handle" "$type" "$body" || return 1
+  done < <(split_agent_messages "$2")
+}
+
+deliver_text() { # subject text attribution — a text opening with a live handle aims at it, "@" optional
+  local word target body
+  word="$(first_word "$2")"
   target="$(live_handle_for "$1" "${word#@}")"
+  if [ -n "$target" ]; then
+    body="${2#"$word"}"
+    "$TEAMUP" ask "$1" --as "$HANDLE" --to "$target" -- "$3${body# }"
+  elif [[ "$word" == @* ]]; then
+    post_to_thread "$1" ":warning: no agent here is called \`${word#@}\` — sent to everyone instead. Live handles: $(agent_handles "$1" | paste -sd, - | sed 's/,/, /g')" || true
+    "$TEAMUP" say "$1" --as "$HANDLE" -- "$3$2"
+  else
+    "$TEAMUP" say "$1" --as "$HANDLE" -- "$3$2"
+  fi
+}
+
+deliver_to_channel() { # subject text author_id author_name
+  local text attribution=""
+  text="$(unescape_slack <<<"$2")"
+  is_bridge_notice "$text" && return 0
+  is_agent_code_block "$text" && { deliver_agent_code_block "$1" "$text"; return; }
   if [ "$3" = "$SLACK_OWNER" ]; then
     touch "$(engaged_file "$1")"
     "$HERE/teamup-focus" on >/dev/null
   else attribution="[slack: $(slack_author_name "$3" "$4")] "; fi
-  if [ -n "$target" ]; then
-    body="${text#"$word"}"
-    "$TEAMUP" ask "$1" --as "$HANDLE" --to "$target" -- "$attribution${body# }"
-  elif [[ "$word" == @* ]]; then
-    post_to_thread "$1" ":warning: no agent here is called \`${word#@}\` — sent to everyone instead. Live handles: $(agent_handles "$1" | paste -sd, - | sed 's/,/, /g')" || true
-    "$TEAMUP" say "$1" --as "$HANDLE" -- "$attribution$text"
-  else
-    "$TEAMUP" say "$1" --as "$HANDLE" -- "$attribution$text"
-  fi
+  deliver_text "$1" "$text" "$attribution"
 }
 
 mirror_channel_to_slack() { # subject
@@ -310,6 +351,8 @@ print_status() {
       printf '  %s — not mirrored\n' "$subject"
   done
 }
+
+[[ "${BASH_SOURCE[0]}" != "$0" ]] && return 0
 
 case "${1:-}" in
   on)      for_each_channel start_mirror "${2:-}" ;;

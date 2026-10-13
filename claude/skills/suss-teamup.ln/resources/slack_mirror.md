@@ -82,10 +82,19 @@ hook, which only fires *between* turns). It joins as a normal member
   keyboard or mouse, the screen stays on an agent at work (resources/tracking_agents.md).
 
 **It cannot loop.** Outbound, `recv` never returns this handle's own lines (`$3!=me`,
-`teamup:234`), so anything injected from Slack can't be posted back. Inbound, every
-message the bridge posts is recorded in `.slack.posted` and skipped on read — needed
-because a user-session token posts as the user, so bridge posts and phone replies share
-one author. Both directions are exact, no heuristics.
+`teamup:234`), so anything injected from Slack can't be posted back. Inbound, a reply that is
+an agent code block is split into its messages and each is looked up in **this machine's**
+`channel.tsv` by seq, clock, handle and type: a match is our own mirror post, dropped. That
+check replaced trusting `.slack.posted` alone, which the poller could read before
+`post_to_thread` had appended to it, so the bridge's own code block came back as a reply from
+the user (a user-session token posts as the user, so bridge posts and phone replies share one
+author). The bridge's own notices (`:warning:`, `:white_check_mark:`, the retire line) are
+dropped the same way. A code block that matches nothing local was mirrored by **another
+machine's** bridge into the same thread (the Coder box and the laptop share one thread per
+channel name): it is delivered, attributed `[{handle}]`, only when it says `@all` or names a
+live local handle; everything else from the other machine stays in Slack. Plain replies are
+delivered as before. `tests/slack_inbound_test.sh` drives all of this against a throwaway
+channel with no Slack.
 
 **Auth is the user's Slack web session** — the same `slack-mcp-xoxc` / `slack-mcp-xoxd`
 keychain items the Slack MCP uses (on Linux, which has no `security`: files of those names
