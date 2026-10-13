@@ -113,4 +113,11 @@ expect_text "other channels keep their thread in the state dir" \
 has_dedicated_slack_channel probe_test && { echo "FAIL throwaway counted as dedicated"; fails=1; } ||
   echo "ok   a throwaway thread is still unfollowed"
 
+mkdir -p "$SUSS_TEAMUP_DIR/gist_test/members"
+printf 'pwd=x\ndoing=probing the gist\n' > "$SUSS_TEAMUP_DIR/gist_test/members/opener.a"
+expect_text "the root falls back to the opener's --doing" "$(thread_root_text gist_test)" "*teamup · gist_test* — probing the gist"
+printf '%s' "$(printf 'é%.0s' {1..300})" > "$SUSS_TEAMUP_DIR/gist_test/.gist"
+gist_root="$(thread_root_text gist_test)"
+expect_text "the root is the --gist, capped at 240 characters" "${gist_root#*— }" "$(printf 'é%.0s' {1..240})"
+
 exit "$fails"

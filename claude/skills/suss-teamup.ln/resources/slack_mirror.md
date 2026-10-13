@@ -158,6 +158,10 @@ routine chatter and agent-to-agent traffic stay in the thread. A throwaway chann
 #suss-throwaway's top level, so a live test can round-trip there.
 `tests/toplevel_posting_test.sh` covers the CLI, both bridge directions and the refusal.
 
+**The thread root** is `*teamup · {subject}* — {gist}`, written once when the thread opens: the
+channel's `join --gist` (the first one given wins, kept in `.gist` in the channel dir), else the
+opening agent's `--doing`, cut at 240 characters.
+
 **Throwaway channels** — `join --throwaway` touches `.slack.throwaway` in the channel dir, and the
 bridge then mirrors into private **#suss-throwaway** (`C0C8PB41Z37`, file `slack-channel.throwaway`)
 instead: agents-only channels (tests, probes) stay out of the user's #suss-teamup. Their thread

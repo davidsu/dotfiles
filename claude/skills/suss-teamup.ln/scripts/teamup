@@ -93,7 +93,7 @@ die() { echo "teamup: $*" >&2; exit 1; }
 usage_text() {
   cat <<'EOF'
 usage:
-  teamup join   <subject> [--as <handle>] [--pwd <path>] [--doing <text>] [--throwaway]  # --as defaults to this session's name; --throwaway: agents-only channel, mirrored to #suss-throwaway
+  teamup join   <subject> [--as <handle>] [--pwd <path>] [--doing <text>] [--gist <text>] [--throwaway]  # --as defaults to this session's name; --throwaway: agents-only channel, mirrored to #suss-throwaway
   teamup rename --as <handle> --to <new>                  # re-key your identity on every channel you're on (after a rename)
   teamup session-name [--session <guid>]                  # the handle this session's name implies; exit 1 if it has no chosen name
   teamup name-command                                     # what the USER types to name this session (/rename on claude, /banner on pi)
@@ -588,7 +588,7 @@ ensure_member() { # subject
 # ---- arg parsing --------------------------------------------------------------
 CMD="${1:-}"; shift || usage
 SUBJECT=""; HANDLE=""; PWD_ARG="$PWD"; DOING=""; TIMEOUT="$DEFAULT_WAIT"; LAST=20; ALL=false; FORCE=false
-TO=""; RE=""; SID=""; THROWAWAY=false; TOP=false
+TO=""; RE=""; SID=""; THROWAWAY=false; TOP=false; GIST=""
 MSG=()
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -596,6 +596,7 @@ while [ $# -gt 0 ]; do
     --pwd)     PWD_ARG="$2"; shift 2 ;;
     --session) SID="$2"; shift 2 ;;
     --doing)   DOING="$2"; shift 2 ;;
+    --gist)    GIST="$2"; shift 2 ;;
     --timeout) TIMEOUT="$2"; shift 2 ;;
     --last)    LAST="$2"; shift 2 ;;
     --to)      TO="$2"; shift 2 ;;
@@ -620,6 +621,7 @@ case "$CMD" in
     require_handle
     mkdir -p "$(mdir "$SUBJECT")"
     $THROWAWAY && touch "$BASE/$SUBJECT/.slack.throwaway"
+    [ -n "$GIST" ] && [ ! -f "$BASE/$SUBJECT/.gist" ] && oneline "$GIST" > "$BASE/$SUBJECT/.gist"
     sid="$(session_guid)"
     member="$(mdir "$SUBJECT")/$HANDLE"
     # A handle owns one cursor file (.cursor.$HANDLE); two live sessions sharing a

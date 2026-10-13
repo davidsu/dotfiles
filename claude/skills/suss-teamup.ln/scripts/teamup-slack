@@ -18,6 +18,7 @@ readonly REPORT_DOWN_AFTER_SECONDS=300
 readonly LATE_REPLY_MARGIN_SECONDS=60
 readonly ADOPTABLE_ROOT_MAX_AGE_SECONDS=86400
 readonly TOP_LEVEL_TAG=" [top]"   # same suffix `teamup --top` writes: this line goes to the channel's top level, not the thread
+readonly GIST_MAX_CHARS=240
 mkdir -p "$THREAD_STATE"
 
 die() { echo "teamup-slack: $*" >&2; exit 1; }
@@ -148,9 +149,14 @@ agent_handles() { # subject
   ls -A "$BASE/$1/members" 2>/dev/null | grep -v "^$HANDLE$"
 }
 
+channel_gist() { # subject — what the channel is for: its --gist, else the opener's --doing
+  cat "$BASE/$1/.gist" 2>/dev/null ||
+    sed -n 's/^doing=//p' "$BASE/$1/members/$(agent_handles "$1" | head -1)" 2>/dev/null
+}
+
 thread_root_text() { # subject
-  printf '%s— reply here and every agent on this channel reads it.\nTo make one agent answer before it can go idle, start your reply with its handle, e.g. `@%s your question`. Live handles: %s\nWho is talking: code blocks are the agents; among replies, David appears bare and anyone else (Claude included) is prefixed `[slack: name]`.' \
-    "$(root_text_prefix "$1")" "$(agent_handles "$1" | head -1)" "$(agent_handles "$1" | paste -sd, - | sed 's/,/, /g')"
+  local gist; gist="$(channel_gist "$1")"
+  printf '%s— %s' "$(root_text_prefix "$1")" "${gist:0:GIST_MAX_CHARS}"
 }
 
 slack_author_name() { # user_id name_from_message
