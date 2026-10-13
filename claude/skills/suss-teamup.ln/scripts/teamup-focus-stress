@@ -2,13 +2,15 @@
 # teamup-focus-stress lifecycle|focus [--skip HANDLE] — stress teamup-focus like a power user.
 #   lifecycle: hammer `on`/`off` the way the user and every Slack bridge at once would; after each
 #     sequence exactly one poller (or none) is alive and the pid file names it. Touches no window.
-#   focus: only while the user is away (exits 2, VOID, the moment they come back). A fresh poller
-#     skipping HANDLE must bring a claude tab back in front from Finder and from Chrome, prefer a
-#     busy tab (a fake agent window it opens), drop that tab once it goes idle or closes, never
-#     pick HANDLE's tab, log no errors, keep acting every tick while windows open and close every
-#     second, let teamup-sleep find and close a tab amid that churn, and do nothing while the
-#     user is active (synthetic input).
-#     Closes every window it opened.
+#   focus: opens windows, so only in a hands-off window David grants (idle ≥ 120 s means not
+#     touching, not away; it still exits 2, VOID, on any input). First, David's check: with Chrome
+#     (its Playwright-group tab) in front, a claude tab is in front within 60 s and stays, both with
+#     a busy tab and with none. Then the 3-minute bound at its worst phase (input timed so a tick
+#     lands just under the 2-minute gate). Then the poller must bring a claude tab back from Finder and from
+#     Chrome, prefer a busy tab (a fake agent window it opens), drop that tab once it goes idle or
+#     closes, never pick HANDLE's tab, log no errors, keep acting every tick while windows open and
+#     close every second, let teamup-sleep close a tab amid that churn, and do nothing while the
+#     user is active (synthetic input). Closes every window it opened.
 # Both end with one poller on, skipping HANDLE. PASS/FAIL per check; exits 1 if any failed.
 set -uo pipefail
 
@@ -117,14 +119,77 @@ is_busy_claude_tab_in_front() { is_claude_tab_in_front && is_busy_title "$(front
 
 is_live_claude_tab_in_front() { is_claude_tab_in_front && [[ "$(front_tab)" != *" $FAKE_AGENT (claude)" ]]; }
 
-expect_front_within_a_tick() { # check predicate
-  local elapsed
-  for ((elapsed = 0; elapsed <= TICK_TIMEOUT_SECONDS; elapsed += CHECK_SECONDS)); do
+expect_front_within_a_tick() { # check predicate [max-seconds]
+  local started=$SECONDS max="${3:-$TICK_TIMEOUT_SECONDS}"
+  while ((SECONDS - started <= max)); do
     void_unless_user_away
-    "$2" && { pass "$1 after ~${elapsed}s: '$(front_tab)'"; return; }
+    "$2" && { pass "$1 after $((SECONDS - started))s (max ${max}s): '$(front_tab)'"; return; }
     sleep "$CHECK_SECONDS"
   done
-  fail "$1: after ${TICK_TIMEOUT_SECONDS}s front is $(front_app) '$(front_tab)'"
+  fail "$1: after ${max}s front is $(front_app) '$(front_tab)'"
+}
+
+expect_terminal_stays() { # check seconds — no tick hands the screen back to another app
+  local started=$SECONDS left_for=""
+  while ((SECONDS - started <= $2)); do
+    void_unless_user_away
+    is_claude_tab_in_front || left_for+="$(date +%T)=$(front_app) "
+    sleep "$CHECK_SECONDS"
+  done
+  [[ -z "$left_for" ]] && pass "$1: a claude tab stayed in front for $2 s" || fail "$1: front left the terminal: $left_for"
+}
+
+non_skipped_busy_tabs() {
+  osascript -e 'tell application "iTerm2" to get name of sessions of tabs of windows' | tr ',' '\n' |
+    rg --no-config '^\s*[◐◓◑◒].*\(claude\)$' | rg --no-config -v " $skip \(claude\)$"
+}
+
+wait_until_no_busy_tab() { # seconds
+  local started=$SECONDS
+  while [[ -n "$(non_skipped_busy_tabs)" ]]; do
+    ((SECONDS - started > $1)) && return 1
+    void_unless_user_away; sleep "$CHECK_SECONDS"
+  done
+}
+
+bring_forward_playwright_tab() { # prints the tab it raised; any Chrome tab when none is in the group
+  osascript <<'OSA'
+on isPlaywrightTab(e)
+  tell application "System Events"
+    try
+      return role of e is "AXRadioButton" and (name of e) contains "Part of group Playwright"
+    on error
+      return false
+    end try
+  end tell
+end isPlaywrightTab
+
+tell application "System Events"
+  repeat with chrome in (processes whose name is "Google Chrome")
+    repeat with w in (windows of chrome)
+      set elements to entire contents of w
+      repeat with e in elements
+        if my isPlaywrightTab(e) then
+          set tabName to name of e
+          perform action "AXPress" of e
+          perform action "AXRaise" of w
+          set frontmost of chrome to true
+          return tabName
+        end if
+      end repeat
+    end repeat
+  end repeat
+end tell
+tell application "Google Chrome" to activate
+return "no Playwright-group tab, Chrome's front window"
+OSA
+}
+
+expect_terminal_takes_over_from_chrome() { # label
+  echo "  [$1] busy non-skipped tabs: $(non_skipped_busy_tabs | paste -sd '|' - | sed 's/^$/none/')"
+  echo "  [$1] raised in Chrome: $(bring_forward_playwright_tab)"
+  expect_front_within_a_tick "DAVID'S CHECK, Chrome → terminal, $1" is_claude_tab_in_front 63
+  expect_terminal_stays "DAVID'S CHECK, terminal stays, $1" 70
 }
 
 bring_forward() { osascript -e "tell application \"$1\" to activate"; }
@@ -194,6 +259,31 @@ synthesize_user_input() { # a zero-distance mouse move: resets HIDIdleTime like 
       $.CGEventGetLocation($.CGEventCreate(null)), 0))' >/dev/null
 }
 
+log_epoch() { date -j -f '%Y-%m-%d %H:%M:%S' "$(cut -c1-19 <<<"$1")" +%s; }
+
+wait_for_new_log_lines() { # count — returns once the poller logged that many more ticks
+  local start; start="$(wc -l < "$LOG_FILE")"
+  until (( $(wc -l < "$LOG_FILE") - start >= $1 )); do void_unless_user_away; sleep 1; done
+}
+
+expect_3_minute_bound_at_worst_phase() { # last input timed so a tick lands just under the gate
+  wait_for_new_log_lines 2
+  local last; last="$(log_epoch "$(tail -1 "$LOG_FILE")")"
+  local period=$(( last - $(log_epoch "$(tail -2 "$LOG_FILE" | head -1)") ))
+  local input_at=$((last + period - AWAY_SECONDS + 1))
+  while ((input_at <= $(date +%s) + 2)); do input_at=$((input_at + period)); done
+  sleep $((input_at - $(date +%s)))
+  synthesize_user_input; input_at="$(date +%s)"; bring_forward Finder
+  while ! is_claude_tab_in_front; do
+    (( $(date +%s) - input_at > 200 )) && break
+    (( $(seconds_since_input) + 3 < $(date +%s) - input_at )) && { echo "VOID: real input during the 3-minute check"; return; }
+    sleep 1
+  done
+  local took=$(( $(date +%s) - input_at ))
+  ((took <= 180)) && pass "3 MIN MAX: tick period ${period}s, a tick at idle ~$((AWAY_SECONDS - 1))s, claude tab in front ${took}s after the last input" \
+    || fail "3 MIN MAX: ${took}s from the last input to a claude tab (period ${period}s)"
+}
+
 expect_no_action_while_user_active() {
   local log_lines; log_lines="$(wc -l < "$LOG_FILE")"
   bring_forward Finder
@@ -226,6 +316,13 @@ run_focus() {
   fake_dir="$(make_fake_claude)"
   log_start="$(wc -l < "$LOG_FILE" 2>/dev/null || echo 0)"
   "$FOCUS" off >/dev/null; "$FOCUS" on --skip "$skip" >/dev/null
+
+  fake_tty="$(open_fake_agent "◐ $FAKE_AGENT")"
+  expect_terminal_takes_over_from_chrome "a busy tab exists"
+  close_fake_agents
+  if wait_until_no_busy_tab 300; then expect_terminal_takes_over_from_chrome "no busy tab"
+  else fail "DAVID'S CHECK, no busy tab: tabs stayed busy for 300 s: $(non_skipped_busy_tabs | paste -sd '|' -)"; fi
+  expect_3_minute_bound_at_worst_phase
 
   bring_forward Finder; expect_front_within_a_tick "from Finder" is_claude_tab_in_front
   bring_forward "Google Chrome"; echo "  chrome front window: $(osascript -e 'tell application "Google Chrome" to title of active tab of front window')"

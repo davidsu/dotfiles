@@ -2,8 +2,11 @@
 # teamup-focus on [--skip HANDLE] | off | status — while the user is away, keep the screen on an
 # agent's terminal. `on` starts one background poller; a second `on` changes nothing, so the user
 # or any lead can run it at any time. Once the Mac has had no keyboard or mouse input for 2
-# minutes, the screen is never more than 3 minutes without a claude iTerm tab in front: every
-# minute, unless a busy one already is, it brings forward the first claude tab whose title shows
+# minutes, the screen is never more than 3 minutes without a claude iTerm tab in front. Worst
+# case, counted from the last input: a tick lands just under the 2-minute gate, the next one acts
+# 55 s later and finishes within its 5 s budget (measured ~1 s), so 120 + 55 + 5 = 180 s. A tick
+# blocked by a hung iTerm (AppleEvent timeout, 2 min) is the one way past it. Every 55 s,
+# unless a busy one already is, it brings forward the first claude tab whose title shows
 # the busy spinner, else the tab of the live claude session that was active most recently
 # (updatedAt in ~/.claude/sessions/*.json), re-selecting it each tick even when it is already in
 # front, a no-op. It never picks Chrome: a Playwright tab keeps its tab
@@ -23,7 +26,8 @@ readonly STALE_LOCK_SECONDS=10
 readonly CLAUDE_SESSIONS_DIR="$HOME/.claude/sessions"
 readonly AWAY_SECONDS=120
 readonly MAX_SECONDS_WITHOUT_WORKING_AGENT=180
-readonly POLL_SECONDS=$((MAX_SECONDS_WITHOUT_WORKING_AGENT - AWAY_SECONDS))
+readonly TICK_BUDGET_SECONDS=5
+readonly POLL_SECONDS=$((MAX_SECONDS_WITHOUT_WORKING_AGENT - AWAY_SECONDS - TICK_BUDGET_SECONDS))
 
 seconds_since_input() { ioreg -c IOHIDSystem | awk '/HIDIdleTime/ { print int($NF / 1000000000); exit }'; }
 
