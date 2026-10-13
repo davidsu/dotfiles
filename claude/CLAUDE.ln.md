@@ -86,6 +86,12 @@ line is 115 characters, the loud header's width. Never more: it must fit on one 
 - Background task / subagent notification: `↪ task: {task name}`, padded the same way
 - Cron / loop tick: `↪ loop: {what it checks}`, padded the same way
 
+## Agent-to-agent messages
+
+Talk to other agents over `/suss-teamup`: David watches those channels (they reach him with the
+header line). Claude Code's native `SendMessage` is not banned, but use it only to tell a peer
+which `/suss-teamup` channel to join, then continue there.
+
 ## Going to sleep
 
 Told to go to sleep → `/suss-teamup sleep`.
