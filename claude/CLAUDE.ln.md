@@ -86,6 +86,10 @@ line is 115 characters, the loud header's width. Never more: it must fit on one 
 - Background task / subagent notification: `↪ task: {task name}`, padded the same way
 - Cron / loop tick: `↪ loop: {what it checks}`, padded the same way
 
+## Going to sleep
+
+Told to go to sleep → `/suss-teamup sleep`.
+
 ## Tools
 
 Prefer tavily mcp to WebSearch tool whenever tavily is available

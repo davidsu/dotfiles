@@ -16,7 +16,7 @@ $S/teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR] [--after HAN
 
 1. **The agent prepares, then says it is ready.** Before it may sleep it must:
    - commit and push everything (code and its task file), and say the commit on the remote
-   - close every browser tab and browser session it opened, and stop any loop or timer it started
+   - close throwaway browser tabs it opened (`browser_tabs close`, `[Welcome]` included; see `/suss-browser`), and stop any loop or timer it started
    - say on the channel `ready to sleep`, with its state in a line or two
 2. **Whoever sleeps it verifies first.** Check the pushed commit and the task file yourself
    (`git log origin/…`, the file on disk). Never take "done" on the agent's word.
