@@ -239,7 +239,7 @@ board alike.
 4. **Link text says what the video shows**, starting with `▶`
 5. **Next to the claim it proves** — like any reference, not in a footer
 6. **Always a thumbnail** — a bare `▶` link reads as text and nobody notices it is a video. `attach` a poster PNG and wrap the link in it: `[![▶ what it shows](poster_url)](video_url)` renders a clickable thumbnail on the board and on GitHub
-7. **The poster shows the proof** — the frame where the claim is visible (`ffmpeg -ss 5 -i v.webm -frames:v 1 poster.png`), with a play button drawn on it, placed so it covers nothing that matters
+7. **The poster shows the proof** — the frame where the claim is visible (`ffmpeg -ss 5 -i v.webm -frames:v 1 poster.png`), left as is: the board draws its own play button, so a drawn one shows twice
 
 ## Markdown Table Alignment
 
