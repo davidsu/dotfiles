@@ -361,7 +361,7 @@ announce_thread_url() { # subject — once per channel, so agents never hunt for
 
 claim_mirror() { # subject — concurrent joins must start exactly one bridge
   local pidfile; pidfile="$(pid_file "$1")"
-  is_mirrored "$1" || rm -f "$pidfile"
+  is_mirrored "$1" || { kill_every_bridge_of "$1"; rm -f "$pidfile"; }
   ( set -o noclobber; echo "$$" > "$pidfile" ) 2>/dev/null || return 1
   [ "$(cat "$pidfile" 2>/dev/null)" = "$$" ]
 }
@@ -378,8 +378,13 @@ start_mirror() { # subject
   echo "mirroring '$1' to Slack (pid $(cat "$(pid_file "$1")")); log: $(log_file "$1")"
 }
 
+kill_every_bridge_of() { # subject — the pidfile names one bridge; an earlier `on` whose pidfile got overwritten left another polling with stale code
+  local pid
+  for pid in $(pgrep -f "teamup-slack __run $1\$" 2>/dev/null); do pkill -P "$pid" 2>/dev/null; kill "$pid" 2>/dev/null; done
+}
+
 stop_mirror() { # subject
-  is_mirrored "$1" && kill "$(cat "$(pid_file "$1")")" 2>/dev/null
+  kill_every_bridge_of "$1"
   rm -f "$(pid_file "$1")"
   "$TEAMUP" leave "$1" --as "$HANDLE" >/dev/null 2>&1 || true
   echo "stopped mirroring '$1'."
