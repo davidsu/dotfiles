@@ -93,8 +93,15 @@ dropped the same way. A code block that matches nothing local was mirrored by **
 machine's** bridge into the same thread (the Coder box and the laptop share one thread per
 channel name): it is delivered, attributed `[{handle}]`, only when it says `@all` or names a
 live local handle; everything else from the other machine stays in Slack. Plain replies are
-delivered as before. `tests/slack_inbound_test.sh` drives all of this against a throwaway
-channel with no Slack.
+delivered as before. Two more rules make the shared thread work across machines: `open_thread`
+first looks for a root younger than a day whose text starts with `*teamup · {subject}* ` among the
+channel's last 200 top-level messages (`conversations.history`, `oldest=`) and adopts it instead of
+posting a new one (older roots are reused channel names and dead threads), relaying
+only replies newer than the adoption (the older ones belong to the machine that opened it) and
+skipping the backfill; and outbound, a reply (`re:#N`, `re #N`, `ack #N`) to a line that arrived
+from another machine (`[handle] …` under the bridge's name) gets `@handle` inserted after the
+`re:#N`, so the other machine's bridge delivers it to its author without anyone typing the handle.
+`tests/slack_inbound_test.sh` drives all of this against a throwaway channel with no Slack.
 
 **Auth is the user's Slack web session** — the same `slack-mcp-xoxc` / `slack-mcp-xoxd`
 keychain items the Slack MCP uses (on Linux, which has no `security`: files of those names

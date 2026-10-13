@@ -44,4 +44,38 @@ deliver_to_channel "$SUBJECT" '``` my own pasted log line 1 line 2 ```' U_OWNER 
 expect_lines "owner's own code block is delivered" 6
 grep -qF $'\tdavid\tsay\t``` my own pasted log' <(last_line) && echo "ok   delivered as a say from david" || { echo "FAIL own block: $(last_line)"; fails=1; }
 
+
+printf '2026-10-13T07:02:00Z\tdavid\task\t@dotfiles.laptop [box.agent] ping-from-box\n' >> "$CHANNEL"
+remote_line=$(wc -l < "$CHANNEL" | tr -d ' ')
+expect_text() { # label got expected
+  [ "$2" = "$3" ] && echo "ok   $1" || { echo "FAIL $1: got [$2]"; fails=1; }
+}
+expect_text "reply to a remote message names its author" \
+  "$(with_reply_crossback "$SUBJECT" "  #9 [07:02:10] dotfiles.laptop (ack) re:#$remote_line pong")" \
+  "  #9 [07:02:10] dotfiles.laptop (ack) re:#$remote_line @box.agent pong"
+expect_text "reply already naming the author is left alone" \
+  "$(with_reply_crossback "$SUBJECT" "  #9 [07:02:10] dotfiles.laptop (say) re #$remote_line @box.agent pong")" \
+  "  #9 [07:02:10] dotfiles.laptop (say) re #$remote_line @box.agent pong"
+expect_text "reply to a local message is left alone" \
+  "$(with_reply_crossback "$SUBJECT" "  #9 [07:02:10] dotfiles.laptop (ack) re:#1 thanks")" \
+  "  #9 [07:02:10] dotfiles.laptop (ack) re:#1 thanks"
+expect_text "non-reply is left alone" \
+  "$(with_reply_crossback "$SUBJECT" "  #9 [07:02:10] dotfiles.laptop (say) plain")" \
+  "  #9 [07:02:10] dotfiles.laptop (say) plain"
+
+SLACK_DESTINATION=C_TEST
+slack_api() { # fake conversations.history: two roots, one for our subject, one for a longer name
+  printf '%s\n' "$*" > "$SUSS_TEAMUP_DIR/last_api_call"
+  printf '{"ok":true,"messages":[{"ts":"1.000000","text":"*teamup · %s* — reply here"},{"ts":"3.000000","text":"*teamup · %s_other* — reply here"},{"ts":"2.000000","text":"*teamup · %s* — reply here"}]}' "$SUBJECT" "$SUBJECT" "$SUBJECT"
+}
+expect_text "existing root for this subject is found (newest)" "$(find_existing_root "$SUBJECT")" "2.000000"
+expect_text "no root for an unknown subject" "$(find_existing_root nothere)" ""
+oldest_asked=$(sed -nE 's/.*oldest=([0-9]+).*/\1/p' "$SUSS_TEAMUP_DIR/last_api_call")
+[ -n "$oldest_asked" ] && (( $(date +%s) - oldest_asked >= 86400 && $(date +%s) - oldest_asked < 86460 )) &&
+  echo "ok   only roots younger than a day are asked for" || { echo "FAIL oldest= not a day ago: [$oldest_asked]"; fails=1; }
+rm -f "$(thread_file "$SUBJECT")" "$(relayed_file "$SUBJECT")"
+open_thread "$SUBJECT"
+expect_text "open_thread adopts the existing root" "$(cat "$(thread_file "$SUBJECT")")" "2.000000"
+[ -s "$(relayed_file "$SUBJECT")" ] && echo "ok   adopted thread relays from now" || { echo "FAIL relayed baseline missing"; fails=1; }
+
 exit "$fails"

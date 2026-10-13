@@ -16,6 +16,7 @@ readonly THREAD_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/slack"
 readonly RETIRE_AFTER_EMPTY_SECONDS=120
 readonly REPORT_DOWN_AFTER_SECONDS=300
 readonly LATE_REPLY_MARGIN_SECONDS=60
+readonly ADOPTABLE_ROOT_MAX_AGE_SECONDS=86400
 mkdir -p "$THREAD_STATE"
 
 die() { echo "teamup-slack: $*" >&2; exit 1; }
@@ -100,13 +101,37 @@ post_code_block() { # subject multiline-text — chunked, or Slack splits the po
   [ -n "$chunk" ] && post_to_thread "$1" "$(as_code_block "$chunk")"
 }
 
-open_thread() { # subject
-  local root; root="$(cat "$(thread_file "$1")" 2>/dev/null || true)"
-  [ -n "$root" ] && return 0
-  root="$(post_thread_root "$(thread_root_text "$1")")"
+root_text_prefix() { printf '*teamup · %s* ' "$1"; }
+
+find_existing_root() { # subject — a thread another machine's bridge opened for this channel name today; older ones are reused names
+  slack_api conversations.history --data-urlencode "channel=$SLACK_DESTINATION" --data-urlencode "limit=200" \
+      --data-urlencode "oldest=$(( $(date +%s) - ADOPTABLE_ROOT_MAX_AGE_SECONDS ))" |
+    jq -r --arg prefix "$(root_text_prefix "$1")" \
+      '[.messages[]? | select(.text | startswith($prefix))] | sort_by(.ts | tonumber) | last | .ts // empty'
+}
+
+start_relaying_from_now() { # subject — an adopted thread's older replies belong to the machine that opened it
+  echo "$(date +%s).000000" >> "$(relayed_file "$1")"
+}
+
+adopt_existing_thread() { # subject
+  local root; root="$(find_existing_root "$1")"
+  [ -n "$root" ] || return 1
+  printf '%s' "$root" > "$(thread_file "$1")"
+  start_relaying_from_now "$1"
+}
+
+open_new_thread() { # subject
+  local root; root="$(post_thread_root "$(thread_root_text "$1")")"
   [ -n "$root" ] || die "could not open a Slack thread for '$1'"
   printf '%s' "$root" > "$(thread_file "$1")"
   unfollow_unless_engaged "$1"
+  post_code_block "$1" "$("$TEAMUP" peek "$1" --last "$BACKFILL_LINES")"
+}
+
+open_thread() { # subject
+  [ -f "$(thread_file "$1")" ] && return 0
+  adopt_existing_thread "$1" || open_new_thread "$1"
 }
 
 unescape_slack() { sed 's/&lt;/</g; s/&gt;/>/g; s/&amp;/\&/g'; }
@@ -116,8 +141,8 @@ agent_handles() { # subject
 }
 
 thread_root_text() { # subject
-  printf '*teamup · %s* — reply here and every agent on this channel reads it.\nTo make one agent answer before it can go idle, start your reply with its handle, e.g. `@%s your question`. Live handles: %s\nWho is talking: code blocks are the agents; among replies, David appears bare and anyone else (Claude included) is prefixed `[slack: name]`.' \
-    "$1" "$(agent_handles "$1" | head -1)" "$(agent_handles "$1" | paste -sd, - | sed 's/,/, /g')"
+  printf '%s— reply here and every agent on this channel reads it.\nTo make one agent answer before it can go idle, start your reply with its handle, e.g. `@%s your question`. Live handles: %s\nWho is talking: code blocks are the agents; among replies, David appears bare and anyone else (Claude included) is prefixed `[slack: name]`.' \
+    "$(root_text_prefix "$1")" "$(agent_handles "$1" | head -1)" "$(agent_handles "$1" | paste -sd, - | sed 's/,/, /g')"
 }
 
 slack_author_name() { # user_id name_from_message
@@ -195,11 +220,25 @@ deliver_to_channel() { # subject text author_id author_name
   deliver_text "$1" "$text" "$attribution"
 }
 
+remote_author_of_line() { # subject seq — the other machine's agent that line N arrived from, if any
+  awk -F'\t' -v seq="$2" -v bridge="$HANDLE" \
+    'NR == seq && $2 == bridge && match($4, /^(@[^ ]+ )?\[[^] ]+\] /) { tag = substr($4, RSTART, RLENGTH); sub(/^(@[^ ]+ )?\[/, "", tag); sub(/\] $/, "", tag); print tag }' \
+    "$BASE/$1/channel.tsv" 2>/dev/null
+}
+
+with_reply_crossback() { # subject recv-line — a reply to another machine's message names its author, so that machine delivers it
+  local seq target
+  seq="$(sed -nE 's/^  #[0-9]+ \[[0-9:]+\] [^ ]+ \([a-z]+\) (re:#|re #|ack #)([0-9]+).*/\2/p' <<<"$2")"
+  target="${seq:+$(remote_author_of_line "$1" "$seq")}"
+  if [ -z "$target" ] || [[ "$2" == *"@$target"* ]]; then printf '%s\n' "$2"; return; fi
+  sed -E "s/((re:#|re #|ack #)$seq)/\1 @$target/" <<<"$2"
+}
+
 mirror_channel_to_slack() { # subject
   local message
   while "$TEAMUP" wait "$1" --as "$HANDLE" --timeout 0 >/dev/null 2>&1; do
     while IFS= read -r message; do
-      post_code_block "$1" "$message"
+      post_code_block "$1" "$(with_reply_crossback "$1" "$message")"
     done < <("$TEAMUP" recv "$1" --as "$HANDLE" | sed 1d | grep '^  #')
   done
 }
@@ -318,10 +357,7 @@ start_mirror() { # subject
   claim_mirror "$1" || { echo "'$1' is already mirrored (pid $(cat "$(pid_file "$1")"))."; return 0; }
   load_slack_session
   "$TEAMUP" join "$1" --as "$HANDLE" --pwd "slack-bridge" --doing "watching from Slack" >/dev/null
-  if [ ! -f "$(thread_file "$1")" ]; then
-    open_thread "$1"
-    post_code_block "$1" "$("$TEAMUP" peek "$1" --last "$BACKFILL_LINES")"
-  fi
+  open_thread "$1"
   announce_thread_url "$1"
   nohup "$0" __run "$1" >> "$(log_file "$1")" 2>&1 &
   echo $! > "$(pid_file "$1")"
