@@ -43,6 +43,9 @@ One file, one line per Slack line:
 - **Link every claim** with a label: no bare URLs in a sentence, no local paths, no code fences.
 - **Sign** with a last line `_agent: <your handle>_`, unless David asks for no signature.
 - **Tag people** only when David asks you to.
+- **Videos go in as files**, never as links: `--image clip.mp4` (any file works) gives Slack's
+  inline player and preview; a link is just text. Use H.264 `.mp4`, named for what it shows (the
+  name is its title).
 
 `check` blocks what breaks the post (fences, paths, bare URLs, a missing signature, a name that
 matches nobody) and notes what is just long.
