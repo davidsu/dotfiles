@@ -1,5 +1,6 @@
 # fag - Search files using ripgrep and fzf, load the selected matches into nvim's quickfix list
-# Usage: fag <search-term>   (CTRL-l selects all matches, then Enter loads them all)
+# Usage: fag <search-term>   (CTRL-l selects all matches, then Enter loads them all;
+#                             CTRL-o opens the URLs on the current line in the browser)
 function fag() {
     local matches tmpfile
 
@@ -12,9 +13,10 @@ function fag() {
             --preview '$HOME/.dotfiles/bin/preview.ts {}' \
             --preview-window 'top:50%:+{2}-/2' \
             --bind 'ctrl-l:select-all' \
+            --bind 'ctrl-o:execute-silent(rg --no-config --only-matching "https?://[^\s<>()\x22\x27\x60]+" <<< {} | xargs open)' \
             --bind 'ctrl-s:toggle-sort' \
             --bind 'ctrl-/:toggle-preview' \
-            --header 'CTRL-l: select-all | CTRL-s: toggle sort | CTRL-/: toggle preview')
+            --header 'CTRL-l: select-all | CTRL-o: open url | CTRL-s: toggle sort | CTRL-/: toggle preview')
 
     [[ -z "$matches" ]] && return
 

@@ -231,7 +231,7 @@ Files that are symlinked use a `.ln` marker in their name (e.g., `zshrc.ln`, `CL
 ### 🎯 Productivity Tools
 
 **🔎 Fuzzy Finder (fzf)**
-- `fag <pattern>` - Search with ripgrep → open in nvim
+- `fag <pattern>` - Search with ripgrep → open in nvim (CTRL-o opens the URLs on the highlighted line)
 - `fa` - File finder with bat preview
 - `mru` / `1m` - Most recently used files
 - `zi` / `jfzf` - Jump to frequent directories
