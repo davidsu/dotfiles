@@ -3,7 +3,8 @@
 // One dialog: type a name, ↑/↓ cycles /color's palette, Enter applies.
 // Both start on the session's current choices (user-chosen name; last /color, else a random pick).
 // An empty or unchanged name applies only the color. Types /rename and /color into the tab (focus-free).
-// Acts on any Claude tab ("… (claude)"): /rename and /color apply immediately even mid-turn. Refuses while
+// Acts on any Claude tab ("… (claude)"), local or a box agent attached over `ssh -t <host> tmux attach -t <session>`
+// (then name and color are read over ssh from the box's session record): /rename and /color apply immediately even mid-turn. Refuses while
 // Claude shows a choice (permission prompt etc.), since the typed Enter would pick its highlighted option.
 // Acts on a Codex tab ("… (codex)") only when idle (no spinner).
 // Both get the iTerm tab color via iterm_tab_style; claude also gets /color.
@@ -47,7 +48,16 @@ const shell = (command) => {
   return app.doShellScript(command);
 };
 
-const pidsOnTty = (session) => shell(`ps -t '${session.tty().replace('/dev/', '')}' -o pid=`).split(/\s+/).filter(Boolean);
+const ttyName = (session) => session.tty().replace('/dev/', '');
+
+const pidsOnTty = (session) => shell(`ps -t '${ttyName(session)}' -o pid=`).split(/\s+/).filter(Boolean);
+
+const REMOTE_ATTACH = /^ssh -t (\S+) tmux attach -t (\S+)/;
+
+const remoteClaudeAttach = (session) => {
+  const attach = shell(`ps -t '${ttyName(session)}' -o command=`).split('\r').map((line) => line.match(REMOTE_ATTACH)).find(Boolean);
+  return attach ? { host: attach[1], tmuxSession: attach[2] } : null;
+};
 
 const readSessionRecord = (pid) => {
   const contents = $.NSString.stringWithContentsOfFileEncodingError(`${SESSIONS_DIR}/${pid}.json`, $.NSUTF8StringEncoding, null);
@@ -59,10 +69,24 @@ const userChosenName = (record) => (record && record.nameSource !== 'derived' &&
 const lastChosenColor = (record) =>
   record ? shell(`grep -oh '"agentColor":"[a-z]*"' ${TRANSCRIPTS_DIR}/*/${record.sessionId}.jsonl 2>/dev/null | tail -1 | cut -d'"' -f4`) : '';
 
-const currentStyle = (session) => {
+const localStyle = (session) => {
   const record = pidsOnTty(session).map(readSessionRecord).find(Boolean);
   return { name: userChosenName(record), color: lastChosenColor(record) };
 };
+
+const REMOTE_STYLE_SCRIPT = (tmuxSession) => `
+  record=$(for f in ~/.claude/sessions/*.json; do jq -r --arg p '${tmuxSession}:' 'select(.tmux // "" | startswith($p)) | [.name // "", .nameSource // "", .sessionId] | @tsv' "$f" 2>/dev/null; done | head -1)
+  [ -n "$record" ] || exit 0
+  id=$(printf '%s' "$record" | cut -f3)
+  color=$(grep -oh '"agentColor":"[a-z]*"' ~/.claude/projects/*/"$id".jsonl 2>/dev/null | tail -1 | cut -d'"' -f4)
+  printf '%s\t%s' "$record" "$color"`;
+
+const remoteStyle = ({ host, tmuxSession }) => {
+  const [name = '', nameSource = '', , color = ''] = shell(`ssh -o BatchMode=yes '${host}' '${REMOTE_STYLE_SCRIPT(tmuxSession).replace(/'/g, "'\\''")}'`).split('\t');
+  return { name: userChosenName({ name, nameSource }), color: color === 'default' ? '' : color };
+};
+
+const currentStyle = (session, remote) => (remote ? remoteStyle(remote) : localStyle(session));
 
 const isIdleCodex = (session) => {
   const title = session.name();
@@ -180,16 +204,18 @@ function run() {
   const iterm = Application('iTerm2');
   const target = iterm.currentWindow().currentSession();
   console.log(`${new Date().toISOString()} invoked on ${JSON.stringify(target.name())}`);
-  if (isClaude(target) && isAwaitingChoice(target)) {
+  const remote = remoteClaudeAttach(target);
+  const claudeTab = isClaude(target) || Boolean(remote);
+  if (claudeTab && isAwaitingChoice(target)) {
     runFocusedModal(showAlert('Claude is waiting on a choice', 'Answer it first: the typed Enter would pick the highlighted option.'));
     return;
   }
-  const applyStyle = isClaude(target) ? styleClaude : isIdleCodex(target) ? styleCodex : null;
+  const applyStyle = claudeTab ? styleClaude : isIdleCodex(target) ? styleCodex : null;
   if (!applyStyle) {
     runFocusedModal(showAlert('Not a Claude or idle Codex session', 'Focus a Claude tab, or a Codex tab waiting at its prompt.'));
     return;
   }
-  const style = promptStyle(currentStyle(target));
+  const style = promptStyle(currentStyle(target, remote));
   iterm.activate();
   if (!style) return;
   applyStyle(target, style);

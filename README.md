@@ -344,6 +344,9 @@ Cmd+Ctrl+R → Name + color the Claude Code or Codex session in the current tab 
 > An empty name sets only the color. Types `/rename` (and, on Claude, `/color`) into the tab. On Claude
 > it works mid-turn too, but refuses while a choice (permission prompt etc.) is on screen, because the
 > typed Enter would pick the highlighted option. Codex tabs (`… (codex)`) must be idle (no spinner).
+> A tab attached to a box agent over `ssh -t <host> tmux attach -t <session>` (susskind's `box attach`) counts
+> as a Claude tab too: its name and last `/color` are read over ssh from the box's `~/.claude/sessions` record and
+> transcript, and the typed `/rename` + `/color` travel down the pty into the remote Claude.
 > Both also get a matching **iTerm tab color** (Codex has no `/color`, so that's its only color), via `bin/iterm_tab_style`
 > (writes iTerm's tab-color escape sequence to the tab's tty).
 > Errors go to `~/Library/Logs/claude_session_style.log`.
