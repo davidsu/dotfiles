@@ -29,3 +29,12 @@ Rules:
 - Use `mcp__playwright-chrome-anon__*` when the task needs a logged-out /
   clean-profile browser (e.g. testing signup or incognito-like behavior).
 - Use Playwright over claude-in-chrome for everything.
+
+Tabs (extension mode, `playwright-chrome`/`playwright-brave`):
+
+- Each connection starts in a `[Welcome]` tab. Make your first call `browser_navigate` so it
+  becomes your tab; `browser_tabs new` first leaves it behind.
+- Close tabs with `browser_tabs close`. `browser_close` leaves the tab open and drops the
+  connection, so the next call opens another `[Welcome]`.
+- Cleanup: don't leave tabs behind by accident. Keeping one open is fine with a reason.
+- `scripts/close-ghost-tabs` closes `[Welcome]` tabs of dead sessions (runs on SessionEnd).

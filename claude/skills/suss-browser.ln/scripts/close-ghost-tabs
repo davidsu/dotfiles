@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+readonly BROWSERS=("Google Chrome" "Brave Browser")
+readonly CONNECT_PAGE="chrome-extension://mmlmfjhmonkocbjadbfplnigmagldckm/connect.html?mcpRelayUrl=ws%3A%2F%2F%5B%3A%3A1%5D%3A"
+
+is_running() { [[ "$(osascript -e "application \"$1\" is running")" == true ]]; }
+
+relay_ports_in() {
+  osascript -e "tell application \"$1\" to get URL of every tab of every window" |
+    tr ',' '\n' | sed 's/^ //' | grep -F "$CONNECT_PAGE" | cut -c$((${#CONNECT_PAGE} + 1))- | cut -d% -f1
+}
+
+is_relay_dead() { ! lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1; }
+
+close_tabs_of_relay() {
+  osascript -e "tell application \"$1\" to repeat with w in windows
+  close (every tab of w whose URL starts with \"$CONNECT_PAGE$2%2F\")
+end repeat"
+  echo "$1: closed ghost tab of dead relay $2"
+}
+
+for browser in "${BROWSERS[@]}"; do
+  is_running "$browser" || continue
+  for port in $(relay_ports_in "$browser"); do
+    is_relay_dead "$port" && close_tabs_of_relay "$browser" "$port"
+  done
+done
