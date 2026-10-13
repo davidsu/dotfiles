@@ -15,11 +15,12 @@ Everything written into a task MUST be correct and verified. Tasks are persisten
 
 ### Status Shebang
 
-Line 1 is the status — nothing else on that line:
+Line 1 is the status — nothing else on that line. Line 2 is the title, starting with the
+epic's emoji ([ORGANIZATION.md](ORGANIZATION.md)):
 
 ```
 open
-# Task title here
+# 🔒 Task title here
 
 ## Summary
 What this task is about...
