@@ -9,6 +9,7 @@
 # iTerm opens the tab at the far right; --after ANCHOR (an iTerm session id or an agent
 # handle) moves it to immediately right of that tab (bin/iterm_tab_move_after). Ghostty ignores it.
 # --background (iTerm only) gives focus back to the tab that had it, so a spawn doesn't steal it.
+# CMD is typed after a ctrl+U, which wipes anything the user typed into the new tab meanwhile.
 set -euo pipefail
 
 dir=""; run=""; app=""; after=""; background=false; resolve_only=false
@@ -91,9 +92,10 @@ on run argv
 	set callerTab to missing value
 	if item 2 of argv is "true" then set callerTab to focusedTab()
 	set theSession to acquireSession()
+	set clearTypeahead to ASCII character 21
 	tell application "iTerm2"
-		tell theSession to write text theRun
 		if callerTab is not missing value then tell callerTab to select
+		tell theSession to write text (clearTypeahead & theRun)
 		return id of theSession
 	end tell
 end run
