@@ -193,12 +193,30 @@ deliver_agent_code_block() { # subject text
   done < <(split_agent_messages "$2")
 }
 
-deliver_text() { # subject text attribution — a text opening with a live handle aims at it, "@" optional
-  local word target body
+is_word_lead() { # word — "lead", any case, "@" and trailing punctuation optional
+  local typed="${1#@}"
+  [ "$(tr '[:upper:]' '[:lower:]' <<<"${typed%[,:;.]}")" = lead ]
+}
+
+lead_handles() { agent_handles "$1" | grep '^lead'; }
+
+ask_each() { # subject handles text
+  local handle
+  while read -r handle; do
+    "$TEAMUP" ask "$1" --as "$HANDLE" --to "$handle" -- "$3" || return 1
+  done <<<"$2"
+}
+
+deliver_text() { # subject text attribution — a text opening with a live handle aims at it, "@" optional; "lead" aims at every lead*
+  local word target body leads
   word="$(first_word "$2")"
+  body="${2#"$word"}"
+  if is_word_lead "$word" && leads="$(lead_handles "$1")"; then
+    ask_each "$1" "$leads" "$3${body# }"
+    return
+  fi
   target="$(live_handle_for "$1" "${word#@}")"
   if [ -n "$target" ]; then
-    body="${2#"$word"}"
     "$TEAMUP" ask "$1" --as "$HANDLE" --to "$target" -- "$3${body# }"
   elif [[ "$word" == @* ]]; then
     post_to_thread "$1" ":warning: no agent here is called \`${word#@}\` — sent to everyone instead. Live handles: $(agent_handles "$1" | paste -sd, - | sed 's/,/, /g')" || true

@@ -72,7 +72,9 @@ hook, which only fires *between* turns). It joins as a normal member
   `lead-7`; the user is often on a phone keyboard), so an aimed reply wakes one agent and trips its Stop hook
   (`asks_for_me=1`) instead of waking the roster. A name no member holds is delivered to
   everyone and answered in the thread with the live handles — aiming at nobody used to
-  become a dangling ask. Aiming is **not privacy**: every message lands on the shared
+  become a dangling ask. A reply opening with the word `lead` (any case, `@` and a trailing
+  `:`/`,` optional) goes as an `ask` to each live `lead*` agent; with no such agent it reads as
+  ordinary text. Aiming is **not privacy**: every message lands on the shared
   channel and all agents read it; it only decides whose idle is blocked.
 - **attribution** — the bridge posts under one handle, so a thread reply from anyone but
   the channel owner is prefixed `[slack: {name}]` (from `bot_profile.name`/`username`,
