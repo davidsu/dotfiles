@@ -32,7 +32,6 @@ goto() {
   cd $(dirname $(realpath $(which $1)))
 }
 
-alias codex='command codex --dangerously-bypass-approvals-and-sandbox'
 # Claude Code
 alias cyolo='claude --dangerously-skip-permissions'
 alias cyc='claude --chrome --dangerously-skip-permissions --mcp-config '\''{"mcpServers":{"playwright-chrome":{"command":"playwright-mcp","args":["--extension"],"env":{"PLAYWRIGHT_MCP_EXTENSION_TOKEN":"'"$PLAYWRIGHT_MCP_EXTENSION_TOKEN"'"}},"playwright-chrome-anon":{"command":"playwright-mcp","args":["--isolated","--browser","chrome"]},"playwright-brave":{"command":"playwright-mcp","args":["--extension","--executable-path","/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"],"env":{"PLAYWRIGHT_MCP_EXTENSION_TOKEN":"'"$PLAYWRIGHT_MCP_EXTENSION_TOKEN_BRAVE"'"}}}}'\'''
@@ -40,7 +39,7 @@ alias cvim='nvim -c "ClaudeConnect"'
 alias findagent='iterm_focus_agent'
 
 # Codex
-alias codex='command codex --dangerously-bypass-approvals-and-sandbox'
+alias codex='command codex --dangerously-bypass-approvals-and-sandbox -c '\''mcp_servers.playwright-chrome.command="playwright-mcp"'\'' -c '\''mcp_servers.playwright-chrome.args=["--extension"]'\'' -c '\''mcp_servers.playwright-chrome.env_vars=["PLAYWRIGHT_MCP_EXTENSION_TOKEN"]'\'''
 
 # Markdown viewer
 alias mdview='nvim --headless -c "MarkdownPreview"'
