@@ -2,7 +2,7 @@
 
 The mirror is the only Slack posting teamup does. A message an agent writes *directly* to a
 Slack channel or thread for people (PR nudges, review replies) is not channel traffic: it
-follows the `suss-slack-post` skill. Channel messages themselves stay plain one-line text.
+follows the `suss-communication` skill. Channel messages themselves stay plain one-line text.
 
 Every channel is mirrored into a **Slack thread automatically** — `join` starts the
 bridge (SKILL.md → Join, `mirror_to_slack_unless_bridge`), so the user can pick a channel up on a
