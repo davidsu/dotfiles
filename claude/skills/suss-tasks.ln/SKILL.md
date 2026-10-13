@@ -17,4 +17,6 @@ Tasks live in the git repo `base44-dev/suss-tasks` (clone: `~/Developer/suss-tas
 
 **Every task gets its own directory with an `epic.md`** — never a single loose `.md` file under `suss-tasks/<project>/`.
 
+**Every epic directory owns one emoji, and every title in it starts with that emoji** (`# 🔒 …`), so the b44sync board tells parallel epics apart. Rules and how to apply it: [ORGANIZATION.md](resources/ORGANIZATION.md).
+
 **CRITICAL**: Read [WRITING.md](resources/WRITING.md) before creating or updating any task file.
