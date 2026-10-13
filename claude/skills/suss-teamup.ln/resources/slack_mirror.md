@@ -124,3 +124,9 @@ Slack refuses to add an agent to an existing DM ("agents can only be added at th
 direct messages"), which is why a self-DM cannot serve. The bridge never creates a
 channel: ad-hoc ones litter a shared workspace and archive rather than delete. One
 channel, one thread per teamup channel, forever.
+
+**A dedicated Slack channel** — a `slack-channel.{subject}` file at the skill root mirrors that
+one teamup channel into its own Slack channel instead, and its thread is never unfollowed.
+Today: teamup `suss-lead` → private **#suss-lead** (`C0C9NE59T24`), the leads' private line to
+the user (`suss-workflows` recipe `lead_role.md`). Repointing a live channel: `off`, move its
+`{subject}.*` thread state aside, `on`.

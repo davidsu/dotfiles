@@ -78,4 +78,14 @@ open_thread "$SUBJECT"
 expect_text "open_thread adopts the existing root" "$(cat "$(thread_file "$SUBJECT")")" "2.000000"
 [ -s "$(relayed_file "$SUBJECT")" ] && echo "ok   adopted thread relays from now" || { echo "FAIL relayed baseline missing"; fails=1; }
 
+expect_text "a channel with its own slack-channel.{subject} mirrors there" \
+  "$(slack_channel_of suss-lead)" "$(cat "$CHANNEL_FILE.suss-lead")"
+expect_text "every other channel mirrors to slack-channel" "$(slack_channel_of "$SUBJECT")" "$(cat "$CHANNEL_FILE")"
+slack_api() { echo "$1" >> "$SUSS_TEAMUP_DIR/unfollow_calls"; }
+unfollow_unless_engaged suss-lead
+[ ! -s "$SUSS_TEAMUP_DIR/unfollow_calls" ] && echo "ok   a dedicated channel's thread is never unfollowed" || { echo "FAIL dedicated thread unfollowed"; fails=1; }
+printf 9.000000 > "$(thread_file never_engaged_test)"
+unfollow_unless_engaged never_engaged_test
+grep -qx subscriptions.thread.remove "$SUSS_TEAMUP_DIR/unfollow_calls" && echo "ok   other threads are still unfollowed" || { echo "FAIL shared thread not unfollowed"; fails=1; }
+
 exit "$fails"

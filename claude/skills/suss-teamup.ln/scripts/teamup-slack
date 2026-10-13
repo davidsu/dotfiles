@@ -38,7 +38,14 @@ slack_api() { # method [curl data args...]
     -H "Cookie: d=$SLACK_COOKIE" --data-urlencode "token=$SLACK_TOKEN" "$@"
 }
 
-load_slack_session() {
+dedicated_channel_file() { printf '%s.%s' "$CHANNEL_FILE" "$1"; }
+has_dedicated_slack_channel() { [ -f "$(dedicated_channel_file "$1")" ]; }
+
+slack_channel_of() { # subject
+  cat "$(dedicated_channel_file "$1")" 2>/dev/null || cat "$CHANNEL_FILE" 2>/dev/null || true
+}
+
+load_slack_session() { # subject
   SLACK_TOKEN="$(keychain_secret slack-mcp-xoxc)"
   SLACK_COOKIE="$(keychain_secret slack-mcp-xoxd)"
   [ -n "$SLACK_TOKEN" ] && [ -n "$SLACK_COOKIE" ] ||
@@ -48,7 +55,7 @@ load_slack_session() {
     die "Slack rejected the session: $(jq -r '.error // "unreachable"' <<<"$identity") — re-copy the xoxc/xoxd tokens into the keychain"
   SLACK_OWNER="$(jq -r '.user_id' <<<"$identity")"
   SLACK_TEAM_URL="$(jq -r '.url' <<<"$identity")"
-  SLACK_DESTINATION="${TEAMUP_SLACK_CHANNEL:-$(cat "$CHANNEL_FILE" 2>/dev/null || true)}"
+  SLACK_DESTINATION="${TEAMUP_SLACK_CHANNEL:-$(slack_channel_of "$1")}"
   [ -n "$SLACK_DESTINATION" ] ||
     SLACK_DESTINATION="$(open_self_dm "$(jq -r '.user_id' <<<"$identity")")"
   [ -n "$SLACK_DESTINATION" ] || die "could not resolve a Slack destination"
@@ -76,7 +83,7 @@ post_to_thread() { # subject text
 }
 
 unfollow_unless_engaged() { # subject
-  [ -f "$(engaged_file "$1")" ] && return 0
+  [ -f "$(engaged_file "$1")" ] || has_dedicated_slack_channel "$1" && return 0
   slack_api subscriptions.thread.remove \
     --data-urlencode "channel=$SLACK_DESTINATION" \
     --data-urlencode "thread_ts=$(cat "$(thread_file "$1")")" >/dev/null
@@ -339,7 +346,7 @@ stop_loops_and_their_listeners() { # an orphaned `teamup wait` keeps the listene
 }
 
 run_bridge() { # subject
-  load_slack_session
+  load_slack_session "$1"
   mirror_channel_to_slack "$1" &
   relay_slack_replies "$1" &
   trap stop_loops_and_their_listeners EXIT TERM INT
@@ -369,7 +376,7 @@ claim_mirror() { # subject — concurrent joins must start exactly one bridge
 start_mirror() { # subject
   [ -d "$BASE/$1" ] || die "no such channel '$1' — teamup channels lists the live ones"
   claim_mirror "$1" || { echo "'$1' is already mirrored (pid $(cat "$(pid_file "$1")"))."; return 0; }
-  load_slack_session
+  load_slack_session "$1"
   "$TEAMUP" join "$1" --as "$HANDLE" --pwd "slack-bridge" --doing "watching from Slack" >/dev/null
   open_thread "$1"
   announce_thread_url "$1"
@@ -412,7 +419,7 @@ print_status() {
 case "${1:-}" in
   on)      for_each_channel start_mirror "${2:-}" ;;
   url)     [ -n "${2:-}" ] || { echo "usage: teamup-slack url <subject>" >&2; exit 2; }
-           load_slack_session; announce_thread_url "$2"; cat "$(url_file "$2")" ;;
+           load_slack_session "$2"; announce_thread_url "$2"; cat "$(url_file "$2")" ;;
   auto)    [ "${TEAMUP_SLACK:-on}" = off ] && exit 0
            is_mirrored "$2" && exit 0
            start_mirror "$2" >/dev/null 2>&1 || true ;;
