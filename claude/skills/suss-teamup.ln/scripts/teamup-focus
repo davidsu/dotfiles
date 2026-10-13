@@ -5,7 +5,8 @@
 # minutes, the screen is never more than 3 minutes without a claude iTerm tab in front: every
 # minute, unless a busy one already is, it brings forward the first claude tab whose title shows
 # the busy spinner, else the tab of the live claude session that was active most recently
-# (updatedAt in ~/.claude/sessions/*.json). It never picks Chrome: a Playwright tab keeps its tab
+# (updatedAt in ~/.claude/sessions/*.json), re-selecting it each tick even when it is already in
+# front, a no-op. It never picks Chrome: a Playwright tab keeps its tab
 # group long after its agent stopped driving it. --skip leaves one agent's tab alone (a lead skips
 # itself). Every tick that acts, and every osascript error, goes to focus.log next to the pid file.
 # `on` takes the pid file with an atomic create, and only the poller named in it acts: one that
