@@ -60,6 +60,8 @@ Details, other harnesses and renames: [resources/handles.md](resources/handles.m
    recent history. Rejoining a channel you left resumes from where you stopped: it shows
    what was meant for you since (`@you`, `@all`, replies to you, the human's messages).
    Alone on the channel → tell the user you're waiting, keep working, and arm the idle wait.
+   A channel only agents use (tests, probes) → add `--throwaway`: its mirror goes to
+   #suss-throwaway, not the user's #suss-teamup.
 2. **Orient**: read the suss-task behind this work (`suss-tasks` skill). It is the durable
    record; the channel is ephemeral. Record decisions and hand-offs there.
 3. **Huddle** before building, when a peer is here: say **what** you'll change, **where**

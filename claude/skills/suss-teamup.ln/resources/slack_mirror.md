@@ -131,3 +131,9 @@ user types at the channel's top level is relayed like a thread reply (so it also
 Today: teamup `suss-lead` → private **#suss-lead** (`C0C9NE59T24`), the leads' private line to
 the user (`suss-workflows` recipe `lead_role.md`). Repointing a live channel: `off`, move its
 `{subject}.*` thread state aside, `on`.
+
+**Throwaway channels** — `join --throwaway` touches `.slack.throwaway` in the channel dir, and the
+bridge then mirrors into private **#suss-throwaway** (`C0C8PB41Z37`, file `slack-channel.throwaway`)
+instead: agents-only channels (tests, probes) stay out of the user's #suss-teamup. Their thread
+state lives in the channel dir, not `~/.local/state`, so `erase` (or a reboot clearing `/tmp`)
+removes it and a later channel of the same name, throwaway or not, opens a fresh thread.

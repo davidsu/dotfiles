@@ -21,11 +21,17 @@ mkdir -p "$THREAD_STATE"
 
 die() { echo "teamup-slack: $*" >&2; exit 1; }
 
-thread_file() { printf '%s/%s.thread' "$THREAD_STATE" "$1"; }
-posted_file() { printf '%s/%s.posted' "$THREAD_STATE" "$1"; }
-relayed_file() { printf '%s/%s.relayed' "$THREAD_STATE" "$1"; }
-engaged_file() { printf '%s/%s.engaged' "$THREAD_STATE" "$1"; }
-url_file() { printf '%s/%s.url' "$THREAD_STATE" "$1"; }
+is_throwaway() { [ -f "$BASE/$1/.slack.throwaway" ]; }
+
+thread_state_dir() { # subject — a throwaway channel's thread dies with the channel
+  is_throwaway "$1" && printf '%s/%s' "$BASE" "$1" || printf '%s' "$THREAD_STATE"
+}
+
+thread_file() { printf '%s/%s.thread' "$(thread_state_dir "$1")" "$1"; }
+posted_file() { printf '%s/%s.posted' "$(thread_state_dir "$1")" "$1"; }
+relayed_file() { printf '%s/%s.relayed' "$(thread_state_dir "$1")" "$1"; }
+engaged_file() { printf '%s/%s.engaged' "$(thread_state_dir "$1")" "$1"; }
+url_file() { printf '%s/%s.url' "$(thread_state_dir "$1")" "$1"; }
 pid_file() { printf '%s/%s/.slack.pid' "$BASE" "$1"; }
 log_file() { printf '%s/%s/.slack.log' "$BASE" "$1"; }
 broken_file() { printf '%s/%s/.slack.broken' "$BASE" "$1"; }
@@ -39,10 +45,11 @@ slack_api() { # method [curl data args...]
 }
 
 dedicated_channel_file() { printf '%s.%s' "$CHANNEL_FILE" "$1"; }
-has_dedicated_slack_channel() { [ -f "$(dedicated_channel_file "$1")" ]; }
+has_dedicated_slack_channel() { ! is_throwaway "$1" && [ -f "$(dedicated_channel_file "$1")" ]; }
+slack_route_of() { is_throwaway "$1" && echo throwaway || echo "$1"; }
 
 slack_channel_of() { # subject
-  cat "$(dedicated_channel_file "$1")" 2>/dev/null || cat "$CHANNEL_FILE" 2>/dev/null || true
+  cat "$(dedicated_channel_file "$(slack_route_of "$1")")" 2>/dev/null || cat "$CHANNEL_FILE" 2>/dev/null || true
 }
 
 load_slack_session() { # subject

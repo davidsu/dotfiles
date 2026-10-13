@@ -103,4 +103,14 @@ deliver_to_channel() { echo "$2" >> "$SUSS_TEAMUP_DIR/delivered"; }
 deliver_unseen_replies never_engaged_test 1.0 "$merged"
 expect_text "join notices are not delivered" "$(paste -sd, - < "$SUSS_TEAMUP_DIR/delivered")" "in thread,top level"
 
+mkdir -p "$SUSS_TEAMUP_DIR/probe_test" && touch "$SUSS_TEAMUP_DIR/probe_test/.slack.throwaway"
+expect_text "a throwaway channel mirrors to slack-channel.throwaway" \
+  "$(slack_channel_of probe_test)" "$(cat "$CHANNEL_FILE.throwaway")"
+expect_text "a throwaway channel keeps its thread in the channel dir" \
+  "$(thread_file probe_test)" "$SUSS_TEAMUP_DIR/probe_test/probe_test.thread"
+expect_text "other channels keep their thread in the state dir" \
+  "$(thread_file "$SUBJECT")" "$THREAD_STATE/$SUBJECT.thread"
+has_dedicated_slack_channel probe_test && { echo "FAIL throwaway counted as dedicated"; fails=1; } ||
+  echo "ok   a throwaway thread is still unfollowed and reads only its thread"
+
 exit "$fails"
