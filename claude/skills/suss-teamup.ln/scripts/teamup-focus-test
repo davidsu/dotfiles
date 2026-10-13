@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# teamup-focus-test — black-box test of the running teamup-focus poller. Run it only while the user
+# is away (no input for 2 min; it exits 2, VOID, otherwise or the moment they come back). It puts
+# Finder in front and PASSes only if a claude iTerm tab comes to the front within one poll period.
+# Prove it can fail: `teamup-focus off; teamup-focus-test` must print FAIL.
+set -uo pipefail
+
+readonly AWAY_SECONDS=120
+readonly TIMEOUT_SECONDS=75
+readonly CHECK_SECONDS=5
+
+seconds_since_input() { ioreg -c IOHIDSystem | awk '/HIDIdleTime/ { print int($NF / 1000000000); exit }'; }
+
+void_unless_user_away() {
+  local idle; idle="$(seconds_since_input)"
+  [[ "$idle" -ge "$AWAY_SECONDS" ]] && return
+  echo "VOID: the user is at the Mac (idle ${idle}s < ${AWAY_SECONDS}s); rerun while they are away"
+  exit 2
+}
+
+front_app() { osascript -e 'tell application "System Events" to name of first process whose frontmost is true'; }
+
+front_iterm_tab() { osascript -e 'tell application "iTerm2" to name of current session of current window'; }
+
+busy_claude_tabs() {
+  osascript -e 'tell application "iTerm2" to get name of sessions of tabs of windows' |
+    tr ',' '\n' | rg --no-config '^\s*[◐◓◑◒].*\(claude\)$' | paste -sd '|' -
+}
+
+void_unless_user_away
+echo "poller: $("$(dirname "$0")/teamup-focus" status)"
+busy_at_start="$(busy_claude_tabs)"
+echo "busy claude tabs at start: ${busy_at_start:-none}"
+osascript -e 'tell application "Finder" to activate'
+echo "front at start: $(front_app)"
+
+for ((elapsed = 0; elapsed <= TIMEOUT_SECONDS; elapsed += CHECK_SECONDS)); do
+  void_unless_user_away
+  if [[ "$(front_app)" == iTerm2 ]] && [[ "$(front_iterm_tab)" == *"(claude)" ]]; then
+    echo "PASS after ~${elapsed}s: front is iTerm2 tab '$(front_iterm_tab)'"
+    exit 0
+  fi
+  sleep "$CHECK_SECONDS"
+done
+echo "FAIL: after ${TIMEOUT_SECONDS}s the front is still '$(front_app)', not a claude iTerm tab"
+exit 1

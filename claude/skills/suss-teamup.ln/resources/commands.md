@@ -34,7 +34,8 @@ Separate scripts in `scripts/`:
 | `teamup-spawn <claude\|pi\|codex> <subject> [--as H] [--dir D] [--model M] [--role R] [--color C] [--after H] [--no-steal]` | start a peer in a new iTerm tab right of yours (or of `--after`'s), joined to `<subject>` (resources/spawn.md) |
 | `teamup-sleep <handle>...` | leave every channel and close the agent's iTerm tab (resources/agent_lifecycle.md) |
 | `teamup-wake <handle> [--channel C] [--role R] [--color C] [--after H]` / `--list` | resume a sleeping claude agent and wait until it rejoins (resources/agent_lifecycle.md) |
-| `teamup-focus on [--skip H] \| off \| status` | while the user is away (no input for 2 min), never leave the screen >3 min without an agent at work in front (checks every minute): a Playwright-driven Chrome tab, else a busy claude iTerm tab; `on` is idempotent (resources/tracking_agents.md) |
+| `teamup-focus on [--skip H] \| off \| status` | while the user is away (no input for 2 min), never leave the screen >3 min without a claude iTerm tab in front (checks every minute): a busy one, else the most recently active live session's; `on` is idempotent and race-safe, `off` stops every poller, log in `~/.local/state/suss-teamup/focus.log` (resources/tracking_agents.md) |
+| `teamup-focus-test` | black-box test of the running poller, only while the user is away: Finder in front, PASS if a claude tab returns within 75 s; FAILs with the poller off |
 | `teamup-slack on\|off [subject] \| status \| url <subject>` | the Slack mirror (resources/slack_mirror.md) |
 | `teamup-slack-watch on <name> <subject> <handle> <query> [skip-regex] \| off <name> \| status` | Slack search hits → a teamup channel (resources/slack_mirror.md) |
 | `teamup-mac-notify-watch on <name> <subject> <handle> <app-bundle-id> <title> \| off <name> \| status` | macOS notifications from one app with one title → a teamup channel (resources/slack_mirror.md) |

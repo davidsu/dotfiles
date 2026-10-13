@@ -92,7 +92,7 @@ hook, which only fires *between* turns). It joins as a normal member
   else `users.info`). Without it, @Claude's replies arrived on the channel as the user's.
 - **focus** — a reply from the channel owner means the user is away from the Mac, so the
   bridge runs `teamup-focus on` (idempotent): from then on, while no one touches the
-  keyboard or mouse, the screen stays on an agent at work (resources/tracking_agents.md).
+  keyboard or mouse, the screen stays on an agent's terminal (resources/tracking_agents.md).
 
 **It cannot loop.** Outbound, `recv` never returns this handle's own lines (`$3!=me`,
 `teamup:234`), so anything injected from Slack can't be posted back. Inbound, a reply that is

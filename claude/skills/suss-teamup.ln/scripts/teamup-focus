@@ -1,30 +1,50 @@
 #!/usr/bin/env bash
 # teamup-focus on [--skip HANDLE] | off | status — while the user is away, keep the screen on an
-# agent at work. `on` starts one background poller; a second `on` changes nothing, so the user or
-# any lead can run it at any time. Once the Mac has had no keyboard or mouse input for 2 minutes,
-# the screen is never more than 3 minutes without an agent at work in front: every minute, unless
-# one already is, it brings forward a Chrome tab an agent drives (Playwright puts those in its
-# "Playwright · claude-code" tab group), else the first iTerm tab whose title shows claude's busy
-# spinner. --skip leaves one agent's iTerm tab alone (a lead skips itself).
+# agent's terminal. `on` starts one background poller; a second `on` changes nothing, so the user
+# or any lead can run it at any time. Once the Mac has had no keyboard or mouse input for 2
+# minutes, the screen is never more than 3 minutes without a claude iTerm tab in front: every
+# minute, unless a busy one already is, it brings forward the first claude tab whose title shows
+# the busy spinner, else the tab of the live claude session that was active most recently
+# (updatedAt in ~/.claude/sessions/*.json), re-selecting it each tick even when it is already in
+# front, a no-op. It never picks Chrome: a Playwright tab keeps its tab
+# group long after its agent stopped driving it. --skip leaves one agent's tab alone (a lead skips
+# itself). Every tick that acts, and every osascript error, goes to focus.log next to the pid file.
+# `on` takes the pid file with an atomic create, and only the poller named in it acts: one that
+# still lost a race between two `on`s quits on its next tick. `off` stops every poller.
 set -uo pipefail
 
-readonly PID_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/focus.pid"
+readonly STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup"
+readonly PID_FILE="$STATE_DIR/focus.pid"
+readonly LOG_FILE="$STATE_DIR/focus.log"
+readonly CLAUDE_SESSIONS_DIR="$HOME/.claude/sessions"
 readonly AWAY_SECONDS=120
 readonly MAX_SECONDS_WITHOUT_WORKING_AGENT=180
 readonly POLL_SECONDS=$((MAX_SECONDS_WITHOUT_WORKING_AGENT - AWAY_SECONDS))
 
 seconds_since_input() { ioreg -c IOHIDSystem | awk '/HIDIdleTime/ { print int($NF / 1000000000); exit }'; }
 
-is_user_away() { [ "$(seconds_since_input)" -ge "$AWAY_SECONDS" ]; }
+is_user_away() { [[ "$(seconds_since_input)" -ge "$AWAY_SECONDS" ]]; }
+
+is_alive() { kill -0 "$1" 2>/dev/null; }
 
 running_poller() { # prints its pid
   local pid; pid="$(cat "$PID_FILE" 2>/dev/null)"
-  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && echo "$pid"
+  [[ -n "$pid" ]] && is_alive "$pid" && echo "$pid"
 }
 
-focus_working_agent() { # skipped handle, may be empty
-  osascript - "$1" <<'OSA' >/dev/null 2>&1
-property drivenTab : "Part of group Playwright"
+agents_most_recent_first() { # skipped handle; prints one live session name per line
+  local session
+  for session in "$CLAUDE_SESSIONS_DIR"/*.json; do
+    jq -r --arg skipped "$1" \
+      'select(.name and .name != $skipped) | "\(.updatedAt // 0) \(.pid) \(.name)"' "$session" 2>/dev/null
+  done | sort -rn | while read -r _ pid name; do is_alive "$pid" && echo "$name"; done
+}
+
+focus_agent_terminal() { # skipped handle
+  osascript - "$1" "$(agents_most_recent_first "$1")" <<'OSA'
+on agentTitleSuffix(handle)
+  return " " & handle & " (claude)"
+end agentTitleSuffix
 
 on isBusy(tabName)
   repeat with glyph in {"◐", "◓", "◑", "◒"}
@@ -33,92 +53,89 @@ on isBusy(tabName)
   return false
 end isBusy
 
-on isWorkingAgentInFront()
-  tell application "System Events" to set frontApp to first process whose frontmost is true
-  tell application "System Events" to set frontName to name of frontApp
-  if frontName is "iTerm2" then
-    tell application "iTerm2" to return my isBusy(name of current session of current window)
-  end if
-  if frontName is "Google Chrome" then
-    tell application "System Events" to return (name of window 1 of frontApp) contains drivenTab
-  end if
-  return false
-end isWorkingAgentInFront
+on isBusyAgentInFront()
+  tell application "System Events" to set frontName to name of first process whose frontmost is true
+  if frontName is not "iTerm2" then return false
+  tell application "iTerm2" to return my isBusy(name of current session of current window)
+end isBusyAgentInFront
 
-on focusDrivenChromeTab()
-  tell application "System Events"
-    repeat with chrome in (processes whose name is "Google Chrome")
-      repeat with w in (windows of chrome)
-        set tabElements to entire contents of w
-        repeat with e in tabElements
-          try
-            if role of e is "AXRadioButton" then
-              if (name of e) contains drivenTab then
-                perform action "AXPress" of e
-                perform action "AXRaise" of w
-                set frontmost of chrome to true
-                return true
-              end if
-            end if
-          end try
-        end repeat
-      end repeat
-    end repeat
-  end tell
-  return false
-end focusDrivenChromeTab
+on isWanted(tabName, wantedSuffix, skippedSuffix)
+  if wantedSuffix is "" then return my isBusy(tabName) and tabName does not end with skippedSuffix
+  return tabName ends with wantedSuffix
+end isWanted
 
-on focusBusyItermTab(skipped)
+on focusFirstTab(wantedSuffix, skippedSuffix)
   tell application "iTerm2"
     repeat with w in windows
       repeat with t in tabs of w
         repeat with s in sessions of t
           set tabName to name of s
-          if my isBusy(tabName) and tabName does not end with skipped then
+          if my isWanted(tabName, wantedSuffix, skippedSuffix) then
             activate
             select w
             tell t to select
             tell s to select
-            return
+            return tabName
           end if
         end repeat
       end repeat
     end repeat
   end tell
-end focusBusyItermTab
+  return ""
+end focusFirstTab
 
 on run argv
-  if isWorkingAgentInFront() then return
-  if focusDrivenChromeTab() then return
-  focusBusyItermTab(" " & (item 1 of argv) & " (claude)")
+  if isBusyAgentInFront() then return ""
+  set skippedSuffix to agentTitleSuffix(item 1 of argv)
+  set wantedSuffixes to {""}
+  repeat with handle in paragraphs of (item 2 of argv)
+    if handle as text is not "" then set end of wantedSuffixes to agentTitleSuffix(handle as text)
+  end repeat
+  repeat with wantedSuffix in wantedSuffixes
+    set focusedTab to focusFirstTab(wantedSuffix as text, skippedSuffix)
+    if focusedTab is not "" then return "focused " & focusedTab
+  end repeat
+  return "no claude tab to focus"
 end run
 OSA
 }
 
+log_line() { while read -r line; do [[ -n "$line" ]] && echo "$(date '+%F %T') $line"; done >> "$LOG_FILE"; }
+
+is_the_one_poller() { [[ "$(cat "$PID_FILE" 2>/dev/null)" == "$$" ]]; }
+
 poll() { # skipped handle
-  while true; do
-    is_user_away && focus_working_agent "$1"
-    sleep "$POLL_SECONDS"
+  while sleep "$POLL_SECONDS" && is_the_one_poller; do
+    is_user_away && focus_agent_terminal "$1" 2>&1 | log_line
   done
 }
+
+claim_pid_file() { (set -o noclobber; echo "$1" > "$PID_FILE") 2>/dev/null; }
+
+remove_stale_pid_file() { running_poller >/dev/null || rm -f "$PID_FILE"; }
 
 turn_on() { # skipped handle
   local pid
   pid="$(running_poller)" && { echo "teamup-focus: already on (pid $pid)"; return; }
-  mkdir -p "$(dirname "$PID_FILE")"
+  mkdir -p "$STATE_DIR"
   nohup "$0" __poll "$1" >/dev/null 2>&1 &
-  echo $! > "$PID_FILE"
-  echo "teamup-focus: on (pid $!)${1:+, skipping $1}"
+  pid=$!
+  claim_pid_file "$pid" || { remove_stale_pid_file; claim_pid_file "$pid"; } || {
+    kill "$pid"; wait "$pid" 2>/dev/null
+    echo "teamup-focus: already on (pid $(running_poller))"; return
+  }
+  echo "teamup-focus: on (pid $pid)${1:+, skipping $1}, log $LOG_FILE"
 }
 
 turn_off() {
-  local pid
-  pid="$(running_poller)" || { echo "teamup-focus: already off"; return; }
-  kill "$pid" && rm -f "$PID_FILE" && echo "teamup-focus: off"
+  local count; count="$(pgrep -f "teamup-focus __poll" | wc -l | tr -d ' ')"
+  rm -f "$PID_FILE"
+  pkill -f "teamup-focus __poll"
+  echo "teamup-focus: off (stopped $count poller(s))"
 }
 
 case "${1:-}" in
-  on)     if [ "${2:-}" = --skip ]; then turn_on "${3:-}"; else turn_on ""; fi ;;
+  on)     if [[ "${2:-}" = --skip ]]; then turn_on "${3:-}"; else turn_on ""; fi ;;
   off)    turn_off ;;
   status) pid="$(running_poller)" && echo "teamup-focus: on (pid $pid)" || echo "teamup-focus: off" ;;
   __poll) poll "${2:-}" ;;
