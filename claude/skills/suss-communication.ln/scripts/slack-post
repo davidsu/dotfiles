@@ -8,7 +8,7 @@ import urllib.request
 from pathlib import Path
 
 from slack_draft import Draft, as_mrkdwn, as_plain, length_notes, lint, preview, read_draft, rich_text_blocks
-from slack_session import slack_api
+from slack_session import SlackError, slack_api
 
 LATE_PREVIEW_SECONDS = 5
 FILE_SHARE_POLLS = 20
@@ -28,13 +28,13 @@ def upload_image(image: str) -> str:
     return upload["file_id"]
 
 
-def post_with_images(draft: Draft, channel: str, thread: str | None, images: list[str]) -> str:
+def share_images(draft: Draft, channel: str, thread: str | None, images: list[str]) -> str:
     file_ids = [upload_image(image) for image in images]
     thread_field = {"thread_ts": thread} if thread else {}
     files = [{"id": file_id, "title": Path(image).stem} for file_id, image in zip(file_ids, images)]
     slack_api("files.completeUploadExternal", files=json.dumps(files),
               channel_id=channel, initial_comment="\n".join(map(as_mrkdwn, draft.lines)), **thread_field)
-    return find_message_with_file(channel, thread, file_ids[0])["ts"]
+    return file_ids[0]
 
 
 def fetch_message(channel: str, thread: str | None, ts: str) -> dict:
@@ -51,7 +51,7 @@ def find_message_with_file(channel: str, thread: str | None, file_id: str) -> di
         shared = [m for m in history["messages"] if any(f["id"] == file_id for f in m.get("files", []))]
         if shared:
             return shared[-1]
-    sys.exit(f"slack-post: uploaded {file_id}, but no message shows it after {FILE_SHARE_POLLS}s")
+    raise SlackError(f"uploaded {file_id}, but no message shows it after {FILE_SHARE_POLLS}s")
 
 
 def update_message(draft: Draft, channel: str, thread: str | None, ts: str) -> str:
@@ -109,18 +109,35 @@ def cmd_check(args):
     sys.exit(1 if problems else 0)
 
 
+def write_message(draft: Draft, args) -> str:
+    if args.update:
+        return update_message(draft, args.channel, args.thread, args.update)
+    if args.image:
+        return share_images(draft, args.channel, args.thread, args.image)
+    return post_text(draft, args.channel, args.thread)
+
+
+def locate_message(args, written: str) -> str:
+    return find_message_with_file(args.channel, args.thread, written)["ts"] if args.image else written
+
+
 def cmd_send(args):
     draft = read_draft(args.draft)
     problems = lint(draft, is_signed=not args.unsigned)
     if problems and not args.force:
         sys.exit("slack-post: fix the draft first (or pass --force):\n" + "\n".join(problems))
-    if args.update:
-        ts = update_message(draft, args.channel, args.thread, args.update)
-    elif args.image:
-        ts = post_with_images(draft, args.channel, args.thread, args.image)
-    else:
-        ts = post_text(draft, args.channel, args.thread)
-    problems = verify(draft, args.channel, args.thread, ts)
+    action = "edit" if args.update else "post"
+    try:
+        written = write_message(draft, args)
+    except SlackError as err:
+        outcome = "may or may not have gone through: check Slack before resending" if err.is_outcome_unknown \
+            else "did NOT go through; nothing changed in Slack"
+        sys.exit(f"slack-post: {err}\nslack-post: the {action} {outcome}")
+    try:
+        problems = verify(draft, args.channel, args.thread, locate_message(args, written))
+    except SlackError as err:
+        sys.exit(f"slack-post: {err}\nslack-post: the {action} ALREADY WENT THROUGH "
+                 f"({'file' if args.image else 'ts'} {written}): do not resend it; check it in Slack")
     print("\n".join(f"verify: {problem}" for problem in problems) or "verify: ok")
     sys.exit(1 if problems else 0)
 
@@ -155,4 +172,7 @@ def build_parser():
 
 if __name__ == "__main__":
     parsed = build_parser().parse_args()
-    parsed.func(parsed)
+    try:
+        parsed.func(parsed)
+    except SlackError as err:
+        sys.exit(f"slack-post: {err}")

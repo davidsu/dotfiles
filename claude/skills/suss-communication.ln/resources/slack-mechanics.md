@@ -11,6 +11,10 @@ Auth: David's Slack web session from the keychain, `slack-mcp-xoxc` (token) and 
 | Read back   | 5s later: `conversations.replies` (or `.history`); delete previews with `chat.deleteAttachment`; compare link and @tag counts with the draft |
 | @tags       | `users.list` once per run; a name must match exactly one user                          |
 
+Errors: every call retries an HTTP 429 up to 3 times when `Retry-After` is ≤30s. Any other
+failure names the method and the HTTP status, and `send` says whether the post/edit already went
+through. If it says ALREADY WENT THROUGH, don't resend; fix it with `--update TS`.
+
 Traps:
 
 - A text-only `chat.update` escapes links (`<url|label>` shows literally) and still returns `ok`.
