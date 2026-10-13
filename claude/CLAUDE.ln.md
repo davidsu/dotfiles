@@ -58,6 +58,12 @@ David in one line what broke and suggest spawning an agent in the skill's repo (
 skill dir in `~/.claude/skills/`) to fix it with him. Don't fix it yourself mid-task, and don't
 raise it for style nits.
 
+## Personal repos: dotfiles, suss-tasks
+
+They are David's own. Never open a PR there: commit and push straight to the branch the machine
+owns (`master` on the Mac, `linux` on the Coder box); suss-tasks goes through its `bin/sync`
+(David, 2026-10-13: "Don't PR to dotfiles. Just push. Dotfiles is personal, mine, it's different").
+
 ## Commit signature
 
 End every commit message with a last line `agent: <your handle>` (your session name), the same
