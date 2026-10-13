@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 
 import { execSync, spawn } from 'child_process'
+import { existsSync } from 'fs'
 import path from 'path'
 import { log } from './logging'
 import { hasCommand } from './system'
@@ -103,6 +104,10 @@ function getAppPathsFromCask(caskName: string) {
     return []
   }
 }
+
+const isCaskAppPresent = (caskName: string) => getAppPathsFromCask(caskName).some((appPath) => existsSync(appPath))
+
+const isCaskInstalled = (caskName: string) => isInstalled(caskName, 'cask') || isCaskAppPresent(caskName)
 
 function removeQuarantineFromCask(caskName: string) {
   for (const appPath of getAppPathsFromCask(caskName)) {
@@ -262,7 +267,8 @@ async function batchInstall(packages: string[], brewType: BrewType) {
   if (packages.length === 0) return
 
   const installed = listInstalled(brewType)
-  const toInstall = packages.filter((pkg) => !installed.has(pkg))
+  const isAlreadyInstalled = (pkg: string) => installed.has(pkg) || (brewType === 'cask' && isCaskAppPresent(pkg))
+  const toInstall = packages.filter((pkg) => !isAlreadyInstalled(pkg))
   const skipped = packages.length - toInstall.length
 
   if (skipped > 0) {
@@ -319,7 +325,7 @@ function verifyTool(name: string, tool: Tool): boolean {
     if (tool.install_type !== 'native') {
       const brewType = tool.brew_type || 'formula'
       if (brewType === 'cask') {
-        return isInstalled(name, 'cask')
+        return isCaskInstalled(name)
       }
     }
     return false

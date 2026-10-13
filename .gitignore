@@ -26,3 +26,6 @@ suss-tasks.pre_git_backup/
 
 __pycache__/
 .playwright-mcp/
+
+# higgsfield CLI runtime config + credentials (created by the CLI)
+config.ln/higgsfield/
