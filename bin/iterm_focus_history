@@ -1,0 +1,109 @@
+#!/usr/bin/env -S uv run --quiet --with iterm2 python
+# iterm_focus_history — browser-style back/forward over the iTerm sessions (tabs and panes) you focus.
+# SIGUSR1 steps back, SIGUSR2 forward; Karabiner sends them on cmd+[ / cmd+] while iTerm is frontmost,
+# reading PID_FILE (the Python API's keystroke monitor never saw cmd+[). A session focused for
+# under MIN_DWELL_SECONDS (a tab an agent spawn flashed up) is left out, so one cmd+[ returns you to
+# where you actually were. launchd keeps it running (launchd/com.davidsu.iterm-focus-history.ln.plist);
+# it waits for iTerm and exits when iTerm quits. Needs Settings → General → Magic → Enable Python API.
+import asyncio
+import os
+import signal
+import time
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import iterm2
+
+MIN_DWELL_SECONDS = 1.0
+BACK = -1
+FORWARD = 1
+SIGNAL_DIRECTIONS = {signal.SIGUSR1: BACK, signal.SIGUSR2: FORWARD}
+PID_FILE = Path.home() / ".local/state/iterm-focus-history.pid"
+
+
+@dataclass
+class Visit:
+    session_id: str
+    entered_at: float
+
+    def is_transient(self):
+        return time.monotonic() - self.entered_at < MIN_DWELL_SECONDS
+
+
+@dataclass
+class FocusHistory:
+    visits: list[Visit] = field(default_factory=list)
+    index: int = -1
+
+    def current_session_id(self):
+        return self.visits[self.index].session_id if self.visits else None
+
+    def record(self, session_id):
+        if session_id == self.current_session_id():
+            return
+        del self.visits[self.index + 1 :]
+        if self.visits and self.visits[-1].is_transient():
+            self.visits.pop()
+        if not self.visits or self.visits[-1].session_id != session_id:
+            self.visits.append(Visit(session_id, time.monotonic()))
+        self.index = len(self.visits) - 1
+
+    def forget_closed(self, open_session_ids):
+        current = self.visits[self.index] if self.visits else None
+        self.visits = [visit for visit in self.visits if visit.session_id in open_session_ids]
+        self.index = self.visits.index(current) if current in self.visits else len(self.visits) - 1
+
+    def step(self, direction):
+        target = self.index + direction
+        while 0 <= target < len(self.visits) and self.visits[target].session_id == self.current_session_id():
+            target += direction
+        if not 0 <= target < len(self.visits):
+            return None
+        self.index = target
+        self.visits[target].entered_at = time.monotonic()
+        return self.visits[target].session_id
+
+
+def _focused_session_id(app):
+    window = app.current_terminal_window
+    return window and window.current_tab and window.current_tab.current_session.session_id
+
+
+def _open_session_ids(app):
+    return {session.session_id for window in app.terminal_windows for tab in window.tabs for session in tab.sessions}
+
+
+async def _record_focus_changes(connection, app, history):
+    async with iterm2.FocusMonitor(connection) as monitor:
+        while True:
+            await monitor.async_get_next_update()
+            await app.async_refresh_focus()
+            if session_id := _focused_session_id(app):
+                history.record(session_id)
+
+
+async def _navigate(app, history, direction):
+    history.forget_closed(_open_session_ids(app))
+    if session_id := history.step(direction):
+        await app.get_session_by_id(session_id).async_activate()
+
+
+def _listen_for_navigation_signals(app, history):
+    loop = asyncio.get_running_loop()
+    for signal_number, direction in SIGNAL_DIRECTIONS.items():
+        loop.add_signal_handler(signal_number, lambda direction=direction: loop.create_task(_navigate(app, history, direction)))
+    PID_FILE.parent.mkdir(parents=True, exist_ok=True)
+    PID_FILE.write_text(str(os.getpid()))
+
+
+async def main(connection):
+    app = await iterm2.async_get_app(connection)
+    history = FocusHistory()
+    if session_id := _focused_session_id(app):
+        history.record(session_id)
+    _listen_for_navigation_signals(app, history)
+    await _record_focus_changes(connection, app, history)
+
+
+if __name__ == "__main__":
+    iterm2.run_forever(main, retry=True)

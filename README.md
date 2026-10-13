@@ -361,6 +361,21 @@ Cmd+Ctrl+G → Focus the iTerm tab of a Claude agent by name (works from any app
 > Also callable from a shell as `findagent` (dialog) or `findagent row5-plan-card` (alias for `iterm_focus_agent`).
 > Errors go to `~/Library/Logs/iterm_focus_agent.log`.
 
+```
+Cmd+[ / Cmd+] → Back / forward through the iTerm tabs and panes you focused (like a browser)
+```
+> `bin/iterm_focus_history` (iTerm2 Python API, run by `uv`) records every focus change; a tab
+> focused for under a second (one an agent spawn flashed up) is left out, so one Cmd+[ returns you
+> to where you were. Karabiner, active only when iTerm is frontmost, sends it SIGUSR1/SIGUSR2 via the
+> pid in `~/.local/state/iterm-focus-history.pid`; iTerm itself never receives these two keys.
+> It runs as a launchd agent (`launchd/com.davidsu.iterm-focus-history.ln.plist`, linked into
+> `~/Library/LaunchAgents`); start it once with
+> `launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.davidsu.iterm-focus-history.plist`.
+> Needs iTerm Settings → General → Magic → Enable Python API. Logs: `~/Library/Logs/iterm_focus_history.log`.
+>
+> Agent spawns (`teamup-spawn`) also stop stealing focus: they call `term_spawn --background`,
+> which re-selects the tab you were on right after creating the new one.
+
 ### 🎹 Function Keys
 ```
 F1/F2       → Brightness

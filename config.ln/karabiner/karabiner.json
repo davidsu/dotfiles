@@ -27,6 +27,23 @@
             ]
           },
           {
+            "description": "iTerm: cmd+[ / cmd+] → back / forward through the tabs and panes you focused",
+            "manipulators": [
+              {
+                "conditions": [{ "type": "frontmost_application_if", "bundle_identifiers": ["^com\\.googlecode\\.iterm2$"] }],
+                "from": { "key_code": "open_bracket", "modifiers": { "mandatory": ["command"] } },
+                "to": [{ "shell_command": "kill -USR1 $(cat $HOME/.local/state/iterm-focus-history.pid)" }],
+                "type": "basic"
+              },
+              {
+                "conditions": [{ "type": "frontmost_application_if", "bundle_identifiers": ["^com\\.googlecode\\.iterm2$"] }],
+                "from": { "key_code": "close_bracket", "modifiers": { "mandatory": ["command"] } },
+                "to": [{ "shell_command": "kill -USR2 $(cat $HOME/.local/state/iterm-focus-history.pid)" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
             "description": "Global: cmd+ctrl+g → focus the iTerm tab of a Claude agent by name",
             "manipulators": [
               {

@@ -228,13 +228,13 @@ tab_color="$color"; [ "$no_color" = true ] && tab_color=""
 did_not_come_up() { echo "teamup-spawn: '$handle' did not come up: look at its tab, then spawn it again" >&2; exit 1; }
 case "$terminal:$agent" in
   iterm:claude)
-    session="$(term_spawn --dir "$dir" --run "$run" ${after:+--after "$after"})"
+    session="$(term_spawn --dir "$dir" --run "$run" ${after:+--after "$after"} --background)"
     [ "$no_color" = true ] || "$0" __boot_iterm "$session" claude "$color" || did_not_come_up
     inject="" ;;
   iterm:codex)
-    session="$(term_spawn --dir "$dir" --run "codex $model_flag" ${after:+--after "$after"})"
+    session="$(term_spawn --dir "$dir" --run "codex $model_flag" ${after:+--after "$after"} --background)"
     "$0" __boot_iterm "$session" codex "$tab_color" "/rename $handle" "$codex_prompt" || did_not_come_up ;;
-  *) term_spawn --dir "$dir" --run "$run" ${after:+--after "$after"} >/dev/null ;;
+  *) term_spawn --dir "$dir" --run "$run" ${after:+--after "$after"} --background >/dev/null ;;
 esac
 echo "spawned $agent${model:+ ($model)} on '$subject' as '$handle'."
 

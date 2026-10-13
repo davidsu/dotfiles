@@ -101,6 +101,9 @@
 "iterm2/dynamic-profiles/ghostty.ln.json" = [
   "~/Library/Application Support/iTerm2/DynamicProfiles/ghostty.json",
 ]
+"launchd/com.davidsu.iterm-focus-history.ln.plist" = [
+  "~/Library/LaunchAgents/com.davidsu.iterm-focus-history.plist",
+]
 
 # dotconfig (whole directory)
 "config.ln" = [

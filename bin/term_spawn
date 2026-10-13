@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # term_spawn — open a new tab in the current terminal (Ghostty or iTerm) running CMD.
-#   term_spawn --run CMD [--dir DIR] [--app ghostty|iterm] [--after ANCHOR]
+#   term_spawn --run CMD [--dir DIR] [--app ghostty|iterm] [--after ANCHOR] [--background]
 #   term_spawn --dir DIR [--app ghostty|iterm]   just a shell sitting in DIR
 #   term_spawn --resolve             print which terminal would be targeted, and exit
 # CMD is typed into a fresh interactive shell (so aliases like cvim/cyc work).
@@ -8,15 +8,17 @@
 # Prints an id for the spawned tab (ghostty tab id / iTerm session id).
 # iTerm opens the tab at the far right; --after ANCHOR (an iTerm session id or an agent
 # handle) moves it to immediately right of that tab (bin/iterm_tab_move_after). Ghostty ignores it.
+# --background (iTerm only) gives focus back to the tab that had it, so a spawn doesn't steal it.
 set -euo pipefail
 
-dir=""; run=""; app=""; after=""; resolve_only=false
+dir=""; run=""; app=""; after=""; background=false; resolve_only=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --dir) dir="$2"; shift 2 ;;
     --run) run="$2"; shift 2 ;;
     --app) app="$2"; shift 2 ;;
     --after) after="$2"; shift 2 ;;
+    --background) background=true; shift ;;
     --resolve) resolve_only=true; shift ;;
     *) echo "term_spawn: unknown flag $1" >&2; exit 1 ;;
   esac
@@ -45,13 +47,13 @@ spawn_ghostty() {
 spawn_iterm() {
   local command="$run" session
   [ -n "$dir" ] && command="cd $(printf '%q' "$dir")${run:+ && $run}"
-  session="$(iterm_tab_running "$command")"
+  session="$(iterm_tab_running "$command" "$background")"
   [ -z "$after" ] || "$HOME/.dotfiles/bin/iterm_tab_move_after" "$session" "$after" >&2 || true
   echo "$session"
 }
 
-iterm_tab_running() { # command
-  osascript - "$1" <<'APPLESCRIPT'
+iterm_tab_running() { # command background
+  osascript - "$1" "$2" <<'APPLESCRIPT'
 -- Window state is unreliable: closing is async and iTerm can report zombie
 -- windows with no tabs. Try a new tab in the current window; on any failure
 -- fall back to a new window and poll until a usable session appears.
@@ -74,11 +76,24 @@ on acquireSession()
 	end tell
 end acquireSession
 
+on focusedTab()
+	tell application "iTerm2"
+		try
+			return current tab of current window
+		on error
+			return missing value
+		end try
+	end tell
+end focusedTab
+
 on run argv
 	set theRun to item 1 of argv
+	set callerTab to missing value
+	if item 2 of argv is "true" then set callerTab to focusedTab()
 	set theSession to acquireSession()
 	tell application "iTerm2"
 		tell theSession to write text theRun
+		if callerTab is not missing value then tell callerTab to select
 		return id of theSession
 	end tell
 end run
