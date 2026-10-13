@@ -264,7 +264,7 @@ function fetchPackage(pkg: string, brewType: BrewType): Promise<void> {
 }
 
 async function batchInstall(packages: string[], brewType: BrewType) {
-  if (packages.length === 0) return
+  if (packages.length === 0) return []
 
   const installed = listInstalled(brewType)
   const isAlreadyInstalled = (pkg: string) => installed.has(pkg) || (brewType === 'cask' && isCaskAppPresent(pkg))
@@ -277,7 +277,7 @@ async function batchInstall(packages: string[], brewType: BrewType) {
 
   if (toInstall.length === 0) {
     log.success(`All ${brewType}s already installed`)
-    return
+    return []
   }
 
   const flag = brewType === 'cask' ? '--cask ' : ''
@@ -302,13 +302,14 @@ async function batchInstall(packages: string[], brewType: BrewType) {
       removeQuarantineFromCask(pkg)
     }
   }
+
+  return toInstall
 }
 
-function runCaskPostInstall(tools: Record<string, Tool>) {
-  for (const [name, tool] of Object.entries(tools)) {
-    if (tool.install_type === 'native') continue
-    // TypeScript now knows tool is BrewTool
-    if (tool.brew_type === 'cask' && tool.setup_message) {
+function runCaskPostInstall(tools: Record<string, Tool>, newlyInstalledCasks: string[]) {
+  for (const name of newlyInstalledCasks) {
+    const tool = tools[name]
+    if (tool.install_type !== 'native' && tool.setup_message) {
       handlePostInstall(name, tool.setup_message, tool.app_path)
     }
   }

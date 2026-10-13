@@ -25,9 +25,6 @@
 "claude/skills/grilling.ln" = [
   "~/.claude/skills/grilling",
 ]
-"claude/skills/prdiff.ln" = [
-  "~/.claude/skills/prdiff",
-]
 "claude/statusline.ln.sh" = [
   "~/.claude/statusline.sh",
 ]

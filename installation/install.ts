@@ -108,9 +108,9 @@ async function main() {
 
   // Phase 3: Batch install all casks, then open GUI apps
   log.info('Phase 3: Installing casks (parallel fetch, then install)...')
-  await batchInstall(casks, 'cask')
-  log.info('Opening GUI apps that need setup...')
-  runCaskPostInstall(allTools)
+  const newlyInstalledCasks = await batchInstall(casks, 'cask')
+  log.info('Opening newly installed GUI apps that need setup...')
+  runCaskPostInstall(allTools, newlyInstalledCasks)
 
   // Phase 4: Install neovim (needed for plugins)
   log.info('Phase 4: Installing neovim...')

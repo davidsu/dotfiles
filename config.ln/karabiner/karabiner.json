@@ -10,7 +10,7 @@
               {
                 "conditions": [{ "type": "frontmost_application_if", "bundle_identifiers": ["^com\\.mitchellh\\.ghostty$"] }],
                 "from": { "key_code": "r", "modifiers": { "mandatory": ["command", "control"] } },
-                "to": [{ "shell_command": "/Users/davidsu/.dotfiles/bin/ghostty_tab style" }],
+                "to": [{ "shell_command": "$HOME/.dotfiles/bin/ghostty_tab style" }],
                 "type": "basic"
               }
             ]
@@ -21,7 +21,7 @@
               {
                 "conditions": [{ "type": "frontmost_application_if", "bundle_identifiers": ["^com\\.googlecode\\.iterm2$"] }],
                 "from": { "key_code": "r", "modifiers": { "mandatory": ["command", "control"] } },
-                "to": [{ "shell_command": "/Users/davidsu/.dotfiles/bin/claude_session_style >> $HOME/Library/Logs/claude_session_style.log 2>&1" }],
+                "to": [{ "shell_command": "$HOME/.dotfiles/bin/claude_session_style >> $HOME/Library/Logs/claude_session_style.log 2>&1" }],
                 "type": "basic"
               }
             ]
@@ -48,7 +48,7 @@
             "manipulators": [
               {
                 "from": { "key_code": "g", "modifiers": { "mandatory": ["command", "control"] } },
-                "to": [{ "shell_command": "/Users/davidsu/.dotfiles/bin/iterm_focus_agent >> $HOME/Library/Logs/iterm_focus_agent.log 2>&1" }],
+                "to": [{ "shell_command": "$HOME/.dotfiles/bin/iterm_focus_agent >> $HOME/Library/Logs/iterm_focus_agent.log 2>&1" }],
                 "type": "basic"
               }
             ]

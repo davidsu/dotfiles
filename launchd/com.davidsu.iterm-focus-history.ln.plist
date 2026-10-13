@@ -6,13 +6,9 @@
   <string>com.davidsu.iterm-focus-history</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/opt/homebrew/bin/uv</string>
-    <string>run</string>
-    <string>--quiet</string>
-    <string>--with</string>
-    <string>iterm2</string>
-    <string>python</string>
-    <string>/Users/davidsu/.dotfiles/bin/iterm_focus_history</string>
+    <string>/bin/sh</string>
+    <string>-c</string>
+    <string>exec /opt/homebrew/bin/uv run --quiet --with iterm2 python "$HOME/.dotfiles/bin/iterm_focus_history" &gt;&gt; "$HOME/Library/Logs/iterm_focus_history.log" 2&gt;&amp;1</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
@@ -20,9 +16,5 @@
   <true/>
   <key>ThrottleInterval</key>
   <integer>30</integer>
-  <key>StandardOutPath</key>
-  <string>/Users/davidsu/Library/Logs/iterm_focus_history.log</string>
-  <key>StandardErrorPath</key>
-  <string>/Users/davidsu/Library/Logs/iterm_focus_history.log</string>
 </dict>
 </plist>
