@@ -16,27 +16,20 @@ readonly ROW_MARK="■ "
 source "$HOME/.claude/skills/suss-teamup/scripts/session_colors.sh"
 
 open_picker_window() {
-  osascript - "$PICKER_PROFILE" "$SELF --pick" <<'OSA'
-on centerOnScreen(theWindow)
-  tell application "Finder" to set {screenLeft, screenTop, screenRight, screenBottom} to bounds of window of desktop
-  tell application "iTerm2"
-    set {windowLeft, windowTop, windowRight, windowBottom} to bounds of theWindow
-    set windowWidth to windowRight - windowLeft
-    set windowHeight to windowBottom - windowTop
-    set newLeft to (screenRight - windowWidth) div 2
-    set newTop to (screenBottom - windowHeight) div 2
-    set bounds of theWindow to {newLeft, newTop, newLeft + windowWidth, newTop + windowHeight}
-  end tell
-end centerOnScreen
-
-on run argv
-  tell application "iTerm2"
-    set pickerWindow to (create window with profile (item 1 of argv) command (item 2 of argv))
-    activate
-  end tell
-  centerOnScreen(pickerWindow)
-end run
-OSA
+  osascript -l JavaScript - "$PICKER_PROFILE" "$SELF --pick" <<'JXA'
+ObjC.import('AppKit');
+const centerOnMainScreen = (window) => {
+  const screen = $.NSScreen.mainScreen.frame.size;
+  const { width, height } = window.bounds();
+  window.bounds = { x: Math.round((screen.width - width) / 2), y: Math.round((screen.height - height) / 2), width, height };
+};
+function run([profile, command]) {
+  const iterm = Application('iTerm2');
+  const window = iterm.createWindowWithProfile(profile, { command });
+  iterm.activate();
+  centerOnMainScreen(window);
+}
+JXA
 }
 
 screen_of_tty() {
