@@ -22,5 +22,13 @@ Traps:
 - The Slack MCP `conversations_add_message` has no unfurl flags.
 - Building JSON in zsh: `echo "$JSON"` turns `\n` into a real newline and jq rejects it.
 
+Connector traps ([slack-connector.md](slack-connector.md)):
+
+- `alt_txt` on `slack_get_file_upload_url` leaves the file with an empty mimetype; the complete
+  call reports success but shares nothing. Measured 2026-10-14 on a webm: 2 of 2 with `alt_txt`
+  dead, 4 of 4 without alive, `title`, thread replies and mrkdwn links all fine.
+- A file permalink in a text message becomes a bare file card, no player, and the raw file id
+  shows in the text.
+
 Unverified: whether Slack's composer links pasted `[text](url)`, and saving a Slack draft
 instead of posting (`slack_send_message_draft` in the claude.ai connector).

@@ -1,5 +1,9 @@
 # Slack
 
+Two routes. `slack-post` is the one you use. When it fails with `invalid_auth` (David's Slack
+web session rotated), switch to the claude.ai connector:
+[slack-connector.md](slack-connector.md). Never refresh the keychain tokens yourself.
+
 ```
 S=~/.claude/skills/suss-communication/scripts/slack-post
 $S check draft.md                                        # show the draft as Slack will, lint it
@@ -25,8 +29,9 @@ One file, one line per Slack line:
 
 - **Link every claim** with a label: no bare URLs in a sentence, no local paths, no code fences.
 - **Videos go in as files**, never as links: `--image clip.mp4` (any file works) gives Slack's
-  inline player and preview; a link is just text. Use H.264 `.mp4`, named for what it shows (the
-  name is its title).
+  inline player and preview; a link is just text. H.264 `.mp4` or `.webm`, named for what it
+  shows (the name is its title). On the connector route the same holds: the file's
+  `initial_comment` is the message, never a text post carrying the file's link.
 
 `check` blocks what breaks the post (fences, paths, bare URLs, a missing signature, a name that
 matches nobody) and notes what is just long.
