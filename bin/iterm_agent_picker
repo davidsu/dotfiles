@@ -23,9 +23,16 @@ ObjC.import('AppKit');
 const SCREEN_FRACTION = 0.8;
 const coverScreenCenter = (window) => {
   const screen = $.NSScreen.mainScreen.frame.size;
-  const width = Math.round(screen.width * SCREEN_FRACTION);
-  const height = Math.round(screen.height * SCREEN_FRACTION);
-  window.bounds = { x: Math.round((screen.width - width) / 2), y: Math.round((screen.height - height) / 2), width, height };
+  const visible = $.NSScreen.mainScreen.visibleFrame;
+  const width = Math.round(visible.size.width * SCREEN_FRACTION);
+  const height = Math.round(visible.size.height * SCREEN_FRACTION);
+  const visibleTop = screen.height - (visible.origin.y + visible.size.height);
+  window.bounds = {
+    x: Math.round(visible.origin.x + (visible.size.width - width) / 2),
+    y: Math.round(visibleTop + (visible.size.height - height) / 2),
+    width,
+    height,
+  };
 };
 function run([profile, command]) {
   const iterm = Application('iTerm2');
