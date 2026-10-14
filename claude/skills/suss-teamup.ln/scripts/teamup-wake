@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR] [--after HANDLE] — resume a sleeping claude agent
+# teamup-wake <handle|session-id> [--channel C] [--role ROLE] [--color COLOR] [--after HANDLE] — resume a sleeping claude agent
 # in a new iTerm tab, in its own directory, and have it rejoin its channel. The tab lands immediately right
 # of the caller's own tab (the tab this command runs in, $ITERM_SESSION_ID), or of --after HANDLE's tab
 # (env TEAMUP_AFTER_HANDLE). Prints what is waiting
@@ -30,10 +30,10 @@ is_session_running() { # session id — a session must never run twice
 
 is_claude_session() { compgen -G "$HOME/.claude/projects/*/$1.jsonl" >/dev/null; }
 
-parked_record() { awk -F'\t' -v h="$1" '$1==h' "$PARKED" 2>/dev/null | tail -1; }
+parked_record() { awk -F'\t' -v h="$1" '$1==h || $2==h' "$PARKED" 2>/dev/null | tail -1; }
 
 registry_record() { # handle — a crashed session never left, so only the registry knows it
-  awk -F'\t' -v h="$1" '$3==h && $4!="" { print h "\t" $4 "\t" $1 "\t" $2 "\t" "crashed?" }' "$REGISTRY" 2>/dev/null | tail -1
+  awk -F'\t' -v h="$1" '($3==h || $4==h) && $4!="" { print $3 "\t" $4 "\t" $1 "\t" $2 "\t" "crashed?" }' "$REGISTRY" 2>/dev/null | tail -1
 }
 
 wake_record() { local record; record="$(parked_record "$1")"; printf '%s' "${record:-$(registry_record "$1")}"; }
@@ -69,6 +69,8 @@ wait_for_join_ping() { # channel handle after-line
   return 1
 }
 
+resume_command() { echo "cyc --resume $1${2:+ -- '/suss-teamup $2'}"; }
+
 wake_color() { # role session-id
   if [ -n "$1" ]; then role_color "$1"; else transcript_color "$2"; fi
 }
@@ -83,11 +85,12 @@ wake() { # handle channel color role after
   is_session_running "$session_id" && die "'$1' is already running (session $session_id): find its tab instead"
   color="${3:-$(wake_color "$4" "$session_id")}"
   log_lines="$(wc -l < "$BASE/$channel/channel.tsv" 2>/dev/null || echo 0)"
-  print_waiting_messages "$1" "$channel"
-  tab="$(term_spawn --app iterm --dir "$dir" --run "cyc --resume $session_id -- '/suss-teamup $channel'" ${after:+--after "$after"} --background)"
-  echo "waking $1 in $dir (session $session_id) to rejoin '$channel'..."
+  [ -z "$channel" ] || print_waiting_messages "$1" "$channel"
+  tab="$(term_spawn --app iterm --dir "$dir" --run "$(resume_command "$session_id" "$channel")" ${after:+--after "$after"} --background)"
+  echo "waking $1 in $dir (session $session_id)${channel:+ to rejoin '$channel'}..."
   [ -z "$color" ] || "$HERE/teamup-spawn" __boot_iterm "$tab" claude "$color" ||
     die "$1 did not come up: look at its tab, usually a permission prompt the resumed session is stuck on"
+  [ -n "$channel" ] || { echo "$1 is back (it was on no channel)."; return 0; }
   wait_for_join_ping "$channel" "$1" "$log_lines" && echo "$1 is back on '$channel'." ||
     die "$1 did not rejoin '$channel' within ${REJOIN_TIMEOUT_SECONDS}s: look at its tab, usually a permission prompt the resumed session is stuck on"
 }

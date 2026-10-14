@@ -32,7 +32,7 @@ Separate scripts in `scripts/`:
 | script | does |
 |---|---|
 | `teamup-spawn <claude\|pi\|codex> <subject> [--as H] [--dir D] [--model M] [--role R] [--color C] [--after H] [--no-steal]` | start a peer in a new iTerm tab right of yours (or of `--after`'s), joined to `<subject>` (resources/spawn.md) |
-| `teamup-sleep <handle>...` | leave every channel and close the agent's iTerm tab (resources/agent_lifecycle.md) |
+| `teamup-sleep [<handle\|session-id>...]` | leave every channel and close the agent's iTerm tab; no argument: your own session (resources/agent_lifecycle.md) |
 | `teamup-wake <handle> [--channel C] [--role R] [--color C] [--after H]` / `--list` | resume a sleeping claude agent and wait until it rejoins (resources/agent_lifecycle.md) |
 | `teamup-focus on [--skip H] \| off \| status` | while the user is away (no input for 2 min), never leave the screen >3 min without a claude iTerm tab in front (checks every minute): a busy one, else the most recently active live session's; `on` is idempotent and race-safe, `off` stops every poller, log in `~/.local/state/suss-teamup/focus.log` (resources/tracking_agents.md) |
 | `teamup-focus-test` | black-box test of the running poller, only while the user is away: Finder in front, PASS if a claude tab returns within 75 s; FAILs with the poller off |

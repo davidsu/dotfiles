@@ -21,6 +21,15 @@ expect() { [ "$2" = "$3" ] && echo "ok   $1" || { echo "FAIL $1: got [$2], expec
 
 expect "the handle maps to its claude pid" "$(claude_pid_of owner.x)" "$fake_claude"
 expect "an unregistered handle has no pid" "$(claude_pid_of nobody)" ""
+readonly LONER_ID=0f0f0f0f-1111-2222-3333-444455556666
+printf '{"sessionId":"%s","name":"loner","cwd":"/work"}' "$LONER_ID" > "$HOME/.claude/sessions/99999.json"
+expect "a session on no channel is found by its claude name" "$(session_id_of loner)" "$LONER_ID"
+expect "an unknown session id resolves to nothing" "$(handle_of aaaaaaaa-bbbb-cccc-dddd-000000000000)" ""
+expect "a session id resolves to its claude name" "$(handle_of "$LONER_ID")" "loner"
+expect "a handle stays itself" "$(handle_of owner.x)" "owner.x"
+park_unregistered loner; park_unregistered owner.x
+expect "a session on no channel is parked for teamup-wake" "$(cut -f1-4 "$PARKED")" "$(printf 'loner\t%s\t/work\t' "$LONER_ID")"
+
 hang_up_claude "$fake_claude"; expect "a hang-up ends the process" "$?" "0"
 sleep 0.2
 kill -0 "$fake_claude" 2>/dev/null; expect "the process is gone afterwards" "$?" "1"

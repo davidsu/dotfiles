@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# teamup-sleep [--force] <handle>... — put agents to sleep: hang up each one's claude, leave its channels, close its iTerm tab.
+# teamup-sleep [--force] [<handle|session-id>...] — put agents to sleep (no argument: the claude session running it): hang up each one's claude, leave its channels, close its iTerm tab.
 # `leave` records how to resume it, so `teamup-wake <handle>` brings it back later.
 # Before running this, the agent has said "ready to sleep": its work is pushed and its
 # browser tabs are closed (resources/agent_lifecycle.md).
@@ -9,6 +9,8 @@ readonly HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly TEAMUP="$HERE/teamup"
 readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
 readonly REGISTRY="$BASE/.sessions.tsv"
+readonly PARKED="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/parked.tsv"
+readonly SESSION_ID_PATTERN='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
 readonly QUIET_SECONDS=60
 readonly DAVID_QUIET_SECONDS=300
 readonly STOP_TIMEOUT_SECONDS=20
@@ -64,7 +66,34 @@ is_focused() { # handle — David is looking at its tab right now (while he is a
   is_david_at_the_mac && { [ "$tab" = "$wanted" ] || [[ "$tab" == *" $wanted" ]]; }
 }
 
-session_id_of() { awk -F'\t' -v h="$1" '$3==h && $4!="" { sid=$4 } END { print sid }' "$REGISTRY" 2>/dev/null; }
+running_session_field() { # key value field — a field of the claude session whose key (sessionId|name) is value, from ~/.claude/sessions
+  jq -r --arg key "$1" --arg value "$2" --arg field "$3" 'select(.[$key] == $value) | .[$field] // empty' \
+    "$HOME/.claude/sessions"/*.json 2>/dev/null | tail -1
+}
+
+registered_session_id() { awk -F'\t' -v h="$1" '$3==h && $4!="" { sid=$4 } END { print sid }' "$REGISTRY" 2>/dev/null; }
+
+registered_handle() { awk -F'\t' -v s="$1" '$4==s { h=$3 } END { print h }' "$REGISTRY" 2>/dev/null; }
+
+session_id_of() { # handle — a session on no channel is only known to claude, by its session name
+  local session_id; session_id="$(registered_session_id "$1")"
+  printf '%s' "${session_id:-$(running_session_field name "$1" sessionId)}"
+}
+
+handle_of() { # handle or session id — the name teamup and the tab title know the session by
+  [[ "$1" =~ $SESSION_ID_PATTERN ]] || { printf '%s' "$1"; return; }
+  local handle; handle="$(registered_handle "$1")"
+  printf '%s' "${handle:-$(running_session_field sessionId "$1" name)}"
+}
+
+park_unregistered() { # handle — no channel means no registry row for leave to park, so teamup-wake could not find it
+  [ -z "$(registered_session_id "$1")" ] || return 0
+  local session_id; session_id="$(session_id_of "$1")"
+  [ -n "$session_id" ] || return 0
+  mkdir -p "$(dirname "$PARKED")"
+  printf '%s\t%s\t%s\t\t%s\n' "$1" "$session_id" "$(running_session_field sessionId "$session_id" cwd)" \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$PARKED"
+}
 
 transcript_of() { # handle — the claude transcript of its running session
   local session_id; session_id="$(session_id_of "$1")"
@@ -166,6 +195,7 @@ put_to_sleep() { # handle
   local pid tty=""; pid="$(claude_pid_of "$1")"
   [ -n "$pid" ] && tty="$(tty_of_pid "$pid")" ||
     echo "teamup-sleep: no running claude session registered for $1; only closing its tab" >&2
+  park_unregistered "$1"
   if is_my_ancestor "$pid"; then
     finish_detached "$1" "$pid" "$tty"; echo "sleeping myself: $1 stops and its tab closes in a moment"
   else
@@ -179,8 +209,11 @@ put_to_sleep() { # handle
 [ "${1:-}" = __finish ] && { stop_leave_and_close "$2" "$3" "$4"; exit 0; }
 
 force=false; [ "${1:-}" = --force ] && { force=true; shift; }
-[ $# -gt 0 ] || { echo "usage: teamup-sleep [--force] <handle>..." >&2; exit 2; }
-for handle in "$@"; do
+[ $# -gt 0 ] || set -- ${CLAUDE_CODE_SESSION_ID:-}
+[ $# -gt 0 ] || { echo "usage: teamup-sleep [--force] [<handle|session-id>...]  (none: this claude session)" >&2; exit 2; }
+for target in "$@"; do
+  handle="$(handle_of "$target")"
+  [ -n "$handle" ] || { echo "teamup-sleep: no claude session $target" >&2; continue; }
   if is_busy "$handle"; then
     [ "$force" = true ] || {
       echo "teamup-sleep: not closing $handle: it is busy (above). Ask it to say 'ready to sleep', or pass --force." >&2

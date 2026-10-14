@@ -6,10 +6,10 @@ session, with its full context, in a new tab. Both are claude-on-iTerm only.
 
 ```
 S=~/.claude/skills/suss-teamup/scripts
-$S/teamup-sleep [--force] <handle>...        # leave its channels, close its tab
+$S/teamup-sleep [--force] [<handle|id>...]   # leave its channels, close its tab; no argument: yourself
 $S/teamup-wake --list                        # who can be woken
 $S/teamup-wake --asleep <handle>             # exit 0 if it can be woken
-$S/teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR] [--after HANDLE]
+$S/teamup-wake <handle|id> [--channel C] [--role ROLE] [--color COLOR] [--after HANDLE]
 ```
 
 ## Putting an agent to sleep
@@ -37,6 +37,11 @@ $S/teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR] [--after HAN
    - the agent spoke in the last minute (it may be mid-push)
 
    It prints what the agent last said. `--force` overrides, and still prints the reasons.
+
+   A target is a handle or a claude session id. An agent sleeping itself passes neither: the
+   script takes `$CLAUDE_CODE_SESSION_ID`. A session on no channel is found through
+   `~/.claude/sessions/{pid}.json` (its session name and cwd), and parked so `teamup-wake` resumes
+   it without a channel to rejoin.
 
 An agent goes to sleep as soon as it is waiting on a reviewer, a human or another agent.
 Don't keep it open to babysit; wake it when the thing it waits for happens.
