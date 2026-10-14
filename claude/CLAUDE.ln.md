@@ -59,6 +59,9 @@ David in one line what broke and suggest spawning an agent in the skill's repo (
 skill dir in `~/.claude/skills/`) to fix it with him. Don't fix it yourself mid-task, and don't
 raise it for style nits.
 
+David away and something on his Mac broke (an app vanished, iTerm quit, an agent is unresponsive,
+keys went to the wrong app), or you need any screen action: load `/suss-troubleshoot-david-away` first.
+
 ## Personal repos: dotfiles, suss-tasks
 
 They are David's own. Never open a PR there: commit and push straight to the branch the machine

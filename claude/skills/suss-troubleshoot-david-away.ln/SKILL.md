@@ -1,19 +1,35 @@
 ---
 name: suss-troubleshoot-david-away
 description: >
-  Rules for an agent that must touch David's Mac screen (open a window, send a
-  synthetic keystroke, change focus, record) or finds one of his apps gone while
-  he is away. Load BEFORE any such action and when an app answers "Connection is
-  invalid" / "Can't get application". Covers the idle gate and how it fails, the
-  per-key frontmost check, crash-report triage, relaunching, config values vs.
-  the installed app version, and ON/OFF coordination with other owners.
+  David is away/AFK and something on his Mac broke: an app vanished or crashed,
+  iTerm quit unexpectedly, an agent is unresponsive, keystrokes went to the wrong
+  app, an app answers "Connection is invalid" / "Can't get application". Also load
+  BEFORE any screen action (open a window, send a synthetic keystroke, change
+  focus, record). Decision table: symptom → first check → safe action → when to
+  wait for David. Covers the idle gate and how it fails, the per-key frontmost
+  check, crash-report triage, relaunching, config values vs. the installed app
+  version, reminders and status while he is away, where agents' state lives.
 ---
 
 # Troubleshooting and screen work while David is away
 
-Written after the night of 2026-10-13/14 (task `dotfiles/floating_fzf_terminal`): a gated
-test typed into David's WhatsApp, and a profile value crashed iTerm2 twice. Every rule
-below is one of those failures, inverted.
+Written after the night of 2026-10-13/14 (tasks `dotfiles/floating_fzf_terminal`,
+`dotfiles/teamup_focus_not_working`): a gated test typed into David's WhatsApp, a profile
+value crashed iTerm2 twice, a poller relaunched iTerm2 and hid the crash. Every rule below
+is one of those failures, inverted.
+
+## Decision table
+
+| Symptom | First check | Safe action (do it, say it) | Wait for David when |
+|---|---|---|---|
+| App vanished; `Connection is invalid (-609)` / `Can't get application (-1728)` right after your call | `$G crashes`, read the `.ips` exception + top frames (§3) | `$G relaunch APP`, post "relaunched X at HH:MM" + cause on the channel | never for the relaunch; before retrying the call that killed it |
+| iTerm2 quit | same as above; `pgrep iTermServer` (sessions survive) | `$G relaunch iTerm2`; restore tab colors with `iterm_tab_style` (§3) | never ("quit and reopen. Why am I needed???", 06:50) |
+| An agent is unresponsive | its tab: busy glyph? its transcript's last line (§9); `teamup-wake --list` | `teamup-wake <handle>` if parked; else `teamup ask --to <handle>` | the agent is mid-work and only David's input unblocks it |
+| Keystrokes went to the wrong app | screenshot now; what was frontmost (§2) | report within a minute: screenshot path, text, recipient (§6); stop all keys | always, before any further key |
+| You need a screen action (window, key, focus) | David announced a window ("I'm afk", "go, hands off")? `$G idle` right before; `$G front` per key (§1-2) | run it gated via `$G key`; announce ON/OFF to other owners | no announced window: idle alone is not "away" |
+| A config value / enum for an installed app | the installed version's source or validation (§4) | first use against a throwaway with `$G crashes 1` watched | the first use is on the window David works in |
+| David wants to be reminded | `ls ~/Library/LaunchAgents/com.davidsu.remind.*` (§7) | a launchd one-shot that posts top-level in #suss-lead | never |
+| Blocked > 20 min | the task file (§8) | write the blocker in the task, take the clunky path | it genuinely cannot be done: say so, with the reason |
 
 `scripts/gate` is the mechanism; use it instead of re-deriving the checks:
 
@@ -79,3 +95,29 @@ $G relaunch APP                  # relaunch APP if it is not running, and say so
 - Something went to a human (a message, a keystroke in a chat): say it on the channel within a
   minute, with the screenshot path, what it said and to whom; David deletes/edits himself.
 - Write the incident, the cause and the fix into the suss-task the same hour.
+
+## 7. Reminders and status while he is away
+
+- A reminder for David is a launchd one-shot (`~/Library/LaunchAgents/com.davidsu.remind.<slug>.plist`,
+  `StartCalendarInterval`, a script under `~/.local/bin/`), not a cron in an agent session: agents
+  die, launchd does not. It posts top-level in #suss-lead as David with `_agent:_`
+  ([suss-communication](../suss-communication/SKILL.md)).
+- Status is pull-based: no timed reports. David asks "what needs my attention"; keep that answer
+  ready in the task. An explicit "remind me" is the one exception.
+
+## 8. Don't get stuck
+
+- A blocker older than 20 min goes into the task file, then take the clunky path and move on.
+- If it cannot be done, say so on the channel with the reason. Silence is the one unacceptable
+  status.
+
+## 9. Where things live
+
+| What | Where |
+|---|---|
+| An agent's transcript | `~/.claude/projects/*/<session-id>.jsonl` (`rg --no-config`: files > 10 MB are skipped by the rg config) |
+| A teamup channel | `/tmp/suss-teamup/<subject>/channel.tsv`; its Slack thread url `~/.local/state/suss-teamup/slack/<subject>.url` |
+| Parked (asleep) agents | `~/.local/state/suss-teamup/parked.tsv`; `teamup-wake <handle> --role owner` ([agent_lifecycle](../suss-teamup/resources/agent_lifecycle.md)) |
+| The focus poller | `teamup-focus on [--skip HANDLE] \| off \| status`; log `~/.local/state/suss-teamup/focus.log`; it relaunched iTerm2 once and now guards with `application is running` (task `dotfiles/teamup_focus_not_working`) |
+| Slack bridges | `teamup-slack off/on <subject>` (`off` also kills your `wait`) ([slack_mirror](../suss-teamup/resources/slack_mirror.md)) |
+| Crash reports | `~/Library/Logs/DiagnosticReports/*.ips` (`$G crashes`) |
