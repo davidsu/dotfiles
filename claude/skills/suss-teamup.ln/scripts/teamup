@@ -207,49 +207,78 @@ channels_of_handle() { # handle -> one subject per line
   return 0
 }
 
+readonly TSV_LOCK_STALE_SECONDS=5
+readonly TSV_LOCK_WAIT_SECONDS=10
+
+lock_age() { echo $(( $(date +%s) - $(stat -f %m "$1" 2>/dev/null || date +%s) )); }
+
+with_tsv_lock() { # file command... — one writer per file at a time (mkdir is atomic); a lock a dead writer left is broken
+  local lock="$1.lock" rc waited=0; shift
+  until mkdir "$lock" 2>/dev/null; do
+    [ "$(lock_age "$lock")" -gt "$TSV_LOCK_STALE_SECONDS" ] && { rm -rf "$lock"; continue; }
+    sleep 0.05; waited=$((waited + 1))
+    [ "$waited" -lt $((TSV_LOCK_WAIT_SECONDS * 20)) ] || rm -rf "$lock"
+  done
+  "$@"; rc=$?
+  rmdir "$lock" 2>/dev/null
+  return $rc
+}
+
+rewrite_tsv() { # file awk-args... — keeps the rows the program prints; a private temp file, so two writers never share one
+  local file="$1" tmp; shift
+  [ -f "$file" ] || return 0
+  tmp="$(mktemp "$file.XXXXXX")" || return 1
+  awk -F'\t' "$@" "$file" > "$tmp" && mv "$tmp" "$file"
+}
+
+register_session_locked() { # file pwd subject handle sid
+  rewrite_tsv "$1" -v p="$2" -v s="$3" -v h="$4" '!($1==p && $2==s && $3==h)'
+  printf '%s\t%s\t%s\t%s\n' "$2" "$3" "$4" "$5" >> "$1"
+}
+
 register_session() { # subject handle pwd
-  local file sid; file="$(sessions_file)"; sid="$(session_guid)"; mkdir -p "$BASE"
-  if [ -f "$file" ]; then
-    awk -F'\t' -v p="$3" -v s="$1" -v h="$2" '!($1==p && $2==s && $3==h)' \
-      "$file" > "$file.tmp" && mv "$file.tmp" "$file"
-  fi
-  printf '%s\t%s\t%s\t%s\n' "$3" "$1" "$2" "$sid" >> "$file"
+  local file; file="$(sessions_file)"; mkdir -p "$BASE"
+  with_tsv_lock "$file" register_session_locked "$file" "$3" "$1" "$2" "$(session_guid)"
 }
 
 unregister_session() { # subject handle
   local file; file="$(sessions_file)"; [ -f "$file" ] || return 0
-  awk -F'\t' -v s="$1" -v h="$2" '!($2==s && $3==h)' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+  with_tsv_lock "$file" rewrite_tsv "$file" -v s="$1" -v h="$2" '!($2==s && $3==h)'
 }
 
 # How to resume a handle that leaves: session id, cwd and channels, kept outside $BASE so it
 # survives a reboot. Recorded by every leave (by hand, teamup-sleep, the session-end hook);
 # teamup-wake reads it. A session with no GUID (no claude/pi/codex id) can't be resumed.
-park_handle() { # handle — merges channels, since a session's channels may be left one by one
-  local rows sid file channels; file="$(parked_file)"
+park_handle_locked() { # file handle rows sid — merges channels, since a session's channels may be left one by one
+  local channels
+  channels="$( { cut -f2 <<<"$3"; awk -F'\t' -v h="$2" -v s="$4" '$1==h && $2==s { gsub(",", "\n", $4); print $4 }' "$1" 2>/dev/null || true; } |
+    grep . | sort -u | paste -sd, -)"
+  rewrite_tsv "$1" -v h="$2" '$1!=h'
+  printf '%s\t%s\t%s\t%s\t%s\n' "$2" "$4" "$(cut -f1 <<<"$3" | head -1)" "$channels" "$(now)" >> "$1"
+}
+
+park_handle() { # handle
+  local rows sid file; file="$(parked_file)"
   rows="$(awk -F'\t' -v h="$1" '$3==h' "$(sessions_file)" 2>/dev/null)"
   sid="$(cut -f4 <<<"$rows" | grep -m1 . || true)"
   [ -n "$sid" ] || return 0
   mkdir -p "$(dirname "$file")"
-  channels="$( { cut -f2 <<<"$rows"; awk -F'\t' -v h="$1" -v s="$sid" '$1==h && $2==s { gsub(",", "\n", $4); print $4 }' "$file" 2>/dev/null || true; } |
-    grep . | sort -u | paste -sd, -)"
-  unpark_handle "$1"
-  printf '%s\t%s\t%s\t%s\t%s\n' "$1" "$sid" "$(cut -f1 <<<"$rows" | head -1)" "$channels" "$(now)" >> "$file"
+  with_tsv_lock "$file" park_handle_locked "$file" "$1" "$rows" "$sid"
 }
 
 unpark_handle() { # handle
   local file; file="$(parked_file)"; [ -f "$file" ] || return 0
-  awk -F'\t' -v h="$1" '$1!=h' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+  with_tsv_lock "$file" rewrite_tsv "$file" -v h="$1" '$1!=h'
 }
 
 unregister_handle() { # handle
   local file; file="$(sessions_file)"; [ -f "$file" ] || return 0
-  awk -F'\t' -v h="$1" '$3!=h' "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+  with_tsv_lock "$file" rewrite_tsv "$file" -v h="$1" '$3!=h'
 }
 
 rekey_handle() { # old new
   local file; file="$(sessions_file)"; [ -f "$file" ] || return 0
-  awk -F'\t' -v OFS='\t' -v old="$1" -v new="$2" '$3==old{$3=new} 1' \
-    "$file" > "$file.tmp" && mv "$file.tmp" "$file"
+  with_tsv_lock "$file" rewrite_tsv "$file" -v OFS='\t' -v old="$1" -v new="$2" '$3==old{$3=new} 1'
 }
 
 # Collapse a message to a single safe TSV line (tabs/newlines -> spaces).
@@ -904,10 +933,7 @@ case "$CMD" in
     if [ -n "$members" ] && [ "$FORCE" != true ]; then
       die "'$SUBJECT' still has members: $(printf '%s' "$members" | tr '\n' ' '). Leave first, or re-run with --force."
     fi
-    if [ -f "$(sessions_file)" ]; then
-      awk -F'\t' -v s="$SUBJECT" '$2 != s' "$(sessions_file)" > "$(sessions_file).tmp" \
-        && mv "$(sessions_file).tmp" "$(sessions_file)"
-    fi
+    with_tsv_lock "$(sessions_file)" rewrite_tsv "$(sessions_file)" -v s="$SUBJECT" '$2 != s'
     rm -rf "$BASE/$SUBJECT"
     echo "erased channel '$SUBJECT'."
     ;;
