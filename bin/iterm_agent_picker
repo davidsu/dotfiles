@@ -20,7 +20,7 @@ source "$HOME/.claude/skills/suss-teamup/scripts/session_colors.sh"
 open_picker_window() {
   osascript -l JavaScript - "$PICKER_PROFILE" "$SELF --pick" <<'JXA'
 ObjC.import('AppKit');
-const SCREEN_FRACTION = 0.8;
+const SCREEN_FRACTION = 0.9;
 const coverScreenCenter = (window) => {
   const screen = $.NSScreen.mainScreen.frame.size;
   const visible = $.NSScreen.mainScreen.visibleFrame;
