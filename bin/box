@@ -1,0 +1,120 @@
+#!/usr/bin/env bash
+# box — drive a Claude session on the Coder box from this laptop as if it were local.
+#   box ls                 the tmux windows on the box: TARGET, what runs there, its cwd
+#   box attach [TARGET]    put that session in this iTerm tab (fzf picker when TARGET is omitted)
+#   box paste [TARGET]     clipboard image → the box → its path typed into that session (cmd+ctrl+v in iTerm)
+#   box url [TARGET]       the session's Remote Control URL (turned on if needed), opened at claude.ai/code:
+#                          the browser view of the same session, where images paste natively
+# TARGET is tmux `session[:window]` on the box, or a teamup handle (coder.lead.18 → coder_lead_18).
+# `paste` and `url` default to the session this iTerm tab was attached to.
+# Images land in `<session cwd>/.box-paste/` (globally gitignored) so the agent reads them without a
+# permission prompt. Box host: $BOX_HOST (default coder.dev-davidsu).
+set -euo pipefail
+export PATH="/opt/homebrew/bin:$PATH"
+
+readonly HOST="${BOX_HOST:-coder.dev-davidsu}"
+readonly TABS_DIR="$HOME/.local/state/box/tabs"
+readonly WINDOW_FORMAT='#{session_name}:#{window_index} #{pane_current_command} #{pane_current_path}'
+
+usage() { sed -n '2,11p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
+
+fail() {
+  echo "box: $*" >&2
+  [[ -t 2 ]] || osascript -e "display notification \"$*\" with title \"box\""
+  exit 1
+}
+
+on_box() { ssh -o LogLevel=ERROR "$HOST" "$@" 2> >(grep -v -e '^version mismatch' -e '^download v' >&2); }
+
+list_windows() { on_box tmux list-windows -a -F "'$WINDOW_FORMAT'"; }
+
+handle_to_session() { echo "${1//./_}"; }
+
+pick_target() { list_windows | fzf --prompt='box attach > ' --with-nth=1,2,3 | cut -d' ' -f1; }
+
+current_tab_id() {
+  osascript -e 'tell application "iTerm2" to tell current session of current tab of current window to get unique id' 2>/dev/null
+}
+
+remember_tab_target() {
+  mkdir -p "$TABS_DIR"
+  echo "$1" >"$TABS_DIR/${ITERM_SESSION_ID##*:}"
+}
+
+target_of_current_tab() {
+  local tab_file="$TABS_DIR/$(current_tab_id)"
+  [[ -f "$tab_file" ]] || fail "this iTerm tab is not attached to the box (run: box attach)"
+  cat "$tab_file"
+}
+
+resolve_target() {
+  local target="${1:-}"
+  [[ -n "$target" ]] || target="$(target_of_current_tab)"
+  handle_to_session "$target"
+}
+
+attach() {
+  local target="${1:-}"
+  [[ -n "$target" ]] || target="$(pick_target)"
+  [[ -n "$target" ]] || exit 0
+  target="$(handle_to_session "$target")"
+  remember_tab_target "$target"
+  local session="${target%%:*}" grouped="box_$$"
+  exec ssh -t "$HOST" "tmux new-session -s $grouped -t $session \\; select-window -t $target \\; set-option destroy-unattached on"
+}
+
+clipboard_png_to() {
+  osascript - "$1" <<'OSA' >/dev/null 2>&1 || fail "no image on the clipboard"
+on run argv
+  set pngFile to open for access POSIX file (item 1 of argv) with write permission
+  write (the clipboard as «class PNGf») to pngFile
+  close access pngFile
+end run
+OSA
+}
+
+paste() {
+  local target local_png remote_cwd remote_png
+  target="$(resolve_target "${1:-}")"
+  local_png="$(mktemp -t box-paste).png"
+  clipboard_png_to "$local_png"
+  remote_cwd="$(on_box tmux display-message -p -t "$target" "'#{pane_current_path}'")"
+  [[ -n "$remote_cwd" ]] || fail "no tmux window $target on the box"
+  remote_png="$remote_cwd/.box-paste/paste-$(date +%Y%m%d-%H%M%S).png"
+  on_box "mkdir -p '$(dirname "$remote_png")' && cat >'$remote_png' && tmux send-keys -t '$target' -l '$remote_png '" <"$local_png"
+  rm -f "$local_png"
+  echo "$remote_png"
+}
+
+remote_control_url_of() {
+  on_box tmux capture-pane -p -S -300 -t "$1" | grep -o 'https://claude.ai/code/session_[A-Za-z0-9]*' | tail -1
+}
+
+url() {
+  local target session_url
+  target="$(resolve_target "${1:-}")"
+  session_url="$(remote_control_url_of "$target")"
+  if [[ -z "$session_url" ]]; then
+    on_box tmux send-keys -t "$target" "'/remote-control ${target%%:*}'" Enter
+    sleep 8
+    session_url="$(remote_control_url_of "$target")"
+  fi
+  [[ -n "$session_url" ]] || fail "no Remote Control URL on $target's screen; run /remote-control there and retry"
+  echo "$session_url"
+  open "$session_url"
+}
+
+main() {
+  local command="${1:-}"
+  shift || true
+  case "$command" in
+    ls) list_windows ;;
+    attach) attach "$@" ;;
+    paste) paste "$@" ;;
+    url) url "$@" ;;
+    -h | --help | help | '') usage ;;
+    *) fail "unknown command '$command' (try: box --help)" ;;
+  esac
+}
+
+main "$@"
