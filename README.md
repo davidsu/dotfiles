@@ -358,8 +358,8 @@ Cmd+Ctrl+R → Name + color the Claude Code or Codex session in the current tab 
 ```
 Cmd+Ctrl+G → Floating fzf picker of the live Claude agents; Enter focuses its iTerm tab (works from any app)
 ```
-> Runs `bin/iterm_agent_picker`: opens a chromeless centered iTerm window (the `Agent Picker` dynamic profile,
-> `iterm2/dynamic-profiles/agent-picker.ln.json`: `Window Type` 19 = centered with no title bar, `Disable Window Resizing`,
+> Runs `bin/iterm_agent_picker`: opens a chromeless iTerm window, centered by the script, (the `Agent Picker` dynamic profile,
+> `iterm2/dynamic-profiles/agent-picker.ln.json`: `Window Type` 12 = no title bar (the picker script centers it; iTerm 3.7.3 has no centered-no-title-bar type, 19 is newer and crashes 3.7.3), `Disable Window Resizing`,
 > `Close Sessions On End` 1 = the window goes when its command ends; the tab bar is hidden since the window has one tab) running
 > `iterm_agent_picker --pick`: an fzf over `iterm_focus_agent --list` (live Claude session names from `~/.claude/sessions/*.json`),
 > each row a `■` block + the name in the agent's `/color`, inside fzf's rounded border; the preview pane (up, 60%) shows what is
