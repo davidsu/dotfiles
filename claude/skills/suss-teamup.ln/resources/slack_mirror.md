@@ -83,9 +83,16 @@ handle, opens or adopts its thread, posts the backfill, and starts **one daemon*
 The daemon loops:
 
 - **out**, every 5 s: `recv` each mirrored channel; every new line becomes one post (code block,
-  thread or top level), queued in `bridge.queue`; the queue is flushed as **one ordered relay**, so a
-  burst keeps its order in Slack. Batching a wake's messages into one code block was tried before
-  and hid answers inside a wall of text on a phone. The returned `message_ts` goes to `.posted`.
+  thread or top level), queued in `bridge.queue`; the head of the queue is flushed as **one ordered
+  relay** of at most `max-turns - 1` posts (7: the relay makes one call per turn and needs the last
+  turn to answer), so a burst keeps its order in Slack and a bigger one spans several flushes.
+  Batching a wake's messages into one code block was tried before and hid answers inside a wall of
+  text on a phone. The returned `message_ts` goes to `.posted`, and **only then does the post leave
+  the queue**: one the relay skipped or Slack refused stays at the head for the next flush
+  (`post unconfirmed on …` in the log), and is dropped after 3 attempts (`post lost on …`, with the
+  connector's error). Before 2026-10-14 the queue was emptied before the relay ran, and a relay
+  that answered in one turn without calling the tool, or hit the turn cap on a burst, silently
+  lost its posts (71 in one day; `tests/flush_posts_test.sh`).
 - **in**, every `TEAMUP_SLACK_POLL` s (default 30): **one relay** reads every mirrored thread
   (`slack_read_thread`, `oldest=` newest known reply minus 60 s) and, for a channel that owns its
   Slack channel, its top level too (`slack_read_channel`); each channel's results are merged and
@@ -141,8 +148,9 @@ channel — so `on` dies at once when the connector does not answer (`load_conne
 once a channel's reads have failed for 5 minutes straight the daemon posts a warning into its thread
 *and* says it on the channel (`.slack.broken`), then a "back up" line when reads recover. Shorter
 blips stay silent: each report wakes every agent on the channel. A reply is marked relayed only
-after the channel accepted it, so a failed `say` is retried on the next poll. A post the relay
-dropped is logged `post lost on {subject}: …` in `bridge.log` (the `recv` cursor has moved on).
+after the channel accepted it, so a failed `say` is retried on the next poll. Outbound, a post
+stays queued until Slack confirmed it (3 attempts, then `post lost on {subject}: …` with the
+connector's error in `bridge.log`); the relay's own stderr lands in `bridge.log` too.
 
 Destination resolves `TEAMUP_SLACK_CHANNEL` → `slack-channel.{subject}` → the id in `slack-channel`
 at the skill root. It is the private **#suss-teamup** channel (`C0BU8PNU5AQ`), which

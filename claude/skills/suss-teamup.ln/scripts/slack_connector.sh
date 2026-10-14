@@ -29,7 +29,7 @@ tool_names_of() { # calls-json → comma-separated full tool names
 run_relay() { # calls-json [ordered] → stream-json events
   env -u CLAUDECODE -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_ENTRYPOINT \
     timeout "$CONNECTOR_TIMEOUT_SECONDS" claude -p --model "$CONNECTOR_MODEL" --output-format stream-json --verbose \
-      --max-turns "$CONNECTOR_MAX_TURNS" --allowedTools "$(tool_names_of "$1")" -- "$(relay_prompt "$(with_full_tool_names "$1")" "${2:-}")" < /dev/null 2>/dev/null
+      --max-turns "$CONNECTOR_MAX_TURNS" --allowedTools "$(tool_names_of "$1")" -- "$(relay_prompt "$(with_full_tool_names "$1")" "${2:-}")" < /dev/null 2>>"${CONNECTOR_LOG:-/dev/null}"
 }
 
 log_relay_cost() { # events
