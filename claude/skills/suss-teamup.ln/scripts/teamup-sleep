@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# teamup-sleep [--force] <handle>... — put agents to sleep: close each one's iTerm tab and leave its channels.
+# teamup-sleep [--force] <handle>... — put agents to sleep: hang up each one's claude, leave its channels, close its iTerm tab.
 # `leave` records how to resume it, so `teamup-wake <handle>` brings it back later.
 # Before running this, the agent has said "ready to sleep": its work is pushed and its
 # browser tabs are closed (resources/agent_lifecycle.md).
@@ -11,21 +11,25 @@ readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
 readonly REGISTRY="$BASE/.sessions.tsv"
 readonly QUIET_SECONDS=60
 readonly DAVID_QUIET_SECONDS=300
+readonly STOP_TIMEOUT_SECONDS=20
 
-close_iterm_tab() { # handle — the tab claude titles "<handle> (claude)", after an optional status glyph
-  osascript - "$1 (claude)" <<'OSA'
+close_iterm_tab() { # handle tty — the tab on that tty, else the one claude titled "<handle> (claude)" after an optional status glyph
+  osascript - "$1 (claude)" "${2:-}" <<'OSA'
 on run argv
   set wanted to item 1 of argv
+  set wantedTty to item 2 of argv
   tell application "iTerm2"
     repeat with w in (get windows)
       repeat with t in (get tabs of w)
         repeat with s in (get sessions of t)
           try
             set tabName to name of s
+            set tabTty to tty of s
           on error
             set tabName to ""
+            set tabTty to ""
           end try
-          if tabName is wanted or tabName ends with (" " & wanted) then
+          if (wantedTty is not "" and tabTty is wantedTty) or tabName is wanted or tabName ends with (" " & wanted) then
             close s
             return "closed"
           end if
@@ -60,10 +64,27 @@ is_focused() { # handle — David is looking at its tab right now (while he is a
   is_david_at_the_mac && { [ "$tab" = "$wanted" ] || [[ "$tab" == *" $wanted" ]]; }
 }
 
+session_id_of() { awk -F'\t' -v h="$1" '$3==h && $4!="" { sid=$4 } END { print sid }' "$REGISTRY" 2>/dev/null; }
+
 transcript_of() { # handle — the claude transcript of its running session
-  local session_id
-  session_id="$(awk -F'\t' -v h="$1" '$3==h && $4!="" { sid=$4 } END { print sid }' "$REGISTRY" 2>/dev/null)"
+  local session_id; session_id="$(session_id_of "$1")"
   [ -n "$session_id" ] && compgen -G "$HOME/.claude/projects/*/$session_id.jsonl" | head -1
+}
+
+claude_pid_of() { # handle — the pid of its running claude (~/.claude/sessions/{pid}.json names the session)
+  local session_id; session_id="$(session_id_of "$1")"
+  [ -n "$session_id" ] || return 0
+  jq -r --arg sid "$session_id" 'select(.sessionId == $sid) | input_filename' "$HOME/.claude/sessions"/*.json 2>/dev/null |
+    head -1 | xargs -I{} basename {} .json
+}
+
+hang_up_claude() { # pid — SIGHUP is what a tab close delivers: claude exits through its SessionEnd hooks
+  kill -HUP "$1" 2>/dev/null || return 1
+  for _ in $(seq 1 $((STOP_TIMEOUT_SECONDS * 10))); do
+    kill -0 "$1" 2>/dev/null || return 0
+    sleep 0.1
+  done
+  return 1
 }
 
 last_typed_prompt_at() { # handle — the last prompt David typed in its terminal; spawn/wake boots type /suss-teamup
@@ -114,10 +135,20 @@ is_busy() { # handle — David is on it, someone is waiting on it, or it spoke a
   return $busy
 }
 
+tty_of_pid() { local device; device="$(ps -o tty= -p "$1" 2>/dev/null | tr -d ' ')"; [ -n "$device" ] && [ "$device" != '??' ] && printf '/dev/%s' "$device"; }
+
+stop_claude() { # handle pid — iTerm's close keeps the process alive for its undo window (~5 s): end it first, by pid
+  hang_up_claude "$2" && echo "stopped $1 (claude pid $2)" ||
+    echo "teamup-sleep: $1 (claude pid $2) did not exit within ${STOP_TIMEOUT_SECONDS}s" >&2
+}
+
 put_to_sleep() { # handle
+  local pid tty=""; pid="$(claude_pid_of "$1")"
+  if [ -n "$pid" ]; then tty="$(tty_of_pid "$pid")"; stop_claude "$1" "$pid"
+  else echo "teamup-sleep: no running claude session registered for $1; only closing its tab" >&2; fi
   "$TEAMUP" leave --all --as "$1" | tail -1
-  [ "$(close_iterm_tab "$1")" = closed ] && echo "closed the tab of $1" ||
-    echo "teamup-sleep: no iTerm tab titled '$1 (claude)'; close it by hand" >&2
+  [ "$(close_iterm_tab "$1" "$tty")" = closed ] && echo "closed the tab of $1" ||
+    echo "teamup-sleep: no iTerm tab of $1; close it by hand" >&2
   echo "resume with: $HERE/teamup-wake $1"
 }
 

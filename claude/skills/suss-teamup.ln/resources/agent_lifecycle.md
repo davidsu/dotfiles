@@ -20,8 +20,13 @@ $S/teamup-wake <handle> [--channel C] [--role ROLE] [--color COLOR] [--after HAN
    - say on the channel `ready to sleep`, with its state in a line or two
 2. **Whoever sleeps it verifies first.** Check the pushed commit and the task file yourself
    (`git log origin/…`, the file on disk). Never take "done" on the agent's word.
-3. Run `teamup-sleep <handle>`. It `leave`s every channel, which records how to resume the
-   agent, and closes the iTerm tab titled `<handle> (claude)`. It refuses, and says why, while:
+3. Run `teamup-sleep <handle>`. It hangs up the agent's claude by pid (SIGHUP, what a tab
+   close delivers: the session ends through its SessionEnd hooks, which `leave` its channels
+   and record how to resume it), waits for the process to exit, `leave`s whatever is left,
+   and closes its iTerm tab. The tab is closed last on purpose: iTerm's "Undo can revive a
+   closed session" keeps a closed tab's process alive for ~5 s (profile default), so closing
+   first left the agent running, and taking turns, after the tool had said `closed`. It
+   refuses, and says why, while:
    - the agent's tab has keyboard focus (the current tab of iTerm's front window): David is
      looking at it
    - David messaged it in the last 5 minutes: a prompt typed in its terminal (the last
