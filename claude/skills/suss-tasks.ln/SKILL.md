@@ -15,6 +15,8 @@ Tasks live in the git repo `base44-dev/suss-tasks` (clone: `~/Developer/suss-tas
 
 **Finding a task from another project**: every project's tasks are in that one clone, so you never need that project checked out. `ls ~/Developer/suss-tasks` lists the project folders (`apper/`, `cli/`, `dotfiles/`, `vite-plugin/`, `weekly/`, …); search across all of them with `rg <pattern> ~/Developer/suss-tasks`. Read them there directly.
 
+**Only project tasks sync to the b44sync board**: `apper/`, `cli/`, `vite-plugin/` (a top-level dir with a matching `~/projects/<name>` repo); `dotfiles/`, `personal/`, `weekly/` are David's own and `/suss-sync-tasks` refuses them, so give such a task the footer `**b44sync**: never`.
+
 **Every task gets its own directory with an `epic.md`** — never a single loose `.md` file under `suss-tasks/<project>/`.
 
 **Every epic directory owns one emoji, and every title in it starts with that emoji** (`# 🔒 …`), so the b44sync board tells parallel epics apart. Rules and how to apply it: [ORGANIZATION.md](resources/ORGANIZATION.md).
