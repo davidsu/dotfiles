@@ -26,7 +26,7 @@ Symptom: a tool call hangs or errors, an app is gone, an agent does not answer.
   with `iterm_tab_style --tty <tty> --color <color>` from each agent's `/color`
   (`transcript_color` in the suss-teamup `session_colors.sh`). Titles return when each agent redraws.
 - Claude sessions: `~/.claude/sessions/*.json` lists the live ones (`kill -0 <pid>`); a dead one with
-  a transcript can be resumed by its owner's lead ([agent_lifecycle](../../../suss-teamup/resources/agent_lifecycle.md)).
+  a transcript can be resumed by its owner's lead ([agent_lifecycle](~/.claude/skills/suss-teamup/resources/agent_lifecycle.md)).
 
 ## An agent does not answer
 

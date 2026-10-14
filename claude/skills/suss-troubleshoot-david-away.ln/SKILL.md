@@ -75,8 +75,8 @@ $G relaunch APP                  # relaunch APP if it is not running, and say so
 |---|---|
 | An agent's transcript | `~/.claude/projects/*/<session-id>.jsonl` (`rg --no-config`: files > 10 MB are skipped by the rg config) |
 | A teamup channel | `/tmp/suss-teamup/<subject>/channel.tsv`; its Slack thread url `~/.local/state/suss-teamup/slack/<subject>.url` |
-| Parked (asleep) agents | `~/.local/state/suss-teamup/parked.tsv`; `teamup-wake <handle> --role owner` ([agent_lifecycle](../suss-teamup/resources/agent_lifecycle.md)) |
+| Parked (asleep) agents | `~/.local/state/suss-teamup/parked.tsv`; `teamup-wake <handle> --role owner` ([agent_lifecycle](~/.claude/skills/suss-teamup/resources/agent_lifecycle.md)) |
 | The focus poller | `teamup-focus on [--skip HANDLE] \| off \| status`; log `~/.local/state/suss-teamup/focus.log` |
-| Slack bridges | `teamup-slack off/on <subject>` (`off` also kills your `wait`) ([slack_mirror](../suss-teamup/resources/slack_mirror.md)) |
+| Slack bridges | `teamup-slack off/on <subject>` (`off` also kills your `wait`) ([slack_mirror](~/.claude/skills/suss-teamup/resources/slack_mirror.md)) |
 | Crash reports | `~/Library/Logs/DiagnosticReports/*.ips` (`$G crashes`) |
 | Reminders | `~/Library/LaunchAgents/com.davidsu.remind.<slug>.plist`, scripts under `~/.local/bin/` |
