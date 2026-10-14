@@ -5,29 +5,33 @@
 # filters, Enter focuses that agent's tab (bin/iterm_focus_agent), Esc closes the window.
 #   iterm_agent_picker                 open the floating window (the "Agent Picker" dynamic profile) running --pick
 #   iterm_agent_picker --pick          the picker itself: what runs inside that window
-#   iterm_agent_picker --preview TTY   print the screen of the iTerm session on TTY (fzf's preview command, bottom anchored)
+#   iterm_agent_picker --preview TTY   print the screen of the iTerm session on TTY with its colors (bin/iterm_screen_ansi via
+#                                      iTerm's Python API; plain AppleScript `contents` when the API is off)
 set -euo pipefail
 export PATH="/opt/homebrew/bin:$PATH"
 
 readonly PICKER_PROFILE="Agent Picker"
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
 readonly FOCUS_AGENT="$(dirname "$SELF")/iterm_focus_agent"
+readonly SCREEN_ANSI="$(dirname "$SELF")/iterm_screen_ansi"
 readonly ROW_MARK="■ "
 source "$HOME/.claude/skills/suss-teamup/scripts/session_colors.sh"
 
 open_picker_window() {
   osascript -l JavaScript - "$PICKER_PROFILE" "$SELF --pick" <<'JXA'
 ObjC.import('AppKit');
-const centerOnMainScreen = (window) => {
+const SCREEN_FRACTION = 0.8;
+const coverScreenCenter = (window) => {
   const screen = $.NSScreen.mainScreen.frame.size;
-  const { width, height } = window.bounds();
+  const width = Math.round(screen.width * SCREEN_FRACTION);
+  const height = Math.round(screen.height * SCREEN_FRACTION);
   window.bounds = { x: Math.round((screen.width - width) / 2), y: Math.round((screen.height - height) / 2), width, height };
 };
 function run([profile, command]) {
   const iterm = Application('iTerm2');
   const window = iterm.createWindowWithProfile(profile, { command });
   iterm.activate();
-  centerOnMainScreen(window);
+  coverScreenCenter(window);
 }
 JXA
 }
@@ -92,6 +96,6 @@ pick_agent() {
 case "${1:-}" in
   "") open_picker_window ;;
   --pick) agent="$(pick_agent)" && [ -n "$agent" ] && exec "$FOCUS_AGENT" "$agent" ;;
-  --preview) screen_of_tty "$2" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' ;;
+  --preview) "$SCREEN_ANSI" "$2" 2>/dev/null || screen_of_tty "$2" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' ;;
   *) echo "usage: iterm_agent_picker [--pick | --preview TTY]" >&2; exit 1 ;;
 esac

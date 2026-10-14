@@ -376,7 +376,8 @@ Cmd+Ctrl+G → Floating fzf picker of the live Claude agents; Enter focuses its 
 > `Close Sessions On End` 1 = the window goes when its command ends; the tab bar is hidden since the window has one tab) running
 > `iterm_agent_picker --pick`: an fzf over `iterm_focus_agent --list` (live Claude session names from `~/.claude/sessions/*.json`),
 > each row a `■` block + the name in the agent's `/color`, inside fzf's rounded border; the preview pane (up, 60%) shows what is
-> on that agent's iTerm tab right now (read-only AppleScript `contents` of the session on its tty). Same keys as every other
+> on that agent's iTerm tab right now, in the tab's colors (`bin/iterm_screen_ansi`: iTerm's Python API per-cell styles → ANSI;
+> plain AppleScript `contents` when the API is off). The window covers 80% of the screen, centered. Same keys as every other
 > fzf here: type to filter, `ctrl-j` / `ctrl-k` (fzf's defaults) or arrows move, Enter runs `iterm_focus_agent <name>`,
 > Esc closes the window. Errors go to `~/Library/Logs/iterm_agent_picker.log`.
 > Known iTerm nit: closing the picker within 3 s of opening (iTerm's `shortLivedSessionDuration` advanced setting) shows

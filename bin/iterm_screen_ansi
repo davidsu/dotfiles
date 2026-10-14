@@ -1,0 +1,70 @@
+#!/usr/bin/env -S uv run --quiet --with iterm2 python
+# iterm_screen_ansi TTY — print the visible screen of the iTerm session on TTY with its colors and
+# attributes as ANSI escape sequences (what the tab looks like, for an fzf --ansi preview).
+# AppleScript's `contents` is plain text; the Python API's per-cell styles are the only colored source.
+# Needs Settings → General → Magic → Enable Python API (bin/iterm_focus_history needs it too).
+import sys
+
+import iterm2
+from iterm2.screen import CellStyle
+
+RESET = "\x1b[0m"
+ATTRIBUTE_CODES = (("bold", 1), ("faint", 2), ("italic", 3), ("underline", 4), ("blink", 5), ("inverse", 7), ("invisible", 8), ("strikethrough", 9))
+
+
+def color_codes(color: CellStyle.Color, layer: int) -> list[str]:
+    if color.is_rgb:
+        return [f"{layer}8;2;{color.rgb.red};{color.rgb.green};{color.rgb.blue}"]
+    if color.is_standard:
+        return [f"{layer}8;5;{color.standard}"]
+    return []
+
+
+def sgr_for(style: CellStyle) -> str:
+    codes = [str(code) for attribute, code in ATTRIBUTE_CODES if getattr(style, attribute)]
+    codes += color_codes(style.fg_color, 3) + color_codes(style.bg_color, 4)
+    return RESET + (f"\x1b[{';'.join(codes)}m" if codes else "")
+
+
+def line_as_ansi(line: iterm2.LineContents, width: int) -> str:
+    cells = []
+    last_style = None
+    for x in range(width):
+        style = line.style_at(x)
+        if style is None:
+            break
+        if style is not last_style:
+            cells.append(sgr_for(style))
+            last_style = style
+        cells.append(line.string_at(x).replace("\x00", " "))
+    return "".join(cells).rstrip() + RESET
+
+
+async def session_on_tty(app: iterm2.App, tty: str) -> iterm2.Session | None:
+    for window in app.terminal_windows:
+        for tab in window.tabs:
+            for session in tab.sessions:
+                if await session.async_get_variable("tty") == tty:
+                    return session
+    return None
+
+
+def without_trailing_blank_lines(lines: list[str]) -> list[str]:
+    while lines and lines[-1] == RESET:
+        lines.pop()
+    return lines
+
+
+async def main(connection: iterm2.Connection) -> None:
+    app = await iterm2.async_get_app(connection)
+    session = await session_on_tty(app, sys.argv[1])
+    if session is None:
+        print("(not in an iTerm tab)")
+        return
+    screen = await session.async_get_screen_contents()
+    width = session.grid_size.width
+    lines = [line_as_ansi(screen.line(index), width) for index in range(screen.number_of_lines)]
+    print("\n".join(without_trailing_blank_lines(lines)))
+
+
+iterm2.run_until_complete(main)
