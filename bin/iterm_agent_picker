@@ -5,7 +5,7 @@
 # filters, Enter focuses that agent's tab (bin/iterm_focus_agent), Esc closes the window.
 #   iterm_agent_picker                 open the floating window (the "Agent Picker" dynamic profile) running --pick
 #   iterm_agent_picker --pick          the picker itself: what runs inside that window
-#   iterm_agent_picker --preview TTY   print the screen of the iTerm session on TTY (fzf's preview command)
+#   iterm_agent_picker --preview TTY   print the screen of the iTerm session on TTY (fzf's preview command, bottom anchored)
 set -euo pipefail
 export PATH="/opt/homebrew/bin:$PATH"
 
@@ -90,8 +90,9 @@ tinted_agent_rows() {
 pick_agent() {
   local picked
   picked="$(tinted_agent_rows | fzf --ansi --layout=reverse --no-info --border=rounded --border-label=' Agents ' --delimiter=$'\t' --with-nth=1 --accept-nth=1 \
-    --prompt='Agent> ' --header='CTRL-j/k: move | ENTER: focus | ESC: close' \
-    --preview="$SELF --preview {2}" --preview-window='up:60%:wrap:follow')" || return 1
+    --prompt='Agent> ' --header='CTRL-j/k: move | CTRL-u/d: scroll preview | ENTER: focus | ESC: close' \
+    --bind='ctrl-u:preview-half-page-up,ctrl-d:preview-half-page-down' \
+    --preview="$SELF --preview {2}" --preview-window='up:60%:nowrap:follow')" || return 1
   echo "${picked#"$ROW_MARK"}"
 }
 
