@@ -10,86 +10,105 @@ phone without anyone having armed anything first. One thread per channel name, r
 across restarts, reboots and `erase`: the thread state (`{subject}.thread`, `.posted`,
 `.relayed`, `.engaged`, `.url`) lives in `~/.local/state/suss-teamup/slack/`, not in the
 ephemeral channel dir — when it lived there, a recreated channel opened a fresh thread and
-the user kept replying into the old, unpolled one. The bridge retires itself once the
+the user kept replying into the old, unpolled one. A channel's mirror retires itself once the
 channel has had no real member for 2 minutes (a single empty poll used to kill it during
-an agent's leave/re-join). Replies typed while no bridge runs are not lost: the next
-bridge for that channel relays every reply it has not relayed yet. **Nothing to invoke**
+an agent's leave/re-join). Replies typed while no mirror runs are not lost: the next
+mirror for that channel relays every reply it has not relayed yet. **Nothing to invoke**
 — the manual controls exist only for overriding it:
 
 ```
-scripts/teamup-slack status          # which channels are mirrored
-scripts/teamup-slack off [subject]   # stop mirroring (bare: all channels)
+scripts/teamup-slack status          # the daemon, and which channels are mirrored
+scripts/teamup-slack off [subject]   # stop mirroring (bare: all channels, and the daemon)
 scripts/teamup-slack on  [subject]   # re-start one you turned off
+scripts/teamup-slack url <subject>   # the channel's Slack thread permalink
 ```
 
-**Finding a channel's Slack thread** — never reconstruct a permalink from `.slack.thread`:
+**Finding a channel's Slack thread** — never reconstruct a permalink from `.thread`:
 the bridge announces it on the channel (`mirror thread in Slack: <url>`) the first time a
 mirror opens, writes it to `~/.local/state/suss-teamup/slack/{subject}.url`, and
-`scripts/teamup-slack url {subject}` prints it (creating + announcing it if missing).
+`scripts/teamup-slack url {subject}` prints it. The team URL is learned from the first post the
+connector makes, so a channel that *adopted* a thread another machine opened gets its announcement
+on the daemon's next outbound tick after any post.
 
-**A running poller keeps the code it started with.** Restart it (`off` then `on`) only
-when the edit touched a path the live loop executes — `deliver_to_channel`,
-`mirror_channel_to_slack`, `post_to_thread`, the poll loop. `claim_mirror` and the docs
-are start-path only, so they need nothing. Stopping a bridge also kills its `teamup wait`
-— an orphaned one used to keep the listener pidfile, wake on the next message, mark it
-seen and exit, so the restarted bridge never posted it. A bridge killed after its script
-was edited may log a syntax error on its way out (bash reads the script lazily);
-harmless. Sweep what is live and how stale it is:
-`for p in "$SUSS_TEAMUP_DIR"/*/.slack.pid; do pid=$(cat "$p"); kill -0 "$pid" 2>/dev/null && echo "$p $pid $(ps -o lstart= -p "$pid")"; done`
+## Auth: the claude.ai Slack connector, no Slack tokens
 
-**Slack search watcher** — `scripts/teamup-slack-watch on {name} {subject} {handle} {query} [skip-regex]` polls
-`search.messages` every 60s (`$TEAMUP_WATCH_POLL`) under the same session and says each new
-hit on `{subject}` as `@{handle} new in #channel from author: text — permalink`, so an agent
-wakes on a file event instead of polling Slack. A bot post with no text shows its attachments' pretext and title, and a hit matching `skip-regex` is dropped. Its first poll only records the baseline, and
-hits in every mirror channel (`slack-channel`, `slack-channel.*`) are skipped. Each watch joins under its own `{name}`, so several share one inbox, and it joins with
-`TEAMUP_SLACK=off`, which keeps raw hits out of Slack. State, pid and log: `~/.local/state/suss-teamup/slack/watch/{name}.*`. Used by the `slack.digest` agent
-(suss-tasks `dotfiles/slack_digest/epic.md`).
-Its sibling `scripts/teamup-mac-notify-watch` does the same for macOS notifications. It reads
-Notification Center's sqlite db every 5s and says each new notification from one app with one
-exact title. That covers WhatsApp Web in Brave: the title is the group, the body `~ sender: text`.
+Until 2026-10-14 the bridge used the user's Slack web session (`xoxc` + `d` cookie from the
+keychain). Slack rotated it at 07:33 and every bridge on both machines died with `invalid_auth`,
+silently (`suss-troubleshoot-david-away/resources/stories/slack_session_rotation_2026_10_14.md`).
+David: "this 'got my tokens from my browser' isn't good enough", and no Slack app / API key
+either. The bridge now drives the **claude.ai Slack connector** (`mcp__claude_ai_Slack__*`), which
+authenticates through claude.ai and is present in every Claude Code session on the laptop and the
+box (`claude mcp list` → `claude.ai Slack … ✔ Connected`).
 
-**suss-tasks mirror** — `scripts/teamup-tasks-sync` (run on demand) uploads every active
-task file (`~/projects/*/suss-tasks/**/*.md`, `done/` excluded) into the same Slack
-channel: one `suss-tasks · {project}` thread per project, each file titled
-`{project}/{relpath}` with its local path as the first line. Idempotent by content hash;
-changed files replace their superseded upload, locally deleted files are removed. This is
-the context Slack-side readers (the user's phone, Claude-in-Slack) have for the team's
-work — re-run it after meaningful task-file changes. Claude-in-Slack cannot clone the
-private suss-tasks repo, so its channel instructions (set on the configure page
-https://claude.ai/claude-in-slack/T08EJMFT8LD/C0BU8PNU5AQ/configure, not stored here) only
-say: read these snapshot threads, and ask an agent in the teamup thread to post a task
-file when it is missing or stale.
+The connector is only reachable from a Claude session, so `scripts/slack_connector.sh` runs a
+**headless relay**: one `claude -p --model haiku` per batch of tool calls, told to make exactly the
+listed calls with the given arguments and nothing else. The tool results are taken from the
+`stream-json` transcript (`tool_use` joined to `tool_result` by id), never from the model's prose, and
+each result is matched back to its request by exact arguments — a call the relay skipped is simply
+missing, which the caller treats as a failure. The connector answers in prose, not JSON;
+`connector_messages_json` parses the `detailed` read format (`Message TS:` blocks, `From:` lines,
+`Reactions:`/`Files:`/`Thread:` trailers, the `*Sent using* <@…|Claude>` footer dropped) back into
+`{ts, user, username, text, thread_ts}` so the delivery code did not change.
 
-**Residual (documented, not fixed):** `claim_mirror` clears a dead pidfile and then
-`noclobber`-creates its own, and it verifies afterwards that its pid is the one that
-landed — so a loser backs off. Two joiners whose writes straddle the other's verify can
-both believe they claimed; cost is one duplicate relay until an `off`. Same TOCTOU class
-as `claim_listener` above, and not worth a lock.
+Costs and latency, measured 2026-10-14 (laptop, haiku): a relay is **6–14 s wall and $0.007–0.009**
+for 1–4 calls; **19 s and $0.012** for 17 calls (haiku makes them one per turn whatever the prompt
+says). Each relay line is logged with its cost in `~/.local/state/suss-teamup/slack/bridge.log`
+(`relay: N turns, M ms, $C`), so the real per-day number is `grep relay bridge.log | awk …`.
 
-`TEAMUP_SLACK=off` disables auto-mirroring entirely. A machine with no Slack session in
-its keychain silently gets no mirror — auto-start never speaks and never fails, so it
-cannot break `join`.
+| inbound poll (`TEAMUP_SLACK_POLL`) | relays/day | at 15 channels (17 reads, $0.012) | at 3 channels ($0.008) |
+|---|---|---|---|
+| 30 s (default) | 2880 | ≈ $34/day | ≈ $23/day |
+| 60 s | 1440 | ≈ $17/day | ≈ $12/day |
+| 120 s | 720 | ≈ $9/day | ≈ $6/day |
 
-It is **deterministic plumbing — no model in the loop**, so it costs no turns and no
-context, and it keeps working while every agent is mid-turn or wedged (unlike the Stop
-hook, which only fires *between* turns). It joins as a normal member
-(`$TEAMUP_SLACK_HANDLE`, default `david`) and reuses teamup's own delivery both ways:
+Outbound relays come on top, one per batch of new lines (a few cents an hour on a busy channel).
+Measured end to end on a throwaway channel: channel line → Slack **19 s**; Slack reply → channel
+**45–56 s** (the poll interval plus a relay). The fast alternative — calling the connector from bash
+through Claude Code's own OAuth token and an undocumented Anthropic proxy, 1 s per call — was
+measured and **rejected** (lead.20, 2026-10-14): a harvested session credential driving an
+unofficial endpoint is the class David had just refused. The transport is one function
+(`connector_calls`), so it can be swapped if he ever allows it.
 
-- **out** — `wait --timeout 0` (fswatch, free) → `recv` → one `chat.postMessage` per
-  channel message in the thread. Batching a wake's messages into one code block hid
-  answers inside a wall of text on a phone.
-- **in** — `conversations.replies` → `say`, or `ask --to {handle}` when the reply starts
-  with a **live** handle (`@` optional, `.` and `-` interchangeable: `lead.7 do X` aims at
-  `lead-7`; the user is often on a phone keyboard), so an aimed reply wakes one agent and trips its Stop hook
-  (`asks_for_me=1`) instead of waking the roster. A name no member holds is delivered to
-  everyone and answered in the thread with the live handles — aiming at nobody used to
-  become a dangling ask. A reply opening with the word `lead` (any case, `@` and a trailing
-  `:`/`,` optional) goes as an `ask` to each live `lead*` agent; with no such agent it reads as
-  ordinary text. Aiming is **not privacy**: every message lands on the shared
-  channel and all agents read it; it only decides whose idle is blocked.
+What the connector cannot do: unfollow a thread (`subscriptions.thread.remove`), so David now
+follows every mirrored thread he "posted" in; delete a message; post without the
+`*Sent using* <@…|Claude>` footer. Messages are sent as **markdown** (the connector converts to
+mrkdwn): the thread root is written `**teamup · {subject}** — gist` and comes back as Slack's
+`*teamup · {subject}* — gist`, which is what `find_existing_root` matches.
+
+## One daemon, every channel
+
+`teamup-slack on {subject}` marks the channel (`.slack.on` in its dir), joins it as the bridge
+handle, opens or adopts its thread, posts the backfill, and starts **one daemon**
+(`__daemon`, pid in `~/.local/state/suss-teamup/slack/bridge.pid`, log `bridge.log`) if none runs.
+The daemon loops:
+
+- **out**, every 5 s: `recv` each mirrored channel; every new line becomes one post (code block,
+  thread or top level), queued in `bridge.queue`; the queue is flushed as **one ordered relay**, so a
+  burst keeps its order in Slack. Batching a wake's messages into one code block was tried before
+  and hid answers inside a wall of text on a phone. The returned `message_ts` goes to `.posted`.
+- **in**, every `TEAMUP_SLACK_POLL` s (default 30): **one relay** reads every mirrored thread
+  (`slack_read_thread`, `oldest=` newest known reply minus 60 s) and, for a channel that owns its
+  Slack channel, its top level too (`slack_read_channel`); each channel's results are merged and
+  handed to `deliver_unseen_replies` → `say`, or `ask --to {handle}` when the reply starts with a
+  **live** handle (`@` optional, `.` and `-` interchangeable: `lead.7 do X` aims at `lead-7`; the user
+  is often on a phone keyboard), so an aimed reply wakes one agent and trips its Stop hook
+  (`asks_for_me=1`) instead of waking the roster. A name no member holds is delivered to everyone
+  and answered in the thread with the live handles. A reply opening with the word `lead` goes as an
+  `ask` to each live `lead*` agent. Aiming is **not privacy**: every message lands on the shared
+  channel; it only decides whose idle is blocked.
+- **retire**: a channel with no real member for 2 minutes gets the `_channel is empty_` notice, the
+  bridge leaves it and drops its marker; the daemon keeps running (and makes no relay) with zero
+  channels.
+
+**A running daemon keeps the code it started with.** After editing `teamup-slack`,
+`slack_connector.sh` or `slack_inbound.sh`: `teamup-slack off` (bare — stops the daemon and leaves
+every channel) then `on` per channel, or just `on {subject}` for one (it restarts nothing if the
+daemon is alive). Per-channel pollers from before the daemon (`teamup-slack __run {subject}`) are
+killed by `on`/`off` of that channel.
+
 - **attribution** — the bridge posts under one handle, so a thread reply from anyone but
-  the channel owner is prefixed `[slack: {name}]` (from `bot_profile.name`/`username`,
-  else `users.info`). Without it, @Claude's replies arrived on the channel as the user's.
+  the channel owner is prefixed `[slack: {name}]` (from the `From:` line, else
+  `slack_read_user_profile`). Without it, @Claude's replies arrived on the channel as the user's.
 - **focus** — a reply from the channel owner means the user is away from the Mac, so the
   bridge runs `teamup-focus on` (idempotent): from then on, while no one touches the
   keyboard or mouse, the screen stays on an agent's terminal (resources/tracking_agents.md).
@@ -98,53 +117,45 @@ hook, which only fires *between* turns). It joins as a normal member
 `teamup:234`), so anything injected from Slack can't be posted back. Inbound, a reply that is
 an agent code block is split into its messages and each is looked up in **this machine's**
 `channel.tsv` by seq, clock, handle and type: a match is our own mirror post, dropped. That
-check replaced trusting `.slack.posted` alone, which the poller could read before
-`post_to_thread` had appended to it, so the bridge's own code block came back as a reply from
-the user (a user-session token posts as the user, so bridge posts and phone replies share one
-author). The bridge's own notices (`:warning:`, `:white_check_mark:`, the retire line) are
-dropped the same way. A code block that matches nothing local was mirrored by **another
-machine's** bridge into the same thread (the Coder box and the laptop share one thread per
-channel name): it is delivered, attributed `[{handle}]`, only when it says `@all` or names a
-live local handle; everything else from the other machine stays in Slack. Such a line may open
-with a handle that lives only on the other machine (`@shahar.preview …, @coder.lead.19 …`): it
-goes to everyone here, silently. The `:warning: no agent here is called …` notice is reserved
-for a reply a person typed (a typo in Slack), where retyping fixes it. Plain replies are
-delivered as before. Two more rules make the shared thread work across machines: `open_thread`
-first looks for a root younger than a day whose text starts with `*teamup · {subject}* ` among the
-channel's last 200 top-level messages (`conversations.history`, `oldest=`) and adopts it instead of
-posting a new one (older roots are reused channel names and dead threads), relaying
-only replies newer than the adoption (the older ones belong to the machine that opened it) and
-skipping the backfill; and outbound, a reply (`re:#N`, `re #N`, `ack #N`) to a line that arrived
-from another machine (`[handle] …` under the bridge's name) gets `@handle` inserted after the
+check replaced trusting `.posted` alone, which the poll could read before the flush had appended
+to it (connector posts and phone replies share one author: David). The bridge's own notices
+(`:warning:`, `:white_check_mark:`, the retire line) are dropped the same way. A code block that
+matches nothing local was mirrored by **another machine's** bridge into the same thread (the Coder
+box and the laptop share one thread per channel name): it is delivered, attributed `[{handle}]`,
+only when it says `@all` or names a live local handle; everything else from the other machine stays
+in Slack. Such a line may open with a handle that lives only on the other machine
+(`@shahar.preview …, @coder.lead.19 …`): it goes to everyone here, silently. The `:warning: no agent
+here is called …` notice is reserved for a reply a person typed (a typo in Slack), where retyping
+fixes it. Two more rules make the shared thread work across machines: `open_thread` first looks for
+a root younger than a day whose text starts with `*teamup · {subject}* ` among the channel's recent
+top-level messages (`slack_read_channel`, `oldest=`) and adopts it instead of posting a new one
+(older roots are reused channel names and dead threads), relaying only replies newer than the
+adoption and skipping the backfill; and outbound, a reply (`re:#N`, `re #N`, `ack #N`) to a line that
+arrived from another machine (`[handle] …` under the bridge's name) gets `@handle` inserted after the
 `re:#N`, so the other machine's bridge delivers it to its author without anyone typing the handle.
-`tests/slack_inbound_test.sh` drives all of this against a throwaway channel with no Slack.
+`tests/slack_inbound_test.sh` and `tests/toplevel_posting_test.sh` drive all of this against a
+throwaway channel with a faked relay (`connector_call` / `connector_calls` redefined): no Slack.
 
-**Auth is the user's Slack web session** — the same `slack-mcp-xoxc` / `slack-mcp-xoxd`
-keychain items the Slack MCP uses. No Slack app, therefore no Events API: the inbound
-side polls (`$TEAMUP_SLACK_POLL`, default 10s — Tier-3, one poller per channel), asking
-only for replies newer than the newest one it knows minus a 60s margin (`oldest=`), so a
-busy thread costs a few KB per poll instead of the last 50 code blocks. Those tokens
-rotate, and the failure mode is **silence**, indistinguishable from a quiet channel — so
-the bridge auth-checks loudly at `on`, and once polls have failed for 5 minutes straight
-posts a warning into the thread *and* says it on the channel (`.slack.broken`), then a
-"back up" line when polling recovers. Shorter blips (laptop sleep, flaky wifi) stay
-silent: each report wakes every agent on the channel. A reply is marked relayed only
-after the channel accepted it, so a failed `say` is retried on the next poll.
+**Failure is loud.** The failure mode of a dead transport is silence, indistinguishable from a quiet
+channel — so `on` dies at once when the connector does not answer (`load_connector_identity`), and
+once a channel's reads have failed for 5 minutes straight the daemon posts a warning into its thread
+*and* says it on the channel (`.slack.broken`), then a "back up" line when reads recover. Shorter
+blips stay silent: each report wakes every agent on the channel. A reply is marked relayed only
+after the channel accepted it, so a failed `say` is retried on the next poll. A post the relay
+dropped is logged `post lost on {subject}: …` in `bridge.log` (the `recv` cursor has moved on).
 
-Destination resolves `TEAMUP_SLACK_CHANNEL` → the id in `slack-channel` at the skill root
-→ the user's self-DM. It is the private **#suss-teamup** channel (`C0BU8PNU5AQ`), which
-also has **@Claude** in it, so the user can talk to a Slack-side Claude in a thread —
-Slack refuses to add an agent to an existing DM ("agents can only be added at the start of
-direct messages"), which is why a self-DM cannot serve. The bridge never creates a
-channel: ad-hoc ones litter a shared workspace and archive rather than delete. One
+Destination resolves `TEAMUP_SLACK_CHANNEL` → `slack-channel.{subject}` → the id in `slack-channel`
+at the skill root. It is the private **#suss-teamup** channel (`C0BU8PNU5AQ`), which
+also has **@Claude** in it, so the user can talk to a Slack-side Claude in a thread. The bridge
+never creates a channel: ad-hoc ones litter a shared workspace and archive rather than delete. One
 channel, one thread per teamup channel, forever.
 
 **A dedicated Slack channel** — a `slack-channel.{subject}` file at the skill root mirrors that
-one teamup channel into its own Slack channel instead: its thread is never unfollowed, and what the
-user types at the channel's top level is relayed like a thread reply (so it also turns `teamup-focus` on).
+one teamup channel into its own Slack channel instead, and what the user types at the channel's top
+level is relayed like a thread reply (so it also turns `teamup-focus` on).
 Today: teamup `suss-lead` → private **#suss-lead** (`C0C9NE59T24`), the leads' private line to
-the user (`suss-workflows` recipe `lead_role.md`). Repointing a live channel: `off`, move its
-`{subject}.*` thread state aside, `on`.
+the user (`suss-workflows` recipe `lead_role.md`). Repointing a live channel: `off {subject}`, move
+its `{subject}.*` thread state aside, `on {subject}`.
 
 **Thread or top level — the agent decides per message.** The user reads a dedicated channel at
 its top level, so an answer buried in the mirror thread is missed. `teamup say|ask|ack … --top`
@@ -159,7 +170,6 @@ top level arrives with the ` [top]` suffix, a thread reply without, so an agent 
 Rule of thumb for a lead: answer a `[top]` message with `--top`; status for David goes `--top`;
 routine chatter and agent-to-agent traffic stay in the thread. A throwaway channel also relays
 #suss-throwaway's top level, so a live test can round-trip there.
-`tests/toplevel_posting_test.sh` covers the CLI, both bridge directions and the refusal.
 
 **The thread root** is `*teamup · {subject}* — {gist}`, written once when the thread opens: the
 channel's `join --gist` (the first one given wins, kept in `.gist` in the channel dir), else the
@@ -170,3 +180,10 @@ bridge then mirrors into private **#suss-throwaway** (`C0C8PB41Z37`, file `slack
 instead: agents-only channels (tests, probes) stay out of the user's #suss-teamup. Their thread
 state lives in the channel dir, not `~/.local/state`, so `erase` (or a reboot clearing `/tmp`)
 removes it and a later channel of the same name, throwaway or not, opens a fresh thread.
+
+**Still on the old session path** (fallback only, dead whenever the session rotates):
+`scripts/teamup-slack-watch` (Slack search → channel, used by `slack.digest`) and
+`scripts/teamup-tasks-sync` (task-file uploads). Both source `slack_session.sh`; porting them means
+`slack_search_public_and_private` and the two-step `slack_get_file_upload_url` /
+`slack_complete_file_upload` through `connector_call`.
+`TEAMUP_SLACK=off` disables auto-mirroring entirely.

@@ -1,4 +1,6 @@
-# Sourced by teamup-slack and teamup-slack-watch: the user's Slack web session (xoxc + d cookie).
+# FALLBACK ONLY (dies whenever Slack rotates the web session, 2026-10-14 07:33): the user's Slack web
+# session (xoxc + d cookie). teamup-slack no longer uses it; teamup-slack-watch and teamup-tasks-sync
+# still do until they are ported to slack_connector.sh.
 # The caller defines die().
 
 keychain_secret() { security find-generic-password -a "$USER" -s "$1" -w 2>/dev/null; }

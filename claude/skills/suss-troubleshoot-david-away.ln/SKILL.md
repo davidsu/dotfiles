@@ -55,6 +55,7 @@ the stories they came from. Learned something: fix the recipe, add a story.
 | iTerm2 crash, 2026-10-14 | A profile `Window Type` from iTerm master crashed iTerm2 3.7.3 twice; the shells survived on iTermServer | [iterm_crash_2026_10_14.md](resources/stories/iterm_crash_2026_10_14.md) |
 | WhatsApp keystroke, 2026-10-14 | A gated screen test checked idle once, waited 90 s, and typed "lead" + Enter into WhatsApp | [whatsapp_keystroke_2026_10_14.md](resources/stories/whatsapp_keystroke_2026_10_14.md) |
 | Focus poller relaunch, 2026-10-13/14 | The focus poller opened ~150 windows while David watched, then relaunched a crashed iTerm2 and hid the crash | [focus_poller_relaunch_2026_10_14.md](resources/stories/focus_poller_relaunch_2026_10_14.md) |
+| Slack session rotation, 2026-10-14 | Slack rotated the web session at 07:33; every token-based bridge on both machines died silently; rebuilt on the claude.ai connector | [slack_session_rotation_2026_10_14.md](resources/stories/slack_session_rotation_2026_10_14.md) |
 
 ## The gate script
 
