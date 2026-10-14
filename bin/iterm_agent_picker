@@ -81,13 +81,13 @@ pick_agent() {
   local picked
   picked="$(tinted_agent_rows | fzf --ansi --layout=reverse --no-info --border=rounded --border-label=' Agents ' --delimiter=$'\t' --with-nth=1 --accept-nth=1 \
     --prompt='Agent> ' --header='CTRL-j/k: move | ENTER: focus | ESC: close' \
-    --preview="$SELF --preview {2}" --preview-window='up:60%:wrap:follow')"
+    --preview="$SELF --preview {2}" --preview-window='up:60%:wrap:follow')" || return 1
   echo "${picked#"$ROW_MARK"}"
 }
 
 case "${1:-}" in
   "") open_picker_window ;;
-  --pick) agent="$(pick_agent)" && exec "$FOCUS_AGENT" "$agent" ;;
+  --pick) agent="$(pick_agent)" && [ -n "$agent" ] && exec "$FOCUS_AGENT" "$agent" ;;
   --preview) screen_of_tty "$2" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' ;;
   *) echo "usage: iterm_agent_picker [--pick | --preview TTY]" >&2; exit 1 ;;
 esac
