@@ -10,6 +10,9 @@
 "claude/hooks/pre_tool_use.ln.py" = [
   "~/.claude/hooks/pre_tool_use.py",
 ]
+"claude/skills/suss-troubleshoot-david-away.ln" = [
+  "~/.claude/skills/suss-troubleshoot-david-away",
+]
 "claude/skills/clean-code.ln" = [
   "~/.claude/skills/clean-code",
 ]

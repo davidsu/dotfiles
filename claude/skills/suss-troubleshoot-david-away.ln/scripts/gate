@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# gate — the screen-work checks of suss-troubleshoot-david-away (see SKILL.md for the rules).
+set -uo pipefail
+
+usage() { sed -n '/^```$/,/^```$/p' "$(dirname "$0")/../SKILL.md" | sed '1d;$d'; exit 1; }
+
+idle_seconds() { ioreg -c IOHIDSystem | awk '/HIDIdleTime/ {print int($NF/1000000000); exit}'; }
+
+frontmost_app() { osascript -e 'tell application "System Events" to name of first application process whose frontmost is true'; }
+
+iterm_front_profile() { osascript -e 'tell application "iTerm2" to profile name of current session of current window' 2>/dev/null; }
+
+is_front() { # app [profile]
+  [ "$(frontmost_app)" = "$1" ] || return 1
+  [ -z "${2:-}" ] || [ "$(iterm_front_profile)" = "$2" ]
+}
+
+gate_idle() {
+  local min="${1:-600}" idle; idle="$(idle_seconds)"
+  echo "idle=${idle}s min=${min}s"
+  [ "$idle" -ge "$min" ]
+}
+
+gate_front() {
+  if is_front "$1" "${2:-}"; then echo "front: $1${2:+ ($2)}"; else echo "NOT front: $(frontmost_app) (wanted $1${2:+ / $2})"; return 1; fi
+}
+
+gate_key() { # app [profile] -- <system events action>
+  local app="$1" profile="" ; shift
+  [ "${1:-}" = "--" ] || { profile="$1"; shift; }
+  [ "${1:-}" = "--" ] && shift
+  is_front "$app" "$profile" || { echo "ABORT: $(frontmost_app) is frontmost, key not sent: $*"; return 2; }
+  osascript -e "tell application \"System Events\" to $*"
+}
+
+gate_crashes() {
+  local minutes="${1:-30}" dir="$HOME/Library/Logs/DiagnosticReports" found=0 report
+  while IFS= read -r report; do
+    found=1
+    echo "== $report"
+    python3 - "$report" <<'PY'
+import json, sys
+head, body = open(sys.argv[1]).read().split('\n', 1)
+meta = json.loads(head); crash = json.loads(body)
+print(f"{meta.get('app_name')} {meta.get('app_version')} at {meta.get('timestamp')}: {crash.get('exception', {}).get('type')} {crash.get('exception', {}).get('signal')}")
+thread = crash['threads'][crash.get('faultingThread', 0)]
+images = crash['usedImages']
+for frame in thread['frames'][:8]:
+    print(f"  {images[frame['imageIndex']].get('name')}: {frame.get('symbol', '?')}")
+PY
+  done < <(find "$dir" -name '*.ips' -mmin "-$minutes" 2>/dev/null | sort)
+  [ "$found" = 1 ] || echo "no crash reports in the last $minutes min"
+}
+
+gate_relaunch() {
+  pgrep -xq "$1" && { echo "$1 is running"; return 0; }
+  open -a "$1" && echo "RELAUNCHED $1 at $(date +%H:%M:%S) (it was not running)"
+}
+
+case "${1:-}" in
+  idle) gate_idle "${2:-}" ;;
+  front) gate_front "${2:?app}" "${3:-}" ;;
+  key) shift; gate_key "$@" ;;
+  crashes) gate_crashes "${2:-}" ;;
+  relaunch) gate_relaunch "${2:?app}" ;;
+  *) usage ;;
+esac
