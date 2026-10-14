@@ -30,7 +30,27 @@ Preview it in David's own chat before sending it to anyone else:
 
 - Use computer `type` once per line, with `shift+Enter` between lines
 - Playwright `fill()` replaces the whole box, and `execCommand('insertText')` doesn't take
-- `*bold*` and `_italic_` render. Links show as raw URLs, and the first URL gets a preview card
+- `*bold*` and `_italic_` render, typed literally
+
+## 🔗 Links
+
+WhatsApp shows URLs raw and never a label, so `[text](url)` arrives as literal brackets
+(2026-10-14, Shahar reply: David called it "shit"). Instead:
+
+- Keep the prose link-free, then a blank line, then one `Label: url` line per link
+- Short URLs only: a PR, a b44sync task, a short GitHub path. Never a long GitHub path with an anchor
+- Two or three links at most; a manager gets the decision and the PR, not implementation details
+- The first URL gets a preview card: close it (its X above the composer) before sending
+
+The shape David approved (lead.static.0, 2026-10-13):
+
+```
+Yes, started. *cli only, happy path, first draft.* direction makes sense?
+
+PR: https://github.com/base44/cli/pull/661
+Task: https://b44sync.base44.app/rd-hub/tasks/BASE-51241
+_agent: lead.static.0_
+```
 
 ## 🎬 Video with a thumbnail
 

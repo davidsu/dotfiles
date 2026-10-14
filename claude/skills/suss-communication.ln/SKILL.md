@@ -23,7 +23,8 @@ Read the resource for the channel before drafting:
 ## 🗣️ Reading David
 
 When David writes `[text](link)`, `text` is the clickable label for `link`: the label shows,
-the URL hides. Keep it that way in the message and in every draft you show him.
+the URL hides. Keep it that way on Slack. WhatsApp has no labeled links: there it becomes
+`Label: url` on its own line ([resources/whatsapp.md](resources/whatsapp.md), Links).
 
 ## ✍️ Every message
 
