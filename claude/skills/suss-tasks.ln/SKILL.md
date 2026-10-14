@@ -21,4 +21,6 @@ Tasks live in the git repo `base44-dev/suss-tasks` (clone: `~/Developer/suss-tas
 
 **Every epic directory owns one emoji, and every title in it starts with that emoji** (`# 🔒 …`), so the b44sync board tells parallel epics apart. Rules and how to apply it: [ORGANIZATION.md](resources/ORGANIZATION.md).
 
+**A task with a PR carries its url**: a `**PR**: [#N](https://github.com/<owner>/<repo>/pull/N)` line above the authorship footer, written by the agent who opens the PR ([WRITING.md, PR Line](resources/WRITING.md#pr-line)).
+
 **CRITICAL**: Read [WRITING.md](resources/WRITING.md) before creating or updating any task file.

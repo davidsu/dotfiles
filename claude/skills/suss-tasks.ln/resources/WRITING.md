@@ -193,6 +193,25 @@ at the lines you read even after the branch moves or is deleted.
 9. Verify the path exists at that sha and the line numbers are accurate before writing
 10. **A path on this machine** (`~/…`, `/Users/…`, `/tmp/…`) has no URL: write it absolute, in backticks, never relative (`compose.mjs` reads as a repo file)
 
+## PR Line
+
+A task that has a PR, open, merged or closed, carries a `**PR**:` line holding the PR's full
+url as a link. Most tasks exist before their PR: the agent who opens the PR adds the line the
+moment the PR exists, and keeps it current on a re-land or a replacement PR, the old PR moving
+into prose. One line per task; a stacked or follow-up PR is chained in it. Linking the PR
+elsewhere (a table, a Closing Note) does not replace the line.
+
+```markdown
+**PR**: [#1234](https://github.com/<owner>/<repo>/pull/1234) (stacks on [#1230](https://github.com/<owner>/<repo>/pull/1230))
+```
+
+**Rules:**
+
+1. **Place**: the metadata block right above the `---` authorship footer, next to `**Owner**`, `**List**`, `**Slack**`
+2. **Shape**: `**PR**: [#N](https://github.com/<owner>/<repo>/pull/N)`, then any note in parentheses; `suss-sync-tasks` `push` refuses a `**PR**:` line with no pull url
+3. **Written by the agent who opens the PR**, the moment it opens; a PR opened later for an already-written task gets the line added then
+4. **Updated on re-land**: a replacement PR takes the line, the superseded one is mentioned in prose
+
 ### Reference-style links — for table cells (keep the reading area narrow)
 
 Inline links are fine in prose. But inside **table cells** a full URL is 100+ chars, which
