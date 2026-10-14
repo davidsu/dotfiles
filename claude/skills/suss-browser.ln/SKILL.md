@@ -28,7 +28,8 @@ Rules:
   only when the task names Brave.
 - Use `mcp__playwright-chrome-anon__*` when the task needs a logged-out /
   clean-profile browser (e.g. testing signup or incognito-like behavior).
-- Use Playwright over claude-in-chrome for everything, except file uploads.
+- Playwright for everything; claude-in-chrome only for the file-input step of an upload.
+  WhatsApp text included: `suss-communication`'s `resources/whatsapp.md` has the recipe.
 
 File uploads (e.g. attaching to a GitHub comment) need `mcp__claude-in-chrome__file_upload`.
 Playwright's `browser_file_upload` only reads files under the project dir (not the scratchpad),
