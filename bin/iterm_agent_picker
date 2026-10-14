@@ -70,11 +70,21 @@ ansi_code_of() {
   esac
 }
 
+live_tty_of_pid() { ps -o tty= -p "$1" 2>/dev/null | tr -d ' ' | grep -v '^??$' || true; }
+
+agent_rows() {
+  local pid name session_id tty
+  while IFS=$'\t' read -r pid name session_id; do
+    tty="$(live_tty_of_pid "$pid")"
+    [ -n "$tty" ] && printf '%s\t%s\t/dev/%s\n' "$name" "$session_id" "$tty"
+  done < <(jq -r 'select(.name) | "\(.pid)\t\(.name)\t\(.sessionId)"' "$HOME"/.claude/sessions/*.json | sort -t$'\t' -k2,2)
+}
+
 tinted_agent_rows() {
   local name session_id tty
   while IFS=$'\t' read -r name session_id tty; do
     printf '\e[%sm%s%s\e[0m\t%s\n' "$(ansi_code_of "$(transcript_color "$session_id")")" "$ROW_MARK" "$name" "$tty"
-  done < <("$FOCUS_AGENT" --list)
+  done < <(agent_rows)
 }
 
 pick_agent() {
