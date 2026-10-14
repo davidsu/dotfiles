@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
-# iterm_tab_style — color an iTerm tab, focus-free.
-#   iterm_tab_style (--tty /dev/ttysNNN | --session ITERM_SESSION_ID) --color NAME
+# iterm_tab_style — color (and optionally title) an iTerm tab, focus-free.
+#   iterm_tab_style (--tty /dev/ttysNNN | --session ITERM_SESSION_ID) --color NAME [--title TEXT]
 # Writes iTerm's escape sequences straight to the tab's tty, so it works while the
 # program in the tab (codex, claude) owns the screen. NAME is one of claude's /color
 # palette.
 set -euo pipefail
 
-tty=""; session=""; color=""
+tty=""; session=""; color=""; title=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --tty) tty="$2"; shift 2 ;;
     --session) session="$2"; shift 2 ;;
     --color) color="$2"; shift 2 ;;
+    --title) title="$2"; shift 2 ;;
     *) echo "iterm_tab_style: unknown flag $1" >&2; exit 1 ;;
   esac
 done
@@ -54,7 +55,12 @@ write_tab_color() {
     "$red" "$green" "$blue" > "$tty"
 }
 
+write_tab_title() {
+  printf '\033]0;%s\a' "$1" > "$tty"
+}
+
 [ -n "$tty" ] || [ -z "$session" ] || tty="$(tty_of_session "$session")"
 [ -w "$tty" ] || { echo "iterm_tab_style: no writable tty (--tty or --session)" >&2; exit 1; }
 [ -n "$color" ] || { echo "iterm_tab_style: --color is required" >&2; exit 1; }
 write_tab_color "$color"
+[ -z "$title" ] || write_tab_title "$title"

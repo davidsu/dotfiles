@@ -8,6 +8,7 @@
 // Claude shows a choice (permission prompt etc.), since the typed Enter would pick its highlighted option.
 // Acts on a Codex tab ("… (codex)") only when idle (no spinner).
 // Both get the iTerm tab color via iterm_tab_style; claude also gets /color.
+// Any other tab (a plain shell) gets the tab color and the name as its tab title.
 ObjC.import('Cocoa');
 
 const SESSION_COLORS = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
@@ -88,10 +89,9 @@ const remoteStyle = ({ host, tmuxSession }) => {
 
 const currentStyle = (session, remote) => (remote ? remoteStyle(remote) : localStyle(session));
 
-const isIdleCodex = (session) => {
-  const title = session.name();
-  return title.endsWith('(codex)') && !CODEX_BUSY_SPINNER.test(title);
-};
+const isCodex = (session) => session.name().endsWith('(codex)');
+
+const isIdleCodex = (session) => isCodex(session) && !CODEX_BUSY_SPINNER.test(session.name());
 
 const showAlert = (message, info) => {
   const alert = $.NSAlert.alloc.init;
@@ -155,7 +155,7 @@ const buildStyleDialog = (current) => {
   const accessory = $.NSView.alloc.initWithFrame($.NSMakeRect(0, 0, 300, 54));
   accessory.addSubview(nameField);
   accessory.addSubview(picker.swatch);
-  const alert = showAlert('Name Claude session', '↑/↓ changes the color');
+  const alert = showAlert('Name session', '↑/↓ changes the color');
   alert.addButtonWithTitle('OK');
   alert.addButtonWithTitle('Cancel');
   alert.accessoryView = accessory;
@@ -188,6 +188,9 @@ const typeCodexCommand = (session, command) => {
 
 const colorTab = (session, color) => shell(`'${TAB_STYLE}' --tty '${session.tty()}' --color ${color}`);
 
+const colorAndTitleTab = (session, { color, name }) =>
+  shell(`'${TAB_STYLE}' --tty '${session.tty()}' --color ${color} --title '${name.replace(/'/g, "'\\''")}'`);
+
 const styleClaude = (session, style) => {
   colorTab(session, style.color);
   if (style.name) typeSlashCommand(session, `/rename ${style.name}`);
@@ -197,6 +200,16 @@ const styleClaude = (session, style) => {
 const styleCodex = (session, style) => {
   colorTab(session, style.color);
   if (style.name) typeCodexCommand(session, `/rename ${style.name}`);
+};
+
+const styleShell = (session, style) => (style.name ? colorAndTitleTab(session, style) : colorTab(session, style.color));
+
+const NO_STYLE = { name: '', color: '' };
+
+const styleFor = (session, claudeTab) => {
+  if (claudeTab) return styleClaude;
+  if (!isCodex(session)) return styleShell;
+  return isIdleCodex(session) ? styleCodex : null;
 };
 
 function run() {
@@ -210,12 +223,12 @@ function run() {
     runFocusedModal(showAlert('Claude is waiting on a choice', 'Answer it first: the typed Enter would pick the highlighted option.'));
     return;
   }
-  const applyStyle = claudeTab ? styleClaude : isIdleCodex(target) ? styleCodex : null;
+  const applyStyle = styleFor(target, claudeTab);
   if (!applyStyle) {
-    runFocusedModal(showAlert('Not a Claude or idle Codex session', 'Focus a Claude tab, or a Codex tab waiting at its prompt.'));
+    runFocusedModal(showAlert('Codex is busy', 'Wait for the Codex tab to return to its prompt.'));
     return;
   }
-  const style = promptStyle(currentStyle(target, remote));
+  const style = promptStyle(applyStyle === styleShell ? NO_STYLE : currentStyle(target, remote));
   iterm.activate();
   if (!style) return;
   applyStyle(target, style);

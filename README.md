@@ -349,7 +349,7 @@ box url             → the same session in the browser at claude.ai/code (Remot
 
 ### 🤖 iTerm Claude / Codex Sessions
 ```
-Cmd+Ctrl+R → Name + color the Claude Code or Codex session in the current tab (one dialog)
+Cmd+Ctrl+R → Name + color the Claude Code or Codex session (or plain tab) in the current tab (one dialog)
 ```
 > Runs `bin/claude_session_style` (JXA); active only when iTerm is frontmost.
 > Type a name, ↑/↓ cycles the `/color` palette, Enter applies, Esc cancels. Both start on the session's
@@ -362,6 +362,8 @@ Cmd+Ctrl+R → Name + color the Claude Code or Codex session in the current tab 
 > transcript, and the typed `/rename` + `/color` travel down the pty into the remote Claude.
 > Both also get a matching **iTerm tab color** (Codex has no `/color`, so that's its only color), via `bin/iterm_tab_style`
 > (writes iTerm's tab-color escape sequence to the tab's tty).
+> Any other tab (a plain shell) gets the same dialog, starting empty: the tab color, and the name as the tab title
+> (`iterm_tab_style --title`, an OSC 0 escape), no `/rename` or `/color`.
 > Errors go to `~/Library/Logs/claude_session_style.log`.
 >
 > Codex's footer is configured in `~/.codex/config.toml` (not tracked: codex rewrites it):
