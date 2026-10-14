@@ -102,7 +102,9 @@ async def main(connection):
     if session_id := _focused_session_id(app):
         history.record(session_id)
     _listen_for_navigation_signals(app, history)
-    await _record_focus_changes(connection, app, history)
+    recording = asyncio.create_task(_record_focus_changes(connection, app, history))
+    await connection.websocket.wait_closed()
+    recording.cancel()
 
 
 if __name__ == "__main__":
