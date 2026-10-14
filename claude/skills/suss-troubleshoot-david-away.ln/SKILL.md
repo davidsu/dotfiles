@@ -5,31 +5,58 @@ description: >
   iTerm quit unexpectedly, an agent is unresponsive, keystrokes went to the wrong
   app, an app answers "Connection is invalid" / "Can't get application". Also load
   BEFORE any screen action (open a window, send a synthetic keystroke, change
-  focus, record). Decision table: symptom → first check → safe action → when to
-  wait for David. Covers the idle gate and how it fails, the per-key frontmost
-  check, crash-report triage, relaunching, config values vs. the installed app
-  version, reminders and status while he is away, where agents' state lives.
+  focus, record). Recipes (symptom-first: things got stuck, screen action, config
+  for the installed app, reminders and status) and stories (what happened the
+  night of 2026-10-13/14, how it was solved, what to do differently).
 ---
 
 # Troubleshooting and screen work while David is away
 
-Written after the night of 2026-10-13/14 (tasks `dotfiles/floating_fzf_terminal`,
-`dotfiles/teamup_focus_not_working`): a gated test typed into David's WhatsApp, a profile
-value crashed iTerm2 twice, a poller relaunched iTerm2 and hid the crash. Every rule below
-is one of those failures, inverted.
+Recipes are generic and symptom-first; stories are one incident each, facts only. Recipes link
+the stories they came from. Learned something: fix the recipe, add a story.
 
 ## Decision table
 
-| Symptom | First check | Safe action (do it, say it) | Wait for David when |
-|---|---|---|---|
-| App vanished; `Connection is invalid (-609)` / `Can't get application (-1728)` right after your call | `$G crashes`, read the `.ips` exception + top frames (§3) | `$G relaunch APP`, post "relaunched X at HH:MM" + cause on the channel | never for the relaunch; before retrying the call that killed it |
-| iTerm2 quit | same as above; `pgrep iTermServer` (sessions survive) | `$G relaunch iTerm2`; restore tab colors with `iterm_tab_style` (§3) | never ("quit and reopen. Why am I needed???", 06:50) |
-| An agent is unresponsive | its tab: busy glyph? its transcript's last line (§9); `teamup-wake --list` | `teamup-wake <handle>` if parked; else `teamup ask --to <handle>` | the agent is mid-work and only David's input unblocks it |
-| Keystrokes went to the wrong app | screenshot now; what was frontmost (§2) | report within a minute: screenshot path, text, recipient (§6); stop all keys | always, before any further key |
-| You need a screen action (window, key, focus) | David announced a window ("I'm afk", "go, hands off")? `$G idle` right before; `$G front` per key (§1-2) | run it gated via `$G key`; announce ON/OFF to other owners | no announced window: idle alone is not "away" |
-| A config value / enum for an installed app | the installed version's source or validation (§4) | first use against a throwaway with `$G crashes 1` watched | the first use is on the window David works in |
-| David wants to be reminded | `ls ~/Library/LaunchAgents/com.davidsu.remind.*` (§7) | a launchd one-shot that posts top-level in #suss-lead | never |
-| Blocked > 20 min | the task file (§8) | write the blocker in the task, take the clunky path | it genuinely cannot be done: say so, with the reason |
+| Symptom | First check | Safe action (do it, say it) | Wait for David when | Recipe |
+|---|---|---|---|---|
+| App vanished; `Connection is invalid (-609)` / `Can't get application (-1728)` right after your call | `$G crashes`; read the `.ips` exception + top frames | `$G relaunch APP`; post "relaunched X at HH:MM" + cause | never for the relaunch; before retrying the call that killed it | [things_got_stuck](resources/recipes/things_got_stuck.md) |
+| iTerm2 quit | same; `pgrep iTermServer` (shells survive) | `$G relaunch iTerm2`; restore tab colors | never ("quit and reopen. Why am I needed???", 06:50) | [things_got_stuck](resources/recipes/things_got_stuck.md) |
+| An agent is unresponsive | its tab's busy glyph; its transcript's last line; `teamup-wake --list` | `teamup-wake <handle>` if parked, else `teamup ask --to <handle>` | it is mid-work and only David's input unblocks it | [things_got_stuck](resources/recipes/things_got_stuck.md) |
+| Keystrokes went to the wrong app | screenshot now; what was frontmost | report within a minute: screenshot path, text, recipient; stop all keys | always, before any further key | [screen_action](resources/recipes/screen_action.md) |
+| You need a screen action (window, key, focus) | did David announce a window ("I'm afk", "go, hands off")? `$G idle` right before; `$G front` per key | run it via `$G key`; announce ON/OFF to other owners | no announced window: idle alone is not "away" | [screen_action](resources/recipes/screen_action.md) |
+| A config value / enum for an installed app | the installed version's source or validation | first use against a throwaway with `$G crashes 1` watched | the first use is on the window David works in | [config_for_installed_app](resources/recipes/config_for_installed_app.md) |
+| David wants to be reminded | `ls ~/Library/LaunchAgents/com.davidsu.remind.*` | a launchd one-shot that posts top-level in #suss-lead | never | [reminders_and_status](resources/recipes/reminders_and_status.md) |
+| Blocked > 20 min | the task file | write the blocker in the task, take the clunky path | it cannot be done: say so, with the reason | [reminders_and_status](resources/recipes/reminders_and_status.md) |
+
+## Hard rules
+
+1. An app that vanishes is a crash until the crash-report dir says otherwise. Attribute to David last.
+2. Relaunching an app an agent broke is risk-free work: do it, then say it.
+3. Idle time is not "away". Screen actions happen only in a window David announced.
+4. Every synthetic key is gated on its own, immediately before it: target app frontmost, target window present. Never over a browser, Slack, WhatsApp or Mail.
+5. Config values come from the installed version, never from a project's `master`.
+6. Anything that relaunches or focuses apps automatically logs loudly and guards with `application is running`.
+7. Something reached a human: say it on the channel within a minute, with the screenshot path.
+8. Status is pull-based; reminders are launchd one-shots; a blocker > 20 min goes into the task and you move on.
+
+## Recipes
+
+| Recipe | Covers | File |
+|---|---|---|
+| Things got stuck | Is it a crash? how to tell; may I kill and relaunch; what survives; restoring tabs; an agent that does not answer | [things_got_stuck.md](resources/recipes/things_got_stuck.md) |
+| Screen action | The idle gate and how it fails, the per-key frontmost check, ON/OFF with other owners, input that cannot miss, headless failure paths, reporting a misfire | [screen_action.md](resources/recipes/screen_action.md) |
+| Config for the installed app | Validating keys and enums against the installed version; first use of a new profile | [config_for_installed_app.md](resources/recipes/config_for_installed_app.md) |
+| Reminders and status | launchd one-shots, pull-based status, not getting stuck | [reminders_and_status.md](resources/recipes/reminders_and_status.md) |
+
+## Stories
+
+| Story | One line | File |
+|---|---|---|
+| iTerm2 crash, 2026-10-14 | A profile `Window Type` from iTerm master crashed iTerm2 3.7.3 twice; the shells survived on iTermServer | [iterm_crash_2026_10_14.md](resources/stories/iterm_crash_2026_10_14.md) |
+| WhatsApp keystroke, 2026-10-14 | A gated screen test checked idle once, waited 90 s, and typed "lead" + Enter into WhatsApp | [whatsapp_keystroke_2026_10_14.md](resources/stories/whatsapp_keystroke_2026_10_14.md) |
+| Focus poller relaunch, 2026-10-13/14 | The focus poller opened ~150 windows while David watched, then relaunched a crashed iTerm2 and hid the crash | [focus_poller_relaunch_2026_10_14.md](resources/stories/focus_poller_relaunch_2026_10_14.md) |
+
+## The gate script
 
 `scripts/gate` is the mechanism; use it instead of re-deriving the checks:
 
@@ -42,82 +69,14 @@ $G crashes [MINUTES]             # crash reports (.ips) newer than MINUTES (defa
 $G relaunch APP                  # relaunch APP if it is not running, and say so loudly (exit 0 = running)
 ```
 
-## 1. The idle gate is a moment, not a state
-
-- `HIDIdleTime` says nothing about the next second. Re-read it **immediately before the first
-  screen action**, not before a handshake, a `teamup wait`, or a `sleep`. (00:11 idle 621 s →
-  90 s handshake → 00:13 David back → keys went to Chrome.)
-- Your own synthetic keystrokes and clicks reset `HIDIdleTime`. Announce runs to other owners
-  (`fzf tests ON` / `OFF` on their channel) so their gates do not read your input as David's.
-- Threshold: David's lead sets it (600 s at night; 60 s when David says "I'm AFK" in the channel).
-  No idle gate replaces his word for anything that types into an app.
-
-## 2. Every synthetic key is gated on its own
-
-- Before **each** key: the target app is frontmost **and** the target window exists (for iTerm,
-  the current session's profile name). `$G key` does exactly that. One check at the start is
-  how "lead" + Enter reached WhatsApp.
-- Never send a key while a browser, Slack, WhatsApp or Mail is frontmost. Abort, do not switch
-  apps to "fix" it.
-- Prefer input that cannot miss: write to the tty (`iterm_tab_style`), AppleScript `write text`
-  to a known session, the tool's own CLI. A System Events keystroke is the last resort.
-
-## 3. An app that vanishes is a crash until proven otherwise
-
-- AppleScript `Connection is invalid (-609)` or `Can't get application "X" (-1728)` right after
-  your call = **X died under your call**. Stop. Do not send keys, do not retry the call.
-- Run `$G crashes` and read the top frames of the `.ips` (`exception`, `faultingThread`).
-  Attribute to David only after the crash-report dir is clean.
-- Relaunching his app is risk-free work: `$G relaunch X`, then say "relaunched X at HH:MM" on
-  the channel (David, 06:50: "quit and reopen. Why am I needed???"). iTerm2 restores the shells
-  from `iTermServer`; tab colors are lost, re-apply with `iterm_tab_style --tty … --color …`
-  from each agent's `/color` (`transcript_color` in `session_colors.sh`); titles return when
-  each agent redraws.
-- An app that comes back by itself (another agent's poller did `tell application`) hides the
-  crash. A poller must guard with `if application "X" is running` and log any relaunch.
-
-## 4. Config values come from the installed version
-
-- A key or enum copied from a project's `master` source must be checked against the **installed**
-  version's source (`gh api …/contents/PATH?ref=vX.Y.Z`) or the app's own validation. iTerm
-  3.7.3 asserted on `Window Type: 19` (master-only) and aborted.
-- First use of any new profile / rule / plist: with the crash-report dir watched (`$G crashes 1`
-  right after), and never against the window David is working in.
-
-## 5. Before the first real run, exercise the failure path headlessly
-
-- `tmux -L test -f /dev/null new-session -d …` + `send-keys` drives a TUI with no window and no
-  HID input. Test Esc / empty selection / abort there first: the picker's Esc path exec'd the
-  legacy dialog, found only on the real screen.
-
-## 6. Reporting
-
-- Something went to a human (a message, a keystroke in a chat): say it on the channel within a
-  minute, with the screenshot path, what it said and to whom; David deletes/edits himself.
-- Write the incident, the cause and the fix into the suss-task the same hour.
-
-## 7. Reminders and status while he is away
-
-- A reminder for David is a launchd one-shot (`~/Library/LaunchAgents/com.davidsu.remind.<slug>.plist`,
-  `StartCalendarInterval`, a script under `~/.local/bin/`), not a cron in an agent session: agents
-  die, launchd does not. It posts top-level in #suss-lead as David with `_agent:_`
-  ([suss-communication](../suss-communication/SKILL.md)).
-- Status is pull-based: no timed reports. David asks "what needs my attention"; keep that answer
-  ready in the task. An explicit "remind me" is the one exception.
-
-## 8. Don't get stuck
-
-- A blocker older than 20 min goes into the task file, then take the clunky path and move on.
-- If it cannot be done, say so on the channel with the reason. Silence is the one unacceptable
-  status.
-
-## 9. Where things live
+## Where things live
 
 | What | Where |
 |---|---|
 | An agent's transcript | `~/.claude/projects/*/<session-id>.jsonl` (`rg --no-config`: files > 10 MB are skipped by the rg config) |
 | A teamup channel | `/tmp/suss-teamup/<subject>/channel.tsv`; its Slack thread url `~/.local/state/suss-teamup/slack/<subject>.url` |
 | Parked (asleep) agents | `~/.local/state/suss-teamup/parked.tsv`; `teamup-wake <handle> --role owner` ([agent_lifecycle](../suss-teamup/resources/agent_lifecycle.md)) |
-| The focus poller | `teamup-focus on [--skip HANDLE] \| off \| status`; log `~/.local/state/suss-teamup/focus.log`; it relaunched iTerm2 once and now guards with `application is running` (task `dotfiles/teamup_focus_not_working`) |
+| The focus poller | `teamup-focus on [--skip HANDLE] \| off \| status`; log `~/.local/state/suss-teamup/focus.log` |
 | Slack bridges | `teamup-slack off/on <subject>` (`off` also kills your `wait`) ([slack_mirror](../suss-teamup/resources/slack_mirror.md)) |
 | Crash reports | `~/Library/Logs/DiagnosticReports/*.ips` (`$G crashes`) |
+| Reminders | `~/Library/LaunchAgents/com.davidsu.remind.<slug>.plist`, scripts under `~/.local/bin/` |
