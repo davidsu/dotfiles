@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # iterm_agent_picker — an fzf picker over iTerm: live Claude agents, agents that can be woken, or every tab.
-# Rows come from bin/iterm_picker_lists; the preview pane shows the row's live screen in color (or a parked
-# agent's last words). ctrl+j / ctrl+k move, typing filters, ctrl+u / ctrl+d scroll the preview,
+# Rows come from bin/iterm_picker_lists (tabs = the iTerm tabs without an agent; agents are in alive / available);
+# the preview pane shows the row's live screen in color (or a parked agent's last words). ctrl+j / ctrl+k move, typing filters, ctrl+u / ctrl+d scroll the preview,
 # ctrl+a / ctrl+w / ctrl+t switch to the alive / available (wake) / tabs list, ctrl+x closes the row's tab
 # and keeps the picker open, Enter focuses the tab (waking a parked agent first), Esc closes.
 #   iterm_agent_picker [alive|available|tabs]   cmd+ctrl+g: open the floating window (bin/iterm_float)
@@ -25,7 +25,7 @@ export PICKER_OWN_TTY="${PICKER_OWN_TTY:-$(tty 2>/dev/null || true)}"
 
 prompt_of() { case "$1" in alive) echo 'Alive> ' ;; available) echo 'Available> ' ;; tabs) echo 'Tabs> ' ;; esac; }
 list_of_prompt() { case "$1" in 'Alive> ') echo alive ;; 'Available> ') echo available ;; 'Tabs> ') echo tabs ;; esac; }
-label_of() { case "$1" in alive) echo ' Alive agents ' ;; available) echo ' Available agents (zz = asleep, Enter wakes) ' ;; tabs) echo ' Terminal tabs ' ;; esac; }
+label_of() { case "$1" in alive) echo ' Alive agents ' ;; available) echo ' Available agents (zz = asleep, Enter wakes) ' ;; tabs) echo ' Terminal tabs without an agent ' ;; esac; }
 
 switch_binding() { # key list
   printf '%s:reload(%s rows %s)+change-prompt(%s)+change-border-label(%s)' "$1" "$LISTS" "$2" "$(prompt_of "$2")" "$(label_of "$2")"

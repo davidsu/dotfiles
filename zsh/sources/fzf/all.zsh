@@ -15,7 +15,7 @@ FZF_ALL_COMMANDS=(
   "bravebookmarks		Brave bookmarks; Enter opens the URL(s) in Brave"
   "bot-awake	cmd+ctrl+g	Live Claude agents with a colored live-screen preview; Enter focuses the agent's iTerm tab"
   "bot-available		Awake + asleep agents; Enter wakes an asleep one (teamup-wake) and focuses its tab"
-  "terminal-tabs		Every iTerm tab with a live-screen preview; Enter focuses, CTRL-x closes the tab"
+  "terminal-tabs		iTerm tabs without an agent (shells, nvim…), live-screen preview; Enter focuses, CTRL-x closes the tab"
   "chrome-tabs		Every Chrome tab (title, URL); Enter goes to it, CTRL-x closes it"
   "fzf-slack		Slack's cmd+k in fzf: channels and DMs (cached), preview = latest messages; Enter opens it in Slack"
 )
