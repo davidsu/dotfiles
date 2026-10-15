@@ -3,7 +3,7 @@
 How tasks are told apart at a glance, on the b44sync board and in a directory listing. The
 board shows titles only, so when several epics advance in parallel every row looks the same.
 This file holds the visual conventions that fix that. It grows as new needs show up (task
-types are the next candidate, see the `dotfiles/suss_tasks_metadata` epic in suss-tasks).
+types are the next candidate, see the `suss_tasks_metadata` epic in `~/projects/apper/susskind/suss-tasks/dotfiles/`).
 
 ## 🎨 One emoji per epic (David, 2026-10-13)
 
