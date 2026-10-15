@@ -8,6 +8,9 @@ is *confidently wrong by default*; the whole protocol exists to turn it into an 
 one **before it spends a token on code.** Written from both seats — having been handed
 off to, and having handed off.
 
+**A lead handing off** keeps the protocol below but first puts a temporary lead in its seat:
+[A lead hands off](#a-lead-hands-off-a-temporary-lead-first).
+
 ## Protocol (outgoing agent)
 
 1. **Write/refresh the durable task file FIRST** (`suss-tasks/…` — see the `suss-tasks`
@@ -52,6 +55,45 @@ Relay the user's locked decisions onto the channel as they land.
 - **Coordinate, then leave.** Hand task-file ownership to the peer (the active
   implementer keeps it honest from here). Stay for shared-worktree push coordination —
   the peer **stacks its commit on your tip, never clobbers** — then `leave`.
+
+## A lead hands off: a temporary lead first
+
+A lead busy handing off is a lead David can't reach (David, 2026-10-15: "Yesterday i needed
+my lead's attention urgently in slack (Guy Ofeck dm) but he was too busy handing off and being
+available to the teams"). So a lead never hands off directly: a **temporary lead**,
+`lead.temp.{x}` (`x` = the outgoing lead's number: lead.24 → `lead.temp.24`), holds the seat
+for the handoff window.
+
+**What lead.temp.x covers, nothing else:**
+- David on `#suss-lead`: it acks every top-level line with `--top` and acts on it, as the lead would
+- the teams' channels: answers their asks, routes their reports, keeps their gates
+
+It takes no part in the handoff itself, starts no new work, and leaves the handoff file to
+the outgoing lead.
+
+**The window file** is lean, beside the handoff file in the same task directory:
+`handoff_{old}_to_{new}_temp_window.md` next to `handoff_{old}_to_{new}.md`. It says what
+happened in the window that the new lead needs: David's asks and what was done, team
+reports, anything still open. Possibly just "nothing noteworthy".
+
+**Protocol** (David's order, 2026-10-15):
+
+1. The lead updates suss-tasks.
+2. The lead prepares the handoff file.
+3. The lead spawns lead.temp.x into `suss-lead`, brief first (`--as lead.temp.{x} --role lead`).
+   The brief lists every team channel; lead.temp.x joins each one and arms a listener on it.
+4. lead.temp.x pings "ready" on `suss-lead`.
+5. The lead yields: on `suss-lead` and on every team channel, "lead.temp.x has the seat until
+   the new lead is ready". From here it answers only its successor.
+6. The lead updates the handoff file if needed.
+7. The handoff protocol as above: spawn the new lead (no `--role`: it takes the lead's color),
+   brief, verified understanding-check.
+8. The new lead pings "ready".
+9. lead.temp.x yields, on `suss-lead` and on every team channel.
+10. The new lead acks and takes over.
+11. lead.temp.x delivers its window file (pushed) and says its path on `suss-lead`.
+12. The old lead goes to sleep if still awake; lead.temp.x goes to sleep
+    (`scripts/teamup-sleep --force`, no argument).
 
 ## Gotcha lived twice
 
