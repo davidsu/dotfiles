@@ -42,6 +42,7 @@ alias bot-available='iterm_agent_picker --pick available'
 alias terminal-tabs='iterm_agent_picker --pick tabs'
 alias chrome-tabs='chrome_tabs'
 alias fzf-chrome-tabs='chrome_tabs'
+alias fzf-slack='slack_picker'
 
 # Codex
 alias codex='command codex --dangerously-bypass-approvals-and-sandbox -c '\''mcp_servers.playwright-chrome.command="playwright-mcp"'\'' -c '\''mcp_servers.playwright-chrome.args=["--extension"]'\'' -c '\''mcp_servers.playwright-chrome.env_vars=["PLAYWRIGHT_MCP_EXTENSION_TOKEN"]'\'''

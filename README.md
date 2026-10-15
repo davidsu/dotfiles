@@ -371,6 +371,10 @@ Cmd+Ctrl+G → Floating fzf picker over iTerm: live agents, agents to wake, ever
 > `fzf-all` (alias `fzf-land`, `zsh/sources/fzf/all.zsh`) lists every fzf-based command here with its global hotkey,
 > description and keys in the preview; Enter runs the chosen one (`fag` first asks for a directory and the rg args).
 > `chrome-tabs` (`bin/chrome_tabs`): every Chrome tab, Enter goes to it, `ctrl-x` closes it.
+> `fzf-slack` (`bin/slack_picker`): Slack's cmd+k in fzf. Channels and DMs come from the claude.ai Slack connector through the
+> suss-teamup bridge's headless relay (`claude -p`, ~10 s and a few cents per call), so the list is cached for a day under
+> `~/.local/state/fzf-slack/` (`ctrl-r` refreshes) and the preview (latest messages) is fetched on demand and cached 5 min.
+> Enter opens the conversation in the Slack app.
 > `bin/iterm_float CMD` runs any command in the same floating window; Karabiner: `cmd+ctrl+t` → `mru`,
 > `cmd+ctrl+c` → `chromehistory`, `cmd+ctrl+b` → `chromebookmarks`.
 > Errors go to `~/Library/Logs/iterm_agent_picker.log`.

@@ -17,6 +17,7 @@ FZF_ALL_COMMANDS=(
   "bot-available		Awake + asleep agents; Enter wakes an asleep one (teamup-wake) and focuses its tab"
   "terminal-tabs		Every iTerm tab with a live-screen preview; Enter focuses, CTRL-x closes the tab"
   "chrome-tabs		Every Chrome tab (title, URL); Enter goes to it, CTRL-x closes it"
+  "fzf-slack		Slack's cmd+k in fzf: channels and DMs (cached), preview = latest messages; Enter opens it in Slack"
 )
 
 fzf_all_entry() { # name — "hotkey<TAB>description"

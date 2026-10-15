@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# slack_picker — Slack's cmd+k switcher in fzf (shell: fzf-slack). Rows: the channels and DMs you are in;
+# preview: the conversation's latest messages; Enter opens it in the Slack app.
+# Slack is reached through the suss-teamup bridge's headless connector relay (claude -p + the claude.ai
+# Slack connector): ~10 s and a few cents per call, so the list is cached (refresh with --refresh or after
+# CACHE_MAX_AGE_HOURS) and each preview is fetched on demand and cached for PREVIEW_MAX_AGE_MINUTES.
+#   slack_picker [--refresh]        the picker
+#   slack_picker rows               the cached rows (name<TAB>id<TAB>kind)
+#   slack_picker preview ID NAME    the latest messages of that conversation
+#   slack_picker open ID            open the conversation in Slack
+set -euo pipefail
+export PATH="/opt/homebrew/bin:$PATH"
+
+readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
+readonly TEAMUP_SCRIPTS="$HOME/.claude/skills/suss-teamup/scripts"
+readonly STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/fzf-slack"
+readonly CHANNELS_CACHE="$STATE_DIR/channels.tsv"
+readonly PREVIEW_CACHE_DIR="$STATE_DIR/previews"
+readonly CACHE_MAX_AGE_HOURS=24
+readonly PREVIEW_MAX_AGE_MINUTES=5
+readonly PREVIEW_MESSAGES=8
+readonly SLACK_TEAM_DOMAIN="base44workspace"
+readonly DIM=$'\e[2m'
+readonly RESET=$'\e[0m'
+mkdir -p "$PREVIEW_CACHE_DIR"
+
+die() { echo "slack_picker: $*" >&2; exit 1; }
+source "$TEAMUP_SCRIPTS/slack_connector.sh"
+
+connector_text() { # the relay returns {"result": "…"}; a channel read's result is itself JSON with a "messages" string
+  jq -r 'if type == "object" and has("result") then .result else . end
+         | (fromjson? // .) | if type == "object" and has("messages") then .messages else . end' 2>/dev/null
+}
+
+conversation_list_markdown() { connector_call slack_list_user_channels '{"types":"public_channel,private_channel,im,mpim","limit":200}' | connector_text; }
+
+markdown_to_rows() { # the connector's "### #name / - **ID:** C… / - **Type:** …" blocks → name \t id \t kind
+  awk '
+    /^### / { name = substr($0, 5); next }
+    /^- \*\*ID:\*\*/ { id = $3; next }
+    /^- \*\*Type:\*\*/ { kind = tolower($0); sub(/^- \*\*type:\*\* */, "", kind); if (name != "" && id != "") printf "%s\t%s\t%s\n", name, id, kind; name = ""; id = "" }
+  '
+}
+
+refresh_rows() { conversation_list_markdown | markdown_to_rows > "$CHANNELS_CACHE.tmp" && mv "$CHANNELS_CACHE.tmp" "$CHANNELS_CACHE"; }
+
+cache_is_fresh() { [ -s "$CHANNELS_CACHE" ] && [ -z "$(find "$CHANNELS_CACHE" -mmin +$((CACHE_MAX_AGE_HOURS * 60)) 2>/dev/null)" ]; }
+
+rows() { cache_is_fresh || refresh_rows; awk -F'\t' -v dim="$DIM" -v reset="$RESET" '{ printf "%s  %s%s%s\t%s\t%s\n", $1, dim, $3, reset, $2, $1 }' "$CHANNELS_CACHE"; }
+
+preview() { # id name
+  local cache="$PREVIEW_CACHE_DIR/$1.txt"
+  if [ -z "$(find "$cache" -mmin "-$PREVIEW_MAX_AGE_MINUTES" 2>/dev/null)" ]; then
+    connector_call slack_read_channel "$(jq -nc --arg id "$1" --argjson n "$PREVIEW_MESSAGES" '{channel_id: $id, limit: $n, response_format: "concise"}')" 2>/dev/null | connector_text > "$cache.tmp" &&
+      mv "$cache.tmp" "$cache"
+  fi
+  printf '%s%s%s\n\n' "$DIM" "$2  ·  latest $PREVIEW_MESSAGES  ·  $(date -r "$cache" +%H:%M 2>/dev/null)" "$RESET"
+  cat "$cache" 2>/dev/null || echo "(no preview: the connector call failed)"
+}
+
+open_conversation() { open "https://$SLACK_TEAM_DOMAIN.slack.com/archives/$1"; }
+
+pick() {
+  local picked id
+  picked="$(rows | fzf --ansi --layout=reverse --no-info --border=rounded --border-label=' Slack ' \
+    --delimiter=$'\t' --with-nth=1 --accept-nth=2 --prompt='Slack> ' \
+    --header='ENTER: open in Slack | CTRL-r: refresh the list | preview = latest messages (10 s the first time) | ESC: quit' \
+    --bind="ctrl-r:reload($SELF rows --refresh)" \
+    --preview="$SELF preview {2} {3}" --preview-window='up:60%:wrap:follow')" || return 1
+  [ -n "$picked" ] && open_conversation "$picked"
+}
+
+case "${1:-}" in
+  "") pick ;;
+  --refresh) refresh_rows; pick ;;
+  rows) [ "${2:-}" = --refresh ] && refresh_rows; rows ;;
+  preview) preview "$2" "$3" ;;
+  open) open_conversation "$2" ;;
+  *) sed -n '2,11p' "$0" >&2; exit 1 ;;
+esac
