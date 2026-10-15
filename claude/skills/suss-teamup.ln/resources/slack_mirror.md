@@ -27,7 +27,7 @@ scripts/teamup-slack url <subject>   # the channel's Slack thread permalink
 the bridge announces it on the channel (`mirror thread in Slack: <url>`) the first time a
 mirror opens, writes it to `~/.local/state/suss-teamup/slack/{subject}.url`, and
 `scripts/teamup-slack url {subject}` prints it. The team URL is learned from the first post the
-connector makes, so a channel that *adopted* a thread another machine opened gets its announcement
+connector makes, so a channel that *adopted* an existing thread gets its announcement
 on the daemon's next outbound tick after any post.
 
 ## Auth: the claude.ai Slack connector, no Slack tokens
@@ -37,8 +37,8 @@ keychain). Slack rotated it at 07:33 and every bridge on both machines died with
 silently (`suss-troubleshoot-david-away/resources/stories/slack_session_rotation_2026_10_14.md`).
 David: "this 'got my tokens from my browser' isn't good enough", and no Slack app / API key
 either. The bridge now drives the **claude.ai Slack connector** (`mcp__claude_ai_Slack__*`), which
-authenticates through claude.ai and is present in every Claude Code session on the laptop and the
-box (`claude mcp list` → `claude.ai Slack … ✔ Connected`).
+authenticates through claude.ai and is present in every Claude Code session on the laptop
+(`claude mcp list` → `claude.ai Slack … ✔ Connected`).
 
 The connector is only reachable from a Claude session, so `scripts/slack_connector.sh` runs a
 **headless relay**: one `claude -p --model haiku` per batch of tool calls, told to make exactly the
@@ -126,20 +126,13 @@ an agent code block is split into its messages and each is looked up in **this m
 `channel.tsv` by seq, clock, handle and type: a match is our own mirror post, dropped. That
 check replaced trusting `.posted` alone, which the poll could read before the flush had appended
 to it (connector posts and phone replies share one author: David). The bridge's own notices
-(`:warning:`, `:white_check_mark:`, the retire line) are dropped the same way. A code block that
-matches nothing local was mirrored by **another machine's** bridge into the same thread (the Coder
-box and the laptop share one thread per channel name): it is delivered, attributed `[{handle}]`,
-only when it says `@all` or names a live local handle; everything else from the other machine stays
-in Slack. Such a line may open with a handle that lives only on the other machine
-(`@shahar.preview …, @coder.lead.19 …`): it goes to everyone here, silently. The `:warning: no agent
-here is called …` notice is reserved for a reply a person typed (a typo in Slack), where retyping
-fixes it. Two more rules make the shared thread work across machines: `open_thread` first looks for
-a root younger than a day whose text starts with `*teamup · {subject}* ` among the channel's recent
-top-level messages (`slack_read_channel`, `oldest=`) and adopts it instead of posting a new one
-(older roots are reused channel names and dead threads), relaying only replies newer than the
-adoption and skipping the backfill; and outbound, a reply (`re:#N`, `re #N`, `ack #N`) to a line that
-arrived from another machine (`[handle] …` under the bridge's name) gets `@handle` inserted after the
-`re:#N`, so the other machine's bridge delivers it to its author without anyone typing the handle.
+(`:warning:`, `:white_check_mark:`, the retire line) are dropped the same way, and so is any other agent
+code block in the thread: only this bridge posts them now. The `:warning: no agent here is called …`
+notice answers a reply a person typed (a typo in Slack), where retyping fixes it. One more rule keeps a
+thread stable across bridge restarts: `open_thread` first looks for a root younger than a day whose text
+starts with `*teamup · {subject}* ` among the channel's recent top-level messages (`slack_read_channel`,
+`oldest=`) and adopts it instead of posting a new one (older roots are reused channel names and dead
+threads), relaying only replies newer than the adoption and skipping the backfill.
 `tests/slack_inbound_test.sh` and `tests/toplevel_posting_test.sh` drive all of this against a
 throwaway channel with a faked relay (`connector_call` / `connector_calls` redefined): no Slack.
 

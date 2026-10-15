@@ -47,7 +47,7 @@ If you're uncertain about requirements, ask for clarification BEFORE implementin
 the company, or embarrass him with colleagues: opening a PR, recording video proof, running e2e on a
 preview, babysitting CI, relaunching an app of his that an agent crashed. Do it, then tell him what was done
 (2026-10-14, told iTerm2 was down and waiting for him: "quit and reopen. Why am I needed???"). His questions and phone-typed
-suggestions ("I suggest we do it on the box…") are a go for that risk-free part. Wait for his word
+suggestions are a go for that risk-free part. Wait for his word
 only on actions with reach: a merge, a Slack post to humans, prod data, dotfiles master
 (2026-10-13, from his phone: "why wait for my go? odd. what if I had turned off my phone").
 
@@ -64,8 +64,7 @@ keys went to the wrong app), or you need any screen action: load `/suss-troubles
 
 ## Personal repos: dotfiles, suss-tasks
 
-They are David's own. Never open a PR there: commit and push straight to the branch the machine
-owns (`master` on the Mac, `linux` on the Coder box); suss-tasks goes through its `bin/sync`
+They are David's own. Never open a PR there: commit and push straight to `master`; suss-tasks goes through its `bin/sync`
 (David, 2026-10-13: "Don't PR to dotfiles. Just push. Dotfiles is personal, mine, it's different").
 
 ## Commit signature

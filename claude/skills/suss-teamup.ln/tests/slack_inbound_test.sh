@@ -32,54 +32,27 @@ deliver_to_channel "$SUBJECT" '```   #1 [07:00:15] laptop.lead (say) @dotfiles.l
 expect_lines "own mirrored block is dropped" 2
 deliver_to_channel "$SUBJECT" 'reminder for David _agent: lead.20_' U0OWNER '' top true >/dev/null
 expect_lines "an agent's direct post through the connector (owner + footer) is dropped" 2
-deliver_to_channel "$SUBJECT" '```   #1 [07:00:15] box.agent (say) @all box block ```' U0OWNER '' thread true >/dev/null
-expect_lines "the other machine's bridge posts carry the footer too and are still delivered" 3
-
-deliver_to_channel "$SUBJECT" '```   #1 [07:00:15] box.agent (say) @dotfiles.laptop from the box ```' U0OWNER '' >/dev/null
-expect_lines "remote block aimed here is delivered" 4
-grep -qF $'\tdavid\task\t@dotfiles.laptop [box.agent] from the box' <(last_line) && echo "ok   delivered as an ask to the local handle, attributed" || { echo "FAIL attribution: $(last_line)"; fails=1; }
-
-deliver_to_channel "$SUBJECT" '```   #5 [07:00:40] box.agent (say) @box.other heads up, @dotfiles.laptop take the laptop half ```' U0OWNER '' >/dev/null
-expect_lines "remote line aimed at the other machine's agent but naming one here is delivered" 5
-grep -qF $'\tdavid\tsay\t[box.agent] @box.other heads up, @dotfiles.laptop take the laptop half' <(last_line) && echo "ok   delivered to everyone, attributed" || { echo "FAIL remote-handle delivery: $(last_line)"; fails=1; }
-expect_no_warning "no warning about a handle that lives on the other machine"
+deliver_to_channel "$SUBJECT" '```   #1 [07:00:15] other.agent (say) @dotfiles.laptop not from here ```' U0OWNER '' thread true >/dev/null
+expect_lines "any other agent code block in the thread is dropped (only this bridge posts them)" 2
 
 deliver_to_channel "$SUBJECT" '@dotfiles.laptp did you see it' U0OWNER '' >/dev/null
-expect_lines "a human's typo is still delivered to everyone" 6
+expect_lines "a human's typo is still delivered to everyone" 3
 grep -qF 'no agent here is called `dotfiles.laptp`' "$THREAD_POSTS" && echo "ok   the human is warned about the typo" || { echo "FAIL no typo warning: $(cat "$THREAD_POSTS" 2>/dev/null)"; fails=1; }
 
-deliver_to_channel "$SUBJECT" '```   #7 [07:01:00] box.agent (say) @all heads up   #8 [07:01:01] box.agent (say) @box.other private ```' U0OWNER '' >/dev/null
-expect_lines "@all delivered, remote-only mention dropped" 7
-
 deliver_to_channel "$SUBJECT" ':warning: the Slack session died (x)' U0OWNER '' >/dev/null
-expect_lines "bridge notice is dropped" 7
+expect_lines "bridge notice is dropped" 3
 
 deliver_to_channel "$SUBJECT" 'plain reply from a phone' U_OTHER 'Someone' >/dev/null
-expect_lines "plain reply still delivered" 8
+expect_lines "plain reply still delivered" 4
 
 deliver_to_channel "$SUBJECT" '``` my own pasted log line 1 line 2 ```' U0OWNER '' >/dev/null
-expect_lines "owner's own code block is delivered" 9
+expect_lines "owner's own code block is delivered" 5
 grep -qF $'\tdavid\tsay\t``` my own pasted log' <(last_line) && echo "ok   delivered as a say from david" || { echo "FAIL own block: $(last_line)"; fails=1; }
 
 
-printf '2026-10-13T07:02:00Z\tdavid\task\t@dotfiles.laptop [box.agent] ping-from-box\n' >> "$CHANNEL"
-remote_line=$(wc -l < "$CHANNEL" | tr -d ' ')
 expect_text() { # label got expected
   [ "$2" = "$3" ] && echo "ok   $1" || { echo "FAIL $1: got [$2]"; fails=1; }
 }
-expect_text "reply to a remote message names its author" \
-  "$(with_reply_crossback "$SUBJECT" "  #9 [07:02:10] dotfiles.laptop (ack) re:#$remote_line pong")" \
-  "  #9 [07:02:10] dotfiles.laptop (ack) re:#$remote_line @box.agent pong"
-expect_text "reply already naming the author is left alone" \
-  "$(with_reply_crossback "$SUBJECT" "  #9 [07:02:10] dotfiles.laptop (say) re #$remote_line @box.agent pong")" \
-  "  #9 [07:02:10] dotfiles.laptop (say) re #$remote_line @box.agent pong"
-expect_text "reply to a local message is left alone" \
-  "$(with_reply_crossback "$SUBJECT" "  #9 [07:02:10] dotfiles.laptop (ack) re:#1 thanks")" \
-  "  #9 [07:02:10] dotfiles.laptop (ack) re:#1 thanks"
-expect_text "non-reply is left alone" \
-  "$(with_reply_crossback "$SUBJECT" "  #9 [07:02:10] dotfiles.laptop (say) plain")" \
-  "  #9 [07:02:10] dotfiles.laptop (say) plain"
-
 prose_message() { # ts text [uid] — one message as the connector prints a channel read
   printf '=== Message from Tester <t@x> (%s) at 2026-10-13 07:00:00 IDT === \nMessage TS: %s\n%s\n\n' "${3:-U0OWNER}" "$1" "$2"
 }

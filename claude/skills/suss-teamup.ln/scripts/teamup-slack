@@ -152,28 +152,14 @@ poster_for() { # subject recv-line — a [top] line goes to the top level of a S
   is_top_level_line "$2" && has_own_slack_channel "$1" && echo post_top_level || echo post_to_thread
 }
 
-remote_author_of_line() { # subject seq — the other machine's agent that line N arrived from, if any
-  awk -F'\t' -v seq="$2" -v bridge="$HANDLE" \
-    'NR == seq && $2 == bridge && match($4, /^(@[^ ]+ )?\[[^] ]+\] /) { tag = substr($4, RSTART, RLENGTH); sub(/^(@[^ ]+ )?\[/, "", tag); sub(/\] $/, "", tag); print tag }' \
-    "$BASE/$1/channel.tsv" 2>/dev/null
-}
-
-with_reply_crossback() { # subject recv-line — a reply to another machine's message names its author, so that machine delivers it
-  local seq target
-  seq="$(sed -nE 's/^  #[0-9]+ \[[0-9:]+\] [^ ]+ \([a-z]+\) (re:#|re #|ack #)([0-9]+).*/\2/p' <<<"$2")"
-  target="${seq:+$(remote_author_of_line "$1" "$seq")}"
-  if [ -z "$target" ] || [[ "$2" == *"@$target"* ]]; then printf '%s\n' "$2"; return; fi
-  sed -E "s/((re:#|re #|ack #)$seq)/\1 @$target/" <<<"$2"
-}
-
 queue_new_channel_lines() { # subject — every line peers wrote since the bridge last read
   local message
   while IFS= read -r message; do
-    post_code_block "$1" "$(with_reply_crossback "$1" "$message")" "$(poster_for "$1" "$message")"
+    post_code_block "$1" "$message" "$(poster_for "$1" "$message")"
   done < <("$TEAMUP" recv "$1" --as "$HANDLE" | sed 1d | grep '^  #')
 }
 
-# --- the thread: one per channel name, adopted when another machine opened it ---
+# --- the thread: one per channel name, adopted again after a bridge restart ---
 
 root_text_prefix() { printf '*teamup · %s* ' "$1"; }
 
@@ -197,7 +183,7 @@ read_thread_args() { # channel root oldest
   jq -nc --arg channel "$1" --arg root "$2" --arg oldest "$3" '{channel_id: $channel, message_ts: $root, oldest: $oldest, response_format: "detailed"}'
 }
 
-find_existing_root() { # subject — a thread another machine's bridge opened for this channel name today; older ones are reused names
+find_existing_root() { # subject — the thread this channel name already has today (a bridge restart); older ones are reused names
   local history
   history="$(connector_call slack_read_channel "$(read_channel_args "$(slack_channel_of "$1")" "$(( $(date +%s) - ADOPTABLE_ROOT_MAX_AGE_SECONDS ))")")" || return 1
   connector_messages_json "$(messages_text_of "$history")" |
@@ -205,7 +191,7 @@ find_existing_root() { # subject — a thread another machine's bridge opened fo
       '[.messages[] | select(.text | startswith($prefix))] | sort_by(.ts | tonumber) | last | .ts // empty'
 }
 
-start_relaying_from_now() { # subject — an adopted thread's older replies belong to the machine that opened it
+start_relaying_from_now() { # subject — an adopted thread's older replies were handled by the bridge that opened it
   echo "$(date +%s).000000" >> "$(relayed_file "$1")"
 }
 

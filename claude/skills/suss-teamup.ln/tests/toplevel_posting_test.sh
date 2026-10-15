@@ -73,12 +73,6 @@ expect_text "a [top] line in the shared channel falls back to the thread" "$(pos
 mirror_line "$THROWAWAY" "  #3 [07:00:03] tester (say) probe [top]"
 expect_text "a [top] line in a throwaway channel is posted top-level" "$(post_message_args | grep -c thread_ts)" "0"
 
-printf '2026-10-13T07:02:00Z\tdavid\task\t@tester [box.agent] ping-from-box\n' >> "$SUSS_TEAMUP_DIR/$DEDICATED/channel.tsv"
-remote_line=$(line_count "$DEDICATED")
-expect_text "the tag does not break the reply cross-back to another machine" \
-  "$(with_reply_crossback "$DEDICATED" "  #9 [07:02:10] tester (ack) re:#$remote_line pong [top]")" \
-  "  #9 [07:02:10] tester (ack) re:#$remote_line @box.agent pong [top]"
-
 prose_message() { # ts text [extra-line] — one message as the connector prints a channel read
   printf '=== Message from Tester <t@x> (U0OWNER) at 2026-10-13 07:00:00 IDT === \nMessage TS: %s\n%s\n%s\n' "$1" "$2" "${3:-}"
 }

@@ -27,11 +27,11 @@ is where the emoji is needed.
    cd ~/Developer/suss-tasks && for f in */*/epic.md; do s=$(head -1 "$f"); case "$s" in closed) ;; *) echo "$(sed -n 2p "$f" | cut -c3-4)  $(dirname "$f")";; esac; done
    ```
    A closed epic frees its emoji.
-2. **It stands for the epic**, not for a task type or status: a lock for protected branches,
-   a penguin for the Linux box. Anyone seeing the row should guess which epic it belongs to.
+2. **It stands for the epic**, not for a task type or status: a lock for protected branches.
+   Anyone seeing the row should guess which epic it belongs to.
 3. **Single code point.** Avoid emojis that need a variation selector or a ZWJ sequence
    (🖥️, 🏷️, 👨‍💻): they count as 2+ characters, render inconsistently in terminals, and
-   break column alignment. Prefer 🔒 💻 🐧 📦 📰 📣 🎬 🧩 📅 🧹 🎨 👻 📜.
+   break column alignment. Prefer 🔒 💻 📦 📰 📣 🎬 🧩 📅 🧹 🎨 👻 📜.
 4. **Same emoji in every file of the directory**, including files added later and files
    moved into `done/`. A new task file copies the emoji from its epic's title.
 5. **The emoji is part of the title everywhere**: the b44sync task title (`suss-sync-tasks`
