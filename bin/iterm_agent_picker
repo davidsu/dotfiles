@@ -2,7 +2,7 @@
 # iterm_agent_picker — an fzf picker over iTerm: live Claude agents, agents that can be woken, or every tab.
 # Rows come from bin/iterm_picker_lists (tabs = the iTerm tabs without an agent; agents are in alive / available);
 # the preview pane shows the row's live screen in color (or a parked agent's last words). ctrl+j / ctrl+k move, typing filters, ctrl+u / ctrl+d scroll the preview,
-# ctrl+a / ctrl+w / ctrl+t switch to the alive / available (wake) / tabs list, ctrl+x closes the row's tab
+# ctrl+o / ctrl+w / ctrl+t switch to the alive / available (wake) / tabs list (ctrl+a is readline's home), ctrl+x closes the row's tab
 # and keeps the picker open, Enter focuses the tab (waking a parked agent first), Esc closes.
 #   iterm_agent_picker [alive|available|tabs]   cmd+ctrl+g: open the floating window (bin/iterm_float)
 #   iterm_agent_picker --pick LIST              the picker inline, in this terminal (aliases alive-agents, available-agents,
@@ -34,9 +34,9 @@ switch_binding() { # key list
 pick_row() { # list — prints `kind<TAB>arg` of the chosen row
   "$LISTS" rows "$1" | fzf --ansi --layout=reverse --no-info --border=rounded --border-label="$(label_of "$1")" \
     --delimiter=$'\t' --with-nth=1 --accept-nth=2,3 --prompt="$(prompt_of "$1")" \
-    --header='CTRL-u/d: scroll preview | CTRL-a/w/t: alive/available/tabs | CTRL-x: close tab | ENTER: focus | ESC: quit' \
+    --header='CTRL-u/d: scroll preview | CTRL-o/w/t: alive/available/tabs | CTRL-x: close tab | ENTER: focus | ESC: quit' \
     --bind="ctrl-u:$PREVIEW_SCROLL_UP,ctrl-d:$PREVIEW_SCROLL_DOWN" \
-    --bind="$(switch_binding ctrl-a alive)" --bind="$(switch_binding ctrl-w available)" --bind="$(switch_binding ctrl-t tabs)" \
+    --bind="$(switch_binding ctrl-o alive)" --bind="$(switch_binding ctrl-w available)" --bind="$(switch_binding ctrl-t tabs)" \
     --bind="ctrl-x:execute-silent($LISTS close {3})+reload($SELF --rows-of-prompt)" \
     --preview="$LISTS preview {2} {3}" --preview-window='up:60%:nowrap:follow'
 }

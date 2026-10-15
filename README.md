@@ -359,7 +359,7 @@ Cmd+Ctrl+G → Floating fzf picker over iTerm: live agents, agents to wake, ever
 ```
 > Runs `bin/iterm_agent_picker`: opens a chromeless iTerm window covering 90% of the screen (the `Agent Picker` dynamic
 > profile, `iterm2/dynamic-profiles/agent-picker.ln.json`: `Window Type` 12 = no title bar, `Disable Window Resizing`,
-> `Close Sessions On End` 1) running the picker. Three lists, switched with `ctrl-a` / `ctrl-w` / `ctrl-t`:
+> `Close Sessions On End` 1) running the picker. Three lists, switched with `ctrl-o` / `ctrl-w` / `ctrl-t`:
 > **alive** (live Claude agents, a `■` block + name in the agent's `/color`), **available** (alive + the agents
 > `teamup-wake --list` can wake, dimmed `zz`), **tabs** (the iTerm tabs without an agent: shells, nvim, …; `[w1]` = window). The preview pane shows the
 > row's tab in its colors (`bin/iterm_screen_ansi`: iTerm's Python API per-cell styles → ANSI; plain AppleScript
