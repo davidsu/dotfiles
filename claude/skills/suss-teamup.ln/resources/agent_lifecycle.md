@@ -25,10 +25,14 @@ $S/teamup-wake <handle|id> [--channel C] [--role ROLE] [--color COLOR] [--after 
    and record how to resume it), waits for the process to exit, `leave`s whatever is left,
    and closes its iTerm tab. The tab is closed last on purpose: iTerm's "Undo can revive a
    closed session" keeps a closed tab's process alive for ~5 s (profile default), so closing
-   first left the agent running, and taking turns, after the tool had said `closed`. It
-   refuses, and says why, while:
-   - the agent's tab has keyboard focus (the current tab of iTerm's front window): David is
-     looking at it
+   first left the agent running, and taking turns, after the tool had said `closed`.
+
+   It **never** closes the tab David is in: the current tab of iTerm's front window while he
+   typed in the last 120 s. No flag overrides that, self-sleep included (an owner once slept
+   itself with `--force` while David typed a request into its tab). It exits 1; tell the lead,
+   and sleep once he has moved on.
+
+   It also refuses, and says why, while:
    - David messaged it in the last 5 minutes: a prompt typed in its terminal (the last
      `origin.kind == "human"` turn of its transcript, not counting the `/suss-teamup` that
      spawn and wake type), or a channel message from `david` naming `@<handle>` (which
@@ -36,7 +40,7 @@ $S/teamup-wake <handle|id> [--channel C] [--role ROLE] [--color COLOR] [--after 
    - a peer is waiting on the agent's answer
    - the agent spoke in the last minute (it may be mid-push)
 
-   It prints what the agent last said. `--force` overrides, and still prints the reasons.
+   It prints what the agent last said. `--force` overrides these, and still prints the reasons.
 
    A target is a handle or a claude session id. An agent sleeping itself passes neither: the
    script takes `$CLAUDE_CODE_SESSION_ID`. A session on no channel is found through

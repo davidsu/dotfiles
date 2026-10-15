@@ -149,9 +149,8 @@ david_spoke_lately() { # handle
   return $spoke
 }
 
-is_busy() { # handle — David is on it, someone is waiting on it, or it spoke a moment ago (maybe mid-push)
+is_busy() { # handle — David spoke to it, someone is waiting on it, or it spoke a moment ago (maybe mid-push)
   local channel at said busy=1
-  is_focused "$1" && { echo "  $1's tab has keyboard focus: David is looking at it"; busy=0; }
   david_spoke_lately "$1" && busy=0
   for channel in $(channels_of "$1"); do
     "$TEAMUP" status "$channel" --as "$1" >/dev/null 2>&1
@@ -204,6 +203,23 @@ put_to_sleep() { # handle
   echo "resume with: $HERE/teamup-wake $1"
 }
 
+# The tab David is typing in is never closed, --force and self-sleep included: an owner that
+# slept itself with --force once cut David off mid-request. --force overrides only is_busy.
+sleep_if_allowed() { # handle force
+  if is_focused "$1"; then
+    echo "teamup-sleep: not closing $1: David is in its tab right now (focused, typed within 120 s). No flag overrides this." >&2
+    return 1
+  fi
+  if is_busy "$1"; then
+    [ "$2" = true ] || {
+      echo "teamup-sleep: not closing $1: it is busy (above). Ask it to say 'ready to sleep', or pass --force." >&2
+      return 1
+    }
+    echo "teamup-sleep: --force: closing $1 although it is busy (above)" >&2
+  fi
+  put_to_sleep "$1"
+}
+
 [[ "${BASH_SOURCE[0]}" != "$0" ]] && return 0
 
 [ "${1:-}" = __finish ] && { stop_leave_and_close "$2" "$3" "$4"; exit 0; }
@@ -211,15 +227,10 @@ put_to_sleep() { # handle
 force=false; [ "${1:-}" = --force ] && { force=true; shift; }
 [ $# -gt 0 ] || set -- ${CLAUDE_CODE_SESSION_ID:-}
 [ $# -gt 0 ] || { echo "usage: teamup-sleep [--force] [<handle|session-id>...]  (none: this claude session)" >&2; exit 2; }
+status=0
 for target in "$@"; do
   handle="$(handle_of "$target")"
-  [ -n "$handle" ] || { echo "teamup-sleep: no claude session $target" >&2; continue; }
-  if is_busy "$handle"; then
-    [ "$force" = true ] || {
-      echo "teamup-sleep: not closing $handle: it is busy (above). Ask it to say 'ready to sleep', or pass --force." >&2
-      continue
-    }
-    echo "teamup-sleep: --force: closing $handle although it is busy (above)" >&2
-  fi
-  put_to_sleep "$handle"
+  [ -n "$handle" ] || { echo "teamup-sleep: no claude session $target" >&2; status=1; continue; }
+  sleep_if_allowed "$handle" "$force" || status=1
 done
+exit "$status"
