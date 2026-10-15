@@ -81,7 +81,7 @@ available_rows() { alive_rows; parked_rows; }
 
 tab_rows() { # every iTerm tab but the one this picker runs in
   local own; own="$(own_tty)"
-  osascript - <<'OSA' | awk -F'\t' -v dim="$DIM" -v reset="$RESET" -v own="$own" '$2 != own { printf "%s[w%s]%s %s\tfocus\t%s\n", dim, $1, reset, $3, $2 }'
+  osascript - <<'OSA' | awk -F'\t' -v dim="$DIM" -v reset="$RESET" -v own="$own" 'NF >= 2 && $2 != own { printf "%s[w%s]%s %s\tfocus\t%s\n", dim, $1, reset, $3, $2 }'
 set out to ""
 set tabChar to ASCII character 9
 tell application "iTerm2"
