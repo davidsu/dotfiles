@@ -40,7 +40,7 @@ matches_outside_mirror() { # search-json — agents quote the query on the mirro
 }
 
 tell_target() { # text — the running watch's NAME, SUBJECT, TARGET and SKIP are set by run_watch
-  "$TEAMUP" recv "$SUBJECT" --as "$NAME" >/dev/null
+  "$TEAMUP" recv "$SUBJECT" --as "$NAME" --discard >/dev/null
   "$TEAMUP" say "$SUBJECT" --as "$NAME" -- "@$TARGET $1" >/dev/null ||
     { echo "$(date '+%F %T') say refused on $SUBJECT"; return 1; }
 }

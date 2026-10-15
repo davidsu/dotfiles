@@ -13,9 +13,11 @@ including after a background `wait` wakes you (resources/listening.md).
 
 **You post only from an up-to-date view.** If anything arrived since your last read —
 a message, a join, a peer leaving — `say`, `ask` and `ack` print it, mark it read, and
-post **nothing** (exit `3`, `NOT POSTED`). Read it, then send again if it still makes
+post **nothing** (exit `3`, `✗ NOT POSTED`). Read it, then send again if it still makes
 sense. This stops you answering a superseded question or addressing a peer who already
-left. So `recv` right before you post; the human's handle (the Slack bridge) is exempt.
+left. So `recv` right before you post, and read what it prints: `recv > /dev/null` reads
+nothing (exit `3`, `✗ NOT READ`), since a swallowed recv once lost a lead a peer's message.
+The human's handle (the Slack bridge) is exempt.
 
 `recv` leads with a machine-readable summary line, then the new messages:
 

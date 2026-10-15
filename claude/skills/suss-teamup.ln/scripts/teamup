@@ -102,7 +102,8 @@ usage:
   teamup ack    <subject> --as <handle> [--re <seq>] [--top] [note...]         # answer/clear an ask (default: latest peer msg)
                                                           # --top: the Slack mirror posts this line at the channel's top level (suffix " [top]"); only where
                                                           # the channel has a Slack channel of its own (slack-channel.<subject>, or --throwaway), exit 2 elsewhere
-  teamup recv   <subject> --as <handle>                   # new msgs from others + summary line, non-blocking
+  teamup recv   <subject> --as <handle> [--discard]       # new msgs from others + summary line, non-blocking; exit 3 into /dev/null
+                                                          # --discard: mark everything read unseen, for scripts that post but never read
   teamup status <subject> --as <handle>                   # summary only; exit 0=clean 1=unread 2=ask-for-me (cursor untouched)
   teamup status --as <handle>                             # no subject: list every team this handle is on + member count
   teamup teams  --session <guid> [--pwd <path>]           # compact one-line joined channels for a statusline (! ask, * unread)
@@ -530,6 +531,15 @@ read_unread() { # subject handle
   if [ -n "$fresh" ]; then printf '%s\n' "$fresh" | pretty; else echo "  (nothing new)"; fi
 }
 
+# `recv > /dev/null` marks read what nobody saw, and the next post then goes out from a stale
+# view (suss-lead #314, 2026-10-15). A script that posts but never reads says so: --discard.
+refuse_recv_into_dev_null() {
+  [ "$DISCARD" = true ] && return 0
+  [ /dev/stdout -ef /dev/null ] || return 0
+  echo "✗ NOT READ (exit 3): recv's output went to /dev/null, so the cursor stays put. Run recv again and read what it prints." >&2
+  exit 3
+}
+
 # A post written without reading what arrived meanwhile can answer a stale question or
 # address a peer who already left. So an agent posts only from an up-to-date view: if
 # anything is new (messages, joins, leaves), show it and refuse; the next attempt goes
@@ -537,7 +547,7 @@ read_unread() { # subject handle
 refuse_post_if_unread() { # subject handle
   [ "$2" = "$HUMAN_HANDLE" ] && return 0
   [ -n "$(fresh_lines "$1" "$2")" ] || return 0
-  echo "NOT POSTED — the channel changed since you last read it. Read this, then send again if it still makes sense:"
+  echo "✗ NOT POSTED (exit 3): the channel changed since you last read it. Read this, then send again if it still makes sense:"
   read_unread "$1" "$2"
   exit 3
 }
@@ -617,7 +627,7 @@ ensure_member() { # subject
 # ---- arg parsing --------------------------------------------------------------
 CMD="${1:-}"; shift || usage
 SUBJECT=""; HANDLE=""; PWD_ARG="$PWD"; DOING=""; TIMEOUT="$DEFAULT_WAIT"; LAST=20; ALL=false; FORCE=false
-TO=""; RE=""; SID=""; THROWAWAY=false; TOP=false; GIST=""
+TO=""; RE=""; SID=""; THROWAWAY=false; TOP=false; DISCARD=false; GIST=""
 MSG=()
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -634,6 +644,7 @@ while [ $# -gt 0 ]; do
     --force)   FORCE=true; shift ;;
     --throwaway) THROWAWAY=true; shift ;;
     --top)     TOP=true; shift ;;
+    --discard) DISCARD=true; shift ;;
     --) shift; MSG+=("$@"); break ;;
     -*) die "unknown flag: $1 (put free-form message text after -- )" ;;
     *) if [ -z "$SUBJECT" ]; then SUBJECT="$1"; else MSG+=("$1"); fi; shift ;;
@@ -734,6 +745,7 @@ case "$CMD" in
 
   recv)
     [ -n "$SUBJECT" ] || usage; require_handle; ensure_member "$SUBJECT"
+    refuse_recv_into_dev_null
     read_unread "$SUBJECT" "$HANDLE"
     ;;
 
