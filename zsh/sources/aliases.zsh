@@ -40,6 +40,8 @@ alias findagent='iterm_focus_agent'
 alias bot-awake='iterm_agent_picker --pick alive'
 alias bot-available='iterm_agent_picker --pick available'
 alias terminal-tabs='iterm_agent_picker --pick tabs'
+alias chrome-tabs='chrome_tabs'
+alias fzf-chrome-tabs='chrome_tabs'
 
 # Codex
 alias codex='command codex --dangerously-bypass-approvals-and-sandbox -c '\''mcp_servers.playwright-chrome.command="playwright-mcp"'\'' -c '\''mcp_servers.playwright-chrome.args=["--extension"]'\'' -c '\''mcp_servers.playwright-chrome.env_vars=["PLAYWRIGHT_MCP_EXTENSION_TOKEN"]'\'''

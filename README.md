@@ -368,8 +368,11 @@ Cmd+Ctrl+G → Floating fzf picker over iTerm: live agents, agents to wake, ever
 > woken with `teamup-wake` first), `ctrl-x` closes the row's tab and keeps the picker open, Esc closes.
 > From a shell the same picker runs inline: `bot-awake`, `bot-available`, `terminal-tabs`
 > (`iterm_agent_picker --pick alive|available|tabs`). Rows and actions live in `bin/iterm_picker_lists`.
-> `fzf-all` (alias `fzf-land`, `zsh/sources/fzf/all.zsh`) lists every fzf-based command here with its description and keys
-> in the preview; Enter runs the chosen one.
+> `fzf-all` (alias `fzf-land`, `zsh/sources/fzf/all.zsh`) lists every fzf-based command here with its global hotkey,
+> description and keys in the preview; Enter runs the chosen one (`fag` first asks for a directory and the rg args).
+> `chrome-tabs` (`bin/chrome_tabs`): every Chrome tab, Enter goes to it, `ctrl-x` closes it.
+> `bin/iterm_float CMD` runs any command in the same floating window; Karabiner: `cmd+ctrl+t` → `mru`,
+> `cmd+ctrl+c` → `chromehistory`, `cmd+ctrl+b` → `chromebookmarks`.
 > Errors go to `~/Library/Logs/iterm_agent_picker.log`.
 > Known iTerm nit: closing the picker within 3 s of opening (iTerm's `shortLivedSessionDuration` advanced setting) shows
 > "A session ended very soon after starting" once; tick "Suppress this message permanently" (it is stored per profile GUID as

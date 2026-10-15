@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# chrome_tabs — an fzf picker over every Google Chrome tab (shell: chrome-tabs / fzf-chrome-tabs).
+# Rows: [window.tab] title; preview: title, URL, window; Enter brings that tab to the front;
+# ctrl+x closes it and keeps the picker open; Esc quits. Chrome is driven over AppleScript.
+#   chrome_tabs            the picker
+#   chrome_tabs rows       the rows (display<TAB>window<TAB>tab)
+#   chrome_tabs preview W T | focus W T | close W T
+set -euo pipefail
+export PATH="/opt/homebrew/bin:$PATH"
+
+readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
+readonly DIM=$'\e[2m'
+readonly RESET=$'\e[0m'
+
+chrome_tab_table() { # window \t tab \t title \t url, every tab
+  osascript <<'OSA'
+set out to ""
+set tabChar to ASCII character 9
+tell application "Google Chrome"
+  set windowIndex to 0
+  repeat with w in windows
+    set windowIndex to windowIndex + 1
+    set tabIndex to 0
+    repeat with t in tabs of w
+      set tabIndex to tabIndex + 1
+      set out to out & windowIndex & tabChar & tabIndex & tabChar & (title of t) & tabChar & (URL of t) & linefeed
+    end repeat
+  end repeat
+end tell
+return out
+OSA
+}
+
+rows() { chrome_tab_table | awk -F'\t' -v dim="$DIM" -v reset="$RESET" '{ printf "%s[%s.%s]%s %s\t%s\t%s\n", dim, $1, $2, reset, $3, $1, $2 }'; }
+
+preview() { # window tab
+  chrome_tab_table | awk -F'\t' -v w="$1" -v t="$2" '$1 == w && $2 == t { printf "%s\n\n%s\n\nwindow %s, tab %s\n", $3, $4, $1, $2 }'
+}
+
+focus() { # window tab
+  osascript - "$1" "$2" <<'OSA'
+on run argv
+  tell application "Google Chrome"
+    set w to window (item 1 of argv as integer)
+    set active tab index of w to (item 2 of argv as integer)
+    set index of w to 1
+    activate
+  end tell
+end run
+OSA
+}
+
+close_tab() { # window tab
+  osascript - "$1" "$2" <<'OSA'
+on run argv
+  tell application "Google Chrome" to close tab (item 2 of argv as integer) of window (item 1 of argv as integer)
+end run
+OSA
+}
+
+pick() {
+  local picked window tab
+  picked="$(rows | fzf --ansi --layout=reverse --no-info --border=rounded --border-label=' Chrome tabs ' \
+    --delimiter=$'\t' --with-nth=1 --accept-nth=2,3 --prompt='Chrome> ' \
+    --header='CTRL-x: close tab | ENTER: go to tab | ESC: quit' \
+    --bind="ctrl-x:execute-silent($SELF close {2} {3})+reload($SELF rows)" \
+    --preview="$SELF preview {2} {3}" --preview-window='up:30%:wrap')" || return 1
+  IFS=$'\t' read -r window tab <<<"$picked"
+  [ -n "$window" ] && focus "$window" "$tab"
+}
+
+case "${1:-}" in
+  "") pick ;;
+  rows) rows ;;
+  preview) preview "$2" "$3" ;;
+  focus) focus "$2" "$3" ;;
+  close) close_tab "$2" "$3" ;;
+  *) sed -n '2,7p' "$0" >&2; exit 1 ;;
+esac

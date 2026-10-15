@@ -16,6 +16,7 @@ FZF_ALL_COMMANDS=(
   "bot-awake	cmd+ctrl+g	Live Claude agents with a colored live-screen preview; Enter focuses the agent's iTerm tab"
   "bot-available		Awake + asleep agents; Enter wakes an asleep one (teamup-wake) and focuses its tab"
   "terminal-tabs		Every iTerm tab with a live-screen preview; Enter focuses, CTRL-x closes the tab"
+  "chrome-tabs		Every Chrome tab (title, URL); Enter goes to it, CTRL-x closes it"
 )
 
 fzf_all_entry() { # name — "hotkey<TAB>description"
