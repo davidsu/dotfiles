@@ -159,7 +159,7 @@ end run
 OSA
 }
 
-own_tty() { tty 2>/dev/null || true; }
+own_tty() { echo "${PICKER_OWN_TTY:-$(tty 2>/dev/null || true)}"; } # the picker exports it once, so fzf's reloads (stdin = a pipe) still know it
 
 close_tty() {
   [ "$1" != "$(own_tty)" ] || { echo "not closing the tab this picker runs in" >&2; return 1; }

@@ -54,6 +54,36 @@
             ]
           },
           {
+            "description": "Global: cmd+ctrl+t → mru in a floating window (bin/iterm_float mru)",
+            "manipulators": [
+              {
+                "from": { "key_code": "t", "modifiers": { "mandatory": ["command", "control"] } },
+                "to": [{ "shell_command": "$HOME/.dotfiles/bin/iterm_float mru >> $HOME/Library/Logs/iterm_float.log 2>&1" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "Global: cmd+ctrl+c → Chrome history in a floating window (bin/iterm_float chromehistory)",
+            "manipulators": [
+              {
+                "from": { "key_code": "c", "modifiers": { "mandatory": ["command", "control"] } },
+                "to": [{ "shell_command": "$HOME/.dotfiles/bin/iterm_float chromehistory >> $HOME/Library/Logs/iterm_float.log 2>&1" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "Global: cmd+ctrl+b → Chrome bookmarks in a floating window (bin/iterm_float chromebookmarks)",
+            "manipulators": [
+              {
+                "from": { "key_code": "b", "modifiers": { "mandatory": ["command", "control"] } },
+                "to": [{ "shell_command": "$HOME/.dotfiles/bin/iterm_float chromebookmarks >> $HOME/Library/Logs/iterm_float.log 2>&1" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
             "description": "Vim layer: ` + hjkl/ui/m,/90/BS (tap ` alone = `)",
             "manipulators": [
               {

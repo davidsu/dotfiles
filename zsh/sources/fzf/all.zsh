@@ -1,29 +1,32 @@
 # fzf-all - Every fzf-based command here in one picker: what it does and its keys in the preview, Enter runs it
 # Usage: fzf-all (alias: fzf-land)
-# The table below is the registry: name, one line. The preview adds the command's own header comment
+# The table below is the registry: name, global hotkey (blank if none), one line. The preview adds the command's header comment
 # and its fzf keys (--header / --prompt lines) read from the file that defines it.
 
 FZF_ALL_COMMANDS=(
-  "mru	Most recently used files (nvim's list); Enter opens the file in nvim at its last position"
-  "jfzf	Jump to a frequently used directory (zoxide); Enter cd's there"
-  "fa	Find a file under the current directory, bat preview; Enter opens it in nvim"
-  "fag	ripgrep search: pick a directory (default ~/projects/apper), type the rg args, matches → nvim's quickfix"
-  "fbw	Bitwarden entries (rbw); Enter copies the password"
-  "chromehistory	Chrome history; Enter opens the URL(s) in Chrome"
-  "chromebookmarks	Chrome bookmarks; Enter opens the URL(s) in Chrome"
-  "bravehistory	Brave history; Enter opens the URL(s) in Brave"
-  "bravebookmarks	Brave bookmarks; Enter opens the URL(s) in Brave"
-  "bot-awake	Live Claude agents with a colored live-screen preview; Enter focuses the agent's iTerm tab"
-  "bot-available	Awake + asleep agents; Enter wakes an asleep one (teamup-wake) and focuses its tab"
-  "terminal-tabs	Every iTerm tab with a live-screen preview; Enter focuses, CTRL-x closes the tab"
+  "mru	cmd+ctrl+t	Most recently used files (nvim's list); Enter opens the file in nvim at its last position"
+  "jfzf		Jump to a frequently used directory (zoxide); Enter cd's there"
+  "fa		Find a file under the current directory, bat preview; Enter opens it in nvim"
+  "fag		ripgrep search: pick a directory (default ~/projects/apper), type the rg args, matches → nvim's quickfix"
+  "fbw		Bitwarden entries (rbw); Enter copies the password"
+  "chromehistory	cmd+ctrl+c	Chrome history; Enter opens the URL(s) in Chrome"
+  "chromebookmarks	cmd+ctrl+b	Chrome bookmarks; Enter opens the URL(s) in Chrome"
+  "bravehistory		Brave history; Enter opens the URL(s) in Brave"
+  "bravebookmarks		Brave bookmarks; Enter opens the URL(s) in Brave"
+  "bot-awake	cmd+ctrl+g	Live Claude agents with a colored live-screen preview; Enter focuses the agent's iTerm tab"
+  "bot-available		Awake + asleep agents; Enter wakes an asleep one (teamup-wake) and focuses its tab"
+  "terminal-tabs		Every iTerm tab with a live-screen preview; Enter focuses, CTRL-x closes the tab"
 )
 
-fzf_all_entry() {
+fzf_all_entry() { # name — "hotkey<TAB>description"
   local entry
   for entry in "${FZF_ALL_COMMANDS[@]}"; do
     [[ "$entry" == "$1"$'\t'* ]] && { print -r -- "${entry#*	}"; return; }
   done
 }
+
+fzf_all_hotkey() { local entry; entry="$(fzf_all_entry "$1")"; print -r -- "${entry%%	*}"; }
+fzf_all_description() { local entry; entry="$(fzf_all_entry "$1")"; print -r -- "${entry#*	}"; }
 
 fzf_all_defining_file() { # name — the function or alias that defines it; an alias or a bare name resolves to its bin/ script
   local name="${1%% *}" file target
@@ -35,8 +38,8 @@ fzf_all_defining_file() { # name — the function or alias that defines it; an a
 
 fzf_all_describe() {
   local name="$1" file
-  print -P "%B${name}%b"
-  fzf_all_entry "$name"
+  print -P "%B${name}%b${$(fzf_all_hotkey "$name"):+  (global: $(fzf_all_hotkey "$name"), floating window)}"
+  fzf_all_description "$name"
   file="$(fzf_all_defining_file "$name")"
   [[ -n "$file" ]] || return 0
   print -- "\ndefined in ${file/#$HOME/~}"
@@ -44,10 +47,11 @@ fzf_all_describe() {
   rg --no-config -o -e "--header[= ]+'[^']*'" -e "--prompt[= ]+'[^']*'" -e "# Usage:.*" "$file" | sed "s/^--//; s/[= ]\+'/ '/; s/  */ /g" | sort -u
 }
 
-fzf_all_rows() { # name <TAB> aligned display line
-  local entry
+fzf_all_rows() { # name <TAB> aligned display line: name, hotkey, description
+  local entry name rest
   for entry in "${FZF_ALL_COMMANDS[@]}"; do
-    printf '%s\t%-16s %s\n' "${entry%%	*}" "${entry%%	*}" "${entry#*	}"
+    name="${entry%%	*}"; rest="${entry#*	}"
+    printf '%s\t%-16s %-12s %s\n' "$name" "$name" "${rest%%	*}" "${rest#*	}"
   done
 }
 

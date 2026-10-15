@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# iterm_float COMMAND… — run a shell command in a floating, chromeless iTerm window centered on the screen
+# (the "Agent Picker" dynamic profile, 90% of the visible screen; the window closes when the command ends).
+# Karabiner's cmd+ctrl+{t,c,b} run `iterm_float mru|chromehistory|chromebookmarks`; bin/iterm_agent_picker uses it too.
+# COMMAND is run by an interactive zsh, so aliases and the fzf functions from zsh/sources work.
+set -euo pipefail
+
+readonly FLOAT_PROFILE="Agent Picker"
+readonly SCREEN_FRACTION=0.9
+
+[ $# -gt 0 ] || { echo "usage: iterm_float COMMAND…" >&2; exit 1; }
+
+osascript -l JavaScript - "$FLOAT_PROFILE" "$SCREEN_FRACTION" "zsh -ic $(printf '%q' "$*")" <<'JXA'
+ObjC.import('AppKit');
+const coverScreenCenter = (window, fraction) => {
+  const screen = $.NSScreen.mainScreen.frame.size;
+  const visible = $.NSScreen.mainScreen.visibleFrame;
+  const width = Math.round(visible.size.width * fraction);
+  const height = Math.round(visible.size.height * fraction);
+  const visibleTop = screen.height - (visible.origin.y + visible.size.height);
+  window.bounds = {
+    x: Math.round(visible.origin.x + (visible.size.width - width) / 2),
+    y: Math.round(visibleTop + (visible.size.height - height) / 2),
+    width,
+    height,
+  };
+};
+function run([profile, fraction, command]) {
+  const iterm = Application('iTerm2');
+  const window = iterm.createWindowWithProfile(profile, { command });
+  iterm.activate();
+  coverScreenCenter(window, Number(fraction));
+}
+JXA

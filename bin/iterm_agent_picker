@@ -4,7 +4,7 @@
 # agent's last words). ctrl+j / ctrl+k move, typing filters, ctrl+u / ctrl+d scroll the preview,
 # ctrl+a / ctrl+w / ctrl+t switch to the alive / available (wake) / tabs list, ctrl+x closes the row's tab
 # and keeps the picker open, Enter focuses the tab (waking a parked agent first), Esc closes.
-#   iterm_agent_picker [alive|available|tabs]   cmd+ctrl+g: open the floating window (the "Agent Picker" profile)
+#   iterm_agent_picker [alive|available|tabs]   cmd+ctrl+g: open the floating window (bin/iterm_float)
 #   iterm_agent_picker --pick LIST              the picker inline, in this terminal (aliases alive-agents, available-agents,
 #                                               terminal-tabs); acts on the chosen row itself
 #   iterm_agent_picker --pick LIST --into FILE  what runs inside the floating window: writes the chosen row to FILE, the
@@ -12,12 +12,14 @@
 set -euo pipefail
 export PATH="/opt/homebrew/bin:$PATH"
 
-readonly PICKER_PROFILE="Agent Picker"
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
 readonly LISTS="$(dirname "$SELF")/iterm_picker_lists"
 readonly TEAMUP_WAKE="$HOME/.claude/skills/suss-teamup/scripts/teamup-wake"
 readonly DEFAULT_LIST=alive
 readonly PICK_TIMEOUT_SECONDS=300
+readonly PREVIEW_SCROLL_LINES=4
+readonly PREVIEW_SCROLL_UP="$(printf 'preview-up+%.0s' $(seq "$PREVIEW_SCROLL_LINES"))"; readonly PREVIEW_SCROLL_DOWN="$(printf 'preview-down+%.0s' $(seq "$PREVIEW_SCROLL_LINES"))"
+export PICKER_OWN_TTY="${PICKER_OWN_TTY:-$(tty 2>/dev/null || true)}"
 
 prompt_of() { case "$1" in alive) echo 'Alive> ' ;; available) echo 'Available> ' ;; tabs) echo 'Tabs> ' ;; esac; }
 list_of_prompt() { case "$1" in 'Alive> ') echo alive ;; 'Available> ') echo available ;; 'Tabs> ') echo tabs ;; esac; }
@@ -30,8 +32,8 @@ switch_binding() { # key list
 pick_row() { # list — prints `kind<TAB>arg` of the chosen row
   "$LISTS" rows "$1" | fzf --ansi --layout=reverse --no-info --border=rounded --border-label="$(label_of "$1")" \
     --delimiter=$'\t' --with-nth=1 --accept-nth=2,3 --prompt="$(prompt_of "$1")" \
-    --header='CTRL-j/k: move | CTRL-u/d: scroll preview | CTRL-a/w/t: alive/available/tabs | CTRL-x: close tab | ENTER: focus | ESC: quit' \
-    --bind='ctrl-u:preview-half-page-up,ctrl-d:preview-half-page-down' \
+    --header='CTRL-u/d: scroll preview | CTRL-a/w/t: alive/available/tabs | CTRL-x: close tab | ENTER: focus | ESC: quit' \
+    --bind="ctrl-u:$PREVIEW_SCROLL_UP,ctrl-d:$PREVIEW_SCROLL_DOWN" \
     --bind="$(switch_binding ctrl-a alive)" --bind="$(switch_binding ctrl-w available)" --bind="$(switch_binding ctrl-t tabs)" \
     --bind="ctrl-x:execute-silent($LISTS close {3})+reload($SELF --rows-of-prompt)" \
     --preview="$LISTS preview {2} {3}" --preview-window='up:60%:nowrap:follow'
@@ -76,29 +78,7 @@ wait_for_choice() { # file — until the picker wrote it, or gave up (Esc closes
 open_picker_window() { # list
   local choice kind arg
   choice="$(mktemp -t agent_picker)"; rm -f "$choice"
-  osascript -l JavaScript - "$PICKER_PROFILE" "$SELF --pick $1 --into $choice" <<'JXA'
-ObjC.import('AppKit');
-const SCREEN_FRACTION = 0.9;
-const coverScreenCenter = (window) => {
-  const screen = $.NSScreen.mainScreen.frame.size;
-  const visible = $.NSScreen.mainScreen.visibleFrame;
-  const width = Math.round(visible.size.width * SCREEN_FRACTION);
-  const height = Math.round(visible.size.height * SCREEN_FRACTION);
-  const visibleTop = screen.height - (visible.origin.y + visible.size.height);
-  window.bounds = {
-    x: Math.round(visible.origin.x + (visible.size.width - width) / 2),
-    y: Math.round(visibleTop + (visible.size.height - height) / 2),
-    width,
-    height,
-  };
-};
-function run([profile, command]) {
-  const iterm = Application('iTerm2');
-  const window = iterm.createWindowWithProfile(profile, { command });
-  iterm.activate();
-  coverScreenCenter(window);
-}
-JXA
+  "$(dirname "$SELF")/iterm_float" "$SELF --pick $1 --into $choice"
   sleep 1
   wait_for_choice "$choice" || return 0
   IFS=$'\t' read -r kind arg < "$choice"; rm -f "$choice"
