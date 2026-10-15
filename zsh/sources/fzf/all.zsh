@@ -7,7 +7,7 @@ FZF_ALL_COMMANDS=(
   "mru	Most recently used files (nvim's list); Enter opens the file in nvim at its last position"
   "jfzf	Jump to a frequently used directory (zoxide); Enter cd's there"
   "fa	Find a file under the current directory, bat preview; Enter opens it in nvim"
-  "fag	ripgrep search; Enter loads the selected matches into nvim's quickfix (CTRL-l selects all)"
+  "fag	ripgrep search: pick a directory (default ~/projects/apper), type the rg args, matches → nvim's quickfix"
   "fbw	Bitwarden entries (rbw); Enter copies the password"
   "chromehistory	Chrome history; Enter opens the URL(s) in Chrome"
   "chromebookmarks	Chrome bookmarks; Enter opens the URL(s) in Chrome"
@@ -16,7 +16,6 @@ FZF_ALL_COMMANDS=(
   "bot-awake	Live Claude agents with a colored live-screen preview; Enter focuses the agent's iTerm tab"
   "bot-available	Awake + asleep agents; Enter wakes an asleep one (teamup-wake) and focuses its tab"
   "terminal-tabs	Every iTerm tab with a live-screen preview; Enter focuses, CTRL-x closes the tab"
-  "box attach	A Claude session on the Coder box; Enter attaches it in this iTerm tab"
 )
 
 fzf_all_entry() {
@@ -52,6 +51,33 @@ fzf_all_rows() { # name <TAB> aligned display line
   done
 }
 
+FZF_ALL_FAG_DEFAULT_DIR="$HOME/projects/apper"
+
+fzf_all_pick_directory() { # ~/projects/apper first, then zoxide's list; Esc keeps the default
+  { print -r -- "$FZF_ALL_FAG_DEFAULT_DIR"; zoxide query -l 2>/dev/null | grep -vx "$FZF_ALL_FAG_DEFAULT_DIR"; } |
+    fzf --prompt 'fag in> ' --header "Enter: search there | ESC: ${FZF_ALL_FAG_DEFAULT_DIR/#$HOME/~}" --no-sort --preview 'ls -1 {}' --preview-window 'right:40%' ||
+    print -r -- "$FZF_ALL_FAG_DEFAULT_DIR"
+}
+
+fzf_all_ask_rg_args() { # dir — the search term and any rg flags, typed into an fzf prompt; Esc aborts
+  true | fzf --print-query --no-info --prompt "rg args in ${1/#$HOME/~}> " --header 'term and flags, e.g. useEffect -g "*.tsx" | Enter: search | ESC: abort' | head -1
+}
+
+fzf_all_run_fag() {
+  local dir rg_args
+  dir="$(fzf_all_pick_directory)"
+  rg_args="$(fzf_all_ask_rg_args "$dir")"
+  [[ -n "$rg_args" ]] || return
+  ( cd "$dir" && fag ${(z)rg_args} )
+}
+
+fzf_all_run() {
+  case "$1" in
+    fag) fzf_all_run_fag ;;
+    *) eval "$1" ;;
+  esac
+}
+
 function fzf-all() {
   local picked
   picked="$(fzf_all_rows |
@@ -60,7 +86,7 @@ function fzf-all() {
         --header 'Enter: run the command | CTRL-/: toggle preview' \
         --preview 'zsh -c "source ~/.dotfiles/zsh/sources/fzf/all.zsh; fzf_all_describe {1}"' \
         --preview-window 'up:50%:wrap')" || return
-  [[ -n "$picked" ]] && eval "$picked"
+  [[ -n "$picked" ]] && fzf_all_run "$picked"
 }
 
 alias fzf-land='fzf-all'
