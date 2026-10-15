@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # iterm_picker_lists — the data behind bin/iterm_agent_picker: what each list holds and how to act on a row.
 # A row is `display<TAB>kind<TAB>arg`; kind is `focus` (arg = tty) or `wake` (arg = a parked agent's handle).
-#   iterm_picker_lists rows alive|available|tabs   print the rows (streamed, one per line, ANSI-colored display)
+#   iterm_picker_lists rows alive|available|tabs   print the rows (streamed, one per line, ANSI-colored display; tabs skips this tab)
 #   iterm_picker_lists preview KIND ARG            what the preview pane shows for that row
 #   iterm_picker_lists focus TTY                   bring the iTerm window, tab and pane on TTY to the front
 #   iterm_picker_lists close TTY                   close the iTerm session on TTY (never the one this runs in)
@@ -79,8 +79,9 @@ parked_rows() {
 
 available_rows() { alive_rows; parked_rows; }
 
-tab_rows() {
-  osascript - <<'OSA' | awk -F'\t' -v dim="$DIM" -v reset="$RESET" '{ printf "%s[w%s]%s %s\tfocus\t%s\n", dim, $1, reset, $3, $2 }'
+tab_rows() { # every iTerm tab but the one this picker runs in
+  local own; own="$(own_tty)"
+  osascript - <<'OSA' | awk -F'\t' -v dim="$DIM" -v reset="$RESET" -v own="$own" '$2 != own { printf "%s[w%s]%s %s\tfocus\t%s\n", dim, $1, reset, $3, $2 }'
 set out to ""
 set tabChar to ASCII character 9
 tell application "iTerm2"
