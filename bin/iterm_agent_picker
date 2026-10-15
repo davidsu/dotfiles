@@ -18,7 +18,9 @@ readonly TEAMUP_WAKE="$HOME/.claude/skills/suss-teamup/scripts/teamup-wake"
 readonly DEFAULT_LIST=alive
 readonly PICK_TIMEOUT_SECONDS=300
 readonly PREVIEW_SCROLL_LINES=4
-readonly PREVIEW_SCROLL_UP="$(printf 'preview-up+%.0s' $(seq "$PREVIEW_SCROLL_LINES"))"; readonly PREVIEW_SCROLL_DOWN="$(printf 'preview-down+%.0s' $(seq "$PREVIEW_SCROLL_LINES"))"
+repeated_action() { local joined; joined="$(printf "$1+%.0s" $(seq "$PREVIEW_SCROLL_LINES"))"; echo "${joined%+}"; }
+readonly PREVIEW_SCROLL_UP="$(repeated_action preview-up)"
+readonly PREVIEW_SCROLL_DOWN="$(repeated_action preview-down)"
 export PICKER_OWN_TTY="${PICKER_OWN_TTY:-$(tty 2>/dev/null || true)}"
 
 prompt_of() { case "$1" in alive) echo 'Alive> ' ;; available) echo 'Available> ' ;; tabs) echo 'Tabs> ' ;; esac; }
