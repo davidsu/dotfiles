@@ -334,19 +334,6 @@ Cmd+Ctrl+R → Rename current tab (prompts) + random tab color
 > An all-lowercase name is upper-cased; mixed-case is kept as typed.
 > Requires Accessibility permission for Karabiner-Elements (see first-run setup).
 
-### 📦 Coder box: `box attach` / `box paste`
-```
-box attach [TARGET] → this iTerm tab becomes a Claude session on the box (fzf picker without TARGET)
-Cmd+Ctrl+V          → paste the clipboard image into the box session attached in this tab (`box paste`)
-box url             → the same session in the browser at claude.ai/code (Remote Control), images paste natively there
-```
-> `bin/box --help` has the commands. Why not plain ctrl+v: the remote Claude has no access to the laptop
-> clipboard, so `box paste` writes the PNG under the session's cwd (`.box-paste/`, globally gitignored) and
-> types its path; the agent reads it with no permission prompt. Over ssh the agent sees it as a file it
-> read, not an inline image. `box attach` joins a grouped tmux session, so the box agent's own tmux
-> client is never detached and each side keeps its own window. `box paste` / `box url` know the tab's
-> session from `~/.local/state/box/tabs/`. Not verified on this machine: the browser paste route (docs only).
-
 ### 🤖 iTerm Claude / Codex Sessions
 ```
 Cmd+Ctrl+R → Name + color the Claude Code or Codex session (or plain tab) in the current tab (one dialog)
@@ -357,9 +344,6 @@ Cmd+Ctrl+R → Name + color the Claude Code or Codex session (or plain tab) in t
 > An empty name sets only the color. Types `/rename` (and, on Claude, `/color`) into the tab. On Claude
 > it works mid-turn too, but refuses while a choice (permission prompt etc.) is on screen, because the
 > typed Enter would pick the highlighted option. Codex tabs (`… (codex)`) must be idle (no spinner).
-> A tab attached to a box agent over `ssh -t <host> tmux attach -t <session>` (susskind's `box attach`) counts
-> as a Claude tab too: its name and last `/color` are read over ssh from the box's `~/.claude/sessions` record and
-> transcript, and the typed `/rename` + `/color` travel down the pty into the remote Claude.
 > Both also get a matching **iTerm tab color** (Codex has no `/color`, so that's its only color), via `bin/iterm_tab_style`
 > (writes iTerm's tab-color escape sequence to the tab's tty).
 > Any other tab (a plain shell) gets the same dialog, starting empty: the tab color, and the name as the tab title

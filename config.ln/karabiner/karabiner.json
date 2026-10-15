@@ -27,17 +27,6 @@
             ]
           },
           {
-            "description": "iTerm: cmd+ctrl+v → paste the clipboard image into the box Claude session attached in this tab (bin/box paste)",
-            "manipulators": [
-              {
-                "conditions": [{ "type": "frontmost_application_if", "bundle_identifiers": ["^com\\.googlecode\\.iterm2$"] }],
-                "from": { "key_code": "v", "modifiers": { "mandatory": ["command", "control"] } },
-                "to": [{ "shell_command": "$HOME/.dotfiles/bin/box paste >> $HOME/Library/Logs/box.log 2>&1" }],
-                "type": "basic"
-              }
-            ]
-          },
-          {
             "description": "iTerm: cmd+[ / cmd+] → back / forward through the tabs and panes you focused",
             "manipulators": [
               {
