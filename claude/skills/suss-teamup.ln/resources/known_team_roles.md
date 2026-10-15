@@ -1,8 +1,7 @@
 # Known team roles and their colors
 
 An agent's color tells the user its role at a glance, on any team. The color goes on both the
-iTerm tab and claude's `/color`. `--no-steal` skips only the typed `/color`: the tab color is
-focus-free, so it is always applied.
+iTerm tab and claude's `/color`, on every spawn: there is no spawning without color.
 
 | Role     | Who                                            | Color                                 |
 |----------|------------------------------------------------|---------------------------------------|

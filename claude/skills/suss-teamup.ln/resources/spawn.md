@@ -19,7 +19,7 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
    (e.g. `pair-auth`, `handoff-x`) — avoid names starting with `spawn`.
 2. **Join it yourself first**, so you're present when the peer arrives:
    `teamup join {subject} --pwd "$PWD" --doing "spawning a {agent} peer"`.
-3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi|codex} {subject} [--as {handle}] [--model {model}] [--role {role}] [--color {color}] [--after {handle}] [--no-steal]`.
+3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi|codex} {subject} [--as {handle}] [--model {model}] [--role {role}] [--color {color}] [--after {handle}]`.
    It opens an iTerm tab in your `$PWD` running the agent, which joins `{subject}`.
    - **Tab position**: immediately right of your own tab (the one the command runs in,
      `$ITERM_SESSION_ID`), so a lead's team sits next to it; `--after {handle}` (or env
@@ -37,11 +37,10 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
      **your own color**: pass `--role` for a peer that is not doing your job. A claude peer gets `/color` typed into its tab, retried every second
      until its transcript records it (claude drops keystrokes while it boots); the tab gets
      the same color. A codex peer gets only the tab
-     color (`bin/iterm_tab_style`). `--no-steal` (alias `--no-color`) skips only the typed
-     `/color`, the one step that takes keystrokes: the tab color is an escape sequence written to
-     its tty, focus-free, so a peer spawned while the user is at the keyboard still gets it.
+     color (`bin/iterm_tab_style`). Every spawn colors, and on iTerm none of it takes focus: the
+     tab color is an escape sequence written to its tty, and `/color` goes in with iTerm's
+     `write text` to that one session, so spawn freely while the user is at the keyboard.
    - **Failure**: spawn waits until the peer is running and has taken its color. If it never
-     does, spawn says `'<handle>' did not come up` and exits 1: look at its tab. With
-     `--no-steal` nothing is checked, so check the roster yourself.
+     does, spawn says `'<handle>' did not come up` and exits 1: look at its tab.
 4. **Huddle** (SKILL.md → Huddle). For a handoff, post the context the peer needs on the channel
    before it gets going; for pairing, align on who owns what.
