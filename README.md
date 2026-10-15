@@ -371,17 +371,20 @@ Cmd+Ctrl+R → Name + color the Claude Code or Codex session (or plain tab) in t
 > `/rename` name leads the footer. Codex can't show custom text there or above the prompt.
 
 ```
-Cmd+Ctrl+G → Floating fzf picker of the live Claude agents; Enter focuses its iTerm tab (works from any app)
+Cmd+Ctrl+G → Floating fzf picker over iTerm: live agents, agents to wake, every tab (works from any app)
 ```
-> Runs `bin/iterm_agent_picker`: opens a chromeless iTerm window, centered by the script, (the `Agent Picker` dynamic profile,
-> `iterm2/dynamic-profiles/agent-picker.ln.json`: `Window Type` 12 = no title bar (the picker script centers it; iTerm 3.7.3 has no centered-no-title-bar type, 19 is newer and crashes 3.7.3), `Disable Window Resizing`,
-> `Close Sessions On End` 1 = the window goes when its command ends; the tab bar is hidden since the window has one tab) running
-> `iterm_agent_picker --pick`: an fzf over `iterm_focus_agent --list` (live Claude session names from `~/.claude/sessions/*.json`),
-> each row a `■` block + the name in the agent's `/color`, inside fzf's rounded border; the preview pane (up, 60%) shows what is
-> on that agent's iTerm tab right now, in the tab's colors (`bin/iterm_screen_ansi`: iTerm's Python API per-cell styles → ANSI;
-> plain AppleScript `contents` when the API is off). The window covers 90% of the visible screen, centered. Same keys as every other
-> fzf here: type to filter, `ctrl-j` / `ctrl-k` (fzf's defaults) or arrows move, Enter runs `iterm_focus_agent <name>`,
-> Esc closes the window. Errors go to `~/Library/Logs/iterm_agent_picker.log`.
+> Runs `bin/iterm_agent_picker`: opens a chromeless iTerm window covering 90% of the screen (the `Agent Picker` dynamic
+> profile, `iterm2/dynamic-profiles/agent-picker.ln.json`: `Window Type` 12 = no title bar, `Disable Window Resizing`,
+> `Close Sessions On End` 1) running the picker. Three lists, switched with `ctrl-a` / `ctrl-w` / `ctrl-t`:
+> **alive** (live Claude agents, a `■` block + name in the agent's `/color`), **available** (alive + the agents
+> `teamup-wake --list` can wake, dimmed `zz`), **tabs** (every iTerm tab, `[w1]` = window). The preview pane shows the
+> row's tab in its colors (`bin/iterm_screen_ansi`: iTerm's Python API per-cell styles → ANSI; plain AppleScript
+> `contents` when the API is off), or a parked agent's channels, dir and last words. Keys as every other fzf here:
+> type to filter, `ctrl-j`/`ctrl-k` move, `ctrl-u`/`ctrl-d` scroll the preview, Enter focuses the tab (a parked agent is
+> woken with `teamup-wake` first), `ctrl-x` closes the row's tab and keeps the picker open, Esc closes.
+> From a shell the same picker runs inline: `alive-agents`, `available-agents`, `terminal-tabs`
+> (`iterm_agent_picker --pick alive|available|tabs`). Rows and actions live in `bin/iterm_picker_lists`.
+> Errors go to `~/Library/Logs/iterm_agent_picker.log`.
 > Known iTerm nit: closing the picker within 3 s of opening (iTerm's `shortLivedSessionDuration` advanced setting) shows
 > "A session ended very soon after starting" once; tick "Suppress this message permanently" (it is stored per profile GUID as
 > `NeverWarnAboutShortLivedSessions_<GUID>`).

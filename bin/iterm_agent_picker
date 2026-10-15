@@ -1,24 +1,82 @@
 #!/usr/bin/env bash
-# iterm_agent_picker — cmd+ctrl+g: a floating iTerm window listing the live Claude agents in fzf.
-# Each row is a colored block + the name in the agent's /color; the preview pane shows what is on that
-# agent's tab right now (its iTerm screen). ctrl+j / ctrl+k move (fzf's defaults, like telescope), typing
-# filters, Enter focuses that agent's tab (bin/iterm_focus_agent), Esc closes the window.
-#   iterm_agent_picker                 open the floating window (the "Agent Picker" dynamic profile) running --pick
-#   iterm_agent_picker --pick          the picker itself: what runs inside that window
-#   iterm_agent_picker --preview TTY   print the screen of the iTerm session on TTY with its colors (bin/iterm_screen_ansi via
-#                                      iTerm's Python API; plain AppleScript `contents` when the API is off)
+# iterm_agent_picker — an fzf picker over iTerm: live Claude agents, agents that can be woken, or every tab.
+# Rows come from bin/iterm_picker_lists; the preview pane shows the row's live screen in color (or a parked
+# agent's last words). ctrl+j / ctrl+k move, typing filters, ctrl+u / ctrl+d scroll the preview,
+# ctrl+a / ctrl+w / ctrl+t switch to the alive / available (wake) / tabs list, ctrl+x closes the row's tab
+# and keeps the picker open, Enter focuses the tab (waking a parked agent first), Esc closes.
+#   iterm_agent_picker [alive|available|tabs]   cmd+ctrl+g: open the floating window (the "Agent Picker" profile)
+#   iterm_agent_picker --pick LIST              the picker inline, in this terminal (aliases alive-agents, available-agents,
+#                                               terminal-tabs); acts on the chosen row itself
+#   iterm_agent_picker --pick LIST --into FILE  what runs inside the floating window: writes the chosen row to FILE, the
+#                                               launcher acts on it once the window is gone
 set -euo pipefail
 export PATH="/opt/homebrew/bin:$PATH"
 
 readonly PICKER_PROFILE="Agent Picker"
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
-readonly FOCUS_AGENT="$(dirname "$SELF")/iterm_focus_agent"
-readonly SCREEN_ANSI="$(dirname "$SELF")/iterm_screen_ansi"
-readonly ROW_MARK="■ "
-source "$HOME/.claude/skills/suss-teamup/scripts/session_colors.sh"
+readonly LISTS="$(dirname "$SELF")/iterm_picker_lists"
+readonly TEAMUP_WAKE="$HOME/.claude/skills/suss-teamup/scripts/teamup-wake"
+readonly DEFAULT_LIST=alive
+readonly PICK_TIMEOUT_SECONDS=300
 
-open_picker_window() {
-  osascript -l JavaScript - "$PICKER_PROFILE" "$SELF --pick" <<'JXA'
+prompt_of() { case "$1" in alive) echo 'Alive> ' ;; available) echo 'Available> ' ;; tabs) echo 'Tabs> ' ;; esac; }
+list_of_prompt() { case "$1" in 'Alive> ') echo alive ;; 'Available> ') echo available ;; 'Tabs> ') echo tabs ;; esac; }
+label_of() { case "$1" in alive) echo ' Alive agents ' ;; available) echo ' Available agents (zz = asleep, Enter wakes) ' ;; tabs) echo ' Terminal tabs ' ;; esac; }
+
+switch_binding() { # key list
+  printf '%s:reload(%s rows %s)+change-prompt(%s)+change-border-label(%s)' "$1" "$LISTS" "$2" "$(prompt_of "$2")" "$(label_of "$2")"
+}
+
+pick_row() { # list — prints `kind<TAB>arg` of the chosen row
+  "$LISTS" rows "$1" | fzf --ansi --layout=reverse --no-info --border=rounded --border-label="$(label_of "$1")" \
+    --delimiter=$'\t' --with-nth=1 --accept-nth=2,3 --prompt="$(prompt_of "$1")" \
+    --header='CTRL-j/k: move | CTRL-u/d: scroll preview | CTRL-a/w/t: alive/available/tabs | CTRL-x: close tab | ENTER: focus | ESC: quit' \
+    --bind='ctrl-u:preview-half-page-up,ctrl-d:preview-half-page-down' \
+    --bind="$(switch_binding ctrl-a alive)" --bind="$(switch_binding ctrl-w available)" --bind="$(switch_binding ctrl-t tabs)" \
+    --bind="ctrl-x:execute-silent($LISTS close {3})+reload($SELF --rows-of-prompt)" \
+    --preview="$LISTS preview {2} {3}" --preview-window='up:60%:nowrap:follow'
+}
+
+rows_of_prompt() { "$LISTS" rows "$(list_of_prompt "${FZF_PROMPT:-}")"; }
+
+wake_and_focus() { # handle
+  "$TEAMUP_WAKE" "$1" >&2 || return 1
+  local tty; tty="$("$LISTS" tty-of-agent "$1")"
+  [ -n "$tty" ] && "$LISTS" focus "$tty" >/dev/null
+}
+
+perform() { # kind arg
+  case "$1" in
+    focus) "$LISTS" focus "$2" >/dev/null ;;
+    wake) wake_and_focus "$2" ;;
+  esac
+}
+
+pick_and_perform() { # list
+  local kind arg
+  IFS=$'\t' read -r kind arg < <(pick_row "$1") || return 1
+  [ -n "${kind:-}" ] && perform "$kind" "$arg"
+}
+
+pick_into() { # list file — the floating window's command: leave the choice for the launcher
+  local kind arg
+  IFS=$'\t' read -r kind arg < <(pick_row "$1") || return 1
+  printf '%s\t%s\n' "$kind" "$arg" > "$2"
+}
+
+wait_for_choice() { # file — until the picker wrote it, or gave up (Esc closes the window without writing)
+  local waited=0
+  while [ ! -s "$1" ] && [ "$waited" -lt "$PICK_TIMEOUT_SECONDS" ]; do
+    sleep 0.2; waited=$((waited + 1))
+    pgrep -fq -- "--into $1" || break
+  done
+  [ -s "$1" ]
+}
+
+open_picker_window() { # list
+  local choice kind arg
+  choice="$(mktemp -t agent_picker)"; rm -f "$choice"
+  osascript -l JavaScript - "$PICKER_PROFILE" "$SELF --pick $1 --into $choice" <<'JXA'
 ObjC.import('AppKit');
 const SCREEN_FRACTION = 0.9;
 const coverScreenCenter = (window) => {
@@ -41,68 +99,16 @@ function run([profile, command]) {
   coverScreenCenter(window);
 }
 JXA
-}
-
-screen_of_tty() {
-  osascript - "$1" <<'OSA'
-on run argv
-  tell application "iTerm2"
-    repeat with w in windows
-      repeat with t in tabs of w
-        repeat with s in sessions of t
-          if (tty of s) is (item 1 of argv) then return contents of s
-        end repeat
-      end repeat
-    end repeat
-  end tell
-  return "(not in an iTerm tab)"
-end run
-OSA
-}
-
-ansi_code_of() {
-  case "$1" in
-    red) echo 31 ;;
-    green) echo 32 ;;
-    yellow) echo 33 ;;
-    blue) echo 34 ;;
-    purple) echo 35 ;;
-    cyan) echo 36 ;;
-    orange) echo '38;5;208' ;;
-    pink) echo '38;5;213' ;;
-    *) echo 0 ;;
-  esac
-}
-
-live_tty_of_pid() { ps -o tty= -p "$1" 2>/dev/null | tr -d ' ' | grep -v '^??$' || true; }
-
-agent_rows() {
-  local pid name session_id tty
-  while IFS=$'\t' read -r pid name session_id; do
-    tty="$(live_tty_of_pid "$pid")"
-    [ -n "$tty" ] && printf '%s\t%s\t/dev/%s\n' "$name" "$session_id" "$tty"
-  done < <(jq -r 'select(.name) | "\(.pid)\t\(.name)\t\(.sessionId)"' "$HOME"/.claude/sessions/*.json | sort -t$'\t' -k2,2)
-}
-
-tinted_agent_rows() {
-  local name session_id tty
-  while IFS=$'\t' read -r name session_id tty; do
-    printf '\e[%sm%s%s\e[0m\t%s\n' "$(ansi_code_of "$(transcript_color "$session_id")")" "$ROW_MARK" "$name" "$tty"
-  done < <(agent_rows)
-}
-
-pick_agent() {
-  local picked
-  picked="$(tinted_agent_rows | fzf --ansi --layout=reverse --no-info --border=rounded --border-label=' Agents ' --delimiter=$'\t' --with-nth=1 --accept-nth=1 \
-    --prompt='Agent> ' --header='CTRL-j/k: move | CTRL-u/d: scroll preview | ENTER: focus | ESC: close' \
-    --bind='ctrl-u:preview-half-page-up,ctrl-d:preview-half-page-down' \
-    --preview="$SELF --preview {2}" --preview-window='up:60%:nowrap:follow')" || return 1
-  echo "${picked#"$ROW_MARK"}"
+  sleep 1
+  wait_for_choice "$choice" || return 0
+  IFS=$'\t' read -r kind arg < "$choice"; rm -f "$choice"
+  perform "$kind" "$arg"
 }
 
 case "${1:-}" in
-  "") open_picker_window ;;
-  --pick) agent="$(pick_agent)" && [ -n "$agent" ] && exec "$FOCUS_AGENT" "$agent" ;;
-  --preview) "$SCREEN_ANSI" "$2" 2>/dev/null || screen_of_tty "$2" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' ;;
-  *) echo "usage: iterm_agent_picker [--pick | --preview TTY]" >&2; exit 1 ;;
+  ""|alive|available|tabs) open_picker_window "${1:-$DEFAULT_LIST}" ;;
+  --pick) if [ "${3:-}" = "--into" ]; then pick_into "$2" "$4"; else pick_and_perform "$2"; fi ;;
+  --rows-of-prompt) rows_of_prompt ;;
+  --preview) "$LISTS" preview focus "$2" ;;
+  *) sed -n '7,12p' "$0" >&2; exit 1 ;;
 esac

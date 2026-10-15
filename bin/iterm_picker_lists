@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+# iterm_picker_lists — the data behind bin/iterm_agent_picker: what each list holds and how to act on a row.
+# A row is `display<TAB>kind<TAB>arg`; kind is `focus` (arg = tty) or `wake` (arg = a parked agent's handle).
+#   iterm_picker_lists rows alive|available|tabs   print the rows (streamed, one per line, ANSI-colored display)
+#   iterm_picker_lists preview KIND ARG            what the preview pane shows for that row
+#   iterm_picker_lists focus TTY                   bring the iTerm window, tab and pane on TTY to the front
+#   iterm_picker_lists close TTY                   close the iTerm session on TTY (never the one this runs in)
+#   iterm_picker_lists tty-of-agent NAME           the tty of the live Claude agent called NAME
+set -euo pipefail
+export PATH="/opt/homebrew/bin:$PATH"
+
+readonly HERE="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+readonly SCREEN_ANSI="$HERE/iterm_screen_ansi"
+readonly TEAMUP_SCRIPTS="$HOME/.claude/skills/suss-teamup/scripts"
+readonly PARKED="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/parked.tsv"
+readonly REGISTRY="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}/.sessions.tsv"
+readonly AGENT_MARK="■ "
+readonly PARKED_MARK="zz "
+readonly DIM=$'\e[2m'
+readonly RESET=$'\e[0m'
+readonly TRANSCRIPT_TAIL_BYTES=300000
+source "$TEAMUP_SCRIPTS/session_colors.sh"
+
+ansi_code_of() {
+  case "$1" in
+    red) echo 31 ;;
+    green) echo 32 ;;
+    yellow) echo 33 ;;
+    blue) echo 34 ;;
+    purple) echo 35 ;;
+    cyan) echo 36 ;;
+    orange) echo '38;5;208' ;;
+    pink) echo '38;5;213' ;;
+    *) echo 0 ;;
+  esac
+}
+
+live_tty_of_pid() { ps -o tty= -p "$1" 2>/dev/null | tr -d ' ' | grep -v '^??$' || true; }
+
+live_agents() { # name \t session_id \t tty, sorted by name
+  local pid name session_id tty
+  while IFS=$'\t' read -r pid name session_id; do
+    tty="$(live_tty_of_pid "$pid")"
+    [ -n "$tty" ] && printf '%s\t%s\t/dev/%s\n' "$name" "$session_id" "$tty"
+  done < <(jq -r 'select(.name) | "\(.pid)\t\(.name)\t\(.sessionId)"' "$HOME"/.claude/sessions/*.json | sort -t$'\t' -k2,2)
+}
+
+alive_rows() {
+  local name session_id tty
+  while IFS=$'\t' read -r name session_id tty; do
+    printf '\e[%sm%s%s\e[0m\tfocus\t%s\n' "$(ansi_code_of "$(transcript_color "$session_id")")" "$AGENT_MARK" "$name" "$tty"
+  done < <(live_agents)
+}
+
+running_session_ids() { # the records whose pid is alive (teamup-wake's is_session_running)
+  local record
+  for record in "$HOME"/.claude/sessions/*.json; do
+    kill -0 "$(basename "$record" .json)" 2>/dev/null && jq -r '.sessionId // empty' "$record"
+  done
+}
+
+has_transcript() { compgen -G "$HOME/.claude/projects/*/$1.jsonl" >/dev/null; }
+
+parked_agents() { # handle \t session_id \t dir \t channels — asleep and wakeable, by teamup-wake --list's rules
+  local handle session_id dir channels running
+  running=" $(running_session_ids | tr '\n' ' ') "
+  while IFS=$'\t' read -r handle session_id dir channels _; do
+    [[ "$handle" =~ ^[A-Za-z0-9._-]+$ && -n "$session_id" && "$running" != *" $session_id "* ]] && has_transcript "$session_id" &&
+      printf '%s\t%s\t%s\t%s\n' "$handle" "$session_id" "$dir" "$channels"
+  done < <({ cat "$PARKED" 2>/dev/null; awk -F'\t' '$4 != "" { print $3 "\t" $4 "\t" $1 "\t" $2 }' "$REGISTRY" 2>/dev/null; } | sort -u -t$'\t' -k1,1)
+}
+
+parked_rows() {
+  local handle session_id dir channels
+  while IFS=$'\t' read -r handle session_id dir channels; do
+    printf '%s%s%s  %s  %s%s\twake\t%s\n' "$DIM" "$PARKED_MARK" "$handle" "$channels" "${dir##*/}" "$RESET" "$handle"
+  done < <(parked_agents)
+}
+
+available_rows() { alive_rows; parked_rows; }
+
+tab_rows() {
+  osascript - <<'OSA' | awk -F'\t' -v dim="$DIM" -v reset="$RESET" '{ printf "%s[w%s]%s %s\tfocus\t%s\n", dim, $1, reset, $3, $2 }'
+set out to ""
+set tabChar to ASCII character 9
+tell application "iTerm2"
+  set windowIndex to 0
+  repeat with w in windows
+    set windowIndex to windowIndex + 1
+    repeat with t in tabs of w
+      repeat with s in sessions of t
+        set out to out & windowIndex & tabChar & (tty of s) & tabChar & (name of s) & linefeed
+      end repeat
+    end repeat
+  end repeat
+end tell
+return out
+OSA
+}
+
+plain_screen_of_tty() {
+  osascript - "$1" <<'OSA'
+on run argv
+  tell application "iTerm2"
+    repeat with w in windows
+      repeat with t in tabs of w
+        repeat with s in sessions of t
+          if (tty of s) is (item 1 of argv) then return contents of s
+        end repeat
+      end repeat
+    end repeat
+  end tell
+  return "(not in an iTerm tab)"
+end run
+OSA
+}
+
+screen_preview() { "$SCREEN_ANSI" "$1" 2>/dev/null || plain_screen_of_tty "$1" | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}'; }
+
+parked_session_id() { awk -F'\t' -v h="$1" '$1 == h { id = $2 } END { print id }' "$PARKED" 2>/dev/null; }
+
+last_assistant_text() { # session id — the tail of what the agent last said
+  local transcripts=("$HOME"/.claude/projects/*/"$1".jsonl)
+  [ -f "${transcripts[0]}" ] || return 0
+  tail -c "$TRANSCRIPT_TAIL_BYTES" "${transcripts[0]}" |
+    jq -R -r 'fromjson? | select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text' 2>/dev/null |
+    tail -n 30
+}
+
+parked_preview() {
+  local handle="$1" session_id
+  session_id="$(parked_session_id "$handle")"
+  parked_agents | awk -F'\t' -v h="$handle" '$1 == h { printf "%s  channels: %s  dir: %s\n", $1, $4, $3 }'
+  printf '%sasleep; Enter wakes it (teamup-wake %s) and focuses its tab%s\n\n' "$DIM" "$handle" "$RESET"
+  [ -n "$session_id" ] && last_assistant_text "$session_id"
+}
+
+focus_tty() {
+  osascript - "$1" <<'OSA'
+on run argv
+  tell application "iTerm2"
+    repeat with w in windows
+      repeat with t in tabs of w
+        repeat with s in sessions of t
+          if (tty of s) is (item 1 of argv) then
+            activate
+            select w
+            select t
+            select s
+            return "focused"
+          end if
+        end repeat
+      end repeat
+    end repeat
+  end tell
+  return "no iTerm session on " & (item 1 of argv)
+end run
+OSA
+}
+
+own_tty() { tty 2>/dev/null || true; }
+
+close_tty() {
+  [ "$1" != "$(own_tty)" ] || { echo "not closing the tab this picker runs in" >&2; return 1; }
+  osascript - "$1" <<'OSA'
+on run argv
+  tell application "iTerm2"
+    repeat with w in windows
+      repeat with t in tabs of w
+        repeat with s in sessions of t
+          if (tty of s) is (item 1 of argv) then
+            close s
+            return "closed"
+          end if
+        end repeat
+      end repeat
+    end repeat
+  end tell
+  return "no iTerm session on " & (item 1 of argv)
+end run
+OSA
+}
+
+tty_of_agent() { live_agents | awk -F'\t' -v n="$1" '$1 == n { print $3; exit }'; }
+
+case "${1:-}" in
+  rows) case "${2:-}" in
+          alive) alive_rows ;;
+          available) available_rows ;;
+          tabs) tab_rows ;;
+          *) echo "usage: iterm_picker_lists rows alive|available|tabs" >&2; exit 1 ;;
+        esac ;;
+  preview) case "${2:-}" in
+             focus) screen_preview "$3" ;;
+             wake) parked_preview "$3" ;;
+             *) echo "usage: iterm_picker_lists preview focus TTY | wake HANDLE" >&2; exit 1 ;;
+           esac ;;
+  focus) focus_tty "${2:?tty}" ;;
+  close) close_tty "${2:?tty}" ;;
+  tty-of-agent) tty_of_agent "${2:?name}" ;;
+  *) sed -n '2,9p' "$0" >&2; exit 1 ;;
+esac
