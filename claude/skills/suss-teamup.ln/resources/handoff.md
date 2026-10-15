@@ -58,7 +58,7 @@ Relay the user's locked decisions onto the channel as they land.
 
 ## A lead hands off: a temporary lead first
 
-A lead busy handing off is a lead David can't reach (David, 2026-10-15: "Yesterday i needed
+The lead's own duties: [lead_role.md](lead_role.md). A lead busy handing off is a lead David can't reach (David, 2026-10-15: "Yesterday i needed
 my lead's attention urgently in slack (Guy Ofeck dm) but he was too busy handing off and being
 available to the teams"). So a lead never hands off directly: a **temporary lead**,
 `lead.temp.{x}` (`x` = the outgoing lead's number: lead.24 → `lead.temp.24`), holds the seat

@@ -155,7 +155,7 @@ channel, one thread per teamup channel, forever.
 one teamup channel into its own Slack channel instead, and what the user types at the channel's top
 level is relayed like a thread reply (so it also turns `teamup-focus` on).
 Today: teamup `suss-lead` → private **#suss-lead** (`C0C9NE59T24`), the leads' private line to
-the user (`suss-workflows` recipe `lead_role.md`). Repointing a live channel: `off {subject}`, move
+the user (`resources/lead_role.md`). Repointing a live channel: `off {subject}`, move
 its `{subject}.*` thread state aside, `on {subject}`.
 
 **Thread or top level — the agent decides per message.** The user reads a dedicated channel at

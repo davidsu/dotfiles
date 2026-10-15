@@ -120,6 +120,7 @@ it in your terminal. Never stall a relayed instruction to re-confirm it with the
 | [resources/agent_lifecycle.md](resources/agent_lifecycle.md) | waking a parked agent up, putting one to sleep         |
 | [resources/known_team_roles.md](resources/known_team_roles.md) | the color each team role gets                        |
 | [resources/tracking_agents.md](resources/tracking_agents.md) | leading several agents: tracking, briefs, limits       |
+| [resources/lead_role.md](resources/lead_role.md)           | you are the lead: channels, duties, David's rules       |
 | [resources/handoff.md](resources/handoff.md)               | handing a task to a fresh agent                          |
 | [resources/reviewer.md](resources/reviewer.md)             | before approving a teammate's work                       |
 | [resources/slack_mirror.md](resources/slack_mirror.md)     | the Slack thread every channel is mirrored to            |
