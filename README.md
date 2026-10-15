@@ -382,8 +382,10 @@ Cmd+Ctrl+G → Floating fzf picker over iTerm: live agents, agents to wake, ever
 > `contents` when the API is off), or a parked agent's channels, dir and last words. Keys as every other fzf here:
 > type to filter, `ctrl-j`/`ctrl-k` move, `ctrl-u`/`ctrl-d` scroll the preview, Enter focuses the tab (a parked agent is
 > woken with `teamup-wake` first), `ctrl-x` closes the row's tab and keeps the picker open, Esc closes.
-> From a shell the same picker runs inline: `alive-agents`, `available-agents`, `terminal-tabs`
+> From a shell the same picker runs inline: `bot-awake`, `bot-available`, `terminal-tabs`
 > (`iterm_agent_picker --pick alive|available|tabs`). Rows and actions live in `bin/iterm_picker_lists`.
+> `fzf-all` (alias `fzf-land`, `zsh/sources/fzf/all.zsh`) lists every fzf-based command here with its description and keys
+> in the preview; Enter runs the chosen one.
 > Errors go to `~/Library/Logs/iterm_agent_picker.log`.
 > Known iTerm nit: closing the picker within 3 s of opening (iTerm's `shortLivedSessionDuration` advanced setting) shows
 > "A session ended very soon after starting" once; tick "Suppress this message permanently" (it is stored per profile GUID as

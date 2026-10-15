@@ -1,5 +1,5 @@
 # fzf-all - Every fzf-based command here in one picker: what it does and its keys in the preview, Enter runs it
-# Usage: fzf-all
+# Usage: fzf-all (alias: fzf-land)
 # The table below is the registry: name, one line. The preview adds the command's own header comment
 # and its fzf keys (--header / --prompt lines) read from the file that defines it.
 
@@ -55,3 +55,5 @@ function fzf-all() {
         --preview-window 'up:50%:wrap')" || return
   [[ -n "$picked" ]] && eval "$picked"
 }
+
+alias fzf-land='fzf-all'
