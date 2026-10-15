@@ -45,13 +45,20 @@ fzf_all_describe() {
   rg --no-config -o -e "--header[= ]+'[^']*'" -e "--prompt[= ]+'[^']*'" -e "# Usage:.*" "$file" | sed "s/^--//; s/[= ]\+'/ '/; s/  */ /g" | sort -u
 }
 
+fzf_all_rows() { # name <TAB> aligned display line
+  local entry
+  for entry in "${FZF_ALL_COMMANDS[@]}"; do
+    printf '%s\t%-16s %s\n' "${entry%%	*}" "${entry%%	*}" "${entry#*	}"
+  done
+}
+
 function fzf-all() {
   local picked
-  picked="$(printf '%s\n' "${FZF_ALL_COMMANDS[@]}" |
-    fzf --delimiter '\t' --with-nth 1,2 --accept-nth 1 \
+  picked="$(fzf_all_rows |
+    fzf --delimiter '\t' --with-nth 2 --accept-nth 1 \
         --prompt 'fzf-all> ' \
         --header 'Enter: run the command | CTRL-/: toggle preview' \
-        --preview 'zsh -ic "source ~/.dotfiles/zsh/sources/fzf/all.zsh; fzf_all_describe {1}" 2>/dev/null' \
+        --preview 'zsh -c "source ~/.dotfiles/zsh/sources/fzf/all.zsh; fzf_all_describe {1}"' \
         --preview-window 'up:50%:wrap')" || return
   [[ -n "$picked" ]] && eval "$picked"
 }
