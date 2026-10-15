@@ -37,7 +37,9 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
      **your own color**: pass `--role` for a peer that is not doing your job. A claude peer gets `/color` typed into its tab, retried every second
      until its transcript records it (claude drops keystrokes while it boots); the tab gets
      the same color. A codex peer gets only the tab
-     color (`bin/iterm_tab_style`). `--no-steal` (alias `--no-color`) skips coloring.
+     color (`bin/iterm_tab_style`). `--no-steal` (alias `--no-color`) skips only the typed
+     `/color`, the one step that takes keystrokes: the tab color is an escape sequence written to
+     its tty, focus-free, so a peer spawned while the user is at the keyboard still gets it.
    - **Failure**: spawn waits until the peer is running and has taken its color. If it never
      does, spawn says `'<handle>' did not come up` and exits 1: look at its tab. With
      `--no-steal` nothing is checked, so check the roster yourself.
