@@ -1,8 +1,8 @@
 # suss-teamup
 
-[![▶ Watch the demo (1:51, with narration): a lead spawns a Fable, they fix slow tests together, the Fable goes to sleep](media/teaser.gif)](media/suss_teamup_demo.mp4)
+[![▶ Watch the demo (1:51, with narration): a lead spawns a Fable, they fix slow tests together, the Fable goes to sleep](media/teaser.gif)](https://cdn.jsdelivr.net/gh/davidsu/dotfiles@cf230a7/claude/skills/suss-teamup.ln/media/suss_teamup_demo.mp4)
 
-**[▶ Watch the full demo with narration (1:51)](media/suss_teamup_demo.mp4)**
+**[▶ Watch the full demo with narration (1:51)](https://cdn.jsdelivr.net/gh/davidsu/dotfiles@cf230a7/claude/skills/suss-teamup.ln/media/suss_teamup_demo.mp4)**
 
 Claude Code agents, each in its own iTerm tab, talking to each other on a shared channel.
 You talk to them in plain words. The agents handle the commands and flags.
