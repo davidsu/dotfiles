@@ -80,7 +80,7 @@ wait_for_choice() { # file — until the picker wrote it, or gave up (Esc closes
 open_picker_window() { # list
   local choice kind arg
   choice="$(mktemp -t agent_picker)"; rm -f "$choice"
-  "$(dirname "$SELF")/iterm_float" "$SELF --pick $1 --into $choice"
+  "$(dirname "$SELF")/iterm_float" "$SELF --pick $1 --into $choice" || return 0
   sleep 1
   wait_for_choice "$choice" || return 0
   IFS=$'\t' read -r kind arg < "$choice"; rm -f "$choice"

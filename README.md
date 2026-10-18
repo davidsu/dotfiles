@@ -375,7 +375,7 @@ Cmd+Ctrl+G → Floating fzf picker over iTerm: live agents, agents to wake, ever
 > suss-teamup bridge's headless relay (`claude -p`, ~10 s and a few cents per call), so the list is cached for a day under
 > `~/.local/state/fzf-slack/` (`ctrl-r` refreshes) and the preview (latest messages) is fetched on demand and cached 5 min.
 > Enter opens the conversation in the Slack app.
-> `bin/iterm_float CMD` runs any command in the same floating window; Karabiner: `cmd+ctrl+t` → `mru`,
+> `bin/iterm_float CMD` runs any command in the same floating window (a singleton: a second press fronts the open one); Karabiner: `cmd+ctrl+t` → `mru`,
 > `cmd+ctrl+c` → `chromehistory`, `cmd+ctrl+b` → `chromebookmarks`.
 > Errors go to `~/Library/Logs/iterm_agent_picker.log`.
 > Known iTerm nit: closing the picker within 3 s of opening (iTerm's `shortLivedSessionDuration` advanced setting) shows

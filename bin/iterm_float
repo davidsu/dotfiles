@@ -3,6 +3,7 @@
 # (the "Agent Picker" dynamic profile, 90% of the visible screen; the window closes when the command ends).
 # Karabiner's cmd+ctrl+{t,c,b} run `iterm_float mru|chromehistory|chromebookmarks`; bin/iterm_agent_picker uses it too.
 # COMMAND is run by an interactive zsh, so aliases and the fzf functions from zsh/sources work.
+# Singleton: while a floating window is open, another call brings it to the front instead (exit 3).
 set -euo pipefail
 
 readonly FLOAT_PROFILE="Agent Picker"
@@ -10,7 +11,7 @@ readonly SCREEN_FRACTION=0.9
 
 [ $# -gt 0 ] || { echo "usage: iterm_float COMMAND…" >&2; exit 1; }
 
-osascript -l JavaScript - "$FLOAT_PROFILE" "$SCREEN_FRACTION" "zsh -ic $(printf '%q' "$*")" <<'JXA'
+outcome="$(osascript -l JavaScript - "$FLOAT_PROFILE" "$SCREEN_FRACTION" "zsh -ic $(printf '%q' "$*")" <<'JXA'
 ObjC.import('AppKit');
 const coverScreenCenter = (window, fraction) => {
   const screen = $.NSScreen.mainScreen.frame.size;
@@ -25,10 +26,21 @@ const coverScreenCenter = (window, fraction) => {
     height,
   };
 };
+const existingFloatingWindow = (iterm, profile) =>
+  iterm.windows().find((window) => window.currentSession().profileName() === profile);
 function run([profile, fraction, command]) {
   const iterm = Application('iTerm2');
+  const open = existingFloatingWindow(iterm, profile);
+  if (open) {
+    iterm.activate();
+    open.select();
+    return 'already open';
+  }
   const window = iterm.createWindowWithProfile(profile, { command });
   iterm.activate();
   coverScreenCenter(window, Number(fraction));
+  return 'opened';
 }
 JXA
+)"
+[ "$outcome" = opened ] || { echo "iterm_float: the floating window is already open, brought it to the front" >&2; exit 3; }
