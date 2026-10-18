@@ -14,14 +14,12 @@ Load this skill before creating or updating tasks in `suss-tasks/`.
 
 ## Vocabulary
 
-Use these words, and only these, when talking about suss-tasks (David, 2026-10-18):
-
-- **Effort**: a folder in `suss-tasks/` holding an `epic.md`. It often starts as research and may end without a single task. _Avoid_: epic (for the folder), epic directory.
-- **The epic**: an effort's `epic.md`, which describes the effort. It is never itself a task.
-- **Sub-effort**: a folder with its own `epic.md` inside an effort.
-- **Task**: a file in an effort for something to implement or an action to take.
-- **Memo**: any other markdown in an effort: exploration, investigation, workflow, test plan. _Avoid_: resource, note, doc.
-- **Asset**: a media file in an effort: image, video, audio. _Avoid_: media, attachment.
+- **Effort**: a folder holding an `epic.md`; may never get a task. _Avoid_: epic
+- **Epic**: the effort's `epic.md`; never a task
+- **Sub-effort**: an effort inside an effort
+- **Task**: something to implement or do
+- **Memo**: any other markdown. _Avoid_: resource, note, doc
+- **Asset**: image, video, audio. _Avoid_: media, attachment
 
 Company projects (`apper/`, `cli/`, `vite-plugin/`, `weekly/`) keep their tasks in the git repo `base44-dev/suss-tasks` (clone: `~/Developer/suss-tasks`, one folder per project), because those repos cannot take a `suss-tasks/` directory: each checkout's `suss-tasks/` is a symlink into the clone, git-ignored there (`.git/info/exclude`). Edit as usual, then publish with `~/Developer/suss-tasks/bin/sync "<commit message>" <paths…>` (paths relative to the clone root; no paths = pull + push now) so other machines and Slack-side agents see it. Never `git pull` / `git push` by hand in that clone: many agents share it, and concurrent pulls corrupt `FETCH_HEAD` ("Cannot rebase onto multiple branches"); `bin/sync` takes a lock and commits only the paths you name.
 
@@ -33,7 +31,7 @@ Company projects (`apper/`, `cli/`, `vite-plugin/`, `weekly/`) keep their tasks 
 
 **Only project tasks sync to the b44sync board**: `apper/`, `cli/`, `vite-plugin/` (a top-level dir with a matching `~/projects/<name>` repo); `weekly/` and every task in dotfiles or susskind are David's own and `/suss-sync-tasks` refuses them, so give such a task the footer `**b44sync**: never`.
 
-**Every task lives in an effort**, as its own file beside the epic: never a loose `.md` file under `suss-tasks/<project>/`, and never the epic itself.
+**Every task is its own file in an effort**, never loose under `suss-tasks/<project>/`, never the epic.
 
 **Every effort owns one emoji, and every title in it starts with that emoji** (`# 🔒 …`), so the b44sync board tells parallel efforts apart. Rules and how to apply it: [ORGANIZATION.md](resources/ORGANIZATION.md).
 

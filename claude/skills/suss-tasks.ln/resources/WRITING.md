@@ -69,7 +69,7 @@ Reproduces on any path with spaces — e.g., `~/Library/Application Support/`.
 
 ## Directory Structure
 
-Tasks live under `suss-tasks/` at the project root, in efforts (words: SKILL.md → Vocabulary). An effort is a directory; its epic, tasks, memos and assets are files inside it. There are no standalone task files.
+Tasks live in efforts under `suss-tasks/` (SKILL.md → Vocabulary).
 
 ```
 suss-tasks/
@@ -87,14 +87,14 @@ suss-tasks/
 ├── fix_mru_crash/                  # even a single task gets its own effort
 │   ├── epic.md
 │   └── quote_link_paths.md
-└── slow_startup/                   # research only: memos, no task (yet)
+└── slow_startup/                   # research only, no task
     ├── epic.md
     └── profile_findings.md
 ```
 
 **Rules:**
 
-1. **Every task lives in an effort, as its own file** — never a bare `.md` file directly under `suss-tasks/`, and never the epic: when an effort needs action, a task file is added beside the epic. An effort may have no task at all: it often starts as research (memos) and ends without action (David, 2026-10-18)
+1. **Every task is its own file in an effort**, never loose under `suss-tasks/`, never the epic
 2. **Tasks are `.md` files** — the filename is the task name
 3. **Nesting is unlimited** — efforts can contain sub-efforts
 4. **`snake_case` or `camelCase`** for filenames and directories — never kebab-case
