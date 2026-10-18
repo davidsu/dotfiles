@@ -16,7 +16,7 @@ Load this skill before creating or updating tasks in `suss-tasks/`.
 
 Use these words, and only these, when talking about suss-tasks (David, 2026-10-18):
 
-- **Effort**: a folder in `suss-tasks/` holding an `epic.md`. _Avoid_: epic (for the folder), epic directory.
+- **Effort**: a folder in `suss-tasks/` holding an `epic.md`. It often starts as research and may end without a single task. _Avoid_: epic (for the folder), epic directory.
 - **The epic**: an effort's `epic.md`, which describes the effort. It is never itself a task.
 - **Sub-effort**: a folder with its own `epic.md` inside an effort.
 - **Task**: a file in an effort for something to implement or an action to take.
