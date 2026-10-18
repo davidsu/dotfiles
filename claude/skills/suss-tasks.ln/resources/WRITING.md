@@ -16,7 +16,7 @@ Everything written into a task MUST be correct and verified. Tasks are persisten
 ### Status Shebang
 
 Line 1 is the status — nothing else on that line. Line 2 is the title, starting with the
-epic's emoji ([ORGANIZATION.md](ORGANIZATION.md)):
+effort's emoji ([ORGANIZATION.md](ORGANIZATION.md)):
 
 ```
 open
@@ -69,30 +69,31 @@ Reproduces on any path with spaces — e.g., `~/Library/Application Support/`.
 
 ## Directory Structure
 
-Tasks live under `suss-tasks/` at the project root. Epics are directories. Tasks are files inside them — there are no standalone task files.
+Tasks live under `suss-tasks/` at the project root, in efforts (words: SKILL.md → Vocabulary). An effort is a directory; its epic, tasks, memos and assets are files inside it. There are no standalone task files.
 
 ```
 suss-tasks/
-├── migrate_to_suss_tasks/          # directory with epic.md
-│   ├── epic.md                     # describes this group of tasks
+├── migrate_to_suss_tasks/          # effort
+│   ├── epic.md                     # the epic: describes the effort
 │   ├── create_skill.md             # task
 │   ├── create_nvim_plugin.md       # task
-│   └── remove_old_task_wiring/     # sub-directory (nesting is fine)
+│   └── remove_old_task_wiring/     # sub-effort (nesting is fine)
 │       ├── epic.md
 │       ├── remove_hooks.md
 │       └── remove_nvim_plugin.md
 ├── improve_statusline/
 │   ├── epic.md
 │   └── add_git_branch.md
-└── fix_mru_crash/                  # even a single task gets its own directory
-    └── epic.md
+└── fix_mru_crash/                  # even a single task gets its own effort
+    ├── epic.md
+    └── quote_link_paths.md
 ```
 
 **Rules:**
 
-1. **Every task lives in a directory with an `epic.md`** — never a bare `.md` file directly under `suss-tasks/`. A one-off task is a directory whose `epic.md` is the task; sub-tasks are added next to it later
+1. **Every task lives in an effort, as its own file** — never a bare `.md` file directly under `suss-tasks/`, and never the epic: a one-off is an effort with an epic and one task file (David, 2026-10-18)
 2. **Tasks are `.md` files** — the filename is the task name
-3. **Nesting is unlimited** — directories can contain directories
+3. **Nesting is unlimited** — efforts can contain sub-efforts
 4. **`snake_case` or `camelCase`** for filenames and directories — never kebab-case
 
 ## Creating Tasks
@@ -100,11 +101,12 @@ suss-tasks/
 Just write the file. No CLI, no commands.
 
 ```bash
-# One-off task — still a directory with an epic.md
+# One-off task — still an effort: the epic plus one task file
 mkdir -p suss-tasks/fix_mru_crash
 Write suss-tasks/fix_mru_crash/epic.md
+Write suss-tasks/fix_mru_crash/quote_link_paths.md
 
-# Task under an epic
+# Task in an existing effort
 mkdir -p suss-tasks/migrate_to_suss_tasks
 Write suss-tasks/migrate_to_suss_tasks/create_skill.md
 ```
@@ -117,7 +119,7 @@ Edit line 1 of the file. That's it.
 
 ```bash
 # Mark as in-progress: change line 1 from "open" to "in_progress"
-Edit suss-tasks/epic/task.md  # old: "open" → new: "in_progress"
+Edit suss-tasks/effort/task.md  # old: "open" → new: "in_progress"
 ```
 
 ## Closing Tasks
@@ -151,7 +153,7 @@ Every task with more than just a title SHOULD have a `## Summary` — 1-3 senten
 When a task references findings from other tasks, cite them inline so readers can navigate to the source:
 
 ```
-suss-tasks/epic/other-task.md#section-heading -> why this is relevant
+suss-tasks/effort/other-task.md#section-heading -> why this is relevant
 ```
 
 ### Example
