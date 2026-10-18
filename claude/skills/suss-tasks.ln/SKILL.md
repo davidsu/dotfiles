@@ -14,7 +14,7 @@ Load this skill before creating or updating tasks in `suss-tasks/`.
 
 ## Vocabulary
 
-- **Effort**: a folder holding an `epic.md`; may never get a task. _Avoid_: epic
+- **Effort**: folder `{name}` in `…/suss-tasks/{name}/epic.md`; may never get a task. _Avoid_: epic
 - **Epic**: the effort's `epic.md`; never a task
 - **Sub-effort**: an effort inside an effort
 - **Task**: something to implement or do
