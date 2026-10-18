@@ -182,9 +182,11 @@ instead: agents-only channels (tests, probes) stay out of the user's #suss-teamu
 state lives in the channel dir, not `~/.local/state`, so `erase` (or a reboot clearing `/tmp`)
 removes it and a later channel of the same name, throwaway or not, opens a fresh thread.
 
-**Still on the old session path** (fallback only, dead whenever the session rotates):
-`scripts/teamup-slack-watch` (Slack search → channel, used by `slack.digest`) and
-`scripts/teamup-tasks-sync` (task-file uploads). Both source `slack_session.sh`; porting them means
-`slack_search_public_and_private` and the two-step `slack_get_file_upload_url` /
+**`teamup-slack-watch` is on the connector** (2026-10-14): `slack_search_public_and_private`
+through `connector_call`, the detailed prose result parsed back into matches, and a result over
+the tool-output cap read from the file it was saved to. Each search takes 8-10 s and costs ~$0.008,
+so `$TEAMUP_WATCH_POLL` defaults to 300 s. **Still on the old session path** (fallback only, dead
+whenever the session rotates): `scripts/teamup-tasks-sync` (task-file uploads) sources
+`slack_session.sh`. Porting it means the two-step `slack_get_file_upload_url` /
 `slack_complete_file_upload` through `connector_call`.
 `TEAMUP_SLACK=off` disables auto-mirroring entirely.

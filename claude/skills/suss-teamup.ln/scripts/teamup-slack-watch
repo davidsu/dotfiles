@@ -9,7 +9,7 @@ export TEAMUP_SLACK=off
 
 readonly HERE="$(cd "$(dirname "$0")" && pwd)"
 readonly TEAMUP="$HERE/teamup"
-readonly POLL_SECONDS="${TEAMUP_WATCH_POLL:-60}"
+readonly POLL_SECONDS="${TEAMUP_WATCH_POLL:-300}"
 readonly WATCH_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/slack/watch"
 readonly REPORT_DOWN_AFTER_FAILED_POLLS=10
 readonly MAX_TEXT_CHARS=600
@@ -17,16 +17,48 @@ mkdir -p "$WATCH_STATE"
 
 die() { echo "teamup-slack-watch: $*" >&2; exit 1; }
 
-source "$HERE/slack_session.sh"
+source "$HERE/slack_connector.sh"
 
 seen_file() { printf '%s/%s.seen' "$WATCH_STATE" "$1"; }
 config_file() { printf '%s/%s.config' "$WATCH_STATE" "$1"; }
 pid_file() { printf '%s/%s.pid' "$WATCH_STATE" "$1"; }
 log_file() { printf '%s/%s.log' "$WATCH_STATE" "$1"; }
 
+search_arguments() { # query — channel_types:… picks the conversation kinds, other modifiers (a colon) are filters, the rest keywords
+  jq -nc --arg query "$1" '($query | split(" ") | map(select(. != ""))) as $words
+    | ([$words[] | select(startswith("channel_types:")) | ltrimstr("channel_types:")] | first) as $types
+    | {keywords: [$words[] | select(contains(":") | not)],
+       filters: ([$words[] | select(contains(":") and (startswith("channel_types:") | not))] | join(" ")),
+       sort: "timestamp", limit: 20, include_bots: true, include_context: false, response_format: "detailed"}
+      + (if $types then {channel_types: $types} else {} end)'
+}
+
+search_results_as_matches() { # connector search result json → {ok, messages:{matches:[{channel, ts, permalink, username, text}]}}
+  jq -c '{ok: true, messages: {matches: (.results | split("\n### Result ")[1:] | map(
+      (capture("Channel: #(?<name>[^ ]*) \\(ID: (?<id>[A-Z0-9]+)\\)") // {}) as $channel
+      | (capture("\nFrom: (?<author>[^\n(]*?) *(<[^>]*>)? *\\(ID: (?<uid>[A-Z0-9]+)\\)") // {}) as $from
+      | {channel: {id: $channel.id, name: $channel.name},
+         ts: (capture("Message_ts: (?<ts>[0-9.]+)").ts),
+         permalink: (capture("Permalink: \\[link\\]\\((?<url>[^)]+)\\)").url),
+         username: ($from.author // $from.uid),
+         text: (capture("\nText: \n(?<t>[\\s\\S]*?)(\n\n---\n|$)").t // "")}))}}' <<<"$1"
+}
+
+oversized_result_file() { # result — a result over the tool-output cap comes back as "saved to <file>"
+  [[ "$1" == "Error: result ("*"exceeds maximum allowed tokens"* ]] || return 1
+  sed -n 's/.*Output has been saved to \(.*\.txt\)\..*/\1/p' <<<"$1" | head -1
+}
+
+full_result() { # result → the result itself, or the file it was saved to
+  local file; file="$(oversized_result_file "$1")" && [ -f "$file" ] && { cat "$file"; return; }
+  printf '%s' "$1"
+}
+
 search_newest_matches() { # query
-  slack_api search.messages --data-urlencode "query=$1" \
-    --data-urlencode sort=timestamp --data-urlencode sort_dir=desc --data-urlencode count=20
+  local result
+  result="$(connector_call slack_search_public_and_private "$(search_arguments "$1")" 2>&1)" ||
+    { jq -nc --arg error "${result:-relay failed}" '{ok: false, error: $error[0:120]}'; return; }
+  search_results_as_matches "$(full_result "$result")" 2>/dev/null || jq -nc '{ok: false, error: "unparseable search result"}'
 }
 
 mirror_channel_ids() { cat "$HERE"/../slack-channel "$HERE"/../slack-channel.* 2>/dev/null | jq -R . | jq -sc .; }
@@ -94,10 +126,9 @@ is_watching() { # name
 start_watch() { # name subject handle query [skip-regex]
   [ -n "${4:-}" ] || die "usage: teamup-slack-watch on <name> <subject> <handle> <query> [skip-regex]"
   is_watching "$1" && { echo "'$1' is already watching (pid $(cat "$(pid_file "$1")"))."; return 0; }
-  load_slack_credentials
   printf '%s\t%s\t%s\t%s\n' "$2" "$3" "$4" "${5:-}" > "$(config_file "$1")"
   "$TEAMUP" join "$2" --as "$1" --pwd "slack-watch" --doing "Slack search '$4' → @$3" >/dev/null
-  nohup "$0" __run "$1" >> "$(log_file "$1")" 2>&1 &
+  nohup "$0" __run "$1" < /dev/null >> "$(log_file "$1")" 2>&1 &
   echo $! > "$(pid_file "$1")"
   echo "'$1' watching Slack for '$4' → @$3 on '$2' (pid $!); log: $(log_file "$1")"
 }
@@ -106,7 +137,7 @@ run_watch() { # name
   local query
   NAME="$1"
   IFS=$'\t' read -r SUBJECT TARGET query SKIP < "$(config_file "$NAME")"
-  load_slack_credentials
+  CONNECTOR_LOG="$(log_file "$NAME")"
   poll_forever "$query"
 }
 

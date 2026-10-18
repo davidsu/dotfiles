@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+# teamup-gh-watch on <name> <subject> <handle> | off <name> | status
+# Delivers every new human comment, review or review comment on the gh user's own open PRs
+# (updated in the last 30 days) to a teamup channel, aimed at one agent. Bots and the author are skipped.
+set -uo pipefail
+
+unset CLAUDE_CODE_SESSION_ID TEAMUP_SESSION CODEX_THREAD_ID TEAMUP_SESSION_NAME
+export TEAMUP_SLACK=off
+
+readonly HERE="$(cd "$(dirname "$0")" && pwd)"
+readonly TEAMUP="$HERE/teamup"
+readonly POLL_SECONDS="${TEAMUP_GH_POLL:-300}"
+readonly ACTIVE_DAYS=30
+readonly MAX_TEXT_CHARS=400
+readonly WATCH_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/gh"
+mkdir -p "$WATCH_STATE"
+
+die() { echo "teamup-gh-watch: $*" >&2; exit 1; }
+
+seen_file() { printf '%s/%s.seen' "$WATCH_STATE" "$1"; }
+config_file() { printf '%s/%s.config' "$WATCH_STATE" "$1"; }
+pid_file() { printf '%s/%s.pid' "$WATCH_STATE" "$1"; }
+log_file() { printf '%s/%s.log' "$WATCH_STATE" "$1"; }
+
+my_active_prs() { # → owner/repo#number per line
+  gh search prs --author @me --state open --updated ">=$(date -v-"${ACTIVE_DAYS}"d +%F)" --limit 100 \
+    --json number,repository -q '.[] | "\(.repository.nameWithOwner)#\(.number)"'
+}
+
+human_feedback_on() { # owner/repo#number → "id␟url␟author␟text" per human comment, review or review comment
+  local repo="${1%#*}" number="${1#*#}" me="$ME"
+  {
+    gh api --paginate "repos/$repo/issues/$number/comments?per_page=100" -q '.[] | {id, url: .html_url, user, body}'
+    gh api --paginate "repos/$repo/pulls/$number/comments?per_page=100" -q '.[] | {id, url: .html_url, user, body}'
+    gh api --paginate "repos/$repo/pulls/$number/reviews?per_page=100" -q '.[] | {id, url: .html_url, user, body: ("[" + .state + "] " + (.body // ""))}'
+  } 2>/dev/null | jq -r --arg me "$me" --argjson max "$MAX_TEXT_CHARS" '
+    (.user.login // "ghost") as $login
+    | select(.user.type != "Bot" and ($login | endswith("[bot]") | not) and $login != $me)
+    | [(.id | tostring), .url, $login, (.body | gsub("[\n\t\r]"; " ") | .[0:$max])] | join("\u001f")'
+}
+
+all_human_feedback() {
+  local pr
+  while IFS= read -r pr; do
+    human_feedback_on "$pr" | sed "s|^|$pr$(printf '\x1f')|"
+  done < <(my_active_prs)
+}
+
+tell_target() { # text
+  "$TEAMUP" recv "$SUBJECT" --as "$NAME" --discard >/dev/null
+  "$TEAMUP" say "$SUBJECT" --as "$NAME" -- "@$TARGET $1" >/dev/null ||
+    { echo "$(date '+%F %T') say refused on $SUBJECT"; return 1; }
+}
+
+deliver_new_feedback() { # feedback-lines
+  local pr id url author text
+  while IFS=$'\x1f' read -r pr id url author text; do
+    grep -qxF "$id" "$(seen_file "$NAME")" && continue
+    tell_target "new on $pr from $author: $text — $url" && echo "$id" >> "$(seen_file "$NAME")"
+  done <<<"$1"
+}
+
+poll_forever() {
+  local feedback
+  while true; do
+    if feedback="$(all_human_feedback)"; then
+      [ -f "$(seen_file "$NAME")" ] || cut -d$'\x1f' -f2 <<<"$feedback" > "$(seen_file "$NAME")"
+      [ -n "$feedback" ] && deliver_new_feedback "$feedback"
+    else
+      echo "$(date '+%F %T') gh poll failed"
+    fi
+    sleep "$POLL_SECONDS"
+  done
+}
+
+is_watching() { # name
+  local pid; pid="$(cat "$(pid_file "$1")" 2>/dev/null || true)"
+  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+}
+
+start_watch() { # name subject handle
+  [ -n "${3:-}" ] || die "usage: teamup-gh-watch on <name> <subject> <handle>"
+  is_watching "$1" && { echo "'$1' is already watching (pid $(cat "$(pid_file "$1")"))."; return 0; }
+  printf '%s\t%s\n' "$2" "$3" > "$(config_file "$1")"
+  "$TEAMUP" join "$2" --as "$1" --pwd "gh-watch" --doing "human comments on my open PRs → @$3" >/dev/null
+  nohup "$0" __run "$1" < /dev/null >> "$(log_file "$1")" 2>&1 &
+  echo $! > "$(pid_file "$1")"
+  echo "'$1' watching human comments on open PRs → @$3 on '$2' (pid $!); log: $(log_file "$1")"
+}
+
+run_watch() { # name
+  NAME="$1"
+  IFS=$'\t' read -r SUBJECT TARGET < "$(config_file "$NAME")"
+  ME="$(gh api user -q .login)" || die "gh is not logged in"
+  poll_forever
+}
+
+stop_watch() { # name
+  local subject
+  is_watching "$1" && kill "$(cat "$(pid_file "$1")")" 2>/dev/null
+  rm -f "$(pid_file "$1")"
+  IFS=$'\t' read -r subject _ < "$(config_file "$1")"
+  "$TEAMUP" leave "$subject" --as "$1" >/dev/null 2>&1 || true
+  echo "stopped '$1'."
+}
+
+print_status() {
+  local config name state
+  for config in "$WATCH_STATE"/*.config; do
+    [ -f "$config" ] || continue
+    name="$(basename "$config" .config)"
+    is_watching "$name" && state="watching (pid $(cat "$(pid_file "$name")"))" || state="stopped"
+    printf '  %s — %s: %s\n' "$name" "$state" "$(tr '\t' ' ' < "$config")"
+  done
+}
+
+case "${1:-}" in
+  on)     start_watch "${2:-}" "${3:-}" "${4:-}" ;;
+  off)    [ -n "${2:-}" ] || die "usage: teamup-gh-watch off <name>"; stop_watch "$2" ;;
+  status) print_status ;;
+  __run)  run_watch "$2" ;;
+  *) echo "usage: teamup-gh-watch on <name> <subject> <handle> | off <name> | status" >&2; exit 2 ;;
+esac
