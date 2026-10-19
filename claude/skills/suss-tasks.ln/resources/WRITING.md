@@ -38,6 +38,11 @@ What this task is about...
 
 The task owner sets `ready` once only review remains.
 
+A `blocked` task states what it waits on, in one line under `## Summary`:
+`**🚫 Blocked on <who>:** <the question, with a link to where it was asked>`. sync pushes
+`blocked` as `todo` with the board's red BLOCKED badge
+([example](https://github.com/base44-dev/suss-tasks/blob/ba74ece/apper/restricted_mode_ui/chen_prs/g12_merge_summary_locked_steps.md?plain=1#L8)).
+
 ### Minimal Task
 
 The smallest valid task:
