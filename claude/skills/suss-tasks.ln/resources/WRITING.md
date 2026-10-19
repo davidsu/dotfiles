@@ -47,6 +47,10 @@ A task may set its b44sync card Type (the card's left-side color) with a footer 
 `**b44sync**:`, e.g. `**b44synctype**: ui_adjustment`. Values: `feature`, `bug`, `operation`,
 `ui_adjustment`, `vulnerability`, `security`, `story`. No line leaves the board's type as it is.
 
+A task never names or links a private Slack channel: #suss-lead, #suss-teamup, #suss-throwaway, or
+David's self-DM. b44sync is read by the team; link the public thread or PR instead, or leave it out.
+`suss-sync-tasks` refuses to push such a file.
+
 ### Minimal Task
 
 The smallest valid task:
