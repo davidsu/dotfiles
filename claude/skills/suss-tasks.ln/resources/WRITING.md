@@ -43,6 +43,10 @@ A `blocked` task states what it waits on, in one line under `## Summary`:
 `blocked` as `todo` with the board's red BLOCKED badge
 ([example](https://github.com/base44-dev/suss-tasks/blob/ba74ece/apper/restricted_mode_ui/chen_prs/g12_merge_summary_locked_steps.md?plain=1#L8)).
 
+A task may set its b44sync card Type (the card's left-side color) with a footer line next to
+`**b44sync**:`, e.g. `**b44synctype**: ui_adjustment`. Values: `feature`, `bug`, `operation`,
+`ui_adjustment`, `vulnerability`, `security`, `story`. No line leaves the board's type as it is.
+
 ### Minimal Task
 
 The smallest valid task:
