@@ -37,4 +37,6 @@ Company projects (`apper/`, `cli/`, `vite-plugin/`, `weekly/`) keep their tasks 
 
 **A task with a PR carries its url**: a `**PR**: [#N](https://github.com/<owner>/<repo>/pull/N)` line above the authorship footer, written by the agent who opens the PR ([WRITING.md, PR Line](resources/WRITING.md#pr-line)).
 
+**A task links every Slack message behind it** (request thread, decisions, replies) as permalinks in the task file itself, not only its epic: the board shows the task alone ([WRITING.md, Slack Links](resources/WRITING.md#slack-links)).
+
 **CRITICAL**: Read [WRITING.md](resources/WRITING.md) before creating or updating any task file.

@@ -230,6 +230,19 @@ elsewhere (a table, a Closing Note) does not replace the line.
 3. **Written by the agent who opens the PR**, the moment it opens; a PR opened later for an already-written task gets the line added then
 4. **Updated on re-land**: a replacement PR takes the line, the superseded one is mentioned in prose
 
+## Slack Links
+
+A task links every Slack message behind it: the thread that asked for the work, each decision,
+each reply that changed it. The board shows the task file alone, never its epic, so a link that
+sits only in `epic.md` is lost there.
+
+**Rules:**
+
+1. **In the task file itself**, even when the epic already holds it
+2. **A permalink to the exact message**, not the channel; link text says what it is (`[asked here](…)`, `[decided](…)`)
+3. **Next to the claim it backs**, like any reference; the thread that asked for the work goes in `## Summary`
+4. **Private channels stay out** (see Status Shebang): a request made only there has no link; say who asked, in words
+
 ### Reference-style links — for table cells (keep the reading area narrow)
 
 Inline links are fine in prose. But inside **table cells** a full URL is 100+ chars, which
