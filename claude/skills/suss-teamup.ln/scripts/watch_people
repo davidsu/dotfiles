@@ -76,11 +76,14 @@ def gh_list(path: str) -> list[dict]:
     return [entry for page in gh_json("api", "--paginate", "--slurp", path) for entry in page]
 
 
+def searched_prs(query: str) -> list[str]:
+    found = gh_json("search", "prs", "--sort", "updated", "--limit", str(SEARCH_LIMIT), "--json", "number,repository", "--", *shlex.split(query))
+    return [f"{pr['repository']['nameWithOwner']}#{pr['number']}" for pr in found]
+
+
 def watched_prs(args) -> list[str]:
-    if args.github_search:
-        found = gh_json("search", "prs", "--sort", "updated", "--limit", str(SEARCH_LIMIT), "--json", "number,repository", "--", *shlex.split(args.github_search))
-        return [f"{pr['repository']['nameWithOwner']}#{pr['number']}" for pr in found]
-    return [pr if "#" in pr else f"{args.github_repo}#{pr}" for pr in args.github_prs]
+    listed = [pr if "#" in pr else f"{args.github_repo}#{pr}" for pr in args.github_prs]
+    return list(dict.fromkeys(listed + (searched_prs(args.github_search) if args.github_search else [])))
 
 
 def github_feedback(pr: str) -> list[tuple[dict, str, str]]:

@@ -13,7 +13,7 @@ A lead starts it as a long-lived **background** command and stops it with SIGTER
 ```
 
 - **What it reads.** GitHub through `gh`: issue comments, review comments and reviews by
-  `--github-users` on the watched PRs (a search keeps its 30 most recently updated: leave out `is:open`, or a merged PR drops out before its merge is posted), and any PR that got merged. Slack through David's keychain
+  `--github-users` on the watched PRs: `--github-prs` and `--github-search` together (a search keeps its 30 most recently updated: leave out `is:open`, or a merged PR drops out before its merge is posted), and any PR that got merged. Slack through David's keychain
   session (`suss-communication/scripts/slack_session.py`): `conversations.history` plus the
   replies of threads started in the last 14 days. It doesn't use search, because search misses bot DMs.
   `--slack-feeds` channels count every message, whoever wrote it (D0B8HFL81GX is the b44sync bot DM:
