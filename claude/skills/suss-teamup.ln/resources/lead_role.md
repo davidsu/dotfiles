@@ -29,6 +29,12 @@ Rules carry `(David, date)`; the rest is glue.
 - **Brief first, then wake or spawn** (David, 2026-10-12): post the brief on the team channel
   with `@handle`, then spawn or wake; the join replay shows it. A fresh agent's first message
   sometimes ignores the brief: re-point once to the brief's `#seq`.
+- **A wake brief says "re-read your instructions"** (David, 2026-10-20): rules change while an
+  agent sleeps, so every wake brief names the rule files to re-read (the effort's recipes, e.g.
+  `pr_video.md`) before the agent acts.
+- **A new rule reaches open work** (David, 2026-10-20): when David adds a rule (e.g. narrated
+  video), the lead sweeps every open PR and task it applies to and briefs their owners, instead of
+  applying it only to work started afterwards.
 - **Pace the agents** (David, 2026-10-12): at most 3 owner tabs awake at a time for a wave of
   small jobs; sleep each the moment its work is verified; no new spawn or wake until the count is
   below 3; sweep browser tabs on every wake. Memory of the laptop is the ceiling.
