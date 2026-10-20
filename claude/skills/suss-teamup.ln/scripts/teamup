@@ -502,7 +502,7 @@ show_backlog_since_left() { # subject handle
   shown="$(printf '%s' "$missed" | meant_for_returning "$1" "$2")"
   skipped=$(( $(printf '%s' "$missed" | spoken_only | count_lines) - $(printf '%s' "$shown" | count_lines) ))
   echo "--- since you left: $(printf '%s' "$shown" | count_lines) for you, $skipped other messages not shown ---"
-  [ -n "$shown" ] && printf '%s\n' "$shown" | pretty
+  [ -z "$shown" ] || printf '%s\n' "$shown" | pretty
 }
 
 # A join marks read only what came before its own ping. Marking the whole channel read

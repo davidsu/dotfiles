@@ -17,7 +17,7 @@ from pathlib import Path
 
 SCRIPTS = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPTS.parent.parent / "suss-communication.ln" / "scripts"))
-from slack_session import SlackError, slack_api  # noqa: E402
+from slack_session import slack_api  # noqa: E402
 
 TEAMUP = SCRIPTS / "teamup"
 STATE_DIR = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "suss-teamup" / "watch_people"
@@ -29,7 +29,6 @@ GH_TIMEOUT_SECONDS = 60
 SEARCH_LIMIT = 30
 MAX_TEXT_CHARS = 200
 DURATION_UNITS = {"s": 1, "m": 60, "h": 3600, "d": 86400}
-POLL_ERRORS = (SlackError, OSError, subprocess.SubprocessError, json.JSONDecodeError, KeyError)
 
 
 @dataclass
@@ -170,8 +169,8 @@ def slack_items(args, channel: str, is_new) -> list[Item]:
 def github_sources(args) -> list:
     try:
         return [functools.partial(github_items, args, pr) for pr in watched_prs(args)]
-    except POLL_ERRORS as err:
-        log(f"listing PRs failed this period: {err}")
+    except Exception as err:
+        log(f"listing PRs failed this period: {err!r}")
         return []
 
 
@@ -183,8 +182,8 @@ def sources(args, is_new) -> list:
 def items_of(source, is_new) -> list[Item]:
     try:
         return [item for item in source() if is_new(item.id, item.at)]
-    except POLL_ERRORS as err:
-        log(f"skipped {source.args[1]} this period: {err}")
+    except Exception as err:
+        log(f"skipped {source.args[1]} this period: {err!r}")
         return []
 
 
@@ -221,23 +220,40 @@ def post(args, item: Item) -> bool:
     return said.returncode == 0
 
 
-def join(args):
+def join(args) -> bool:
     throwaway = ["--throwaway"] if args.throwaway else []
-    teamup("join", args.channel, "--as", args.handle, "--pwd", "watch_people", *throwaway,
-           "--doing", f"posting new activity by {', '.join(args.github_users + args.slack_users) or 'feeds'}")
+    joined = teamup("join", args.channel, "--as", args.handle, "--pwd", "watch_people", *throwaway, "--doing",
+                    f"posting new activity by {', '.join(args.github_users + args.slack_users) or 'feeds'}", check=False)
+    if joined.returncode:
+        log(f"join failed ({joined.returncode}), retrying next period: {joined.stdout.strip()} {joined.stderr.strip()}")
+    return joined.returncode == 0
 
 
 def stop_on_sigterm():
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
 
 
+def post_new_items(args, seen: Seen):
+    for item in new_items(args, seen):
+        if post(args, item):
+            seen.add(item)
+
+
+def run_period(args, seen: Seen, is_joined: bool) -> bool:
+    try:
+        is_joined = is_joined or join(args)
+        if is_joined:
+            post_new_items(args, seen)
+    except Exception as err:
+        log(f"period failed, retrying next period: {err!r}")
+    return is_joined
+
+
 def poll_forever(args, seen: Seen):
-    join(args)
+    is_joined = False
     try:
         while True:
-            for item in new_items(args, seen):
-                if post(args, item):
-                    seen.add(item)
+            is_joined = run_period(args, seen, is_joined)
             time.sleep(args.poll_period)
     finally:
         teamup("leave", args.channel, "--as", args.handle, check=False)
@@ -278,4 +294,5 @@ def main():
     poll_forever(args, Seen(args.state or STATE_DIR / f"{args.channel}.{args.handle}.json", since))
 
 
-main()
+if __name__ == "__main__":
+    main()
