@@ -17,7 +17,9 @@ off to, and having handed off.
    skill). It is the spine the ephemeral channel can't be: goal, the *verified*
    finding/bug + root cause, every **locked decision**, the plan (or the options still
    open), an **orientation list** (the exact docs + code files to read), the test plan,
-   and the current PR/work state.
+   and the current PR/work state. The **handoff file** itself is not that file: it goes to
+   `/tmp/handoff/handoff_{old}_to_{new}.md`, never committed or synced, so no b44sync footer
+   and no `bin/sync` (David, 2026-10-20).
 2. **Spawn the peer** into a shared channel (`scripts/teamup-spawn claude {subject}`,
    join yourself first — see resources/spawn.md). Leave out `--role` and `--color`: the
    successor takes your color, so the user still sees the PR owner, lead or keeper.
@@ -71,7 +73,7 @@ for the handoff window.
 It takes no part in the handoff itself, starts no new work, and leaves the handoff file to
 the outgoing lead.
 
-**The window file** is lean, beside the handoff file in the same task directory:
+**The window file** is lean, beside the handoff file in `/tmp/handoff/`:
 `handoff_{old}_to_{new}_temp_window.md` next to `handoff_{old}_to_{new}.md`. It says what
 happened in the window that the new lead needs: David's asks and what was done, team
 reports, anything still open. Possibly just "nothing noteworthy".
@@ -91,7 +93,7 @@ reports, anything still open. Possibly just "nothing noteworthy".
 8. The new lead pings "ready".
 9. lead.temp.x yields, on `suss-lead` and on every team channel.
 10. The new lead acks and takes over.
-11. lead.temp.x delivers its window file (pushed) and says its path on `suss-lead`.
+11. lead.temp.x writes its window file and says its path on `suss-lead`.
 12. The old lead goes to sleep if still awake; lead.temp.x goes to sleep
     (`scripts/teamup-sleep --force`, no argument).
 
