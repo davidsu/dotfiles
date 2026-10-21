@@ -78,6 +78,23 @@ const showAlert = (message, info) => {
   return alert;
 };
 
+const EDIT_SHORTCUTS = [
+  ['Cut', 'cut:', 'x'],
+  ['Copy', 'copy:', 'c'],
+  ['Paste', 'paste:', 'v'],
+  ['Select All', 'selectAll:', 'a'],
+];
+
+const installEditMenu = () => {
+  const editMenu = $.NSMenu.alloc.initWithTitle('Edit');
+  EDIT_SHORTCUTS.forEach(([title, action, key]) => editMenu.addItemWithTitleActionKeyEquivalent(title, action, key));
+  const editItem = $.NSMenuItem.alloc.init;
+  editItem.submenu = editMenu;
+  const mainMenu = $.NSMenu.alloc.init;
+  mainMenu.addItem(editItem);
+  $.NSApplication.sharedApplication.mainMenu = mainMenu;
+};
+
 function runFocusedModal(alert) {
   $.NSApplication.sharedApplication.activateIgnoringOtherApps(true);
   return alert.runModal;
@@ -192,6 +209,7 @@ const styleFor = (session, claudeTab) => {
 
 function run() {
   $.NSApplication.sharedApplication.setActivationPolicy($.NSApplicationActivationPolicyAccessory);
+  installEditMenu();
   const iterm = Application('iTerm2');
   const target = iterm.currentWindow().currentSession();
   console.log(`${new Date().toISOString()} invoked on ${JSON.stringify(target.name())}`);
