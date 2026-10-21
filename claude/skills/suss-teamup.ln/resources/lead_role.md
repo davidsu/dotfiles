@@ -29,6 +29,8 @@ Rules carry `(David, date)`; the rest is glue.
 - **Brief first, then wake or spawn** (David, 2026-10-12): post the brief on the team channel
   with `@handle`, then spawn or wake; the join replay shows it. A fresh agent's first message
   sometimes ignores the brief: re-point once to the brief's `#seq`.
+- **Spawn in the agent's worktree** (David, 2026-10-21): create it, then `teamup-spawn … --dir
+  {worktree}` ([spawn.md](spawn.md) → Dir).
 - **A wake brief says "re-read your instructions"** (David, 2026-10-20): rules change while an
   agent sleeps, so every wake brief names the rule files to re-read (the effort's recipes, e.g.
   `pr_video.md`) before the agent acts.

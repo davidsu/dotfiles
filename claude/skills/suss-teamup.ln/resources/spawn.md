@@ -20,7 +20,10 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
 2. **Join it yourself first**, so you're present when the peer arrives:
    `teamup join {subject} --pwd "$PWD" --doing "spawning a {agent} peer"`.
 3. **Spawn the peer:** `scripts/teamup-spawn {claude|pi|codex} {subject} [--as {handle}] [--model {model}] [--role {role}] [--color {color}] [--after {handle}]`.
-   It opens an iTerm tab in your `$PWD` running the agent, which joins `{subject}`.
+   It opens an iTerm tab in your `$PWD` (or `--dir`) running the agent, which joins `{subject}`.
+   - **Dir: the worktree the peer works in** (David, 2026-10-21): create the worktree first,
+     then `--dir {worktree}`. Never brief it to `cd` or make its own: David's cmd+t in its tab
+     must land in the worktree.
    - **Tab position**: immediately right of your own tab (the one the command runs in,
      `$ITERM_SESSION_ID`), so a lead's team sits next to it; `--after {handle}` (or env
      `TEAMUP_AFTER_HANDLE`) puts it right of that agent's tab instead. Moved via the iTerm2
