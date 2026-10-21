@@ -75,8 +75,8 @@ nvim/
 - 🎯 **TypeScript indentation**: Uses built-in filetype indent instead of TreeSitter
 
 ### 🛠️ Core Commands
-- `:P` / `:CP` / `:CopyFilePath` - 📄 Copy full file path to clipboard
-- `:PP` - 📍 Copy file path with line number to clipboard
+- `:P` / `:CP` / `:CopyFilePath` - 📄 Copy full file path to clipboard; from a visual range copies `{path}:{from}-{to}`
+- `:PP` - 📍 Copy file path with line number to clipboard; from a visual range copies `{path}:{from}-{to}`
 - `:CopyFileName` - 📝 Copy file name to clipboard
 - `:CopyFileNameNoExtension` - ✂️ Copy file name without extension
 - `:CopyRelativeFilePath` - 📁 Copy relative file path to clipboard

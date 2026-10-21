@@ -8,15 +8,28 @@ local function to_clipboard(value)
   vim.notify('Copied: ' .. value)
 end
 
-vim.api.nvim_create_user_command('P', function()
-  to_clipboard(vim.fn.expand('%:p'))
-end, { desc = 'Copy full file path to clipboard' })
+local function line_span(opts)
+  if opts.line1 == opts.line2 then return ':' .. opts.line1 end
+  return ':' .. opts.line1 .. '-' .. opts.line2
+end
 
-vim.api.nvim_create_user_command('PP', function()
-  local path = vim.fn.expand('%:p')
-  local line = vim.fn.line('.')
-  to_clipboard(path .. ':' .. line)
-end, { desc = 'Copy full file path with line number to clipboard' })
+local function line_suffix(opts)
+  return opts.range == 0 and '' or line_span(opts)
+end
+
+local function file_path_copier(lines_of)
+  return function(opts)
+    to_clipboard(vim.fn.expand('%:p') .. lines_of(opts))
+  end
+end
+
+local copy_file_path = file_path_copier(line_suffix)
+local copy_file_path_opts = { range = true, desc = 'Copy full file path (with {from}-{to} lines when given a range) to clipboard' }
+
+vim.api.nvim_create_user_command('P', copy_file_path, copy_file_path_opts)
+
+vim.api.nvim_create_user_command('PP', file_path_copier(line_span),
+  { range = true, desc = 'Copy full file path with line number (or {from}-{to} range) to clipboard' })
 
 vim.api.nvim_create_user_command('PPP', function()
   local path = vim.fn.expand('%:p')
@@ -25,9 +38,7 @@ vim.api.nvim_create_user_command('PPP', function()
   to_clipboard(path .. ':' .. line .. ':' .. col)
 end, { desc = 'Copy full file path with line and column to clipboard' })
 
-vim.api.nvim_create_user_command('CopyFilePath', function()
-  to_clipboard(vim.fn.expand('%:p'))
-end, { desc = 'Copy full file path to clipboard' })
+vim.api.nvim_create_user_command('CopyFilePath', copy_file_path, copy_file_path_opts)
 
 vim.api.nvim_create_user_command('CopyFileName', function()
   to_clipboard(vim.fn.expand('%:t'))
