@@ -1,4 +1,4 @@
-in_progress
+ready
 # 🔀 Open gdiffbranch in a new tab right of the agent's tab
 
 ## Summary
