@@ -33,7 +33,7 @@ Company projects (`apper/`, `cli/`, `vite-plugin/`, `weekly/`) keep their tasks 
 
 **Every task is its own file in an effort**, never loose under `suss-tasks/<project>/`, never the epic.
 
-**Every effort owns one emoji, and every title in it starts with that emoji** (`# 🔒 …`), so the b44sync board tells parallel efforts apart. Rules and how to apply it: [ORGANIZATION.md](resources/ORGANIZATION.md).
+**Every effort owns one emoji, and every title in it starts with that emoji** (`# 🔒 …`), so the b44sync board tells parallel efforts apart. A sub-effort owns its own emoji too, shown after its parent's (`# 🔒🧩 …`). Rules and how to apply it: [ORGANIZATION.md](resources/ORGANIZATION.md).
 
 **A task with a PR carries its url**: a `**PR**: [#N](https://github.com/<owner>/<repo>/pull/N)` line above the authorship footer, written by the agent who opens the PR ([WRITING.md, PR Line](resources/WRITING.md#pr-line)).
 
