@@ -10,7 +10,7 @@
 #   iterm_agent_picker --pick LIST --into FILE  what runs inside the floating window: writes the chosen row to FILE, the
 #                                               launcher acts on it once the window is gone
 set -euo pipefail
-export PATH="/opt/homebrew/bin:$PATH"
+export PATH="$HOME/.dotfiles/bin:/opt/homebrew/bin:$PATH"
 
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
 readonly LISTS="$(dirname "$SELF")/iterm_picker_lists"
