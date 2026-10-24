@@ -12,6 +12,10 @@ scripts/teamup-telegram status           # daemon pid, last relay, relayed chann
 - **Out**: agent lines tagged `[top]` or naming `@david`, as `<subject> · <handle>: text`. No backfill.
 - **In**: a Telegram reply to a relayed message lands on its subject as `re #<seq> …` (wakes its
   author); any other message lands on the subject that spoke last. 👍 = posted, 👎 = refused.
+- **Attachments in**: photos, voice notes, audio, video and documents are saved to
+  `~/.local/state/suss-teamup/telegram/media/` and posted as `[<kind>: <path>]` next to the caption.
+  Voice, audio and round videos are transcribed locally (whisper-cli + ffmpeg, model
+  `~/.local/share/whisper/ggml-medium.bin`) and posted as `transcript: …`.
 - Posts as `david`, which teamup exempts from the read-before-post check, so it never fights
   `teamup-slack` for a cursor. It tails `channel.tsv` with its own cursor and never joins, so it
   is not a peer in anyone's wake rules.

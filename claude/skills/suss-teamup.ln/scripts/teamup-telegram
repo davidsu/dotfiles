@@ -30,6 +30,10 @@ OFFSET = STATE / "offset"
 LAST_RELAY = STATE / "last_relay"
 PID = STATE / "daemon.pid"
 LOG = STATE / "daemon.log"
+MEDIA = STATE / "media"
+WHISPER_MODEL = Path.home() / ".local/share/whisper/ggml-medium.bin"
+ATTACHMENT_KINDS = ("photo", "voice", "audio", "video_note", "video", "document")
+SPOKEN_ATTACHMENTS = ("voice", "audio", "video_note")
 HUMAN = "david"
 TOP_LEVEL_TAG = " [top]"
 SPOKEN = ("say", "ask", "ack")
@@ -126,11 +130,47 @@ def route_of(message):
     return newest[0]["subject"], ""
 
 
+def attachment_of(message):
+    kind = next((kind for kind in ATTACHMENT_KINDS if kind in message), None)
+    if kind is None:
+        return None, None
+    file = message[kind][-1] if kind == "photo" else message[kind]
+    return kind, file["file_id"]
+
+
+def download(file_id, message_id):
+    remote_path = telegram("getFile", file_id=file_id)["file_path"]
+    MEDIA.mkdir(parents=True, exist_ok=True)
+    local_path = MEDIA / f"{message_id}_{Path(remote_path).name}"
+    token = read_json(CONFIG, {})["token"]
+    urllib.request.urlretrieve(f"https://api.telegram.org/file/bot{token}/{remote_path}", local_path)
+    return local_path
+
+
+def transcribe(audio_path):
+    wav_path = audio_path.with_suffix(".wav")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(audio_path), "-ar", "16000", "-ac", "1", str(wav_path)],
+                   check=True)
+    whisper = subprocess.run(["whisper-cli", "-m", str(WHISPER_MODEL), "-l", "auto", "-nt", "-np", "-f", str(wav_path)],
+                             capture_output=True, text=True)
+    return whisper.stdout.strip() or f"(transcription failed: {whisper.stderr.strip()[-200:]})"
+
+
+def text_of(message):
+    kind, file_id = attachment_of(message)
+    words = message.get("text") or message.get("caption") or ""
+    if kind is None:
+        return words
+    saved = download(file_id, message["message_id"])
+    transcript = f" transcript: {transcribe(saved)}" if kind in SPOKEN_ATTACHMENTS else ""
+    return f"{words} [{kind}: {saved}]{transcript}".strip().replace("\n", " ")
+
+
 def deliver_reply(message):
     subject, prefix = route_of(message)
     if subject is None:
         return telegram("sendMessage", chat_id=message["chat"]["id"], text="No teamup channel is relayed right now.")
-    posted = subprocess.run([str(TEAMUP), "say", subject, "--as", HUMAN, "--", prefix + message["text"]],
+    posted = subprocess.run([str(TEAMUP), "say", subject, "--as", HUMAN, "--", prefix + text_of(message)],
                             env=POST_ENV, capture_output=True, text=True)
     reaction = "👍" if posted.returncode == 0 else "👎"
     telegram("setMessageReaction", chat_id=message["chat"]["id"], message_id=message["message_id"],
@@ -139,7 +179,7 @@ def deliver_reply(message):
 
 
 def is_from_david(message):
-    return message["chat"]["id"] == read_json(CONFIG, {})["chat_id"] and "text" in message
+    return message["chat"]["id"] == read_json(CONFIG, {})["chat_id"]
 
 
 def relay_once():
