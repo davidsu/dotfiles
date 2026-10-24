@@ -93,7 +93,11 @@ def forward(subject, seq, handle, body):
     routes = read_json(ROUTES, {})
     routes[str(sent["message_id"])] = {"subject": subject, "seq": seq}
     write_json(ROUTES, dict(list(routes.items())[-MAX_ROUTES:]))
-    write_json(LAST_RELAY, {"at": time.strftime("%F %T"), "direction": "out", "subject": subject})
+    record_relay("out", subject)
+
+
+def record_relay(direction, subject):
+    write_json(LAST_RELAY, {**read_json(LAST_RELAY, {}), direction: f"{time.strftime('%F %T')} {subject}"})
 
 
 def cursor_file(subject): return STATE / f"{subject}.cursor"
@@ -125,7 +129,7 @@ def deliver_reply(message):
     reaction = "👍" if posted.returncode == 0 else "👎"
     telegram("setMessageReaction", chat_id=message["chat"]["id"], message_id=message["message_id"],
              reaction=[{"type": "emoji", "emoji": reaction}])
-    write_json(LAST_RELAY, {"at": time.strftime("%F %T"), "direction": "in", "subject": subject})
+    record_relay("in", subject)
 
 
 def is_from_david(message):
@@ -200,7 +204,7 @@ def turn_off(subject):
 
 def print_status():
     pid = daemon_pid()
-    print(f"  daemon: {f'running (pid {pid})' if pid else 'stopped'}; last relay: {read_json(LAST_RELAY, 'none')}")
+    print(f"  daemon: {f'running (pid {pid})' if pid else 'stopped'}; last relay: {read_json(LAST_RELAY, {})}")
     for subject in read_json(CHANNELS, []):
         print(f"  {subject}")
 
