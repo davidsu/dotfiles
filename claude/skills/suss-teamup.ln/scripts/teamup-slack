@@ -35,6 +35,7 @@ source "$HERE/slack_inbound.sh"
 readonly FLUSH_MAX_POSTS=$(( CONNECTOR_MAX_TURNS - 1 ))   # one call per turn, and the relay's closing "done" needs the last turn
 readonly MAX_POST_ATTEMPTS=3
 
+is_slack_opted_out() { [ -f "$BASE/$1/.slack.off" ]; }
 is_throwaway() { [ -f "$BASE/$1/.slack.throwaway" ]; }
 
 thread_state_dir() { # subject — a throwaway channel's thread dies with the channel
@@ -373,6 +374,7 @@ is_mirrored() { [ -f "$(mirror_marker "$1")" ] && daemon_is_alive; }
 
 start_mirror() { # subject
   [ -d "$BASE/$1" ] || die "no such channel '$1' — teamup channels lists the live ones"
+  is_slack_opted_out "$1" && { echo "'$1' opted out of Slack (join --no-slack)."; return 0; }
   is_mirrored "$1" && { echo "'$1' is already mirrored (daemon pid $(daemon_pid))."; return 0; }
   load_connector_identity
   stop_legacy_poller_of "$1"

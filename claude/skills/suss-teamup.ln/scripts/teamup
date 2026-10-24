@@ -93,7 +93,7 @@ die() { echo "teamup: $*" >&2; exit 1; }
 usage_text() {
   cat <<'EOF'
 usage:
-  teamup join   <subject> [--as <handle>] [--pwd <path>] [--doing <text>] [--gist <text>] [--throwaway]  # --as defaults to this session's name; --throwaway: agents-only channel, mirrored to #suss-throwaway
+  teamup join   <subject> [--as <handle>] [--pwd <path>] [--doing <text>] [--gist <text>] [--throwaway] [--no-slack]  # --as defaults to this session's name; --throwaway: agents-only channel, mirrored to #suss-throwaway; --no-slack: never mirror this channel to Slack (sticks for the channel)
   teamup rename --as <handle> --to <new>                  # re-key your identity on every channel you're on (after a rename)
   teamup session-name [--session <guid>]                  # the handle this session's name implies; exit 1 if it has no chosen name
   teamup name-command                                     # what the USER types to name this session (/rename on claude, /banner on pi)
@@ -147,6 +147,7 @@ session_guid()  { printf '%s' "${TEAMUP_SESSION:-${CLAUDE_CODE_SESSION_ID:-${COD
 # The bridge joins as a member itself, so its own join must not re-trigger this.
 mirror_to_slack_unless_bridge() { # subject handle
   [ "$2" = "${TEAMUP_SLACK_HANDLE:-david}" ] && return 0
+  [ -f "$BASE/$1/.slack.off" ] && return 0
   local bridge; bridge="$(dirname "$0")/teamup-slack"
   [ -x "$bridge" ] || return 0
   ( "$bridge" auto "$1" >/dev/null 2>&1 & ) &
@@ -627,7 +628,7 @@ ensure_member() { # subject
 # ---- arg parsing --------------------------------------------------------------
 CMD="${1:-}"; shift || usage
 SUBJECT=""; HANDLE=""; PWD_ARG="$PWD"; DOING=""; TIMEOUT="$DEFAULT_WAIT"; LAST=20; ALL=false; FORCE=false
-TO=""; RE=""; SID=""; THROWAWAY=false; TOP=false; DISCARD=false; GIST=""
+TO=""; RE=""; SID=""; THROWAWAY=false; NO_SLACK=false; TOP=false; DISCARD=false; GIST=""
 MSG=()
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -643,6 +644,7 @@ while [ $# -gt 0 ]; do
     --all)     ALL=true; shift ;;
     --force)   FORCE=true; shift ;;
     --throwaway) THROWAWAY=true; shift ;;
+    --no-slack)  NO_SLACK=true; shift ;;
     --top)     TOP=true; shift ;;
     --discard) DISCARD=true; shift ;;
     --) shift; MSG+=("$@"); break ;;
@@ -661,6 +663,7 @@ case "$CMD" in
     require_handle
     mkdir -p "$(mdir "$SUBJECT")"
     $THROWAWAY && touch "$BASE/$SUBJECT/.slack.throwaway"
+    $NO_SLACK && touch "$BASE/$SUBJECT/.slack.off"
     [ -n "$GIST" ] && [ ! -f "$BASE/$SUBJECT/.gist" ] && oneline "$GIST" > "$BASE/$SUBJECT/.gist"
     sid="$(session_guid)"
     member="$(mdir "$SUBJECT")/$HANDLE"

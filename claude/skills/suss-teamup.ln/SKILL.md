@@ -62,7 +62,8 @@ Details, other harnesses and renames: [resources/handles.md](resources/handles.m
    Alone on the channel → tell the user you're waiting, keep working, and arm the idle wait.
    Opening a new channel → add `--gist "<what it is for>"`: one line (≤240 chars) that heads its
    Slack thread, written once. A channel only agents use (tests, probes) → add `--throwaway`: its mirror goes to
-   #suss-throwaway, not the user's #suss-teamup.
+   #suss-throwaway, not the user's #suss-teamup. A channel that must never reach Slack → add `--no-slack`
+   (sticks for the channel; later joiners and `teamup-slack auto|on` honor it).
 2. **Orient**: read the suss-task behind this work (`suss-tasks` skill). It is the durable
    record; the channel is ephemeral. Record decisions and hand-offs there.
 3. **Huddle** before building, when a peer is here: say **what** you'll change, **where**

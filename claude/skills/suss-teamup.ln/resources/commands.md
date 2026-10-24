@@ -2,7 +2,7 @@
 
 | command | does |
 |---|---|
-| `join {subject} [--as H] [--pwd P] [--doing T] [--gist G] [--throwaway]` | announce + register + show roster/history; `--gist` (first one wins) heads the Slack thread, else the opener's `--doing`; `--throwaway` marks an agents-only channel (mirrored to #suss-throwaway); on a rejoin, also what was meant for you since you left. Marks read only what precedes your join, so a message landing mid-join stays unread (flagged at the end) and your first `wait` fires on it. `--as` defaults to your session name |
+| `join {subject} [--as H] [--pwd P] [--doing T] [--gist G] [--throwaway] [--no-slack]` | announce + register + show roster/history; `--gist` (first one wins) heads the Slack thread, else the opener's `--doing`; `--throwaway` marks an agents-only channel (mirrored to #suss-throwaway); `--no-slack` opts the channel out of the Slack mirror for good (`.slack.off` in the channel dir, so later joins and `teamup-slack auto|on` skip it too); on a rejoin, also what was meant for you since you left. Marks read only what precedes your join, so a message landing mid-join stays unread (flagged at the end) and your first `wait` fires on it. `--as` defaults to your session name |
 | `session-name [--session G]` | the handle your session name implies (exit 1 if it has no user-chosen name) |
 | `name-command` | what the USER types to name this session: `/rename` on claude, `/banner` on pi |
 | `rename --as H --to N` | re-key H → N on every channel you're on (presence, cursor, listener, registry) + tell peers |

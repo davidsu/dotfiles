@@ -182,6 +182,10 @@ instead: agents-only channels (tests, probes) stay out of the user's #suss-teamu
 state lives in the channel dir, not `~/.local/state`, so `erase` (or a reboot clearing `/tmp`)
 removes it and a later channel of the same name, throwaway or not, opens a fresh thread.
 
+**Opting a channel out** — `join --no-slack` touches `.slack.off` in the channel dir. `join` then never
+starts the bridge for it, and `teamup-slack auto|on` skip it (`start_mirror` refuses), whoever joins later.
+Unlike `TEAMUP_SLACK=off` it is per channel and persists until `erase`.
+
 **`teamup-slack-watch` is on the connector** (2026-10-14): `slack_search_public_and_private`
 through `connector_call`, the detailed prose result parsed back into matches, and a result over
 the tool-output cap read from the file it was saved to. Each search takes 8-10 s and costs ~$0.008,
@@ -189,4 +193,4 @@ so `$TEAMUP_WATCH_POLL` defaults to 300 s. **Still on the old session path** (fa
 whenever the session rotates): `scripts/teamup-tasks-sync` (task-file uploads) sources
 `slack_session.sh`. Porting it means the two-step `slack_get_file_upload_url` /
 `slack_complete_file_upload` through `connector_call`.
-`TEAMUP_SLACK=off` disables auto-mirroring entirely.
+`TEAMUP_SLACK=off` disables auto-mirroring entirely (every channel; for one channel use `join --no-slack`).
