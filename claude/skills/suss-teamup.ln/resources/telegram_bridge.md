@@ -15,6 +15,8 @@ scripts/teamup-telegram status           # daemon pid, last relay, relayed chann
 - Posts as `david`, which teamup exempts from the read-before-post check, so it never fights
   `teamup-slack` for a cursor. It tails `channel.tsv` with its own cursor and never joins, so it
   is not a peer in anyone's wake rules.
+- Survives reboots: every `teamup join` runs `teamup-telegram auto`, which restarts the daemon if
+  any channel is relayed. A recreated channel (shorter `channel.tsv`) restarts its cursor at 0.
 - Only David's chat id is accepted; anything else is logged and dropped.
 - Secrets: `~/.local/share/suss-teamup/telegram.json` (`token`, `chat_id`), 0600. Not `~/.config`: here it is a symlink into this public repo.
 - State and log: `~/.local/state/suss-teamup/telegram/` (`daemon.log`).

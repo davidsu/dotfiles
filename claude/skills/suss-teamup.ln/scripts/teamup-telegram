@@ -1,5 +1,5 @@
 #!/usr/bin/env -S python3 -I
-"""teamup-telegram setup | on <subject> | off <subject> | status
+"""teamup-telegram setup | on <subject> | off <subject> | status | auto
 
 Relays teamup channels to David's chat with his Telegram bot, and his replies back as 'david'.
 Agent lines tagged [top] or naming @david go out as '<subject> · <handle>: text'. A Telegram
@@ -7,7 +7,8 @@ reply to one of them lands on that subject as 're #<seq> …', which wakes its a
 message lands on the subject that last spoke. Chats other than David's are dropped.
 The bot token and David's chat id live in ~/.local/share/suss-teamup/telegram.json (0600, never in
 the repo); `setup` waits for his /start and records the chat id. The daemon tails channel.tsv
-with its own cursor and never joins, so it is not a peer for anyone's wake rules.
+with its own cursor and never joins, so it is not a peer for anyone's wake rules. Every `teamup join`
+runs `auto`, which restarts the daemon when channels are relayed but it is down (after a reboot).
 """
 import json
 import os
@@ -103,10 +104,15 @@ def record_relay(direction, subject):
 def cursor_file(subject): return STATE / f"{subject}.cursor"
 
 
+def cursor_within(lines, subject):
+    cursor = read_json(cursor_file(subject), 0)
+    return cursor if cursor <= len(lines) else 0
+
+
 def forward_new_lines():
     for subject in read_json(CHANNELS, []):
         lines = channel_lines(subject)
-        for seq, handle, body in messages_for_david(lines, read_json(cursor_file(subject), 0)):
+        for seq, handle, body in messages_for_david(lines, cursor_within(lines, subject)):
             forward(subject, seq, handle, body)
             write_json(cursor_file(subject), seq)
         write_json(cursor_file(subject), len(lines))
@@ -222,6 +228,9 @@ if __name__ == "__main__":
         turn_off(*args)
     elif command == "status" and not args:
         print_status()
+    elif command == "auto" and not args:
+        if read_json(CHANNELS, []):
+            start_daemon()
     elif command == "__run":
         run_daemon()
     else:
