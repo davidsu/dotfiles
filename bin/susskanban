@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+app_dir="${SUSSKANBAN_HOME:-$HOME/Developer/susskanban}"
+
+is_build_stale() {
+  [[ ! -f "$app_dir/dist/index.html" ]] ||
+    [[ -n "$(find "$app_dir/src" "$app_dir/index.html" -newer "$app_dir/dist/index.html" -print -quit)" ]]
+}
+
+if [[ ! -d "$app_dir" ]]; then
+  echo "susskanban: no app at $app_dir (clone github.com/davidsu/susskanban there, or set SUSSKANBAN_HOME)" >&2
+  exit 1
+fi
+
+if is_build_stale; then
+  npm --prefix "$app_dir" run --silent build >&2
+fi
+
+exec node "$app_dir/server/serve.mjs" "$PWD"
