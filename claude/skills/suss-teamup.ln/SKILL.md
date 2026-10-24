@@ -125,6 +125,7 @@ it in your terminal. Never stall a relayed instruction to re-confirm it with the
 | [resources/handoff.md](resources/handoff.md)               | handing a task to a fresh agent                          |
 | [resources/reviewer.md](resources/reviewer.md)             | before approving a teammate's work                       |
 | [resources/slack_mirror.md](resources/slack_mirror.md)     | the Slack thread every channel is mirrored to            |
+| [resources/telegram_bridge.md](resources/telegram_bridge.md) | relaying a channel to David's Telegram bot chat            |
 | [resources/watch_people.md](resources/watch_people.md)     | a lead watching people's GitHub/Slack activity, no model  |
 | [resources/hooks.md](resources/hooks.md)                   | Stop/SessionEnd hooks per harness, the statusline        |
 | [resources/limitations.md](resources/limitations.md)       | something behaves oddly                                  |

@@ -1,0 +1,224 @@
+#!/usr/bin/env -S python3 -I
+"""teamup-telegram setup | on <subject> | off <subject> | status
+
+Relays teamup channels to David's chat with his Telegram bot, and his replies back as 'david'.
+Agent lines tagged [top] or naming @david go out as '<subject> · <handle>: text'. A Telegram
+reply to one of them lands on that subject as 're #<seq> …', which wakes its author; any other
+message lands on the subject that last spoke. Chats other than David's are dropped.
+The bot token and David's chat id live in ~/.local/share/suss-teamup/telegram.json (0600, never in
+the repo); `setup` waits for his /start and records the chat id. The daemon tails channel.tsv
+with its own cursor and never joins, so it is not a peer for anyone's wake rules.
+"""
+import json
+import os
+import signal
+import subprocess
+import sys
+import time
+import urllib.request
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+TEAMUP = HERE / "teamup"
+BASE = Path(os.environ.get("SUSS_TEAMUP_DIR", "/tmp/suss-teamup"))
+CONFIG = Path.home() / ".local/share/suss-teamup/telegram.json"
+STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "suss-teamup/telegram"
+CHANNELS = STATE / "channels.json"
+ROUTES = STATE / "routes.json"
+OFFSET = STATE / "offset"
+LAST_RELAY = STATE / "last_relay"
+PID = STATE / "daemon.pid"
+LOG = STATE / "daemon.log"
+HUMAN = "david"
+TOP_LEVEL_TAG = " [top]"
+SPOKEN = ("say", "ask", "ack")
+POLL_SECONDS = 5
+MAX_ROUTES = 500
+MAX_TEXT_CHARS = 4000
+POST_ENV = {**{key: value for key, value in os.environ.items()
+               if key not in ("CLAUDE_CODE_SESSION_ID", "TEAMUP_SESSION", "CODEX_THREAD_ID", "TEAMUP_SESSION_NAME")},
+            "TEAMUP_SLACK": "off"}
+
+
+def read_json(path, default):
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return default
+
+
+def write_json(path, value):
+    path.write_text(json.dumps(value, ensure_ascii=False))
+
+
+def log(text):
+    print(f"{time.strftime('%F %T')} {text}", flush=True)
+
+
+def telegram(method, **params):
+    request = urllib.request.Request(f"https://api.telegram.org/bot{read_json(CONFIG, {})['token']}/{method}",
+                                     data=json.dumps(params).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(request, timeout=POLL_SECONDS + 30) as response:
+        return json.load(response)["result"]
+
+
+def fetch_updates(timeout):
+    updates = telegram("getUpdates", offset=int(read_json(OFFSET, 0)), timeout=timeout, allowed_updates=["message"])
+    if updates:
+        write_json(OFFSET, updates[-1]["update_id"] + 1)
+    return [update["message"] for update in updates if "message" in update]
+
+
+def channel_lines(subject):
+    try:
+        return (BASE / subject / "channel.tsv").read_text().splitlines()
+    except OSError:
+        return []
+
+
+def is_for_david(handle, kind, body):
+    return handle != HUMAN and kind in SPOKEN and (body.endswith(TOP_LEVEL_TAG) or f"@{HUMAN}" in body)
+
+
+def messages_for_david(lines, cursor):
+    for seq, line in enumerate(lines[cursor:], start=cursor + 1):
+        _, handle, kind, body = (line.split("\t", 3) + [""] * 4)[:4]
+        if is_for_david(handle, kind, body):
+            yield seq, handle, body.removesuffix(TOP_LEVEL_TAG)
+
+
+def forward(subject, seq, handle, body):
+    sent = telegram("sendMessage", chat_id=read_json(CONFIG, {})["chat_id"],
+                    text=f"{subject} · {handle}: {body}"[:MAX_TEXT_CHARS])
+    routes = read_json(ROUTES, {})
+    routes[str(sent["message_id"])] = {"subject": subject, "seq": seq}
+    write_json(ROUTES, dict(list(routes.items())[-MAX_ROUTES:]))
+    write_json(LAST_RELAY, {"at": time.strftime("%F %T"), "direction": "out", "subject": subject})
+
+
+def cursor_file(subject): return STATE / f"{subject}.cursor"
+
+
+def forward_new_lines():
+    for subject in read_json(CHANNELS, []):
+        lines = channel_lines(subject)
+        for seq, handle, body in messages_for_david(lines, read_json(cursor_file(subject), 0)):
+            forward(subject, seq, handle, body)
+            write_json(cursor_file(subject), seq)
+        write_json(cursor_file(subject), len(lines))
+
+
+def route_of(message):
+    replied_to = str(message.get("reply_to_message", {}).get("message_id", ""))
+    if route := read_json(ROUTES, {}).get(replied_to):
+        return route["subject"], f"re #{route['seq']} "
+    newest = list(read_json(ROUTES, {}).values())[-1:] or [{"subject": next(iter(read_json(CHANNELS, [])), None)}]
+    return newest[0]["subject"], ""
+
+
+def deliver_reply(message):
+    subject, prefix = route_of(message)
+    if subject is None:
+        return telegram("sendMessage", chat_id=message["chat"]["id"], text="No teamup channel is relayed right now.")
+    posted = subprocess.run([str(TEAMUP), "say", subject, "--as", HUMAN, "--", prefix + message["text"]],
+                            env=POST_ENV, capture_output=True, text=True)
+    reaction = "👍" if posted.returncode == 0 else "👎"
+    telegram("setMessageReaction", chat_id=message["chat"]["id"], message_id=message["message_id"],
+             reaction=[{"type": "emoji", "emoji": reaction}])
+    write_json(LAST_RELAY, {"at": time.strftime("%F %T"), "direction": "in", "subject": subject})
+
+
+def is_from_david(message):
+    return message["chat"]["id"] == read_json(CONFIG, {})["chat_id"] and "text" in message
+
+
+def relay_once():
+    for message in fetch_updates(POLL_SECONDS):
+        if is_from_david(message):
+            deliver_reply(message)
+        else:
+            log(f"dropped a message from chat {message['chat']['id']}")
+    forward_new_lines()
+
+
+def run_daemon():
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+    log("daemon up")
+    while read_json(CHANNELS, []):
+        try:
+            relay_once()
+        except Exception as error:
+            log(f"relay failed: {error!r}")
+            time.sleep(POLL_SECONDS)
+    log("no channels left, daemon down")
+
+
+def daemon_pid():
+    try:
+        pid = int(PID.read_text())
+        os.kill(pid, 0)
+        return pid
+    except (OSError, ValueError):
+        return None
+
+
+def start_daemon():
+    if daemon_pid():
+        return
+    with open(LOG, "a") as log_file:
+        process = subprocess.Popen([sys.executable, "-I", __file__, "__run"], stdout=log_file, stderr=log_file,
+                                   stdin=subprocess.DEVNULL, start_new_session=True)
+    PID.write_text(str(process.pid))
+
+
+def setup():
+    config = read_json(CONFIG, {})
+    print("Send /start to the bot from your Telegram; waiting…", flush=True)
+    while not (starts := [message for message in fetch_updates(30) if message.get("text") == "/start"]):
+        pass
+    chat = starts[0]["chat"]
+    write_json(CONFIG, {**config, "chat_id": chat["id"]})
+    CONFIG.chmod(0o600)
+    telegram("sendMessage", chat_id=chat["id"], text="Linked: teamup channels relayed here will reach you.")
+    print(f"linked chat of {chat.get('first_name', '')} (@{chat.get('username', '?')}).")
+
+
+def turn_on(subject):
+    write_json(cursor_file(subject), len(channel_lines(subject)))
+    write_json(CHANNELS, sorted({*read_json(CHANNELS, []), subject}))
+    start_daemon()
+    print(f"relaying '{subject}' to Telegram (daemon pid {daemon_pid()}); log: {LOG}")
+
+
+def turn_off(subject):
+    channels = [channel for channel in read_json(CHANNELS, []) if channel != subject]
+    write_json(CHANNELS, channels)
+    if not channels and (pid := daemon_pid()):
+        os.kill(pid, signal.SIGTERM)
+    print(f"stopped relaying '{subject}'.")
+
+
+def print_status():
+    pid = daemon_pid()
+    print(f"  daemon: {f'running (pid {pid})' if pid else 'stopped'}; last relay: {read_json(LAST_RELAY, 'none')}")
+    for subject in read_json(CHANNELS, []):
+        print(f"  {subject}")
+
+
+USAGE = __doc__.strip().splitlines()[0]
+
+if __name__ == "__main__":
+    STATE.mkdir(parents=True, exist_ok=True)
+    command, args = (sys.argv[1] if len(sys.argv) > 1 else ""), sys.argv[2:]
+    if command == "setup" and not args:
+        setup()
+    elif command == "on" and len(args) == 1:
+        turn_on(*args)
+    elif command == "off" and len(args) == 1:
+        turn_off(*args)
+    elif command == "status" and not args:
+        print_status()
+    elif command == "__run":
+        run_daemon()
+    else:
+        sys.exit(f"usage: {USAGE}")
