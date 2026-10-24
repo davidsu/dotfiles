@@ -40,3 +40,5 @@ Company projects (`apper/`, `cli/`, `vite-plugin/`, `weekly/`) keep their tasks 
 **A task links every Slack message behind it** (request thread, decisions, replies) as permalinks in the task file itself, not only its epic: the board shows the task alone ([WRITING.md, Slack Links](resources/WRITING.md#slack-links)).
 
 **CRITICAL**: Read [WRITING.md](resources/WRITING.md) before creating or updating any task file.
+It defines line 1 as workflow status and the optional line-2 `Bot-status:` metadata used when the
+bot's state differs; existing tasks whose title is on line 2 remain valid.

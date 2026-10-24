@@ -26,8 +26,9 @@ should show both emojis, parent epic first"). A sub-sub-effort nests the same wa
 ```
 
 The **emoji prefix** is the title's first word: the effort's emojis with no space between them,
-then one space. It opens the `# ` title line. Line 1 stays the bare status: the sync tool, the
-nvim task plugin and the hooks parse it, and the board shows the title, which is where the
+then one space. It opens the `# ` title line: line 2 in a legacy task, or line 3 when optional
+`Bot-status:` metadata occupies line 2. Line 1 stays the bare workflow status: the sync tool,
+the nvim task plugin and the hooks parse it, and the board shows the title, which is where the
 emojis are needed.
 
 ### Rules

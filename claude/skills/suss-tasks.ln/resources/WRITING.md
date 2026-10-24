@@ -13,13 +13,15 @@ Everything written into a task MUST be correct and verified. Tasks are persisten
 
 ## File Format
 
-### Status Shebang
+### Task and Bot Status
 
-Line 1 is the status — nothing else on that line. Line 2 is the title, starting with the
-effort's emoji ([ORGANIZATION.md](ORGANIZATION.md)):
+Line 1 is the task's workflow status — nothing else on that line. An optional line 2 records
+the bot's status as `Bot-status: <status>`. Without it, the bot status is the task status.
+The title follows, starting with the effort's emoji ([ORGANIZATION.md](ORGANIZATION.md)):
 
 ```
 open
+Bot-status: ready
 # 🔒 Task title here
 
 ## Summary
@@ -36,7 +38,13 @@ What this task is about...
 | `ready`       | Work done, waiting on review     |
 | `closed`      | Done                             |
 
-The task owner sets `ready` once only review remains.
+Both fields use the statuses above. Task status describes where the work sits in the human
+workflow; Bot-status describes the owner's work. For example, work waiting for human review is
+`open` + `Bot-status: ready`, so the task stays in To Do while the bot is visibly ready. Bot-status
+is metadata, not part of the rendered task body.
+
+Existing tasks without `Bot-status:` stay valid. Add it when the two statuses differ; do not add a
+redundant line only to repeat line 1.
 
 A `blocked` task states what it waits on, in one line under `## Summary`:
 `**🚫 Blocked on <who>:** <the question, with a link to where it was asked>`. sync pushes
@@ -131,7 +139,8 @@ Write suss-tasks/migrate_to_suss_tasks/create_skill.md
 
 ## Updating Status
 
-Edit line 1 of the file. That's it.
+Edit line 1 for workflow movement. Update `Bot-status:` separately when the bot's state changes;
+never move the task workflow merely to report the bot's state.
 
 ```bash
 # Mark as in-progress: change line 1 from "open" to "in_progress"
