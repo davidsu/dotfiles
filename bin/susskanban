@@ -2,19 +2,90 @@
 set -euo pipefail
 
 app_dir="${SUSSKANBAN_HOME:-$HOME/Developer/susskanban}"
+server_script="$app_dir/server/serve.mjs"
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/susskanban"
+task_dir="$PWD"
+instance_file="$state_dir/$(printf %s "$task_dir" | shasum | cut -c1-16)"
+log_file="$instance_file.log"
+
+print_help() {
+  cat <<EOF
+usage: susskanban [--help | killall]
+
+  susskanban          open the board of the current folder in the browser; starts a
+                      background server on a random port unless one already serves it
+  susskanban killall  stop every susskanban server
+  susskanban --help   show this help
+
+env:   SUSSKANBAN_HOME  app checkout (default ~/Developer/susskanban)
+       SUSSKANBAN_PORT  fixed port instead of a random one
+state: $state_dir (one pid/url file and one log per folder)
+EOF
+}
 
 is_build_stale() {
   [[ ! -f "$app_dir/dist/index.html" ]] ||
     [[ -n "$(find "$app_dir/src" "$app_dir/index.html" -newer "$app_dir/dist/index.html" -print -quit)" ]]
 }
 
-if [[ ! -d "$app_dir" ]]; then
-  echo "susskanban: no app at $app_dir (clone github.com/davidsu/susskanban there, or set SUSSKANBAN_HOME)" >&2
-  exit 1
-fi
+ensure_built() {
+  if [[ ! -d "$app_dir" ]]; then
+    echo "susskanban: no app at $app_dir (clone github.com/davidsu/susskanban there, or set SUSSKANBAN_HOME)" >&2
+    exit 1
+  fi
+  if is_build_stale; then
+    npm --prefix "$app_dir" run --silent build >&2
+  fi
+}
 
-if is_build_stale; then
-  npm --prefix "$app_dir" run --silent build >&2
-fi
+is_serving() {
+  [[ "$(ps -p "$1" -o command= 2>/dev/null || true)" == *"$server_script"* ]]
+}
 
-exec node "$app_dir/server/serve.mjs" "$PWD"
+open_running_board() {
+  [[ -f "$instance_file" ]] || return 1
+  local pid url
+  read -r pid url <"$instance_file"
+  is_serving "$pid" || return 1
+  echo "susskanban: $task_dir already at $url (pid $pid)"
+  open "$url"
+}
+
+await_url() {
+  local pid=$1 url
+  for _ in {1..100}; do
+    url="$(rg --no-config -o 'http://localhost:[0-9]+/' "$log_file" || true)"
+    [[ -n "$url" ]] && echo "$url" && return
+    is_serving "$pid" || break
+    sleep 0.1
+  done
+  echo "susskanban: server failed to start, log $log_file:" >&2
+  cat "$log_file" >&2
+  return 1
+}
+
+start_board() {
+  ensure_built
+  mkdir -p "$state_dir"
+  nohup node "$server_script" "$task_dir" </dev/null >"$log_file" 2>&1 &
+  local pid=$! url
+  url="$(await_url "$pid")"
+  echo "$pid $url" >"$instance_file"
+  echo "susskanban: $task_dir at $url (pid $pid, log $log_file)"
+}
+
+kill_all_boards() {
+  if pkill -f "$server_script"; then
+    echo "susskanban: stopped all servers"
+  else
+    echo "susskanban: no server running"
+  fi
+  rm -rf "$state_dir"
+}
+
+case "${1:-}" in
+  -h | --help) print_help ;;
+  killall) kill_all_boards ;;
+  "") open_running_board || start_board ;;
+  *) print_help >&2 && exit 1 ;;
+esac
