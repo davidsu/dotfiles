@@ -10,6 +10,8 @@ scripts/teamup-telegram status           # daemon pid, last relay, relayed chann
 ```
 
 - **Out**: agent lines tagged `[top]` or naming `@david`, as `<subject> · <handle>: text`. No backfill.
+- **Files out**: each `[file: /absolute/path]` in a relayed line is sent as a document after the
+  text (a missing or failed file is reported in the chat instead).
 - **In**: a Telegram reply to a relayed message lands on its subject as `re #<seq> …` (wakes its
   author); any other message lands on the subject that spoke last. 👍 = posted, 👎 = refused.
 - **Attachments in**: photos, voice notes, audio, video and documents are saved to

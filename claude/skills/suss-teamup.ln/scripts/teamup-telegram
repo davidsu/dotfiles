@@ -12,11 +12,13 @@ runs `auto`, which restarts the daemon when channels are relayed but it is down 
 """
 import json
 import os
+import re
 import signal
 import subprocess
 import sys
 import time
 import urllib.request
+import uuid
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -40,6 +42,7 @@ SPOKEN = ("say", "ask", "ack")
 POLL_SECONDS = 5
 MAX_ROUTES = 500
 MAX_TEXT_CHARS = 4000
+FILE_MARKER = re.compile(r"\[file: ([^\]]+)\]")
 POST_ENV = {**{key: value for key, value in os.environ.items()
                if key not in ("CLAUDE_CODE_SESSION_ID", "TEAMUP_SESSION", "CODEX_THREAD_ID", "TEAMUP_SESSION_NAME")},
             "TEAMUP_SLACK": "off"}
@@ -60,11 +63,30 @@ def log(text):
     print(f"{time.strftime('%F %T')} {text}", flush=True)
 
 
-def telegram(method, **params):
-    request = urllib.request.Request(f"https://api.telegram.org/bot{read_json(CONFIG, {})['token']}/{method}",
-                                     data=json.dumps(params).encode(), headers={"Content-Type": "application/json"})
+def bot_url(method): return f"https://api.telegram.org/bot{read_json(CONFIG, {})['token']}/{method}"
+
+
+def call_bot(request):
     with urllib.request.urlopen(request, timeout=POLL_SECONDS + 30) as response:
         return json.load(response)["result"]
+
+
+def telegram(method, **params):
+    return call_bot(urllib.request.Request(bot_url(method), data=json.dumps(params).encode(),
+                                           headers={"Content-Type": "application/json"}))
+
+
+def form_field(boundary, name, value, filename=None):
+    disposition = f'form-data; name="{name}"' + (f'; filename="{filename}"' if filename else "")
+    return f"--{boundary}\r\nContent-Disposition: {disposition}\r\n\r\n".encode() + value + b"\r\n"
+
+
+def send_document(chat_id, path):
+    boundary = uuid.uuid4().hex
+    body = (form_field(boundary, "chat_id", str(chat_id).encode())
+            + form_field(boundary, "document", path.read_bytes(), path.name) + f"--{boundary}--\r\n".encode())
+    return call_bot(urllib.request.Request(bot_url("sendDocument"), data=body,
+                                           headers={"Content-Type": f"multipart/form-data; boundary={boundary}"}))
 
 
 def fetch_updates(timeout):
@@ -92,9 +114,22 @@ def messages_for_david(lines, cursor):
             yield seq, handle, body.removesuffix(TOP_LEVEL_TAG)
 
 
+def send_file(chat_id, path):
+    try:
+        send_document(chat_id, path)
+    except (OSError, ValueError) as error:
+        telegram("sendMessage", chat_id=chat_id, text=f"(file not sent: {path}: {error})")
+
+
+def send_files(chat_id, body):
+    for path in map(Path, FILE_MARKER.findall(body)):
+        send_file(chat_id, path)
+
+
 def forward(subject, seq, handle, body):
-    sent = telegram("sendMessage", chat_id=read_json(CONFIG, {})["chat_id"],
-                    text=f"{subject} · {handle}: {body}"[:MAX_TEXT_CHARS])
+    chat_id = read_json(CONFIG, {})["chat_id"]
+    sent = telegram("sendMessage", chat_id=chat_id, text=f"{subject} · {handle}: {body}"[:MAX_TEXT_CHARS])
+    send_files(chat_id, body)
     routes = read_json(ROUTES, {})
     routes[str(sent["message_id"])] = {"subject": subject, "seq": seq}
     write_json(ROUTES, dict(list(routes.items())[-MAX_ROUTES:]))
