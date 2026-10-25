@@ -12,6 +12,8 @@ scripts/teamup-telegram status           # daemon pid, last relay, relayed chann
 - **Out**: agent lines tagged `[top]` or naming `@david`, as `<subject> · <handle>: text`. No backfill.
 - **Line breaks**: teamup lines are single-line, so write a literal `\n` (backslash, n) where the phone
   should break the line; the leading `@david ` is dropped. Short lines and bullets read far better on a phone.
+- **Copy-paste text**: `@david [copy] <text>` goes out as the text alone, with no `subject · handle` line, so
+  David can copy the whole bubble (a reply to a bank, a message for someone). Send the explanation separately.
 - **Files out**: each `[file: /absolute/path]` in a relayed line is sent as a document after the
   text (a missing or failed file is reported in the chat instead).
 - **In**: a Telegram reply to a relayed message lands on its subject as `re #<seq> …` (wakes its

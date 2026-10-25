@@ -44,6 +44,7 @@ MAX_ROUTES = 500
 MAX_TEXT_CHARS = 4000
 FILE_MARKER = re.compile(r"\[file: ([^\]]+)\]")
 LINE_BREAK = "\\n"
+COPY_TAG = "[copy] "
 POST_ENV = {**{key: value for key, value in os.environ.items()
                if key not in ("CLAUDE_CODE_SESSION_ID", "TEAMUP_SESSION", "CODEX_THREAD_ID", "TEAMUP_SESSION_NAME")},
             "TEAMUP_SLACK": "off"}
@@ -131,9 +132,16 @@ def readable(body):
     return body.replace(f"@{HUMAN} ", "", 1).replace(LINE_BREAK, "\n")
 
 
+def message_text(subject, handle, body):
+    text = readable(body)
+    if text.startswith(COPY_TAG):
+        return text.removeprefix(COPY_TAG)
+    return f"{subject} · {handle}\n{text}"
+
+
 def forward(subject, seq, handle, body):
     chat_id = read_json(CONFIG, {})["chat_id"]
-    sent = telegram("sendMessage", chat_id=chat_id, text=f"{subject} · {handle}\n{readable(body)}"[:MAX_TEXT_CHARS])
+    sent = telegram("sendMessage", chat_id=chat_id, text=message_text(subject, handle, body)[:MAX_TEXT_CHARS])
     send_files(chat_id, body)
     routes = read_json(ROUTES, {})
     routes[str(sent["message_id"])] = {"subject": subject, "seq": seq}
