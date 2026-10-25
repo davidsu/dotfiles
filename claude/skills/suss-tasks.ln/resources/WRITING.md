@@ -30,13 +30,13 @@ What this task is about...
 
 ### Valid Statuses
 
-| Status        | Meaning                          |
-|---------------|----------------------------------|
-| `open`        | Not started yet                  |
-| `in_progress` | Currently being worked on        |
-| `blocked`     | Waiting on something else        |
-| `ready`       | Work done, waiting on review     |
-| `closed`      | Done                             |
+| Status        | Meaning                      |
+| ------------- | ---------------------------- |
+| `open`        | Not started yet              |
+| `in_progress` | Currently being worked on    |
+| `blocked`     | Waiting on something else    |
+| `ready`       | Work done, waiting on review |
+| `closed`      | Done                         |
 
 Both fields use the statuses above. Task status describes where the work sits in the human
 workflow; Bot-status describes the owner's work. For example, work waiting for human review is
@@ -139,13 +139,16 @@ Write suss-tasks/migrate_to_suss_tasks/create_skill.md
 
 ## Updating Status
 
-Edit line 1 for workflow movement. Update `Bot-status:` separately when the bot's state changes;
-never move the task workflow merely to report the bot's state.
+Line 1 belongs to the human workflow; the owner reports its own work on line 2. Starting work
+leaves line 1 `open` (board: To Do) and sets `Bot-status: in_progress`:
 
-```bash
-# Mark as in-progress: change line 1 from "open" to "in_progress"
-Edit suss-tasks/effort/task.md  # old: "open" → new: "in_progress"
 ```
+open
+Bot-status: in_progress
+# 🔒 Task title here
+```
+
+Change line 1 when user's status of work in the task changes.
 
 ## Closing Tasks
 
@@ -260,11 +263,12 @@ blows the column out and makes the table unreadable (see "Markdown Table Alignme
 refs block at the **bottom of the file**.
 
 ```markdown
-| #  | Primitive                       | What it does                          |
-|----|---------------------------------|---------------------------------------|
-| P1 | data-driven URL recompute       | [reduceSandboxSlot][p1] recomputes url |
+| #   | Primitive                 | What it does                           |
+| --- | ------------------------- | -------------------------------------- |
+| P1  | data-driven URL recompute | [reduceSandboxSlot][p1] recomputes url |
 
 <!-- code refs -->
+
 [p1]: https://github.com/<owner>/<repo>/blob/<sha>/frontend/.../sandbox.reducer.ts#L90
 ```
 
@@ -279,7 +283,7 @@ opens the target — same as an inline link. GitHub renders it as a normal click
 3. **Definition format**: `[key]: <permalink>` — same rules as inline links above
 4. **Keys are unique, lowercase, and use `_` not `-` as the separator** (`r_wtfa`, `g_sync_status`) — Vim's `iskeyword` excludes `-`, so `*`/`#`/`gd`-style word motions treat a `-`-joined token as several words; `_` keeps the whole key one word so `*` on it jumps between its uses
 5. Reuse one key if the same location is cited from multiple cells
-5. Verify each `[key]` has exactly one matching `[key]: …` definition
+6. Verify each `[key]` has exactly one matching `[key]: …` definition
 
 ## Videos
 
@@ -369,9 +373,9 @@ Handles null slugs by design.
 
 ### ⚠️ Frontend — 8 Unguarded Refs
 
-| File          | Risk     | What Breaks                       |
-|---------------|----------|-----------------------------------|
-| domains.ts    | CRITICAL | 3 URL functions produce undefined |
+| File       | Risk     | What Breaks                       |
+| ---------- | -------- | --------------------------------- |
+| domains.ts | CRITICAL | 3 URL functions produce undefined |
 ```
 
 ## Authorship Footer
@@ -380,6 +384,7 @@ Every task MUST include authorship tracking at the bottom:
 
 ```markdown
 ---
+
 **Created by**: claude-code-session (2026-03-11)
 **Updated by**: architect (2026-03-11), domain-researcher (2026-03-12)
 ```
