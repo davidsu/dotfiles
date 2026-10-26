@@ -35,7 +35,7 @@ Company projects (`apper/`, `cli/`, `vite-plugin/`, `weekly/`) keep their tasks 
 
 **Every effort owns one emoji, and every title in it starts with that emoji** (`# 🔒 …`), so the b44sync board tells parallel efforts apart. A sub-effort owns its own emoji too, shown after its parent's (`# 🔒🧩 …`). Rules and how to apply it: [ORGANIZATION.md](resources/ORGANIZATION.md).
 
-**A task with a PR carries its url**: a `**PR**: [#N](https://github.com/<owner>/<repo>/pull/N)` line above the authorship footer, written by the agent who opens the PR ([WRITING.md, PR Line](resources/WRITING.md#pr-line)).
+**A task with PRs lists them** in a `## 🔗 Linked PRs` section above the authorship footer, one bullet per PR, link first, written by the agent who opens the PR ([WRITING.md, Linked PRs](resources/WRITING.md#linked-prs)).
 
 **A task links every Slack message behind it** (request thread, decisions, replies) as permalinks in the task file itself, not only its epic: the board shows the task alone ([WRITING.md, Slack Links](resources/WRITING.md#slack-links)).
 
