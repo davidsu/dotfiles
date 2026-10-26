@@ -34,7 +34,6 @@ What this task is about...
 | ------------- | ---------------------------- |
 | `open`        | Not started yet              |
 | `in_progress` | Currently being worked on    |
-| `blocked`     | Waiting on something else    |
 | `ready`       | Work done, waiting on review |
 | `closed`      | Done                         |
 
@@ -46,9 +45,11 @@ is metadata, not part of the rendered task body.
 Existing tasks without `Bot-status:` stay valid. Add it when the two statuses differ; do not add a
 redundant line only to repeat line 1.
 
-A `blocked` task states what it waits on, in one line under `## Summary`:
-`**🚫 Blocked on <who>:** <the question, with a link to where it was asked>`. sync pushes
-`blocked` as `todo` with the board's red BLOCKED badge
+Blocked is a toggle, not a status: a task waiting on someone keeps its line 1 (`open`, `in_progress`,
+…) and states what it waits on, in one line under `## Summary`:
+`**🚫 Blocked on <who>:** <the question, with a link to where it was asked>`. That line is the flag:
+sync adds the board's red BLOCKED badge to whatever column line 1 puts the card in (`in_progress` +
+the line = Doing + BLOCKED); delete the line to unblock. A `closed` task never shows the badge
 ([example](https://github.com/base44-dev/suss-tasks/blob/ba74ece/apper/restricted_mode_ui/chen_prs/g12_merge_summary_locked_steps.md?plain=1#L8)).
 
 A task may set its b44sync card Type (the card's left-side color) with a footer line next to
