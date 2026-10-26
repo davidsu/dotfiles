@@ -620,7 +620,7 @@ require_handle() {
 # never answers (and split the typing agent's read-cursor in two).
 ensure_member() { # subject
   local member; member="$(mdir "$1")/$HANDLE"
-  [ -f "$member" ] && return 0
+  [ -f "$member" ] || [ "$HANDLE" = "$HUMAN_HANDLE" ] && return 0
   [ -d "$BASE/$HANDLE" ] &&
     die "'$HANDLE' is a CHANNEL name, not a handle — you almost certainly meant --as <your handle>"
   has_spoken "$1" "$HANDLE" ||
