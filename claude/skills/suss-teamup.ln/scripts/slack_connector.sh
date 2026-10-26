@@ -80,8 +80,9 @@ connector_text_to_records() { # messages-text → one "ts␟user␟name␟via_co
     /^From: / && !collecting { author(substr($0, 7)); next }
     /^Time: / && !collecting { next }
     /^Message TS: / { ts = substr($0, 13); collecting = 1; next }
+    /^Files: / && ts != "" { s = $0; while (match(s, /\(ID: F[A-Z0-9]+/)) { text = text " [slack file " substr(s, RSTART + 5, RLENGTH - 5) "]"; s = substr(s, RSTART + RLENGTH) } collecting = 0; next }
     !collecting { next }
-    /^(Reactions|Files|Thread|Edited): / { collecting = 0; next }
+    /^(Reactions|Thread|Edited): / { collecting = 0; next }
     /^\*Sent using\* <@/ { via = 1; next }
     { text = text " " $0 }
     END { flush() }'

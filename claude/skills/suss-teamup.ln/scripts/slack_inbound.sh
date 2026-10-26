@@ -60,6 +60,27 @@ deliver_text() { # subject text attribution — a text opening with a live handl
   "$TEAMUP" say "$1" --as "$HANDLE" -- "$3$2"
 }
 
+saved_blob_path() { # slack_read_file result → the path Claude Code saved the file's bytes to
+  grep -oE '(saved to|\[Image: source:) /[^ ,]+' <<<"$1" | head -1 | sed -E 's/^(saved to|\[Image: source:) //; s/\]$//'
+}
+
+download_slack_file() { # subject file_id → local path
+  local blob dest
+  blob="$(saved_blob_path "$(connector_call slack_read_file "$(jq -nc --arg id "$2" '{file_id: $id}')")")"
+  [ -f "$blob" ] || return 1
+  dest="$BASE/$1/files/$2.${blob##*.}"
+  mkdir -p "$(dirname "$dest")" && mv "$blob" "$dest" && printf '%s' "$dest"
+}
+
+with_files_downloaded() { # subject text — each "[slack file ID]" becomes "[file: local path]", the same marker teamup-telegram uses
+  local text="$2" file_id path marker
+  for file_id in $(grep -oE '\[slack file F[A-Z0-9]+\]' <<<"$2" | sed -E 's/^\[slack file |\]$//g'); do
+    path="$(download_slack_file "$1" "$file_id")" && marker="[file: $path]" || marker="[Slack file $file_id: download failed, read it with slack_read_file]"
+    text="${text//"[slack file $file_id]"/$marker}"
+  done
+  printf '%s' "$text"
+}
+
 is_agent_direct_post() { # author_id via_connector text — an agent wrote it to Slack through the connector under the owner's name (a notice for the user, not a reply)
   [ "$1" = "$SLACK_OWNER" ] && [ "$2" = true ] && ! is_agent_code_block "$3"
 }
@@ -70,6 +91,7 @@ deliver_to_channel() { # subject text author_id author_name [origin: top|thread]
   is_bridge_notice "$text" && return 0
   is_agent_direct_post "$3" "${6:-false}" "$text" && return 0
   is_agent_code_block "$text" && return 0
+  text="$(with_files_downloaded "$1" "$text")"
   [ "${5:-thread}" = top ] && text="$text$TOP_LEVEL_TAG"
   if [ "$3" = "$SLACK_OWNER" ]; then
     touch "$(engaged_file "$1")"

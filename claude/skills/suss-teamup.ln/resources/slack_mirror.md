@@ -103,6 +103,8 @@ The daemon loops:
   and answered in the thread with the live handles. A reply opening with the word `lead` goes as an
   `ask` to each live `lead*` agent. Aiming is **not privacy**: every message lands on the shared
   channel; it only decides whose idle is blocked.
+  Files attached to a reply are downloaded (one `slack_read_file` relay each) to
+  `/tmp/suss-teamup/{subject}/files/{file_id}.{ext}` and land in the text as `[file: /path]`.
 - **retire**: a channel with no real member for 2 minutes gets the `_channel is empty_` notice, the
   bridge leaves it and drops its marker; the daemon keeps running (and makes no relay) with zero
   channels.
