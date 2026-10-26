@@ -39,5 +39,5 @@ Separate scripts in `scripts/`:
 | `teamup-focus-stress lifecycle\|focus [--skip H]` | lifecycle: hammer concurrent `on`/`off` (bridges, stale pid, kill -9, stale lock), asserting one poller or none, touches no window; focus: opens fake agent windows, so only when nobody is even watching the screen (idle ≥ 120 s cannot tell) |
 | `teamup-slack on\|off [subject] \| status \| url <subject>` | the Slack mirror (resources/slack_mirror.md) |
 | `teamup-slack-watch on <name> <subject> <handle> <query> [skip-regex] \| off <name> \| status` | Slack search hits → a teamup channel (resources/slack_mirror.md) |
-| `teamup-telegram setup \| on <subject> \| off <subject> \| status` | a channel's [top] and @david lines → David's Telegram bot chat, his replies back as `david` (resources/telegram_bridge.md) |
+| `teamup-telegram setup <bot> \| on <subject> --bot <bot> \| off <subject> \| status` | a channel's [top] and @david lines → its bot's Telegram group with David, his replies back as `david` (resources/telegram_bridge.md) |
 | `teamup-mac-notify-watch on <name> <subject> <handle> <app-bundle-id> <title> \| off <name> \| status` | macOS notifications from one app with one title → a teamup channel (resources/slack_mirror.md) |

@@ -1,13 +1,20 @@
 # The Telegram bridge
 
-`scripts/teamup-telegram` relays teamup channels to David's chat with his own Telegram bot.
+`scripts/teamup-telegram` relays teamup channels to David's Telegram through his own bots. Each bot
+lives in its own group with David (group `finances` ← bot Finances, group `homie` ← bot homie), so
+more bots can join a group later. Each relayed channel is bound to one bot.
 
 ```
-scripts/teamup-telegram setup            # once: waits for David's /start, records his chat id
-scripts/teamup-telegram on <subject>     # relay a channel (starts the daemon)
-scripts/teamup-telegram off <subject>    # stop it (the last one stops the daemon)
-scripts/teamup-telegram status           # daemon pid, last relay, relayed channels
+scripts/teamup-telegram setup <bot>               # new bot: token on stdin; then David sends /start in its group
+scripts/teamup-telegram on <subject> --bot <bot>  # relay a channel on that bot (starts the daemon)
+scripts/teamup-telegram off <subject>             # stop it (the last one stops the daemon)
+scripts/teamup-telegram status                    # daemon pid, last relay, bots, channel → bot
 ```
+
+- **New bot**: create it in @BotFather, `/setprivacy` → Disable (so it reads every group message, not
+  only commands), make a group with David and the bot, run `setup <bot>` (stop the daemon first: two
+  getUpdates on one bot conflict), and send `/start` in the group. Its profile photo can be set with
+  the Bot API's `setMyProfilePhoto`.
 
 - **Out**: agent lines tagged `[top]` or naming `@david`, as `<subject> · <handle>: text`. No backfill.
 - **Line breaks**: teamup lines are single-line, so write a literal `\n` (backslash, n) where the phone
@@ -17,7 +24,7 @@ scripts/teamup-telegram status           # daemon pid, last relay, relayed chann
 - **Files out**: each `[file: /absolute/path]` in a relayed line is sent as a document after the
   text (a missing or failed file is reported in the chat instead).
 - **In**: a Telegram reply to a relayed message lands on its subject as `re #<seq> …` (wakes its
-  author); any other message lands on the subject that spoke last. 👍 = posted, 👎 = refused.
+  author); any other message lands on the bot's channel that spoke last. 👍 = posted, 👎 = refused.
 - **Attachments in**: photos, voice notes, audio, video and documents are saved to
   `~/.local/state/suss-teamup/telegram/media/` and posted as `[<kind>: <path>]` next to the caption.
   Voice, audio and round videos are transcribed locally (whisper-cli + ffmpeg, model
@@ -30,8 +37,8 @@ scripts/teamup-telegram status           # daemon pid, last relay, relayed chann
 - Latency: three threads, so no direction waits on another. Out stat-polls each `channel.tsv` every
   0.3 s; in long-polls Telegram (10 s, retried at once after a stalled read); deliveries (downloads,
   transcription, posting) run in order on the third.
-- Only David's chat id is accepted; anything else is logged and dropped.
-- Secrets: `~/.local/share/suss-teamup/telegram.json` (`token`, `chat_id`), 0600. Not `~/.config`: here it is a symlink into this public repo.
+- Only David (`david_id`, his user id) in the bot's own group is accepted; anything else is logged and dropped.
+- Secrets: `~/.local/share/suss-teamup/telegram.json` (`david_id`, and `bots.<name>.token` / `.chat_id`), 0600. Not `~/.config`: here it is a symlink into this public repo.
 - State and log: `~/.local/state/suss-teamup/telegram/` (`daemon.log`).
 - Privacy: bot chats are Telegram cloud chats, encrypted to Telegram's servers, not end-to-end
   ([FAQ](https://telegram.org/faq)). Fine for pings and status, not for secrets.
