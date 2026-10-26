@@ -27,6 +27,9 @@ scripts/teamup-telegram status           # daemon pid, last relay, relayed chann
   is not a peer in anyone's wake rules.
 - Survives reboots: every `teamup join` runs `teamup-telegram auto`, which restarts the daemon if
   any channel is relayed. A recreated channel (shorter `channel.tsv`) restarts its cursor at 0.
+- Latency: three threads, so no direction waits on another. Out stat-polls each `channel.tsv` every
+  0.3 s; in long-polls Telegram (10 s, retried at once after a stalled read); deliveries (downloads,
+  transcription, posting) run in order on the third.
 - Only David's chat id is accepted; anything else is logged and dropped.
 - Secrets: `~/.local/share/suss-teamup/telegram.json` (`token`, `chat_id`), 0600. Not `~/.config`: here it is a symlink into this public repo.
 - State and log: `~/.local/state/suss-teamup/telegram/` (`daemon.log`).
