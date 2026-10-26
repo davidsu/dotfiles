@@ -1,4 +1,4 @@
-open
+closed
 # 🗡️ teamup-sleep `--force-with-no-mercy`: sleep the agent, no guard can refuse
 
 ## Summary
@@ -21,6 +21,10 @@ On 2026-10-26 David told an agent, in its own tab, to finish and go to sleep. It
 ## 🚚 Ship
 
 Dotfiles is David's own repo: stage only these files (the checkout holds others' uncommitted work), commit and push straight to `master`, no PR.
+
+## ✔️ Done
+
+Shipped by teamup.mercy.owner (2026-10-26): `sleep_if_allowed` takes the flag itself (`''`, `--force`, `--force-with-no-mercy`); the focused-tab refusal now names the one flag that overrides it. All three `tests/sleep_*_test.sh` pass.
 
 ---
 **Created by**: actors.owner.2 (2026-10-26), at David's ask

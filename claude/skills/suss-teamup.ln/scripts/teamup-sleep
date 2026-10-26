@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# teamup-sleep [--force] [<handle|session-id>...] — put agents to sleep (no argument: the claude session running it): hang up each one's claude, leave its channels, close its iTerm tab.
+# teamup-sleep [--force|--force-with-no-mercy] [<handle|session-id>...] — put agents to sleep (no argument: the claude session running it): hang up each one's claude, leave its channels, close its iTerm tab.
 # `leave` records how to resume it, so `teamup-wake <handle>` brings it back later.
 # Before running this, the agent has said "ready to sleep": its work is pushed and its
 # browser tabs are closed (resources/agent_lifecycle.md).
@@ -203,19 +203,23 @@ put_to_sleep() { # handle
   echo "resume with: $HERE/teamup-wake $1"
 }
 
-# The tab David is typing in is never closed, --force and self-sleep included: an owner that
-# slept itself with --force once cut David off mid-request. --force overrides only is_busy.
-sleep_if_allowed() { # handle force
+# The tab David is typing in is never closed by --force or a self-sleep: an owner that slept
+# itself with --force once cut David off mid-request. --force overrides only is_busy;
+# --force-with-no-mercy, for a sleep David himself ordered, overrides both.
+sleep_if_allowed() { # handle flag ('' | --force | --force-with-no-mercy)
   if is_focused "$1"; then
-    echo "teamup-sleep: not closing $1: David is in its tab right now (focused, typed within 120 s). No flag overrides this." >&2
-    return 1
+    [ "$2" = --force-with-no-mercy ] || {
+      echo "teamup-sleep: not closing $1: David is in its tab right now (focused, typed within 120 s). Only --force-with-no-mercy overrides this, and only when David himself ordered the sleep." >&2
+      return 1
+    }
+    echo "teamup-sleep: --force-with-no-mercy: closing $1 although David is in its tab" >&2
   fi
   if is_busy "$1"; then
-    [ "$2" = true ] || {
+    [ -n "$2" ] || {
       echo "teamup-sleep: not closing $1: it is busy (above). Ask it to say 'ready to sleep', or pass --force." >&2
       return 1
     }
-    echo "teamup-sleep: --force: closing $1 although it is busy (above)" >&2
+    echo "teamup-sleep: $2: closing $1 although it is busy (above)" >&2
   fi
   put_to_sleep "$1"
 }
@@ -224,13 +228,13 @@ sleep_if_allowed() { # handle force
 
 [ "${1:-}" = __finish ] && { stop_leave_and_close "$2" "$3" "$4"; exit 0; }
 
-force=false; [ "${1:-}" = --force ] && { force=true; shift; }
+flag=""; [[ "${1:-}" == --force || "${1:-}" == --force-with-no-mercy ]] && { flag="$1"; shift; }
 [ $# -gt 0 ] || set -- ${CLAUDE_CODE_SESSION_ID:-}
-[ $# -gt 0 ] || { echo "usage: teamup-sleep [--force] [<handle|session-id>...]  (none: this claude session)" >&2; exit 2; }
+[ $# -gt 0 ] || { echo "usage: teamup-sleep [--force|--force-with-no-mercy] [<handle|session-id>...]  (none: this claude session; --force-with-no-mercy only when David himself ordered the sleep)" >&2; exit 2; }
 status=0
 for target in "$@"; do
   handle="$(handle_of "$target")"
   [ -n "$handle" ] || { echo "teamup-sleep: no claude session $target" >&2; status=1; continue; }
-  sleep_if_allowed "$handle" "$force" || status=1
+  sleep_if_allowed "$handle" "$flag" || status=1
 done
 exit "$status"

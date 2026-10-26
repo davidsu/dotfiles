@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # teamup-sleep never closes the tab David is typing in, --force and self-sleep included:
 # fzf.terminal slept itself with --force while David typed a request into its tab (2026-10-15).
+# --force-with-no-mercy does, for a sleep David himself ordered (2026-10-26).
 set -uo pipefail
 
 readonly TESTS_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -27,11 +28,19 @@ expect "David away from the keyboard is not focus" "$(is_focused_with '✳ owner
 put_to_sleep() { echo "slept $1"; }
 is_busy() { return 1; }
 focused_title='✳ owner.x (claude)' idle_seconds=5
-expect "--force does not close the tab David is in" "$(sleep_if_allowed owner.x true 2>/dev/null)" ""
-expect "the refusal says why" "$(sleep_if_allowed owner.x true 2>&1 >/dev/null)" \
-  "teamup-sleep: not closing owner.x: David is in its tab right now (focused, typed within 120 s). No flag overrides this."
-sleep_if_allowed owner.x true >/dev/null 2>&1; expect "a refusal exits non-zero" "$?" "1"
+expect "--force does not close the tab David is in" "$(sleep_if_allowed owner.x --force 2>/dev/null)" ""
+expect "the refusal says why" "$(sleep_if_allowed owner.x --force 2>&1 >/dev/null)" \
+  "teamup-sleep: not closing owner.x: David is in its tab right now (focused, typed within 120 s). Only --force-with-no-mercy overrides this, and only when David himself ordered the sleep."
+sleep_if_allowed owner.x --force >/dev/null 2>&1; expect "a refusal exits non-zero" "$?" "1"
+expect "--force-with-no-mercy closes the tab David is in" \
+  "$(sleep_if_allowed owner.x --force-with-no-mercy 2>/dev/null)" "slept owner.x"
+expect "--force-with-no-mercy says what it overrode" "$(sleep_if_allowed owner.x --force-with-no-mercy 2>&1 >/dev/null)" \
+  "teamup-sleep: --force-with-no-mercy: closing owner.x although David is in its tab"
+is_busy() { return 0; }
+expect "--force-with-no-mercy closes a busy agent's tab David is in" \
+  "$(sleep_if_allowed owner.x --force-with-no-mercy 2>/dev/null)" "slept owner.x"
 idle_seconds=300
-expect "once David is idle, --force sleeps it" "$(sleep_if_allowed owner.x true 2>/dev/null)" "slept owner.x"
+expect "no flag does not close a busy agent" "$(sleep_if_allowed owner.x '' 2>/dev/null)" ""
+expect "once David is idle, --force sleeps a busy agent" "$(sleep_if_allowed owner.x --force 2>/dev/null)" "slept owner.x"
 
 exit "$fails"

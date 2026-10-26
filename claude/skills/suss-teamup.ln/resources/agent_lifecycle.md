@@ -27,10 +27,14 @@ $S/teamup-wake <handle|id> [--channel C] [--role ROLE] [--color COLOR] [--after 
    closed session" keeps a closed tab's process alive for ~5 s (profile default), so closing
    first left the agent running, and taking turns, after the tool had said `closed`.
 
-   It **never** closes the tab David is in: the current tab of iTerm's front window while he
-   typed in the last 120 s. No flag overrides that, self-sleep included (an owner once slept
-   itself with `--force` while David typed a request into its tab). It exits 1; tell the lead,
-   and sleep once he has moved on.
+   It does not close the tab David is in: the current tab of iTerm's front window while he
+   typed in the last 120 s. `--force` does not override that, self-sleep included (an owner once
+   slept itself with `--force` while David typed a request into its tab). It exits 1; tell the
+   lead, and sleep once he has moved on.
+
+   `--force-with-no-mercy` overrides every guard, that one included. Pass it only when David
+   himself ordered the sleep: typed in the agent's tab, or his words relayed. A lead's own
+   "go to sleep" stays `--force`.
 
    It also refuses, and says why, while:
    - David messaged it in the last 5 minutes: a prompt typed in its terminal (the last
