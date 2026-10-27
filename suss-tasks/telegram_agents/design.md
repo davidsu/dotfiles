@@ -24,3 +24,7 @@ Session transcript: `~/.claude/projects/-Users-thistooshallpass--dotfiles/aa5e25
    after all. A message starting with an agent's name goes to that agent (handle, bot name or
    @username, since Telegram's @-autocomplete gives the username, not the name). Every agent signs.
    And "pls ack asap, the silence is annoying": a rule for every agent.
+7. **Adding a bot to a group** (2026-10-27): the Bot API can't. Options were a Telegram client
+   logged in as David, taps on his phone over adb, or his Brave Telegram Web tab. David picked the
+   first: `suss-telegram-user` (Telethon, own venv) holds his session in the keychain and claim
+   adds the bot in under 2 s. Release takes the bot out of the group, owners' bots included.

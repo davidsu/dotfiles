@@ -12,7 +12,9 @@ Built: `~/.dotfiles/claude/skills/suss-telegram.ln/` (`claim`, `say`, `release`,
 `teamup-telegram` and its channel relay are gone. Every bot is polled by one daemon, which gathers
 the copies of one David message for 3 s to spot a reply (a name or mention is read from each copy alone), because a bot never sees
 another bot's message and so can't tell that David replied to it. `teamup leave --all` releases the
-agent's bot. Left: David's checks from his phone (mention, reply, broadcast).
+agent's bot, which leaves the group; claim adds it back, acting as David through Telethon
+(`scripts/suss-telegram-user`, session and api credentials in the keychain), 1.8 s end to end.
+A name nobody present answers to gets "X is not here". Left: David's checks from his phone.
 
 ---
 **Created by**: teamup.telegram (2026-10-27)

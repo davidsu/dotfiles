@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+exec "$HOME/.local/share/suss-telegram/venv/bin/python" -I "$(dirname "$0")/telegram_user.py" "$@"

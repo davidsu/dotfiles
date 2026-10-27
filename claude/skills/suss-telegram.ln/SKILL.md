@@ -15,13 +15,13 @@ a teamup handle. **No two agents use the same bot at the same time.**
 S=~/.claude/skills/suss-telegram/scripts/suss-telegram
 $S claim [<bot>] --as H [--group G] [--inbox CHANNEL]   # your bot; a free pool bot if none named
 $S say --as H -- "text"                                  # \n breaks lines, [file: /path] attaches
-$S release --as H                                        # give a pool bot back
+$S release --as H                                        # give your bot back (it leaves the group)
 $S status
 ```
 
 - Owners keep a named bot (lead.home: homie, finances: finances); others take one from the pool.
-  Every message is signed `agent: <handle>`. A claim fails unless the bot is in the group.
-  `teamup leave --all` (and so sleep) releases the bot; a pool bot leaves the group.
+  Every message is signed `agent: <handle>`. A claim puts the bot in the group, acting as David
+  (`scripts/suss-telegram-user`); `teamup leave --all`, and so sleep, releases it and takes it out.
 - David's messages land on your inbox channel as `david` (default `tg.<handle>`, or one you already
   watch): a reply to your bubble, a message starting with your handle, bot name or @username, an
   @mention of your bot, or one addressed to no one, which every agent in the group gets. A name
@@ -30,6 +30,5 @@ $S status
   short progress line. Silence annoys him.
 - Write for a phone: short lines.
 - A new bot: create it in @BotFather with `/setprivacy` off, then `$S setup <name>`, token on stdin.
-  A bot can't join a group by itself; David adds it.
 - Bot chats aren't end-to-end encrypted: never send secrets. Files David sends are saved under
   `~/.local/state/suss-telegram/media/`; voice notes arrive transcribed.

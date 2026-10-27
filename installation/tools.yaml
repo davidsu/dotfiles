@@ -32,6 +32,12 @@ tools:
     description: Tavily search MCP server for Claude Code
     requires: node
 
+  suss-telegram-venv:
+    install_type: native
+    cmd: ~/.local/share/suss-telegram/venv/bin/python
+    install_command: 'python3 -m venv ~/.local/share/suss-telegram/venv && ~/.local/share/suss-telegram/venv/bin/pip install -q telethon'
+    description: Telethon in its own venv, for suss-telegram acting as David's Telegram account (adds bots to groups)
+
   playwright-mcp:
     install_type: native
     cmd: playwright-mcp

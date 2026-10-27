@@ -25,6 +25,7 @@ import uuid
 from pathlib import Path
 
 TEAMUP = Path.home() / ".claude/skills/suss-teamup/scripts/teamup"
+AS_DAVID = Path(__file__).resolve().parent / "suss-telegram-user"
 TEAMUP_BASE = Path(os.environ.get("SUSS_TEAMUP_DIR", "/tmp/suss-teamup"))
 CONFIG = Path.home() / ".local/share/suss-telegram/config.json"
 STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "suss-telegram"
@@ -442,6 +443,14 @@ def pick_pool_bot(group):
     return next((bot for bot in free if is_in_group(bot, group)), next(iter(free), None))
 
 
+def add_to_group(bot, group):
+    username = bots()[bot]["username"]
+    added = subprocess.run([str(AS_DAVID), "add", str(config()["groups"][group]), username], capture_output=True, text=True)
+    if not is_in_group(bot, group):
+        sys.exit(f"NOT CLAIMED: could not add @{username} to group '{group}' as David "
+                 f"({(added.stderr or added.stdout).strip()[-200:]}). David adds it (Add Members), then claim again.")
+
+
 def claim(bot, handle, group, inbox):
     if held := bot_of(handle):
         sys.exit(f"'{handle}' already holds bot '{held}'")
@@ -450,8 +459,7 @@ def claim(bot, handle, group, inbox):
     if (holder := bots()[bot].get("agent")) and holder != handle:
         sys.exit(f"bot '{bot}' is held by '{holder}'")
     if not is_in_group(bot, group):
-        sys.exit(f"NOT CLAIMED: bot '{bot}' is not in group '{group}'. Ask David to add "
-                 f"@{bots()[bot]['username']} to '{group}' (Add Members), then claim again.")
+        add_to_group(bot, group)
     update_bot(bot, agent=handle, group=group, inbox=inbox or f"tg.{handle}")
     entry = bots()[bot]
     subprocess.run([str(TEAMUP), "join", entry["inbox"], "--as", handle, "--doing", "David's Telegram messages"],
@@ -468,10 +476,9 @@ def release(handle):
     if not (bot := bot_of(handle)):
         return
     entry = bots()[bot]
-    if entry.get("pool"):
-        run_guarded(leave_group, bot)
+    run_guarded(leave_group, bot)
     update_bot(bot, agent=None, inbox=None, group=None if entry.get("pool") else entry.get("group"))
-    print(f"bot '{bot}' released by '{handle}'" + (f" and left group '{entry['group']}'." if entry.get("pool") else "."))
+    print(f"bot '{bot}' released by '{handle}' and left group '{entry['group']}'.")
 
 
 def token_from_stdin():
