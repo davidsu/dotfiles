@@ -69,15 +69,12 @@ function isTapInstalled(tap: string) {
 }
 
 function installTap(tap: string) {
-  if (isTapInstalled(tap)) {
-    return true
-  }
-
   try {
-    execSync(`brew tap ${tap}`, { stdio: 'inherit' })
+    if (!isTapInstalled(tap)) execSync(`brew tap ${tap}`, { stdio: 'inherit' })
+    execSync(`brew trust ${tap}`, { stdio: 'inherit' })
     return true
   } catch {
-    log.warn(`Failed to tap ${tap}`)
+    log.warn(`Failed to tap or trust ${tap}`)
     return false
   }
 }
