@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+settings="$HOME/.claude/settings.json"
+stop_command="~/.claude/skills/suss-teamup/scripts/teamup-hook stop --require-listener"
+session_end_command="~/.claude/skills/suss-teamup/scripts/teamup-hook session-end"
+
+[ -f "$settings" ] || echo '{}' > "$settings"
+
+jq --arg stop "$stop_command" --arg end "$session_end_command" '
+  def with_hook($event; $command):
+    .hooks[$event] = (.hooks[$event] // [])
+    | if any(.hooks[$event][]?.hooks[]?; .command == $command) then .
+      else .hooks[$event] += [{hooks: [{type: "command", command: $command, timeout: 10}]}] end;
+  .hooks = (.hooks // {})
+  | with_hook("Stop"; $stop)
+  | with_hook("SessionEnd"; $end)
+' "$settings" > "$settings.tmp"
+mv "$settings.tmp" "$settings"
+echo "teamup Stop/SessionEnd hooks present in $settings"

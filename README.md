@@ -47,6 +47,7 @@ cd ~/.dotfiles
 5. ⚙️ Apply macOS system defaults (disable animations, fast keyboard repeat, etc.)
 6. 🎨 Install Neovim plugins via lazy.nvim
 7. 🤖 Install Claude Code via native installer (auto-updates enabled)
+8. 🪝 Wire the teamup `Stop`/`SessionEnd` hooks into `~/.claude/settings.json` (`bin/claude-teamup-hooks`, safe to re-run). `settings.json` is machine-local, not symlinked: without these hooks a Claude agent can go idle with unread teamup messages and nobody wakes it
 
 ---
 

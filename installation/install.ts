@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { spawn } from 'child_process'
+import { spawn, spawnSync } from 'child_process'
 import { log } from './logging'
 import { isMacOS, getMacOSVersion, hasCommand } from './system'
 import { loadTools, installTool, installNativeTool, getToolsByType, installAllTaps, batchInstall, runCaskPostInstall } from './tools'
@@ -133,6 +133,9 @@ async function main() {
       installNativeTool(name, tool)
     }
   }
+
+  log.info('Phase 7: Wiring teamup hooks into Claude Code settings...')
+  spawnSync(`${process.env.HOME}/.dotfiles/bin/claude-teamup-hooks`, { stdio: 'inherit' })
 
   // Verification
   const failedPackages = await verifyAllTools()
