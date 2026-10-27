@@ -28,3 +28,6 @@ __pycache__/
 
 # higgsfield CLI runtime config + credentials (created by the CLI)
 config.ln/higgsfield/
+
+# per-machine suss-teamup switches (slack=off); ~/.config is a symlink into config.ln
+config.ln/suss-teamup/local.conf
