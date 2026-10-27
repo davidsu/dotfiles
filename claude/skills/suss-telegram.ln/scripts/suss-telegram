@@ -232,7 +232,8 @@ def named_bots(message):
 
 
 def is_from_david(bot, message):
-    return message["chat"]["id"] == chat_of(bot) and message.get("from", {}).get("id") == config()["david_id"]
+    in_its_group = bots()[bot].get("group") and message["chat"]["id"] == chat_of(bot)
+    return in_its_group and message.get("from", {}).get("id") == config()["david_id"]
 
 
 def attachment_of(message):
@@ -288,6 +289,8 @@ def deliver(bot, message):
     posted = subprocess.run([str(TEAMUP), "say", entry["inbox"], "--as", HUMAN, "--", text_of(bot, message)],
                             env=POST_ENV, capture_output=True, text=True)
     react(bot, message, "👍" if posted.returncode == 0 else "👎")
+    log(f"{bot} → {entry['inbox']}: {'posted' if posted.returncode == 0 else 'REFUSED'}, "
+        f"{time.time() - message['date']:.1f} s after David sent it")
 
 
 def same_message_key(message):
