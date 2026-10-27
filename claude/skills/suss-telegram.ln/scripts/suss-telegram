@@ -43,7 +43,7 @@ RETRY_DELAY_SECONDS = 1
 BOT_CHECK_SECONDS = 5
 MAX_TEXT_CHARS = 4000
 QUOTE_CHARS = 80
-GATHER_SECONDS = 1.5
+GATHER_SECONDS = 3
 LONG_PARAGRAPH_CHARS = 160
 FILE_MARKER = re.compile(r"\[file: ([^\]]+)\]")
 LINE_BREAK = "\\n"
@@ -210,13 +210,18 @@ def replied_bot_id(message):
     return replied_to["id"] if replied_to.get("is_bot") else None
 
 
+def held_bots_in(chat_id): return {bot for bot in held_bots() if chat_of(bot) == chat_id}
+
+
+def named_bots(message):
+    return (mentioned_bots(message) | {prefixed_bot(message)}) & held_bots_in(message["chat"]["id"])
+
+
 def addressees(copies):
     replied = {replied_bot_id(message) for _, message in copies} - {None}
     if replied:
         return [(bot, message) for bot, message in copies if bot_user_id(bot) in replied]
-    mentioned = set().union(*(mentioned_bots(message) | {prefixed_bot(message)} - {None} for _, message in copies))
-    mentioned &= {bot for bot, _ in copies}
-    return [(bot, message) for bot, message in copies if not mentioned or bot in mentioned]
+    return [(bot, message) for bot, message in copies if not (named := named_bots(message)) or bot in named]
 
 
 def is_from_david(bot, message):
