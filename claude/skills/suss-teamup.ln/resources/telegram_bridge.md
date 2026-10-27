@@ -1,8 +1,8 @@
 # The Telegram bridge
 
-`scripts/teamup-telegram` relays teamup channels to David's Telegram through his own bots. Each bot
-lives in its own group with David (group `finances` ← bot Finances, group `homie` ← bot homie), so
-more bots can join a group later. Each relayed channel is bound to one bot.
+`scripts/teamup-telegram` relays teamup channels to David's Telegram through his own bots, in groups
+with David. Each relayed channel is bound to one bot; several bots can share a group (today bots
+homie and Finances both sit in group `homie`).
 
 ```
 scripts/teamup-telegram setup <bot>               # new bot: token on stdin; then David sends /start in its group
@@ -15,16 +15,24 @@ scripts/teamup-telegram status                    # daemon pid, last relay, bots
   only commands), make a group with David and the bot, run `setup <bot>` (stop the daemon first: two
   getUpdates on one bot conflict), and send `/start` in the group. Its profile photo can be set with
   the Bot API's `setMyProfilePhoto`.
+- **Another bot into an existing group**: add it to the group in Telegram (privacy mode off first),
+  then set its `chat_id` in `telegram.json` to that group's id and restart the daemon.
 
-- **Out**: agent lines tagged `[top]` or naming `@david`, as `<subject> · <handle>: text`. No backfill.
+- **Out**: agent lines tagged `[top]` or naming `@david`, sent by the channel's bot as: the channel in
+  italics, a blank line, the text, and a last line `agent: <handle>` in bold italics whenever the
+  group's channels hold more than one agent (as the WhatsApp bridge signs). No backfill.
 - **Line breaks**: teamup lines are single-line, so write a literal `\n` (backslash, n) where the phone
-  should break the line; the leading `@david ` is dropped. Short lines and bullets read far better on a phone.
-- **Copy-paste text**: `@david [copy] <text>` goes out as the text alone, with no `subject · handle` line, so
+  should break the line; the leading `@david ` is dropped. The bridge also puts each `(1)`, `(2)` item
+  in its own paragraph and, in a paragraph over 160 characters, each sentence on its own line. Still,
+  write short: a phone bubble is narrow.
+- **Copy-paste text**: `@david [copy] <text>` goes out as the text alone, with no channel or signature, so
   David can copy the whole bubble (a reply to a bank, a message for someone). Send the explanation separately.
 - **Files out**: each `[file: /absolute/path]` in a relayed line is sent as a document after the
   text (a missing or failed file is reported in the chat instead).
 - **In**: a Telegram reply to a relayed message lands on its subject as `re #<seq> …` (wakes its
-  author); any other message lands on the bot's channel that spoke last. 👍 = posted, 👎 = refused.
+  author); any other message lands on the bot's channel that spoke last. In a group with several bots,
+  a reply belongs to the bot replied to and anything else to the bot that posted last in that group.
+  👍 = posted, 👎 = refused.
 - **Attachments in**: photos, voice notes, audio, video and documents are saved to
   `~/.local/state/suss-teamup/telegram/media/` and posted as `[<kind>: <path>]` next to the caption.
   Voice, audio and round videos are transcribed locally (whisper-cli + ffmpeg, model

@@ -12,6 +12,7 @@ and records the chat id. The daemon tails channel.tsv with its own cursor and ne
 is not a peer for anyone's wake rules. Every `teamup join` runs `auto`, which restarts the daemon
 when channels are relayed but it is down (after a reboot).
 """
+import html
 import json
 import os
 import queue
@@ -53,6 +54,9 @@ MAX_TEXT_CHARS = 4000
 FILE_MARKER = re.compile(r"\[file: ([^\]]+)\]")
 LINE_BREAK = "\\n"
 COPY_TAG = "[copy] "
+LONG_PARAGRAPH_CHARS = 160
+NUMBERED_ITEM = re.compile(r"\s+(?=\(\d+\)\s)")
+SENTENCE_BREAK = re.compile(r"(?<=[.!?:])\s+(?=\S)")
 POST_ENV = {**{key: value for key, value in os.environ.items()
                if key not in ("CLAUDE_CODE_SESSION_ID", "TEAMUP_SESSION", "CODEX_THREAD_ID", "TEAMUP_SESSION_NAME")},
             "TEAMUP_SLACK": "off"}
@@ -94,6 +98,15 @@ def offset_file(bot): return STATE / f"{bot}.offset"
 
 
 def routes_file(bot): return STATE / f"{bot}.routes.json"
+
+
+def last_bot_file(chat_id): return STATE / f"{chat_id}.last_bot"
+
+
+def bot_user_id(bot): return int(bots()[bot]["token"].split(":")[0])
+
+
+def bots_in(chat_id): return sorted(bot for bot, config in bots().items() if config.get("chat_id") == chat_id)
 
 
 def bot_url(bot, method): return f"https://api.telegram.org/bot{bots()[bot]['token']}/{method}"
@@ -164,11 +177,30 @@ def readable(body):
     return body.replace(f"@{HUMAN} ", "", 1).replace(LINE_BREAK, "\n")
 
 
-def message_text(subject, handle, body):
+def lines_of(paragraph):
+    return SENTENCE_BREAK.sub("\n", paragraph) if len(paragraph) > LONG_PARAGRAPH_CHARS else paragraph
+
+
+def airy(text):
+    paragraphs = NUMBERED_ITEM.sub("\n\n", text).split("\n\n")
+    return "\n\n".join(lines_of(paragraph.strip()) for paragraph in paragraphs)
+
+
+def agents_on(subject):
+    members = BASE / subject / "members"
+    return {member.name for member in members.iterdir() if member.name != HUMAN} if members.is_dir() else set()
+
+
+def agents_in_chat(chat_id):
+    return set().union(*(agents_on(subject) for subject, bot in relayed_channels().items() if bot in bots_in(chat_id)))
+
+
+def message_html(subject, handle, body, is_signed):
     text = readable(body)
     if text.startswith(COPY_TAG):
-        return text.removeprefix(COPY_TAG)
-    return f"{subject} · {handle}\n{text}"
+        return html.escape(text.removeprefix(COPY_TAG)[:MAX_TEXT_CHARS])
+    signature = f"\n\n<b><i>agent: {html.escape(handle)}</i></b>" if is_signed else ""
+    return f"<i>{html.escape(subject)}</i>\n\n{html.escape(airy(text)[:MAX_TEXT_CHARS])}{signature}"
 
 
 def remember_route(bot, message_id, subject, seq):
@@ -178,7 +210,10 @@ def remember_route(bot, message_id, subject, seq):
 
 
 def forward(bot, subject, seq, handle, body):
-    sent = telegram(bot, "sendMessage", chat_id=chat_of(bot), text=message_text(subject, handle, body)[:MAX_TEXT_CHARS])
+    chat_id = chat_of(bot)
+    text = message_html(subject, handle, body, is_signed=len(agents_in_chat(chat_id)) > 1)
+    sent = telegram(bot, "sendMessage", chat_id=chat_id, text=text, parse_mode="HTML")
+    write_json(last_bot_file(chat_id), bot)
     send_files(bot, body)
     remember_route(bot, sent["message_id"], subject, seq)
     record_relay("out", subject)
@@ -270,11 +305,22 @@ def is_from_david(bot, message):
     return message["chat"]["id"] == chat_of(bot) and message.get("from", {}).get("id") == david_id()
 
 
+def bot_spoken_last_in(chat_id):
+    return read_json(last_bot_file(chat_id), None) or next(iter(bots_in(chat_id)), None)
+
+
+def is_addressed_to(bot, message):
+    replied_to = message.get("reply_to_message", {}).get("from", {})
+    if replied_to.get("is_bot"):
+        return replied_to["id"] == bot_user_id(bot)
+    return bot_spoken_last_in(message["chat"]["id"]) == bot
+
+
 def route_message(bot, message):
-    if is_from_david(bot, message):
-        deliver_reply(bot, message)
-    else:
+    if not is_from_david(bot, message):
         log(f"{bot}: dropped a message from chat {message['chat']['id']}")
+    elif is_addressed_to(bot, message):
+        deliver_reply(bot, message)
 
 
 def run_guarded(step, *args):
