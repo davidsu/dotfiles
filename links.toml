@@ -43,6 +43,9 @@
 "claude/skills/suss-diff.ln" = [
   "~/.claude/skills/suss-diff",
 ]
+"claude/skills/suss-kanban.ln" = [
+  "~/.claude/skills/suss-kanban",
+]
 "claude/skills/suss-proof.ln" = [
   "~/.claude/skills/suss-proof",
 ]
