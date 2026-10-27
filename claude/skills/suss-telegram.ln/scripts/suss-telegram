@@ -25,6 +25,7 @@ import uuid
 from pathlib import Path
 
 TEAMUP = Path.home() / ".claude/skills/suss-teamup/scripts/teamup"
+TEAMUP_BASE = Path(os.environ.get("SUSS_TEAMUP_DIR", "/tmp/suss-teamup"))
 CONFIG = Path.home() / ".local/share/suss-telegram/config.json"
 STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "suss-telegram"
 PID = STATE / "daemon.pid"
@@ -43,7 +44,8 @@ RETRY_DELAY_SECONDS = 1
 BOT_CHECK_SECONDS = 5
 MAX_TEXT_CHARS = 4000
 QUOTE_CHARS = 80
-GATHER_SECONDS = 3
+BROADCAST_WAIT_SECONDS = 3
+DECIDED_MEMORY_SECONDS = 120
 LONG_PARAGRAPH_CHARS = 160
 FILE_MARKER = re.compile(r"\[file: ([^\]]+)\]")
 LINE_BREAK = "\\n"
@@ -210,18 +212,22 @@ def replied_bot_id(message):
     return replied_to["id"] if replied_to.get("is_bot") else None
 
 
-def held_bots_in(chat_id): return {bot for bot in held_bots() if chat_of(bot) == chat_id}
+def is_listening(bot):
+    entry = bots()[bot]
+    return (TEAMUP_BASE / entry["inbox"] / "members" / entry["agent"]).exists()
+
+
+def present_bots_in(chat_id):
+    return {bot for bot in held_bots() if chat_of(bot) == chat_id and is_listening(bot)}
+
+
+def first_word(message):
+    words = (message.get("text") or message.get("caption") or "").split(maxsplit=1)
+    return words[0].strip("@:,") if words else ""
 
 
 def named_bots(message):
-    return (mentioned_bots(message) | {prefixed_bot(message)}) & held_bots_in(message["chat"]["id"])
-
-
-def addressees(copies):
-    replied = {replied_bot_id(message) for _, message in copies} - {None}
-    if replied:
-        return [(bot, message) for bot, message in copies if bot_user_id(bot) in replied]
-    return [(bot, message) for bot, message in copies if not (named := named_bots(message)) or bot in named]
+    return mentioned_bots(message) | {prefixed_bot(message)} - {None}
 
 
 def is_from_david(bot, message):
@@ -289,17 +295,69 @@ def same_message_key(message):
     return message["chat"]["id"], message["date"], message.get("text") or message.get("caption"), file_id
 
 
-def from_david_only(copies):
-    for bot, message in copies:
-        if is_from_david(bot, message):
-            yield bot, message
-        else:
-            log(f"{bot}: dropped a message from chat {message['chat']['id']}")
+def say_not_here(bot, message):
+    telegram(bot, "sendMessage", chat_id=message["chat"]["id"], reply_to_message_id=message["message_id"],
+             text=f"{first_word(message) or 'They'} is not here.")
 
 
-def route_copies(copies):
-    for bot, message in addressees(list(from_david_only(copies))):
-        run_guarded(deliver, bot, message)
+class Dispatcher:
+    def __init__(self):
+        self.waiting = {}
+        self.decided = {}
+
+    def take(self, bot, message):
+        if not is_from_david(bot, message):
+            return log(f"{bot}: dropped a message from chat {message['chat']['id']}")
+        key = same_message_key(message)
+        verdict = self.decided.get(key, (None,))[0]
+        if verdict == "everyone":
+            return run_guarded(deliver, bot, message)
+        if verdict:
+            return
+        if replied := replied_bot_id(message):
+            return self.decide_reply(key, bot, message, replied)
+        if named := named_bots(message):
+            return self.decide_named(key, bot, message, named)
+        self.wait_for_siblings(key, bot, message)
+
+    def decide_reply(self, key, bot, message, replied):
+        if replied == bot_user_id(bot):
+            self.settle(key, "reply")
+            run_guarded(deliver, bot, message)
+
+    def decide_named(self, key, bot, message, named):
+        present = named & present_bots_in(message["chat"]["id"])
+        if bot in present:
+            run_guarded(deliver, bot, message)
+        elif not present:
+            self.settle(key, "absent")
+            run_guarded(say_not_here, bot, message)
+
+    def wait_for_siblings(self, key, bot, message):
+        copies = self.waiting.setdefault(key, {"deadline": time.monotonic() + BROADCAST_WAIT_SECONDS, "copies": []})
+        copies["copies"].append((bot, message))
+        if {bot for bot, _ in copies["copies"]} >= present_bots_in(message["chat"]["id"]):
+            self.deliver_to_everyone(key)
+
+    def settle(self, key, verdict):
+        self.waiting.pop(key, None)
+        self.decided[key] = (verdict, time.monotonic())
+
+    def deliver_to_everyone(self, key):
+        copies = self.waiting[key]["copies"]
+        self.settle(key, "everyone")
+        for bot, message in copies:
+            run_guarded(deliver, bot, message)
+
+    def next_timeout(self):
+        deadlines = [copies["deadline"] for copies in self.waiting.values()]
+        return max(0, min(deadlines) - time.monotonic()) if deadlines else None
+
+    def expire(self):
+        now = time.monotonic()
+        for key in [key for key, copies in self.waiting.items() if copies["deadline"] <= now]:
+            self.deliver_to_everyone(key)
+        self.decided = {key: value for key, value in self.decided.items() if now - value[1] < DECIDED_MEMORY_SECONDS}
 
 
 def run_guarded(step, *args):
@@ -322,28 +380,14 @@ def receive_forever(bot, deliveries):
         run_guarded(queue_messages, bot, deliveries)
 
 
-def gather(deliveries):
-    batch = [deliveries.get()]
-    deadline = time.monotonic() + GATHER_SECONDS
-    while (left := deadline - time.monotonic()) > 0:
-        try:
-            batch.append(deliveries.get(timeout=left))
-        except queue.Empty:
-            break
-    return batch
-
-
-def copies_of_each_message(batch):
-    grouped = {}
-    for bot, message in batch:
-        grouped.setdefault(same_message_key(message), []).append((bot, message))
-    return grouped.values()
-
-
 def deliver_forever(deliveries):
+    dispatcher = Dispatcher()
     while True:
-        for copies in copies_of_each_message(gather(deliveries)):
-            route_copies(copies)
+        try:
+            run_guarded(dispatcher.take, *deliveries.get(timeout=dispatcher.next_timeout()))
+        except queue.Empty:
+            pass
+        dispatcher.expire()
 
 
 def start_thread(loop, *args):
@@ -385,38 +429,49 @@ def start_daemon():
     PID.write_text(str(process.pid))
 
 
-def is_in_group(bot):
+def is_in_group(bot, group):
     try:
-        member = telegram(bot, "getChatMember", chat_id=chat_of(bot), user_id=bot_user_id(bot))
+        member = telegram(bot, "getChatMember", chat_id=config()["groups"][group], user_id=bot_user_id(bot))
     except urllib.error.HTTPError:
         return False
     return member["status"] in ("member", "administrator")
 
 
+def pick_pool_bot(group):
+    free = free_pool_bots()
+    return next((bot for bot in free if is_in_group(bot, group)), next(iter(free), None))
+
+
 def claim(bot, handle, group, inbox):
     if held := bot_of(handle):
         sys.exit(f"'{handle}' already holds bot '{held}'")
-    bot = bot or next(iter(free_pool_bots()), None) or sys.exit("no free bot in the pool")
+    group = group or (bot and bots()[bot].get("group")) or sys.exit(f"pass --group <{' | '.join(config()['groups'])}>")
+    bot = bot or pick_pool_bot(group) or sys.exit("no free bot in the pool")
     if (holder := bots()[bot].get("agent")) and holder != handle:
         sys.exit(f"bot '{bot}' is held by '{holder}'")
-    group = group or bots()[bot].get("group") or sys.exit(f"pass --group <{' | '.join(config()['groups'])}>")
+    if not is_in_group(bot, group):
+        sys.exit(f"NOT CLAIMED: bot '{bot}' is not in group '{group}'. Ask David to add "
+                 f"@{bots()[bot]['username']} to '{group}' (Add Members), then claim again.")
     update_bot(bot, agent=handle, group=group, inbox=inbox or f"tg.{handle}")
     entry = bots()[bot]
     subprocess.run([str(TEAMUP), "join", entry["inbox"], "--as", handle, "--doing", "David's Telegram messages"],
                    env={**os.environ, "TEAMUP_SLACK": "off"}, capture_output=True)
     start_daemon()
-    print(f"'{handle}' speaks as bot '{bot}' (@{entry['username']}) in group '{entry['group']}'; "
+    print(f"'{handle}' speaks as bot '{bot}' (@{entry['username']}) in group '{group}'; "
           f"David's messages land on channel '{entry['inbox']}'.")
-    if not is_in_group(bot):
-        print(f"bot '{bot}' is not in group '{entry['group']}' yet: David (or an agent driving his Telegram) adds "
-              f"@{entry['username']} to it.")
+
+
+def leave_group(bot): telegram(bot, "leaveChat", chat_id=chat_of(bot))
 
 
 def release(handle):
     if not (bot := bot_of(handle)):
         return
-    update_bot(bot, agent=None, inbox=None, group=None if bots()[bot].get("pool") else bots()[bot].get("group"))
-    print(f"bot '{bot}' released by '{handle}'.")
+    entry = bots()[bot]
+    if entry.get("pool"):
+        run_guarded(leave_group, bot)
+    update_bot(bot, agent=None, inbox=None, group=None if entry.get("pool") else entry.get("group"))
+    print(f"bot '{bot}' released by '{handle}'" + (f" and left group '{entry['group']}'." if entry.get("pool") else "."))
 
 
 def token_from_stdin():

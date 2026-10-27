@@ -20,10 +20,12 @@ $S status
 ```
 
 - Owners keep a named bot (lead.home: homie, finances: finances); others take one from the pool.
-  Every message is signed `agent: <handle>`. `teamup leave --all` releases the bot.
+  Every message is signed `agent: <handle>`. A claim fails unless the bot is in the group.
+  `teamup leave --all` (and so sleep) releases the bot; a pool bot leaves the group.
 - David's messages land on your inbox channel as `david` (default `tg.<handle>`, or one you already
   watch): a reply to your bubble, a message starting with your handle, bot name or @username, an
-  @mention of your bot, or one addressed to no one, which every agent in the group gets.
+  @mention of your bot, or one addressed to no one, which every agent in the group gets. A name
+  nobody present answers to gets "X is not here" in the group.
 - Ack every message from David at once, one line, before working; then the result. Long work gets a
   short progress line. Silence annoys him.
 - Write for a phone: short lines.
