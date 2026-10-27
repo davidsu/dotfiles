@@ -7,9 +7,12 @@ David asked for 15 spare bots with plain-word names he can tag (line 2391 of the
 [design.md](design.md): "something human that I can easily tag … not bot1 bot2"). Created from his
 Telegram Web through @BotFather, privacy mode off, names amber … otter.
 
-**🚫 Blocked on BotFather:** after 4 bots it answered "too many attempts. Please try again in
-56839 seconds" (2026-10-27 06:15, so until 22:03). Next: ember falcon garnet harbor iris
-juniper kestrel lantern maple nutmeg otter.
+After 4 bots BotFather answered "too many attempts. Please try again in 56839 seconds"
+(2026-10-27 06:15, so until 22:03). The rest create themselves: `suss-telegram-user fill-pool`
+(Telethon, as David, talking to @BotFather) runs from the LaunchAgent
+`~/Library/LaunchAgents/com.susskind.suss-telegram-fill-pool.plist` at :05 every hour, never
+before the wait BotFather named (`~/.local/state/suss-telegram/botfather_next_try`), and removes
+itself once the pool holds 15. Log: `~/.local/state/suss-telegram/fill_pool.log`.
 
 | Bot   | Username                 | Taken by   |
 |-------|--------------------------|------------|
