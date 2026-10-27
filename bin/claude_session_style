@@ -3,8 +3,9 @@
 // One dialog: type a name, ↑/↓ cycles /color's palette, Enter applies.
 // Both start on the session's current choices (user-chosen name; last /color, else a random pick).
 // An empty or unchanged name applies only the color. Types /rename and /color into the tab (focus-free).
-// Acts on any Claude tab ("… (claude)"): /rename and /color apply immediately even mid-turn. Refuses while
-// Claude shows a choice (permission prompt etc.), since the typed Enter would pick its highlighted option.
+// Acts on any Claude tab (a claude process on its tty, found by its ~/.claude/sessions record): /rename and
+// /color apply immediately even mid-turn. Refuses while Claude shows a choice (permission prompt etc.),
+// since the typed Enter would pick its highlighted option.
 // Acts on a Codex tab ("… (codex)") only when idle (no spinner).
 // Both get the iTerm tab color via iterm_tab_style; claude also gets /color.
 // Any other tab (a plain shell) gets the tab color and the name as its tab title.
@@ -28,8 +29,6 @@ const swatchFor = (color) => ({
 
 const PENDING_CHOICE_HINT = 'Esc to cancel';
 const SCREEN_TAIL_LINES = 15;
-
-const isClaude = (session) => session.name().endsWith('(claude)');
 
 const screenTail = (session) => session.contents().trimEnd().split('\n').slice(-SCREEN_TAIL_LINES).join('\n');
 
@@ -62,10 +61,9 @@ const userChosenName = (record) => (record && record.nameSource !== 'derived' &&
 const lastChosenColor = (record) =>
   record ? shell(`grep -oh '"agentColor":"[a-z]*"' ${TRANSCRIPTS_DIR}/*/${record.sessionId}.jsonl 2>/dev/null | tail -1 | cut -d'"' -f4`) : '';
 
-const localStyle = (session) => {
-  const record = pidsOnTty(session).map(readSessionRecord).find(Boolean);
-  return { name: userChosenName(record), color: lastChosenColor(record) };
-};
+const claudeRecordOnTty = (session) => pidsOnTty(session).map(readSessionRecord).find(Boolean);
+
+const savedStyle = (claudeRecord) => ({ name: userChosenName(claudeRecord), color: lastChosenColor(claudeRecord) });
 
 const isCodex = (session) => session.name().endsWith('(codex)');
 
@@ -201,8 +199,8 @@ const styleShell = (session, style) => (style.name ? colorAndTitleTab(session, s
 
 const NO_STYLE = { name: '', color: '' };
 
-const styleFor = (session, claudeTab) => {
-  if (claudeTab) return styleClaude;
+const styleFor = (session, claudeRecord) => {
+  if (claudeRecord) return styleClaude;
   if (!isCodex(session)) return styleShell;
   return isIdleCodex(session) ? styleCodex : null;
 };
@@ -213,17 +211,17 @@ function run() {
   const iterm = Application('iTerm2');
   const target = iterm.currentWindow().currentSession();
   console.log(`${new Date().toISOString()} invoked on ${JSON.stringify(target.name())}`);
-  const claudeTab = isClaude(target);
-  if (claudeTab && isAwaitingChoice(target)) {
+  const claudeRecord = claudeRecordOnTty(target);
+  if (claudeRecord && isAwaitingChoice(target)) {
     runFocusedModal(showAlert('Claude is waiting on a choice', 'Answer it first: the typed Enter would pick the highlighted option.'));
     return;
   }
-  const applyStyle = styleFor(target, claudeTab);
+  const applyStyle = styleFor(target, claudeRecord);
   if (!applyStyle) {
     runFocusedModal(showAlert('Codex is busy', 'Wait for the Codex tab to return to its prompt.'));
     return;
   }
-  const style = promptStyle(applyStyle === styleShell ? NO_STYLE : localStyle(target));
+  const style = promptStyle(applyStyle === styleShell ? NO_STYLE : savedStyle(claudeRecord));
   iterm.activate();
   if (!style) return;
   applyStyle(target, style);
