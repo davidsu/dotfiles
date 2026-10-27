@@ -231,6 +231,10 @@ def named_bots(message):
     return mentioned_bots(message) | {prefixed_bot(message)} - {None}
 
 
+def is_said(message):
+    return bool(message.get("text") or message.get("caption") or attachment_of(message)[0])
+
+
 def is_from_david(bot, message):
     in_its_group = bots()[bot].get("group") and message["chat"]["id"] == chat_of(bot)
     return in_its_group and message.get("from", {}).get("id") == config()["david_id"]
@@ -327,6 +331,8 @@ class Dispatcher:
         self.decided = {}
 
     def take(self, bot, message):
+        if not is_said(message):
+            return
         if not is_from_david(bot, message):
             return log(f"{bot}: dropped a message from chat {message['chat']['id']}")
         key = same_message_key(message)
