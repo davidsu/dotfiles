@@ -62,6 +62,10 @@
   "~/.claude/skills/suss-teamup",
   "~/.agents/skills/suss-teamup",
 ]
+"claude/skills/suss-telegram.ln" = [
+  "~/.claude/skills/suss-telegram",
+  "~/.agents/skills/suss-telegram",
+]
 
 # codex
 "codex/hooks.ln.json" = [

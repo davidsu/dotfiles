@@ -154,9 +154,15 @@ mirror_to_slack_unless_bridge() { # subject handle
   return 0
 }
 
-revive_telegram_bridge() { # after a reboot, the first join restarts the relay of every channel it was relaying; tests' private BASE never does
-  local bridge; bridge="$(dirname "$0")/teamup-telegram"
-  [ "$BASE" = /tmp/suss-teamup ] && [ -x "$bridge" ] && ( "$bridge" auto >/dev/null 2>&1 & )
+TELEGRAM="$HOME/.claude/skills/suss-telegram/scripts/suss-telegram"
+
+revive_telegram() { # after a reboot, the first join restarts the poller of the bots agents hold; tests' private BASE never does
+  [ "$BASE" = /tmp/suss-teamup ] && [ -x "$TELEGRAM" ] && ( "$TELEGRAM" auto >/dev/null 2>&1 & )
+  return 0
+}
+
+release_telegram_bot() { # handle — an agent leaving everything gives its pool bot back
+  [ "$BASE" = /tmp/suss-teamup ] && [ -x "$TELEGRAM" ] && "$TELEGRAM" release --as "$1"
   return 0
 }
 
@@ -690,7 +696,7 @@ case "$CMD" in
     [ -f "$(cursor "$SUBJECT" "$HANDLE")" ] && show_backlog_since_left "$SUBJECT" "$HANDLE"
     mark_read_through_own_join "$SUBJECT" "$HANDLE"
     mirror_to_slack_unless_bridge "$SUBJECT" "$HANDLE"
-    revive_telegram_bridge
+    revive_telegram
     echo "joined '$SUBJECT' as '$HANDLE'."
     echo "--- on channel now ---"
     "$0" roster "$SUBJECT"
@@ -930,6 +936,7 @@ case "$CMD" in
       [ -n "$subjects" ] || { echo "no channels."; exit 0; }
       while read -r s; do leave_channel "$s" "$HANDLE"; done <<< "$subjects"
       unregister_handle "$HANDLE"
+      release_telegram_bot "$HANDLE"
     else
       [ -n "$SUBJECT" ] || usage
       leave_channel "$SUBJECT" "$HANDLE"
