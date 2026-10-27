@@ -28,3 +28,5 @@ Session transcript: `~/.claude/projects/-Users-thistooshallpass--dotfiles/aa5e25
    logged in as David, taps on his phone over adb, or his Brave Telegram Web tab. David picked the
    first: `suss-telegram-user` (Telethon, own venv) holds his session in the keychain and claim
    adds the bot in under 2 s. Release takes the bot out of the group, owners' bots included.
+8. **Tests go to Lab** (2026-10-27, David: "you guys should likely be driving this test in a
+   throway channel instead of trashing Home and the cleaning it"). Group Lab exists for that.

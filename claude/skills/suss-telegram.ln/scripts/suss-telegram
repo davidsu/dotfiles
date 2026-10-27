@@ -304,6 +304,23 @@ def say_not_here(bot, message):
              text=f"{first_word(message) or 'They'} is not here.")
 
 
+DELIVERY_QUEUES = {}
+DELIVERY_QUEUES_LOCK = threading.Lock()
+
+
+def deliver_in_order(bot_queue):
+    while True:
+        run_guarded(deliver, *bot_queue.get())
+
+
+def deliver_soon(bot, message):
+    with DELIVERY_QUEUES_LOCK:
+        if bot not in DELIVERY_QUEUES:
+            DELIVERY_QUEUES[bot] = queue.Queue()
+            start_thread(deliver_in_order, DELIVERY_QUEUES[bot])
+    DELIVERY_QUEUES[bot].put((bot, message))
+
+
 class Dispatcher:
     def __init__(self):
         self.waiting = {}
@@ -315,7 +332,7 @@ class Dispatcher:
         key = same_message_key(message)
         verdict = self.decided.get(key, (None,))[0]
         if verdict == "everyone":
-            return run_guarded(deliver, bot, message)
+            return deliver_soon(bot, message)
         if verdict:
             return
         if replied := replied_bot_id(message):
@@ -327,12 +344,12 @@ class Dispatcher:
     def decide_reply(self, key, bot, message, replied):
         if replied == bot_user_id(bot):
             self.settle(key, "reply")
-            run_guarded(deliver, bot, message)
+            deliver_soon(bot, message)
 
     def decide_named(self, key, bot, message, named):
         present = named & present_bots_in(message["chat"]["id"])
         if bot in present:
-            run_guarded(deliver, bot, message)
+            deliver_soon(bot, message)
         elif not present:
             self.settle(key, "absent")
             run_guarded(say_not_here, bot, message)
@@ -351,7 +368,7 @@ class Dispatcher:
         copies = self.waiting[key]["copies"]
         self.settle(key, "everyone")
         for bot, message in copies:
-            run_guarded(deliver, bot, message)
+            deliver_soon(bot, message)
 
     def next_timeout(self):
         deadlines = [copies["deadline"] for copies in self.waiting.values()]

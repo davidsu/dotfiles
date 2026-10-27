@@ -29,6 +29,7 @@ $S status
 - Ack every message from David at once, one line, before working; then the result. Long work gets a
   short progress line. Silence annoys him.
 - Write for a phone: short lines.
+- Test in group Lab (`--group Lab`), never in David's groups.
 - A new bot: create it in @BotFather with `/setprivacy` off, then `$S setup <name>`, token on stdin.
 - Bot chats aren't end-to-end encrypted: never send secrets. Files David sends are saved under
   `~/.local/state/suss-telegram/media/`; voice notes arrive transcribed.
