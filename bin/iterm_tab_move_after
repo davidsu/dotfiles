@@ -2,7 +2,8 @@
 # iterm_tab_move_after — put the iTerm tab holding one session immediately to the right of another tab.
 #   iterm_tab_move_after <session-id> <anchor>
 # <anchor> is an iTerm session id (the UUID, as term_spawn prints it) or an agent handle, matched
-# against the tab title "<handle> (claude)" with any status glyph in front. AppleScript cannot
+# against the tab title "<handle> (claude)" or "<handle> (node)" (iTerm shows the job name; this Mac's
+# claude runs as node) with any status glyph in front. AppleScript cannot
 # reorder tabs; this uses the iTerm2 Python API (Window.async_set_tabs), which needs
 # Preferences → General → Magic → Enable Python API. The selected tab stays selected.
 import sys
@@ -16,7 +17,7 @@ def holds_session(tab, session_id):
 
 async def holds_handle(tab, handle):
     title = await tab.current_session.async_get_variable("session.name") or ""
-    return title == f"{handle} (claude)" or title.endswith(f" {handle} (claude)")
+    return any(title == f"{handle} ({job})" or title.endswith(f" {handle} ({job})") for job in ("claude", "node"))
 
 
 async def find_tab(app, anchor):
