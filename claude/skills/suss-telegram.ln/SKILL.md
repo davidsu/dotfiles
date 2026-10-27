@@ -19,11 +19,13 @@ $S release --as H                                        # give a pool bot back
 $S status
 ```
 
-- Owners keep a named bot (lead.home: homie, finances: finances). Others take a pool bot; its name
-  says nothing, so its messages are signed `agent: <handle>`. `teamup leave --all` releases it.
+- Owners keep a named bot (lead.home: homie, finances: finances); others take one from the pool.
+  Every message is signed `agent: <handle>`. `teamup leave --all` releases the bot.
 - David's messages land on your inbox channel as `david` (default `tg.<handle>`, or one you already
-  watch): a reply to your bubble, an @mention of your bot, or a message mentioning no bot, which
-  every agent in the group gets.
+  watch): a reply to your bubble, a message starting with your handle, bot name or @username, an
+  @mention of your bot, or one addressed to no one, which every agent in the group gets.
+- Ack every message from David at once, one line, before working; then the result. Long work gets a
+  short progress line. Silence annoys him.
 - Write for a phone: short lines.
 - A new bot: create it in @BotFather with `/setprivacy` off, then `$S setup <name>`, token on stdin.
   A bot can't join a group by itself; David adds it.

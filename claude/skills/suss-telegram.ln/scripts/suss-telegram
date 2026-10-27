@@ -105,6 +105,15 @@ def free_pool_bots(): return sorted(bot for bot, entry in bots().items() if entr
 def bot_usernames(): return {entry["username"].lower(): bot for bot, entry in bots().items() if "username" in entry}
 
 
+def names_of_bots():
+    names = {}
+    for bot, entry in bots().items():
+        for name in (bot, entry.get("username"), entry.get("agent")):
+            if name:
+                names[name.lower()] = bot
+    return names
+
+
 @functools.cache
 def token_of(bot):
     return subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-a", bot, "-w"],
@@ -160,15 +169,14 @@ def airy(text):
     return "\n\n".join(lines_of(paragraph.strip()) for paragraph in paragraphs)
 
 
-def bubble_html(handle, text, is_signed):
-    signature = f"\n\n<b><i>agent: {html.escape(handle)}</i></b>" if is_signed else ""
-    return html.escape(airy(text)[:MAX_TEXT_CHARS]) + signature
+def bubble_html(handle, text):
+    return f"{html.escape(airy(text)[:MAX_TEXT_CHARS])}\n\n<b><i>agent: {html.escape(handle)}</i></b>"
 
 
 def say(handle, text):
     bot = bot_of(handle) or sys.exit(f"'{handle}' holds no bot; run: suss-telegram claim --as {handle}")
     telegram(bot, "sendMessage", chat_id=chat_of(bot), parse_mode="HTML",
-             text=bubble_html(handle, text, is_signed=bots()[bot].get("pool", False)))
+             text=bubble_html(handle, text))
     send_files(bot, text)
 
 
@@ -192,6 +200,11 @@ def mentioned_bots(message):
     return {usernames[mention] for mention in mentions if mention in usernames}
 
 
+def prefixed_bot(message):
+    first_word = (message.get("text") or message.get("caption") or "").split(maxsplit=1)[:1]
+    return names_of_bots().get(first_word[0].strip("@:,").lower()) if first_word else None
+
+
 def replied_bot_id(message):
     replied_to = message.get("reply_to_message", {}).get("from", {})
     return replied_to["id"] if replied_to.get("is_bot") else None
@@ -201,7 +214,8 @@ def addressees(copies):
     replied = {replied_bot_id(message) for _, message in copies} - {None}
     if replied:
         return [(bot, message) for bot, message in copies if bot_user_id(bot) in replied]
-    mentioned = set().union(*(mentioned_bots(message) for _, message in copies))
+    mentioned = set().union(*(mentioned_bots(message) | {prefixed_bot(message)} - {None} for _, message in copies))
+    mentioned &= {bot for bot, _ in copies}
     return [(bot, message) for bot, message in copies if not mentioned or bot in mentioned]
 
 

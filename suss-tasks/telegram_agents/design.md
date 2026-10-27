@@ -20,3 +20,7 @@ Session transcript: `~/.claude/projects/-Users-thistooshallpass--dotfiles/aa5e25
    - This Mac mirrors no teamup channel anywhere; agents post to David on purpose.
    - Docs short, for tomorrow's agents (line 2418: "don't write for yesterday's agent").
 5. **Secrets** (line 2493: "I hate secrets on files"): bot tokens move to the keychain.
+6. **After first use** (2026-10-27 04:50, via lead.home on tg-latency): David wants the Slack habit
+   after all. A message starting with an agent's name goes to that agent (handle, bot name or
+   @username, since Telegram's @-autocomplete gives the username, not the name). Every agent signs.
+   And "pls ack asap, the silence is annoying": a rule for every agent.
