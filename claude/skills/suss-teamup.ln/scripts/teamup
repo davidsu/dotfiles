@@ -246,7 +246,7 @@ rewrite_tsv() { # file awk-args... — keeps the rows the program prints; a priv
 }
 
 register_session_locked() { # file pwd subject handle sid
-  rewrite_tsv "$1" -v p="$2" -v s="$3" -v h="$4" '!($1==p && $2==s && $3==h)'
+  rewrite_tsv "$1" -v s="$3" -v h="$4" '!($2==s && $3==h)'
   printf '%s\t%s\t%s\t%s\n' "$2" "$3" "$4" "$5" >> "$1"
 }
 
