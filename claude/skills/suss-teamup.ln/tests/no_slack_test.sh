@@ -6,6 +6,7 @@ set -uo pipefail
 readonly TESTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 export SUSS_TEAMUP_DIR="$(mktemp -d)"
 export XDG_STATE_HOME="$SUSS_TEAMUP_DIR/state"
+export XDG_CONFIG_HOME="$SUSS_TEAMUP_DIR/config"
 unset CLAUDE_CODE_SESSION_ID TEAMUP_SESSION CODEX_THREAD_ID TEAMUP_SESSION_NAME
 trap 'rm -rf "$SUSS_TEAMUP_DIR"' EXIT
 
@@ -29,5 +30,12 @@ expect "teamup-slack auto skips the channel" bash -c "'$BRIDGE' auto '$OPTED_OUT
 
 TEAMUP_SLACK=off "$CLI" join plain_test --as first --pwd /t --doing test >/dev/null
 expect "a normal channel is not marked" test ! -f "$SUSS_TEAMUP_DIR/plain_test/.slack.off"
+
+readonly MACHINE_CONFIG="$XDG_CONFIG_HOME/suss-teamup/local.conf"
+mkdir -p "$(dirname "$MACHINE_CONFIG")"
+echo 'slack=off' > "$MACHINE_CONFIG"
+"$CLI" join machine_off_test --as first --pwd /t --doing test >/dev/null
+expect "slack=off in local.conf: teamup-slack on refuses" bash -c "'$BRIDGE' on machine_off_test | grep -q 'off on this machine'"
+expect "slack=off in local.conf: teamup-slack auto mirrors nothing" bash -c "'$BRIDGE' auto machine_off_test; test ! -f '$SUSS_TEAMUP_DIR/machine_off_test/.slack.on'"
 
 exit $fails

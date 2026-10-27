@@ -63,7 +63,8 @@ Details, other harnesses and renames: [resources/handles.md](resources/handles.m
    Opening a new channel → add `--gist "<what it is for>"`: one line (≤240 chars) that heads its
    Slack thread, written once. A channel only agents use (tests, probes) → add `--throwaway`: its mirror goes to
    #suss-throwaway, not the user's #suss-teamup. A channel that must never reach Slack → add `--no-slack`
-   (sticks for the channel; later joiners and `teamup-slack auto|on` honor it).
+   (sticks for the channel; later joiners and `teamup-slack auto|on` honor it). A machine that
+   never mirrors (home) has `slack=off` in `~/.config/suss-teamup/local.conf`: no flag needed.
 2. **Orient**: read the suss-task behind this work (`suss-tasks` skill). It is the durable
    record; the channel is ephemeral. Record decisions and hand-offs there.
 3. **Huddle** before building, when a peer is here: say **what** you'll change, **where**

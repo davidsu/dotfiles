@@ -188,6 +188,13 @@ removes it and a later channel of the same name, throwaway or not, opens a fresh
 starts the bridge for it, and `teamup-slack auto|on` skip it (`start_mirror` refuses), whoever joins later.
 Unlike `TEAMUP_SLACK=off` it is per channel and persists until `erase`.
 
+**Turning Slack off for a whole machine** — a file outside the repo (so never tracked),
+`~/.config/suss-teamup/local.conf` (`$XDG_CONFIG_HOME/suss-teamup/local.conf`), holding the line `slack=off`.
+`start_mirror` refuses every channel while it is there, so `teamup-slack on|auto` do nothing and `join` needs no
+`--no-slack`. No file, or no such line, means on: a machine without the file mirrors as before.
+`echo 'slack=off' > ~/.config/suss-teamup/local.conf` (mkdir the dir first); delete the line to turn it back on.
+Threads already mirrored keep running until `teamup-slack off`.
+
 **`teamup-slack-watch` is on the connector** (2026-10-14): `slack_search_public_and_private`
 through `connector_call`, the detailed prose result parsed back into matches, and a result over
 the tool-output cap read from the file it was saved to. Each search takes 8-10 s and costs ~$0.008,
