@@ -46,7 +46,8 @@ scripts/teamup-telegram status                    # daemon pid, last relay, bots
   0.3 s; in long-polls Telegram (10 s, retried at once after a stalled read); deliveries (downloads,
   transcription, posting) run in order on the third.
 - Only David (`david_id`, his user id) in the bot's own group is accepted; anything else is logged and dropped.
-- Secrets: `~/.local/share/suss-teamup/telegram.json` (`david_id`, and `bots.<name>.token` / `.chat_id`), 0600. Not `~/.config`: here it is a symlink into this public repo.
+- Secrets: each bot's token is in the login keychain (service `suss-telegram`, account = bot name).
+  `~/.local/share/suss-teamup/telegram.json` (0600) keeps `david_id` and each bot's `chat_id`, no tokens.
 - State and log: `~/.local/state/suss-teamup/telegram/` (`daemon.log`).
 - Privacy: bot chats are Telegram cloud chats, encrypted to Telegram's servers, not end-to-end
   ([FAQ](https://telegram.org/faq)). Fine for pings and status, not for secrets.
