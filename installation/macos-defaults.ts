@@ -1,6 +1,12 @@
 #!/usr/bin/env bun
 
-import { execSync } from 'child_process'
+import { execSync, spawnSync } from 'child_process'
+import { readFileSync } from 'fs'
+import path from 'path'
+import { log } from './logging'
+
+const ITERM_DOMAIN = 'com.googlecode.iterm2'
+const GHOSTTY_PROFILE = path.join(import.meta.dir, '..', 'iterm2', 'dynamic-profiles', 'ghostty.ln.json')
 
 function setDefault(domain: string, key: string, type: string, value: string) {
   execSync(`defaults write ${domain} "${key}" -${type} ${value}`, { stdio: 'inherit' })
@@ -63,6 +69,23 @@ function setAppearanceDefaults() {
   setGlobalDefault('AppleInterfaceStyle', 'string', 'Dark')
 }
 
+const isITermRunning = () => spawnSync('ps', ['-axco', 'comm=']).stdout.toString().split('\n').includes('iTerm2')
+
+const readGhosttyProfileGuid = () => JSON.parse(readFileSync(GHOSTTY_PROFILE, 'utf8')).Profiles[0].Guid
+
+function setITermDefaults(domain = ITERM_DOMAIN) {
+  try {
+    if (isITermRunning()) {
+      log.warn('iTerm is running and would overwrite its prefs on quit: quit it and rerun installation/macos-defaults.ts')
+      return
+    }
+    setDefault(domain, 'Default Bookmark Guid', 'string', readGhosttyProfileGuid())
+    setDefault(domain, 'AddNewTabAtEndOfTabs', 'bool', 'false')
+  } catch (err) {
+    log.warn(`iTerm defaults not applied: ${err}`)
+  }
+}
+
 function restartAffectedApps() {
   execSync('killall Dock Finder 2>/dev/null || true', { stdio: 'inherit' })
 }
@@ -77,6 +100,7 @@ function applyMacOSDefaults() {
   setTrackpadScrollAndZoomDefaults()
   setDockDefaults()
   setAppearanceDefaults()
+  setITermDefaults()
   restartAffectedApps()
 
   console.log('macOS defaults applied. Some changes may require logout.')
@@ -86,4 +110,4 @@ if (import.meta.main) {
   applyMacOSDefaults()
 }
 
-export { applyMacOSDefaults }
+export { applyMacOSDefaults, setITermDefaults }

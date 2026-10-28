@@ -287,8 +287,10 @@ A **dynamic profile** named `Ghostty` that makes iTerm2 look identical to Ghostt
 you need iTerm's clickable file paths (see the iTerm2 post-install step above).
 
 Source: `iterm2/dynamic-profiles/ghostty.ln.json` — iTerm2 auto-loads anything in that
-directory, so no import step is needed. Select it via **Settings → Profiles → Ghostty →
-Other Actions… → Set as Default**.
+directory, so no import step is needed. `installation/macos-defaults.ts` makes it the default
+profile and opens new tabs next to the current one (`AddNewTabAtEndOfTabs = false`). iTerm
+overwrites its prefs on quit, so that step is skipped with a warning while iTerm runs: quit
+iTerm and run `bun ~/.dotfiles/installation/macos-defaults.ts`.
 
 | Setting | Value |
 |---------|-------|
