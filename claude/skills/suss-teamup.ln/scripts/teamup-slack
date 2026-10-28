@@ -224,7 +224,7 @@ announce_thread_url() { # subject — once per channel, so agents never hunt for
   local root; root="$(cat "$(thread_file "$1")" 2>/dev/null)"
   [ -n "$root" ] && [ -n "$SLACK_TEAM_URL" ] || return 0
   printf '%sarchives/%s/p%s\n' "$SLACK_TEAM_URL" "$(slack_channel_of "$1")" "${root/./}" > "$(url_file "$1")"
-  "$TEAMUP" say "$1" --as "$HANDLE" -- "mirror thread in Slack: $(cat "$(url_file "$1")") (also in $(url_file "$1"))" >/dev/null
+  "$TEAMUP" note "$1" --as "$HANDLE" -- "mirror thread in Slack: $(cat "$(url_file "$1")") (also in $(url_file "$1"))" >/dev/null
 }
 
 # --- inbound: one relay per poll reads every mirrored thread (and the top level of channels that own one) ---
@@ -259,14 +259,14 @@ report_broken_session() { # subject error
   [ -f "$(broken_file "$1")" ] && return 0
   printf '%s' "$2" > "$(broken_file "$1")"
   post_to_thread "$1" ":warning: the Slack connector relay is failing ($2) — replies in this thread are NOT reaching the agents." || true
-  "$TEAMUP" say "$1" --as "$HANDLE" -- "teamup-slack bridge is down ($2) — David is not receiving this channel and his replies are not arriving." || true
+  "$TEAMUP" note "$1" --as "$HANDLE" -- "teamup-slack bridge is down ($2) — David is not receiving this channel and his replies are not arriving." || true
 }
 
 report_session_recovered() { # subject
   [ -f "$(broken_file "$1")" ] || return 0
   rm -f "$(broken_file "$1")"
   post_to_thread "$1" ":white_check_mark: the Slack connector relay is back — replies in this thread reach the agents again." || true
-  "$TEAMUP" say "$1" --as "$HANDLE" -- "teamup-slack bridge is back up — David's replies are arriving again." || true
+  "$TEAMUP" note "$1" --as "$HANDLE" -- "teamup-slack bridge is back up — David's replies are arriving again." || true
 }
 
 relay_down_too_long() { # sets FAILING_SINCE

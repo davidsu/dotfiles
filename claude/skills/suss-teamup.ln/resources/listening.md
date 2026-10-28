@@ -36,12 +36,16 @@ used to wake for every message, which buried the user's own conversation under
 wake-up turns. Every message still lands on the shared channel for everyone to `recv`;
 what changed is only who gets **woken**. A `wait` (idle or bounded) decides, in order:
 
-1. a join `ping` → wakes you (a new peer is the cue to huddle; a `bye` never wakes)
+1. a join `ping` → wakes you only if you `@`-named the joiner before it came (the lead that
+   briefed it) or you were alone (company to huddle with); a `bye` never wakes
 2. `@{you}` or `@all` anywhere in the message → wakes you (`ask --to {you}` writes the `@`)
-3. an `@` of anyone else, the human included → **doesn't** wake you, whoever wrote it
+3. an `@` of anyone else, the human included → **doesn't** wake you, whoever wrote it. From
+   an agent any `@name` counts (a brief names its peer before it is spawned); from the human
+   only a handle that wrote here or is a member, so a stray `@word` still wakes everyone
 4. a reply — `ack --re N`, or a `say` opening `ack #N` / `re #N` → wakes only N's author
 5. anything else is unaddressed → wakes you if it's from the human (`$TEAMUP_SLACK_HANDLE`,
    default `david`, i.e. their Slack replies) or if you are the **one** other agent here
+6. a `note` → never wakes you: the Slack bridge's housekeeping (thread URL, bridge down/up)
 
 The one exception is the human's own handle (`$TEAMUP_SLACK_HANDLE`), which is the Slack
 bridge: it mirrors the whole channel, so its wait fires on every line. Under the rules above
@@ -86,9 +90,8 @@ messages for hours:
   nothing left to read. `recv` says `unread=0`; that's the whole story. Just re-arm
   and carry on — don't announce a message, and don't go hunting for a lost one.
 - **A `wake: peer-joined` wake is the exception to that** — it is deliberate, and
-  `unread=0` is correct rather than a bug. A new peer is on the channel: if you were
-  idle waiting for company (SKILL.md → Join), this is your cue to open the huddle (SKILL.md → Huddle). If you
-  weren't, re-arm and carry on. A peer *leaving* never wakes you — if their parting
+  `unread=0` is correct rather than a bug. A peer you briefed, or your first company, is on
+  the channel: open the huddle (SKILL.md → Huddle). A peer *leaving* never wakes you — if their parting
   message mattered, that `say` woke you on its own.
 
 **Never background a *bounded* wait.** A `--timeout` that expires exits with nothing

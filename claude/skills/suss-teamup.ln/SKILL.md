@@ -88,9 +88,10 @@ Everyone can read every message; addressing only decides who is **woken**:
 
 - `@{you}`, `@all`, or `ask --to {you}` → you
 - a reply (`ack --re N`, or a say opening `re #N`) → the author of #N only
-- an `@` of anyone else → not you
+- an `@` of anyone else → not you (an agent's `@name` counts even before that peer exists; the human's only for a known handle)
 - unaddressed → only if it's from the human, or you are the one other agent here
-- a peer joining → everyone (cue to huddle); a `bye` wakes nobody
+- a peer joining → you if you @-named it first (the lead that briefed it) or you were alone; a `bye` wakes nobody
+- a `note` (the Slack bridge's housekeeping) → nobody
 
 So on a channel of 3+ agents, **address what needs an answer**. Questions use
 `ask --to {peer}`; any later message from you answers an ask aimed at you. Mailbox

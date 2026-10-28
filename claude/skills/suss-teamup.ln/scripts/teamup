@@ -12,7 +12,8 @@
 # Each message has a stable id = its 1-based line number in channel.tsv ("seq").
 # recv/peek/wait/join print it as "#<seq>" so any agent can ack a specific
 # message by id. Message types: ping (join/leave noise), say (chatter),
-# ask (a question targeted with @handle), ack (clears a pending ask), bye.
+# ask (a question targeted with @handle), ack (clears a pending ask), note
+# (housekeeping that wakes no one), bye.
 #
 # Identity is explicit and stateless: pass --as {handle} on every call.
 # Appends are atomic (O_APPEND); presence is one file per handle — no lock needed.
@@ -102,12 +103,13 @@ usage:
   teamup ack    <subject> --as <handle> [--re <seq>] [--top] [note...]         # answer/clear an ask (default: latest peer msg)
                                                           # --top: the Slack mirror posts this line at the channel's top level (suffix " [top]"); only where
                                                           # the channel has a Slack channel of its own (slack-channel.<subject>, or --throwaway), exit 2 elsewhere
+  teamup note   <subject> --as <handle> <text...>         # housekeeping (bridge status): read like a say, wakes no one
   teamup recv   <subject> --as <handle> [--discard]       # new msgs from others + summary line, non-blocking; exit 3 into /dev/null
                                                           # --discard: mark everything read unseen, for scripts that post but never read
   teamup status <subject> --as <handle>                   # summary only; exit 0=clean 1=unread 2=ask-for-me (cursor untouched)
   teamup status --as <handle>                             # no subject: list every team this handle is on + member count
   teamup teams  --session <guid> [--pwd <path>]           # compact one-line joined channels for a statusline (! ask, * unread)
-  teamup wait   <subject> --as <handle> [--timeout <sec>] # block until a message meant for you: @you/@all, a reply to you, the human, a join, or anything on a 2-agent channel (default 110s; 0 = forever)
+  teamup wait   <subject> --as <handle> [--timeout <sec>] # block until a message meant for you: @you/@all, a reply to you, the human, the join of a peer you named, or anything on a 2-agent channel (default 110s; 0 = forever)
                                                           # exits 0 only with something unread to read, 1 on timeout; a duplicate --timeout 0 stands by instead of exiting
   teamup roster <subject>                                 # who is on the channel
   teamup peek   <subject> [--last <n>]                    # show recent history (default 20)
@@ -350,14 +352,18 @@ other_agent_count() { # subject handle
 # stdin filter (numbered lines): what justifies waking this handle. On a busy channel
 # every agent waking for every message buried the user's own conversation under
 # wake-up turns, so a wake needs a message MEANT for this handle, decided in order:
-#   - a join `ping`: a new peer is the cue to open the huddle (a `bye` never wakes)
+#   - a join `ping`: wakes whoever @-named the joiner before it came (the lead that
+#     briefed it), or the one agent it joins as company; others see it at their checkpoint
 #   - an @mention of this handle, or @all
-#   - an @mention of anyone else: not for this handle, whoever wrote it
+#   - an @mention of anyone else: not for this handle. From an agent any @name counts (a
+#     brief names its peer before the peer exists); from the human only a known handle
+#     (an author or a member), so a stray @word cannot swallow the human's line
 #   - a reply: `ack` (re:#N) or a say opening "ack #N" / "re #N" wakes N's author only
 #   - otherwise unaddressed: wakes everyone if from the human (their Slack replies
 #     arrive as $HUMAN_HANDLE), or if this handle is the only other agent here
 # The human's own handle is the Slack bridge, which mirrors the whole channel: it wakes
 # for every line, or agent-to-agent traffic reaches Slack only when someone @s the human.
+# A `note` (the bridge's housekeeping) never wakes anyone.
 # Anything that doesn't wake stays unread for the next checkpoint.
 worth_waking_for() { # subject handle
   [ "$2" = "$HUMAN_HANDLE" ] && { cat; return; }
@@ -373,7 +379,9 @@ meant_for_returning() { # subject handle
 }
 
 meant_for() { # subject handle solo returning
-  awk -F'\t' -v me="$2" -v human="$HUMAN_HANDLE" -v solo="$3" -v returning="$4" '
+  awk -F'\t' -v me="$2" -v human="$HUMAN_HANDLE" -v solo="$3" -v returning="$4" \
+      -v members="$(ls -A "$(mdir "$1")" 2>/dev/null | paste -sd' ' -)" '
+    BEGIN { split(members, listed, " "); for (i in listed) known[listed[i]] = 1 }
     function is_handle_char(c) { return c ~ /[A-Za-z0-9._+-]/ }
     function ends_handle(rest,   following) {
       following = substr(rest, 1, 1)
@@ -388,18 +396,21 @@ meant_for() { # subject handle solo returning
       }
       return 0
     }
-    function mentions_anyone(body,   h) { for (h in author_seen) if (mentions(body, h)) return 1; return 0 }
+    function mentions_known(body,   h) { for (h in known) if (mentions(body, h)) return 1; return 0 }
+    function mentions_any_name(body) { return body ~ /(^|[^A-Za-z0-9._+-])@[A-Za-z0-9]/ }
+    function addressed_elsewhere(from, body) { return from == human ? mentions_known(body) : mentions_any_name(body) }
+    function named_by_me_before(h, seq,   s) { for (s in mine) if (s + 0 < seq + 0 && mentions(mine[s], h)) return 1; return 0 }
     function reply_target(type, body,   seq) {
       if (!match(body, /^(re:|[Aa][Cc][Kk]|[Rr][Ee])[: ]*#[0-9]+/)) return ""
       seq = substr(body, RSTART, RLENGTH); sub(/^[^#]*#/, "", seq)
       return author[seq + 0]
     }
-    FNR == NR { author[FNR] = $2; author_seen[$2] = 1; next }
-    $4 == "ping" { if (!returning) print; next }
+    FNR == NR { author[FNR] = $2; known[$2] = 1; if ($2 == me) mine[FNR] = $4; next }
+    $4 == "ping" { if (!returning && (solo || named_by_me_before($3, $1))) print; next }
     $4 != "say" && $4 != "ask" && $4 != "ack" { next }
     returning && $3 == human { print; next }
     mentions($5, me) || mentions($5, "all") { print; next }
-    mentions_anyone($5) { next }
+    addressed_elsewhere($3, $5) { next }
     { target = reply_target($4, $5) }
     target != "" { if (target == me) print; next }
     $3 == human || solo { print }
@@ -757,6 +768,12 @@ case "$CMD" in
     refuse_post_if_unread "$SUBJECT" "$HANDLE"
     append "$SUBJECT" "$HANDLE" say "$(with_top_tag "$text")"
     echo "sent."
+    ;;
+
+  note)
+    [ -n "$SUBJECT" ] || usage; require_handle
+    append "$SUBJECT" "$HANDLE" note "${MSG[*]}"
+    echo "noted."
     ;;
 
   recv)
