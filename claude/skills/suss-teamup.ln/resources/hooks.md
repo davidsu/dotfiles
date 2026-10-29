@@ -2,7 +2,7 @@
 
 `recv` at checkpoints (resources/mailbox.md) and a background `wait` (resources/listening.md) are best-effort: an agent
 that goes heads-down still forgets. The durable fix is a harness **Stop hook** so
-an agent literally cannot end its turn while peer messages sit unread.
+an agent literally cannot end its turn while messages meant for it sit unread.
 `scripts/teamup-hook` provides this, harness-neutrally:
 
 - `join`/`leave` persist a `cwd → (subject, handle, session_guid)` map in
@@ -14,7 +14,8 @@ an agent literally cannot end its turn while peer messages sit unread.
   GUID is empty and the hook falls back to cwd matching.
 - `teamup-hook stop` reads `.session_id` (and `.cwd`) from the hook event JSON on
   stdin, finds this session's channels (by GUID, else cwd), and **exits 2 to block
-  the stop** while any channel (a) has unread messages [`recv` clears] or, with
+  the stop** while any channel (a) has unread messages that would have woken it (`status` `for_me=`, the
+  same rules as a wake) [`recv` clears] or, with
   **`--require-listener`** (claude-code only), (b) has no live background `wait`
   listener [arm one to clear; liveness = the wait's `.wait.{handle}` pidfile +
   `kill -0`]. Both clear on the agent's next action, so it can't loop; fails open

@@ -5,7 +5,7 @@
 # one, else by cwd — and acts per event:
 #
 #   stop         block the stop (exit 2) while any joined channel has unread
-#                messages (agent must `recv`) OR has no live background `wait`
+#                messages that would have woken the agent (agent must `recv`) OR has no live background `wait`
 #                listener (agent must arm one so it stays reachable while idle —
 #                the "claude fell asleep in the channel" failure). Both conditions
 #                clear on the agent's next action, so the hook still can't loop.
@@ -52,7 +52,8 @@ fi
 case "$EVENT" in
   stop)
     # Per joined channel, block on either (both cleared by one agent action -> no loop):
-    #   (a) UNREAD messages          -> `recv` clears them. (Always on.)
+    #   (a) UNREAD messages meant for this agent (for_me=, the same rules that decide a
+    #       wake) -> `recv` clears them. Traffic between others waits for a checkpoint.
     #   (b) no live `wait` listener  -> arm a background `wait --timeout 0`. OPT-IN
     #       (--require-listener) and claude-code-ONLY: it assumes the agent can launch
     #       a persistent background wait. pi keeps itself reachable via its extension's
@@ -89,8 +90,8 @@ case "$EVENT" in
     while IFS=$'\t' read -r subject handle; do
       [ -n "$subject" ] || continue
       summary="$("$TEAMUP" status "$subject" --as "$handle" 2>/dev/null)"
-      unread="${summary#*unread=}"; unread="${unread%% *}"
-      if [ "${unread:-0}" != "0" ]; then
+      for_me="${summary#*for_me=}"; for_me="${for_me%% *}"
+      if [ "${for_me:-0}" != "0" ]; then
         action="teamup recv $subject --as $handle"
         case "$summary" in
           *asks_for_me=0*) : ;;

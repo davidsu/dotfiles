@@ -822,12 +822,13 @@ case "$CMD" in
       exit 0
     fi
     unread="$(fresh_lines "$SUBJECT" "$HANDLE" | spoken_only | count_lines)"
+    for_me="$(fresh_lines "$SUBJECT" "$HANDLE" | spoken_only | worth_waking_for "$SUBJECT" "$HANDLE" | count_lines)"
     pending="$(pending_asks_for_me "$SUBJECT" "$HANDLE")"
     # listener= lets an agent see whether it still needs to arm one WITHOUT wrapping
     # `wait` in a guard script (whose own exit would wake it — the churn this whole
     # design is about). Cursor-safe, so it is also the tester's assertion point.
     listener_is_alive "$(waitpid "$SUBJECT" "$HANDLE")" && live=live || live=none
-    printf 'summary: unread=%s asks_for_me=%s listener=%s\n' "$unread" "$pending" "$live"
+    printf 'summary: unread=%s for_me=%s asks_for_me=%s listener=%s\n' "$unread" "$for_me" "$pending" "$live"
     [ "$pending" -gt 0 ] && exit 2
     [ "$unread" -gt 0 ] && exit 1
     exit 0

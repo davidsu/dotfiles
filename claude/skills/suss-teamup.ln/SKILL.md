@@ -22,6 +22,10 @@ allowed-tools: Bash, Read, Edit, Grep, Glob
 > "verify". Do not read or modify any files. Just join, then report the roster and
 > wait for peers.
 
+**Message-passing owner** (who is woken, stop hook, listeners, cursors, bridge notices): see
+`~/.dotfiles/suss-tasks/teamup_message_passing/epic.md`. A bug there → `/suss-teamup wake` that
+owner, don't spawn a new agent.
+
 A channel is an append-only message log plus a presence roster under
 `/tmp/suss-teamup/{subject}/`. Agents append lines and read only what's new since they
 last looked. **The script is the whole mechanism**; always call it by absolute path:
