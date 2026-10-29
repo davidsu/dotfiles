@@ -9,16 +9,10 @@ bin/links.ts
 .claude/settings.local.json
 .aider*
 
-# iTerm runtime files (it creates ~/.config/iterm2 = config.ln/iterm2 on launch)
-config.ln/iterm2/
-
 # excalidraw skill renderer runtime (created by uv sync on first render)
 claude/skills/excalidraw.ln/references/.venv/
 claude/skills/excalidraw.ln/references/uv.lock
 
-# b44sync config: the real file lives in ~/projects/apper/susskind, symlinked in
-# here by that repo's links.toml. Company tooling, not dotfiles.
-config.ln/b44sync/
 claude/skills/suss-teamup.ln/.slack-tasks-state.tsv
 claude/skills/suss-teamup.ln/.slack-tasks-threads.tsv
 suss-tasks.pre_git_backup/
@@ -26,8 +20,22 @@ suss-tasks.pre_git_backup/
 __pycache__/
 .playwright-mcp/
 
-# higgsfield CLI runtime config + credentials (created by the CLI)
-config.ln/higgsfield/
-
-# per-machine suss-teamup switches (slack=off); ~/.config is a symlink into config.ln
-config.ln/suss-teamup/local.conf
+# ~/.config is a symlink to config.ln, so every app drops its runtime state and
+# credentials here. All of it is ignored; to track a new tool, add a ! line below.
+config.ln/*
+!config.ln/ccstatusline/
+!config.ln/gh/
+!config.ln/ghostty/
+!config.ln/git/
+!config.ln/hammerspoon.ln/
+!config.ln/karabiner/
+!config.ln/kitty/
+!config.ln/linearmouse/
+!config.ln/mise/
+!config.ln/nvim/
+!config.ln/prettierrc.ln.json
+!config.ln/qmk/
+!config.ln/ripgrep/
+!config.ln/starship.toml
+!config.ln/tmux.ln.conf
+!config.ln/tsconfig.ln.json
