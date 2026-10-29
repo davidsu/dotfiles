@@ -41,10 +41,11 @@ T=~/.claude/skills/suss-teamup/scripts/teamup     # `$T` with no args prints usa
 | `/suss-teamup status`                    | `status --as {handle}`: every team you're on                          |
 | `/suss-teamup spawn [pi\|claude\|codex] [model] [flavor] [new\|subject]` | spawn a peer (`model` e.g. `fable` → `--model`): [resources/spawn.md](resources/spawn.md) |
 | `/suss-teamup handoff …`                 | the handoff spawn flavor: read [resources/handoff.md](resources/handoff.md) first |
+| `/suss-teamup wake {handle}`             | wake a sleeping agent (resume its session in a new tab): `scripts/teamup-wake`, see [resources/agent_lifecycle.md](resources/agent_lifecycle.md); `teamup-wake --list` shows who can be woken |
 | `/suss-teamup sleep`                     | you were told to sleep: agent_lifecycle.md checklist, then `scripts/teamup-sleep --force` last (`--force-with-no-mercy` when David himself ordered it): no argument sleeps your own session, channel or not (it closes your tab; `--force` never while David is typing in it) |
 | `/suss-teamup help`                      | list these forms, then run `$T help`; join nothing                    |
 
-The literal words `help`, `sleep` and `status` are commands, not channel names.
+The literal words `help`, `sleep`, `wake` and `status` are commands, not channel names.
 
 ## Your handle
 

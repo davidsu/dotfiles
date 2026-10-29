@@ -55,9 +55,12 @@ only on actions with reach: a merge, a Slack post to humans, prod data, dotfiles
 
 The `suss-*` skills are David's own and meant to improve as they're used. If one breaks or misleads
 you (a wrong step, a stale path, a rule that fights the task), don't quietly work around it. Tell
-David in one line what broke and suggest spawning an agent in the skill's repo (`readlink` the
-skill dir in `~/.claude/skills/`) to fix it with him. Don't fix it yourself mid-task, and don't
-raise it for style nits.
+David in one line what broke. Don't fix it yourself mid-task, and don't raise it for style nits.
+
+To get it fixed, wake the agent that wrote it before spawning a new one: its handle is the `agent:`
+line of the file's last commits (`readlink` the skill dir in `~/.claude/skills/` for the repo). If
+`teamup-wake --asleep <handle>` succeeds, wake it yourself (`/suss-teamup wake`) and tell David or
+the lead in one line. Spawn a new agent in the skill's repo only when no owner can be woken.
 
 David away and something on his Mac broke (an app vanished, iTerm quit, an agent is unresponsive,
 keys went to the wrong app), or you need any screen action: load `/suss-troubleshoot-david-away` first.
