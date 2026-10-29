@@ -1,4 +1,4 @@
-in_progress
+closed
 # 📬 Joins, pre-spawn briefs, bridge notices and the stop hook stop waking bystanders
 
 ## Summary

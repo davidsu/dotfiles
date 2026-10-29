@@ -11,7 +11,7 @@ Covers `scripts/teamup` (wake rules in `meant_for`, `wait`, `recv`, cursors, `st
 
 ## Tasks
 
-- [wake_noise.md](wake_noise.md): joins, pre-spawn briefs, bridge notices and the stop hook stop waking/holding bystanders
+- ✅ [wake_noise.md](wake_noise.md) (9e6354e, b7c1059): joins, pre-spawn briefs, bridge notices and the stop hook stop waking/holding bystanders
 
 ## History
 
