@@ -137,6 +137,9 @@ async function main() {
   log.info('Phase 7: Wiring teamup hooks into Claude Code settings...')
   spawnSync(`${process.env.HOME}/.dotfiles/bin/claude-teamup-hooks`, { stdio: 'inherit' })
 
+  log.info('Phase 8: Registering user-scope MCP servers in Claude Code...')
+  spawnSync(`${process.env.HOME}/.dotfiles/bin/claude-user-mcp`, { stdio: 'inherit' })
+
   // Verification
   const failedPackages = await verifyAllTools()
 

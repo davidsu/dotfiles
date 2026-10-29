@@ -48,6 +48,7 @@ cd ~/.dotfiles
 6. 🎨 Install Neovim plugins via lazy.nvim
 7. 🤖 Install Claude Code via native installer (auto-updates enabled)
 8. 🪝 Wire the teamup `Stop`/`SessionEnd` hooks into `~/.claude/settings.json` (`bin/claude-teamup-hooks`, safe to re-run). `settings.json` is machine-local, not symlinked: without these hooks a Claude agent can go idle with unread teamup messages and nobody wakes it
+9. 🔎 Register the Tavily MCP server at user scope, so it works in every project (`bin/claude-user-mcp`, safe to re-run; needs `claude` installed, so re-run it if step 7 hadn't finished)
 
 ---
 
@@ -478,7 +479,7 @@ security add-generic-password -a "$USER" -s "PLAYWRIGHT_MCP_EXTENSION_TOKEN_BRAV
 ### ⚙️ How It Works
 
 1. `zshenv` loads API keys from Keychain → environment variables
-2. `.mcp.json` defines MCP servers (no secrets, auto-loaded)
+2. `bin/claude-user-mcp` registers Tavily at user scope (every project); `.mcp.json` holds dotfiles-only servers (neovim). Neither stores secrets
 3. `claude/example.claude.json` provides reference configs
 
 ### ✅ Verify Setup

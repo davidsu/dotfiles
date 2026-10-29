@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+command -v claude >/dev/null || { echo "claude not installed yet: re-run $0 once it is" >&2; exit 1; }
+
+claude mcp remove --scope user tavily >/dev/null 2>&1 || true
+claude mcp add --scope user tavily -- tavily-mcp
+echo "tavily MCP registered at user scope (its key comes from TAVILY_API_KEY, exported by zshenv)"
