@@ -58,7 +58,8 @@ you (a wrong step, a stale path, a rule that fights the task), don't quietly wor
 David in one line what broke. Don't fix it yourself mid-task, and don't raise it for style nits.
 
 To get it fixed, wake the agent that wrote it before spawning a new one: its handle is the `agent:`
-line of the file's last commits (`readlink` the skill dir in `~/.claude/skills/` for the repo). If
+line of the file's last commits (`readlink` the skill dir in `~/.claude/skills/` for the repo), or its
+highest `<handle>.N` successor if one exists (suss-teamup `agent_lifecycle.md` → Waking an agent). If
 `teamup-wake --asleep <handle>` succeeds, wake it yourself (`/suss-teamup wake`) and tell David or
 the lead in one line. Spawn a new agent in the skill's repo only when no owner can be woken.
 

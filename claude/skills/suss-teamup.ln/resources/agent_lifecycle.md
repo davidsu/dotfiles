@@ -56,6 +56,11 @@ Don't keep it open to babysit; wake it when the thing it waits for happens.
 
 ## Waking an agent
 
+**Wake the successor, not the name you were given** (David, 2026-10-30). An agent that blew its
+context is continued by `<handle>.2`, `<handle>.3`, …, so before waking `<handle>` look for
+`<handle>.N` in `teamup-wake --list`, the running sessions (`jq -r .name ~/.claude/sessions/*.json`)
+and the channel rosters, and wake the highest N. `<handle>` itself only when no `.N` exists.
+
 **Post the brief first, then wake.** The agent sees the brief the moment it rejoins, so
 nobody waits on an "awaiting lead" round trip.
 
