@@ -44,13 +44,17 @@ search_results_as_matches() { # connector search result json → {ok, messages:{
          text: (capture("\nText: \n(?<t>[\\s\\S]*?)(\n\n---\n|$)").t // "")}))}}' <<<"$1"
 }
 
-oversized_result_file() { # result — a result over the tool-output cap comes back as "saved to <file>"
-  [[ "$1" == "Error: result ("*"exceeds maximum allowed tokens"* ]] || return 1
-  sed -n 's/.*Output has been saved to \(.*\.txt\)\..*/\1/p' <<<"$1" | head -1
+oversized_result_file() { # result — a result over the tool-output cap comes back as "saved to[:] <file>"
+  sed -nE 's/.*[Oo]utput (has been )?saved to:? ([^ ]+\.(txt|json)).*/\2/p' <<<"$1" | head -1
+}
+
+saved_result_text() { # file → the result text; a .json file holds the tool's content blocks
+  [[ "$1" == *.json ]] && { jq -r 'map(.text) | join("")' "$1"; return; }
+  cat "$1"
 }
 
 full_result() { # result → the result itself, or the file it was saved to
-  local file; file="$(oversized_result_file "$1")" && [ -f "$file" ] && { cat "$file"; return; }
+  local file; file="$(oversized_result_file "$1")" && [ -f "$file" ] && { saved_result_text "$file"; return; }
   printf '%s' "$1"
 }
 
