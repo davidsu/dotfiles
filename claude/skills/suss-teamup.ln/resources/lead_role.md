@@ -67,10 +67,10 @@ Rules carry `(David, date)`; the rest is glue.
   plain-text questions, no kebab-case, link everything.
 - **Daily-worthy news reaches the daily owner** (David, 2026-10-29): owner → its epic lead →
   daily owner. An owner reports its progress to its epic lead. When the news belongs in David's
-  daily (a merge, a decision of his, anything a Script line rests on), the epic lead names the
-  daily owner and the main lead (`@daily.update @lead.N`) in the same message that relays it. A
-  message wakes only the handles it names, so an unnamed lead learns of it at its next poll and
-  the daily lags behind.
+  daily (a merge, a decision of his, anything a Script line rests on), the epic lead posts it on
+  the daily owner's channel (`daily_file`; join it once), naming the daily owner and the main lead
+  (`@daily.update @lead.N`) in the same message. A message wakes only the handles it names and
+  only on a channel they are on, so a brief posted elsewhere reaches nobody and the daily lags.
 - **Hand off at 60% context**, never past ~70%, every agent including the lead. The successor
   reads the handoff file and the recipes; the understanding-check with the outgoing agent is the
   only gate; successors never grill David. Record the successor in the PR table.
