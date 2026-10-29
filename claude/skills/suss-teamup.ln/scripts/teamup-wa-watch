@@ -1,0 +1,101 @@
+#!/usr/bin/env -S python3 -I
+"""teamup-wa-watch link | on <name> <subject> <handle> <group>... | off <name> | status
+
+Delivers every new message of the named WhatsApp groups to a teamup channel, aimed at one agent.
+Reads only, never posts. Its own linked-device session (whatsmeow, no browser), so David's
+WhatsApp keeps working; `link` shows a QR code to scan once. Every message, history included,
+is also kept in messages.jsonl in the state dir, so past ones can be looked up.
+"""
+import json
+import os
+import signal
+import subprocess
+import sys
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+TEAMUP = HERE / "teamup"
+SOURCE = HERE / "wa"
+BINARY = SOURCE / "bin/teamup-wa"
+STATE = Path(os.environ.get("XDG_STATE_HOME", Path.home() / ".local/state")) / "suss-teamup/wa"
+DAEMON_ENV = {**{key: value for key, value in os.environ.items()
+                 if key not in ("CLAUDE_CODE_SESSION_ID", "TEAMUP_SESSION", "CODEX_THREAD_ID", "TEAMUP_SESSION_NAME")},
+              "TEAMUP_SLACK": "off", "TEAMUP_BIN": str(TEAMUP), "TEAMUP_WA_STATE": str(STATE)}
+
+
+def config_file(name): return STATE / f"{name}.json"
+def pid_file(name): return STATE / f"{name}.pid"
+def log_file(name): return STATE / f"{name}.log"
+
+
+def teamup(*args):
+    return subprocess.run([str(TEAMUP), *args], env=DAEMON_ENV, capture_output=True, text=True).returncode == 0
+
+
+def build():
+    sources = list(SOURCE.glob("*.go")) + [SOURCE / "go.mod"]
+    if BINARY.exists() and BINARY.stat().st_mtime >= max(path.stat().st_mtime for path in sources):
+        return
+    subprocess.run(["go", "build", "-o", str(BINARY), "."], cwd=SOURCE, check=True)
+
+
+def link():
+    build()
+    STATE.mkdir(parents=True, exist_ok=True)
+    os.execve(str(BINARY), [str(BINARY), "link"], DAEMON_ENV)
+
+
+def watcher_pid(name):
+    try:
+        pid = int(pid_file(name).read_text())
+        os.kill(pid, 0)
+        return pid
+    except (OSError, ValueError):
+        return None
+
+
+def start(name, subject, handle, *groups):
+    if pid := watcher_pid(name):
+        return print(f"'{name}' is already watching (pid {pid}).")
+    build()
+    STATE.mkdir(parents=True, exist_ok=True)
+    config = {"name": name, "subject": subject, "handle": handle, "groups": list(groups)}
+    config_file(name).write_text(json.dumps(config, ensure_ascii=False))
+    teamup("join", subject, "--as", name, "--pwd", "wa-watch", "--doing", f"WhatsApp groups {', '.join(groups)} → @{handle}")
+    with open(log_file(name), "a") as log:
+        process = subprocess.Popen([str(BINARY), "run", name, subject, handle, *groups],
+                                   stdout=log, stderr=log, env=DAEMON_ENV, start_new_session=True)
+    pid_file(name).write_text(str(process.pid))
+    print(f"'{name}' watching WhatsApp groups {', '.join(groups)} → @{handle} on '{subject}' (pid {process.pid}); log: {log_file(name)}")
+
+
+def stop(name):
+    if pid := watcher_pid(name):
+        os.kill(pid, signal.SIGTERM)
+    pid_file(name).unlink(missing_ok=True)
+    teamup("leave", json.loads(config_file(name).read_text())["subject"], "--as", name)
+    print(f"stopped '{name}'.")
+
+
+def print_status():
+    for config_path in sorted(STATE.glob("*.json")):
+        config = json.loads(config_path.read_text())
+        pid = watcher_pid(config["name"])
+        state = f"watching (pid {pid})" if pid else "stopped"
+        print(f"  {config['name']} — {state}: {', '.join(config['groups'])} → @{config['handle']} on {config['subject']}")
+
+
+USAGE = __doc__.strip().splitlines()[0]
+
+if __name__ == "__main__":
+    command, args = (sys.argv[1] if len(sys.argv) > 1 else ""), sys.argv[2:]
+    if command == "link" and not args:
+        link()
+    elif command == "on" and len(args) >= 4:
+        start(*args)
+    elif command == "off" and len(args) == 1:
+        stop(*args)
+    elif command == "status" and not args:
+        print_status()
+    else:
+        sys.exit(f"usage: {USAGE}")
