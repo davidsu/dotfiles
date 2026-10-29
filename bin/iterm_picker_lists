@@ -37,7 +37,7 @@ ansi_code_of() {
 
 live_tty_of_pid() { ps -o tty= -p "$1" 2>/dev/null | tr -d ' ' | grep -v '^??$' || true; }
 
-live_agents() { # name \t session_id \t tty, sorted by name
+agents_with_a_tty() { # name \t session_id \t tty, sorted by name
   local pid name session_id tty
   while IFS=$'\t' read -r pid name session_id; do
     tty="$(live_tty_of_pid "$pid")"
@@ -45,11 +45,25 @@ live_agents() { # name \t session_id \t tty, sorted by name
   done < <(jq -r 'select(.name) | "\(.pid)\t\(.name)\t\(.sessionId)"' "$HOME"/.claude/sessions/*.json | sort -t$'\t' -k2,2)
 }
 
+iterm_session_ttys() { osascript -e 'tell application "iTerm2" to get tty of sessions of tabs of windows' | tr -s ', ' '\n'; }
+
+keep_open_tabs() { # lines whose 3rd field is a tty, minus those whose tab is closed but whose claude is still shutting down
+  local iterm_ttys lines
+  iterm_ttys="$(mktemp)"
+  iterm_session_ttys > "$iterm_ttys" &
+  lines="$(cat)"
+  wait $!
+  awk -F'\t' 'NR == FNR { open[$1]; next } $3 in open' "$iterm_ttys" <(printf '%s\n' "$lines")
+  rm -f "$iterm_ttys"
+}
+
+live_agents() { agents_with_a_tty | keep_open_tabs; }
+
 alive_rows() {
   local name session_id tty
   while IFS=$'\t' read -r name session_id tty; do
     printf '\e[%sm%s%s\e[0m\tfocus\t%s\n' "$(ansi_code_of "$(transcript_color "$session_id")")" "$AGENT_MARK" "$name" "$tty"
-  done < <(live_agents)
+  done < <(agents_with_a_tty) | keep_open_tabs
 }
 
 running_session_ids() { # the records whose pid is alive (teamup-wake's is_session_running)
