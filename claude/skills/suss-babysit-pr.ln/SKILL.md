@@ -40,6 +40,9 @@ comment is resolved(or escalated), or the user says stop. Report the terminal st
   branch. Re-read the failing test/log first — do not paper over it.
 - **Flaky / infra** (timeout, network, known-flaky test, runner died): rerun
   rather than "fix".
+- **Green but shippy didn't auto-approve** → investigate. It might be that a
+  full rerun (`gh run rerun <run-id>`, not `--failed`) fixes it
+  ([#33664](https://github.com/base44-dev/apper/pull/33664), 2026-10-29).
 
 ## 4. Bot review comments → judge, then act
 
