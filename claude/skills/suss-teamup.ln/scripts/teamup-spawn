@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # teamup-spawn — launch a cooperating agent in a new terminal tab, joined to a channel.
-#   teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--model MODEL] [--role ROLE] [--color COLOR] [--after HANDLE]
+#   teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--model MODEL] [--effort LEVEL] [--role ROLE] [--color COLOR] [--after HANDLE]
 # The tab opens in the caller's terminal (Ghostty or iTerm, via term_spawn). On iTerm it lands
 # immediately right of the caller's own tab (the tab this command runs in, $ITERM_SESSION_ID),
 # or of --after HANDLE's tab (env TEAMUP_AFTER_HANDLE), so a lead's team sits next to it.
@@ -171,19 +171,21 @@ if [ "${1:-}" = __boot_iterm ]; then
 fi
 
 agent="${1:-}"; subject="${2:-}"; shift 2 2>/dev/null || true
-dir="$PWD"; handle=""; color=""; model=""; role=""; after="${TEAMUP_AFTER_HANDLE:-${ITERM_SESSION_ID:-}}"; after="${after#*:}"
+dir="$PWD"; handle=""; color=""; model=""; effort=""; role=""; after="${TEAMUP_AFTER_HANDLE:-${ITERM_SESSION_ID:-}}"; after="${after#*:}"
 while [ $# -gt 0 ]; do
   case "$1" in
     --as)    handle="$2"; shift 2 ;;
     --dir)   dir="$2"; shift 2 ;;
     --color) color="$2"; shift 2 ;;
     --model) model="$2"; shift 2 ;;
+    --effort) effort="$2"; shift 2 ;;
     --role)  role="$2"; shift 2 ;;
     --after) after="$2"; shift 2 ;;
     *) echo "teamup-spawn: unknown flag $1" >&2; exit 1 ;;
   esac
 done
-[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--model MODEL] [--role lead|owner|keeper|ROLE] [--color $(IFS='|'; echo "${SESSION_COLORS[*]}")] [--after HANDLE]" >&2; exit 1; }
+[ -n "$agent" ] && [ -n "$subject" ] || { echo "usage: teamup-spawn <claude|pi|codex> <subject> [--as HANDLE] [--dir DIR] [--model MODEL] [--effort LEVEL] [--role lead|owner|keeper|ROLE] [--color $(IFS='|'; echo "${SESSION_COLORS[*]}")] [--after HANDLE]" >&2; exit 1; }
+[ -z "$effort" ] || [ "$agent" = claude ] || { echo "teamup-spawn: --effort is for claude only" >&2; exit 1; }
 [ -z "$color" ] || is_session_color "$color" || { echo "teamup-spawn: --color must be one of: ${SESSION_COLORS[*]}" >&2; exit 1; }
 
 free_peer_handle() {
@@ -208,8 +210,9 @@ color="${color:-$(spawn_color)}"
 # bypass flags) does NOT dispatch slash commands from argv — argv is a plain prompt —
 # so it gets a natural-language instruction naming the skill (from ~/.agents/skills).
 model_flag="${model:+--model '$model'}"
+effort_flag="${effort:+--effort '$effort'}"
 case "$agent" in
-  claude) run="cyc $model_flag --name '$handle' -- '/suss-teamup $subject'"; inject="/color $color" ;;
+  claude) run="cyc $model_flag $effort_flag --name '$handle' -- '/suss-teamup $subject'"; inject="/color $color" ;;
   # pi takes several argv messages and runs them in order, so it names ITSELF before it
   # joins — no keystroke injection, no focus steal. `/banner` is pi's `/rename`: it sets
   # the session name the handle is derived from AND paints the banner, which is the only
