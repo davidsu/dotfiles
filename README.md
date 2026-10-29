@@ -471,6 +471,9 @@ security add-generic-password -a "$USER" -s "PLAYWRIGHT_MCP_EXTENSION_TOKEN" -w 
 
 # Playwright MCP extension token (for Brave browser control)
 security add-generic-password -a "$USER" -s "PLAYWRIGHT_MCP_EXTENSION_TOKEN_BRAVE" -w "your-brave-playwright-token" -T /usr/bin/security
+
+# Backblaze B2 application key for rclone (remote b2photos; rclone reads RCLONE_CONFIG_B2PHOTOS_KEY, so rclone.conf keeps no key)
+security add-generic-password -a "$USER" -s "RCLONE_CONFIG_B2PHOTOS_KEY" -w "your-b2-application-key" -T /usr/bin/security
 ```
 
 - Get Tavily key at: **https://tavily.com**

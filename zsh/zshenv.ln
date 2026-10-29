@@ -9,4 +9,5 @@ if command -v security &> /dev/null; then
   export TAVILY_API_KEY=$(security find-generic-password -a "$USER" -s "TAVILY_API_KEY" -w 2>/dev/null)
   export PLAYWRIGHT_MCP_EXTENSION_TOKEN=$(security find-generic-password -a "$USER" -s "PLAYWRIGHT_MCP_EXTENSION_TOKEN" -w 2>/dev/null)
   export PLAYWRIGHT_MCP_EXTENSION_TOKEN_BRAVE=$(security find-generic-password -a "$USER" -s "PLAYWRIGHT_MCP_EXTENSION_TOKEN_BRAVE" -w 2>/dev/null)
+  export RCLONE_CONFIG_B2PHOTOS_KEY=$(security find-generic-password -a "$USER" -s "RCLONE_CONFIG_B2PHOTOS_KEY" -w 2>/dev/null)
 fi
