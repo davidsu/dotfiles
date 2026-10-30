@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+# claude_transcript_jump_e2e — end-to-end test of cmd+ctrl+o (bin/claude_transcript_jump), the way you use it.
+# Copies a Claude transcript, resumes the copy in a new background iTerm tab (an idle Claude), then per case: focuses that
+# tab, runs claude_transcript_jump as Karabiner does, types a query into the floating picker, Enter, and checks the line
+# is highlighted in the Claude tab. Cases come from the transcript: the first, a middle and the last prompt, and a
+# reply line after ctrl+w. Prints PASS/FAIL with timings and saves screenshots; closes the tab and deletes the copy.
+#   claude_transcript_jump_e2e [SESSION_ID]    default: the Claude session it runs from ($CLAUDE_CODE_SESSION_ID)
+# Focus moves to the test tab during the run and back at the end: run it while you are not typing.
+set -euo pipefail
+export PATH="$HOME/.dotfiles/bin:/opt/homebrew/bin:$PATH"
+
+readonly SESSION_ID="${1:-${CLAUDE_CODE_SESSION_ID:-}}"
+readonly APP_LOG="$HOME/Library/Logs/claude_transcript_jump.log"
+readonly RUN_DIR="${TMPDIR:-/tmp}/claude_transcript_jump_e2e/$(date +%Y%m%d-%H%M%S)"
+readonly TAB_NAME='e2e-transcript-jump'
+readonly QUERY_WORDS=4
+readonly TYPING_SETTLE_SECONDS=0.7
+readonly SWITCH_TO_WHOLE_CHAT=$'\x17'
+readonly ENTER=$'\r'
+readonly QUIT_CLAUDE=$'\x03'
+readonly CLEANUP_WAIT_SECONDS=5
+
+[ -n "$SESSION_ID" ] || { sed -n '7p' "$0" >&2; exit 1; }
+
+iterm() { # select ID | front | float | screen ID | type ID TEXT | tty ID | close ID
+  osascript -l JavaScript - "$@" <<'JXA'
+const iterm = Application('iTerm2');
+const tabsOf = (window) => {
+  try {
+    return window.tabs();
+  } catch (closingWindow) {
+    return [];
+  }
+};
+const allTabs = () => iterm.windows().flatMap(tabsOf).filter(Boolean);
+const allSessions = () => allTabs().flatMap((tab) => tab.sessions());
+const sessionWithId = (id) => allSessions().find((session) => session.id() === id);
+const tabWithId = (id) => allTabs().find((tab) => tab.sessions().some((session) => session.id() === id));
+const visibleRows = (session) => session.contents().replace(/\n$/, '').split('\n').slice(-session.rows()).join('\n');
+const floatSession = () => allSessions().find((session) => session.profileName() === 'Transcript Picker');
+
+const COMMANDS = {
+  select: ([id]) => { tabWithId(id).select(); iterm.activate(); },
+  front: () => iterm.currentWindow().currentSession().id(),
+  float: () => (floatSession() ? floatSession().id() : ''),
+  screen: ([id]) => visibleRows(sessionWithId(id)),
+  type: ([id, text]) => { sessionWithId(id).write({ text, newline: false }); },
+  tty: ([id]) => sessionWithId(id).tty(),
+  close: ([id]) => { sessionWithId(id).close(); },
+};
+
+function run([command, ...args]) {
+  return COMMANDS[command](args);
+}
+JXA
+}
+
+selected_text() { # iterm session id — its selection, with iTerm's empty cells as spaces and whitespace collapsed
+  uv run --quiet --with iterm2 python - "$1" <<'PY'
+import sys
+
+import iterm2
+
+
+async def print_selection(connection):
+    session = (await iterm2.async_get_app(connection)).get_session_by_id(sys.argv[1])
+    text = await session.async_get_selection_text(await session.async_get_selection())
+    print(" ".join(text.replace("\x00", " ").split()))
+
+
+iterm2.run_until_complete(print_selection)
+PY
+}
+
+now_ms() { python3 -c 'import time; print(int(time.time() * 1000))'; }
+
+wait_for() { # seconds, command… — until the command prints something
+  local deadline=$(( $(now_ms) + $1 * 1000 )) output; shift
+  while [ "$(now_ms)" -lt "$deadline" ]; do
+    output="$("$@" || true)"
+    [ -n "$output" ] && { echo "$output"; return 0; }
+    sleep 0.1
+  done
+  return 1
+}
+
+claude_record_on_tty() { # tty — `pid<TAB>sessionId<TAB>status` of the Claude there
+  local pid
+  for pid in $(ps -t "${1#/dev/}" -o pid=); do
+    [ -f "$HOME/.claude/sessions/$pid.json" ] && jq -r '"\(.pid)\t\(.sessionId)\t\(.status)"' "$HOME/.claude/sessions/$pid.json" && return
+  done
+}
+
+idle_copy_on_tty() { claude_record_on_tty "$1" | awk -F'\t' -v copy="$COPY_ID" '$2 == copy && $3 == "idle"'; }
+
+test_cases() { # lines — `prompts|all<TAB>phrase`: the first, a middle and the last prompt, then a reply line from the middle
+  awk -F'\t' -v words="$QUERY_WORDS" '
+    function phrase_of(text,    parts, idx, result) {
+      if (split(text, parts, " ") < words) return ""
+      for (idx = 1; idx <= words; idx++) {
+        if (parts[idx] !~ /^[A-Za-z0-9][A-Za-z0-9.,?]*$/) return ""
+        result = result (idx > 1 ? " " : "") parts[idx]
+      }
+      return result
+    }
+    function occurrences(phrase,    n, count) {
+      for (n = 1; n <= NR; n++) count += index(text[n], phrase) > 0
+      return count
+    }
+    { role[NR] = $1; message[NR] = $2; text[NR] = $3 }
+    END {
+      for (n = 1; n <= NR; n++) {
+        phrase = phrase_of(text[n])
+        if (phrase == "" || occurrences(phrase) != 1) continue
+        starts_prompt = role[n] == "user" && (n == 1 || role[n - 1] != "user" || message[n] != message[n - 1])
+        if (starts_prompt) prompts[++prompt_count] = phrase
+        else if (role[n] == "assistant") replies[++reply_count] = phrase
+      }
+      if (prompt_count) printf "prompts\t%s\nprompts\t%s\nprompts\t%s\n", prompts[1], prompts[int((prompt_count + 1) / 2)], prompts[prompt_count]
+      if (reply_count) printf "all\t%s\n", replies[int((reply_count + 1) / 2)]
+    }' "$1"
+}
+
+query_for() { echo "'${1// /\\ }"; } # phrase — fzf exact-phrase query
+
+no_float_open() { [ -z "$(iterm float)" ] && echo none; }
+
+float_ready() { local id; id="$(iterm float)"; [ -n "$id" ] && iterm screen "$id" | rg -q --no-config '(Your prompts|Whole chat)> ' && echo "$id"; }
+
+run_case() { # number, mode, phrase — prints one result line
+  local started launcher float entered selection verdict
+  wait_for 10 no_float_open > /dev/null || { echo "FAIL  case $1: a floating window is still open"; return; }
+  iterm select "$TARGET"
+  [ "$(iterm front)" = "$TARGET" ] || { echo "FAIL  case $1: the test tab is not in front"; return; }
+  started=$(now_ms)
+  claude_transcript_jump >> "$APP_LOG" 2>&1 &
+  launcher=$!
+  float="$(wait_for 10 float_ready)" || { kill "$launcher" 2>/dev/null || true; echo "FAIL  case $1: no picker within 10s"; return; }
+  local ready=$(( $(now_ms) - started ))
+  [ "$2" = all ] && { iterm type "$float" "$SWITCH_TO_WHOLE_CHAT"; sleep "$TYPING_SETTLE_SECONDS"; }
+  iterm type "$float" "$(query_for "$3")"
+  sleep "$TYPING_SETTLE_SECONDS"
+  screencapture -x "$RUN_DIR/case$1-picker.png"
+  entered=$(now_ms)
+  iterm type "$float" "$ENTER"
+  wait "$launcher" || true
+  local scrolled=$(( $(now_ms) - entered ))
+  selection="$(selected_text "$TARGET")"
+  screencapture -x "$RUN_DIR/case$1-claude.png"
+  [[ "$selection" == *"$3"* ]] && verdict=PASS || verdict=FAIL
+  printf '%s  case %s: picker %4dms, Enter→highlight %4dms  [%s] %s\n' "$verdict" "$1" "$ready" "$scrolled" "$2" "$3"
+  [ "$verdict" = PASS ] || echo "      selected: ${selection:0:120}"
+}
+
+is_gone() { kill -0 "$1" 2>/dev/null || echo gone; }
+
+quit_test_claude() { # pid — ctrl+c twice, as you would; a kill if it is still there after CLEANUP_WAIT_SECONDS
+  iterm type "$TARGET" "$QUIT_CLAUDE" && sleep 0.5 && iterm type "$TARGET" "$QUIT_CLAUDE" || true
+  wait_for "$CLEANUP_WAIT_SECONDS" is_gone "$1" > /dev/null || kill "$1" 2>/dev/null || true
+}
+
+cleanup() {
+  local pid
+  pid="$(claude_record_on_tty "$TARGET_TTY" | cut -f1)"
+  [ -n "$pid" ] && quit_test_claude "$pid"
+  iterm close "$TARGET" || true
+  rm -f "$COPY"
+  iterm select "$RETURN_TO" || true
+}
+
+SOURCE="$(compgen -G "$HOME/.claude/projects/*/$SESSION_ID.jsonl" | head -1)" || { echo "no transcript for $SESSION_ID" >&2; exit 1; }
+COPY_ID="$(uuidgen | tr '[:upper:]' '[:lower:]')"
+COPY="$(dirname "$SOURCE")/$COPY_ID.jsonl"
+PROJECT_DIR="$(jq -rn 'first(inputs | select(.cwd) | .cwd)' "$SOURCE")"
+RETURN_TO="$(iterm front)"
+mkdir -p "$RUN_DIR"
+cp "$SOURCE" "$COPY"
+TARGET="$(term_spawn --app iterm --dir "$PROJECT_DIR" --run "claude --resume $COPY_ID -n $TAB_NAME" --after "$RETURN_TO" --background)"
+TARGET_TTY="$(iterm tty "$TARGET")"
+trap cleanup EXIT
+wait_for 60 idle_copy_on_tty "$TARGET_TTY" > /dev/null || { echo "FAIL: the resumed Claude never went idle" >&2; exit 1; }
+claude_transcript_jump --lines "$COPY" > "$RUN_DIR/lines"
+case_number=0
+while IFS=$'\t' read -r mode phrase; do
+  case_number=$((case_number + 1))
+  run_case "$case_number" "$mode" "$phrase"
+done < <(test_cases "$RUN_DIR/lines")
+echo "screenshots: $RUN_DIR   scroll traces: $APP_LOG"

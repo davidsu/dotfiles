@@ -17,15 +17,24 @@ const MIN_LINES_PER_PAGE = 5;
 const SETTLE_SECONDS = 0.1;
 const SNIPPET_LENGTH = 40;
 const LANDMARK_MIN_LENGTH = 15;
-const MAX_JUMPS = 40;
+const MAX_JUMPS = 60;
+const MAX_BLIND_PAGES = 8;
+const MAX_LANDMARK_GAP = 40;
 
 const normalized = (text) => text.replace(/[`*_#>|│]/g, '').replace(/\s+/g, ' ').trim();
 
 const readLines = (path) =>
   $.NSString.stringWithContentsOfFileEncodingError(path, $.NSUTF8StringEncoding, null).js.split('\n').map((line) => line.replace(/^[a-z]+\t\d+\t/, ''));
 
-const sessionWithId = (iterm, id) =>
-  iterm.windows().flatMap((window) => (window.tabs() || []).flatMap((tab) => tab.sessions())).find((session) => session.id() === id);
+const sessionsOf = (window) => {
+  try {
+    return window.tabs().flatMap((tab) => tab.sessions());
+  } catch (closingWindow) {
+    return [];
+  }
+};
+
+const sessionWithId = (iterm, id) => iterm.windows().flatMap(sessionsOf).find((session) => session.id() === id);
 
 const PINNED_PROMPT_MARK = '\u276F';
 
@@ -47,39 +56,72 @@ const press = (session, key, times) => {
   delay(SETTLE_SECONDS);
 };
 
-const occursOnce = (snippets, snippet) => snippets.indexOf(snippet) === snippets.lastIndexOf(snippet);
+const appearsOnce = (lines, snippet) => lines.filter((line) => line.includes(snippet)).length === 1;
 
-const landmarkIndexes = (snippets) =>
-  snippets.map((snippet, idx) => idx).filter((idx) => snippets[idx].length >= LANDMARK_MIN_LENGTH && occursOnce(snippets, snippets[idx]));
+const landmarkIndexes = (lines, snippets) =>
+  snippets.map((snippet, idx) => idx).filter((idx) => snippets[idx].length >= LANDMARK_MIN_LENGTH && appearsOnce(lines, snippets[idx]));
+
+const clustersOf = (indexes) =>
+  indexes.reduce((clusters, idx) => {
+    const last = clusters[clusters.length - 1];
+    if (last && idx - last[last.length - 1] <= MAX_LANDMARK_GAP) last.push(idx);
+    else clusters.push([idx]);
+    return clusters;
+  }, []);
+
+const largestOf = (clusters) => clusters.reduce((largest, cluster) => (cluster.length > largest.length ? cluster : largest), []);
 
 const visibleSpan = (screen, snippets, landmarks) => {
-  const visible = landmarks.filter((idx) => screen.includes(snippets[idx]));
+  const visible = largestOf(clustersOf(landmarks.filter((idx) => screen.includes(snippets[idx]))));
   return visible.length ? { top: visible[0], bottom: visible[visible.length - 1] } : null;
 };
 
-const isTargetOnScreen = ({ screen, span, snippets, target }) =>
+const isTargetOnScreen = ({ screen, span, lines, snippets, target }) =>
   screen.includes(snippets[target]) &&
-  (occursOnce(snippets, snippets[target]) || (span !== null && span.top <= target && target <= span.bottom));
+  (appearsOnce(lines, snippets[target]) || (span !== null && span.top <= target && target <= span.bottom));
 
 const pagesBetween = (distance, linesPerPage) => Math.ceil(distance / linesPerPage);
 
 const guessedLinesPerPage = (span) => Math.max(MIN_LINES_PER_PAGE, span.bottom - span.top + 1);
 
-const measuredLinesPerPage = (before, after) => {
+const measuredLinesPerPage = (before, after, rowsOnScreen) => {
   const isPageMove = before.move.key === 'pageUp' || before.move.key === 'pageDown';
   if (!isPageMove || before.span === null || after === null) return null;
   const perPage = Math.abs(after.top - before.span.top) / before.move.times;
-  return perPage >= 1 ? perPage : null;
+  return perPage >= 1 && perPage <= rowsOnScreen ? perPage : null;
 };
 
 const nudgeTowardNearerEdge = (span, target) =>
   target - span.top <= span.bottom - target ? { key: 'wheelUp', times: NUDGE_LINES } : { key: 'wheelDown', times: NUDGE_LINES };
 
-const nextMove = (span, target, linesPerPage) => {
-  if (span === null) return { key: 'pageUp', times: 1 };
+const DIRECTION_OF = { pageUp: 'pageUp', wheelUp: 'pageUp', pageDown: 'pageDown', wheelDown: 'pageDown' };
+
+const blindMove = (previous) => {
+  if (previous === null) return { key: 'pageUp', times: 1 };
+  const key = DIRECTION_OF[previous.move.key];
+  const isStillBlind = previous.span === null && previous.move.key === key;
+  return { key, times: isStillBlind ? Math.min(previous.move.times * 2, MAX_BLIND_PAGES) : 1 };
+};
+
+const nextMove = ({ span, target, linesPerPage, previous }) => {
+  if (span === null) return blindMove(previous);
   if (target < span.top) return { key: 'pageUp', times: pagesBetween(span.top - target, linesPerPage) };
   if (target > span.bottom) return { key: 'pageDown', times: pagesBetween(target - span.bottom, linesPerPage) };
   return nudgeTowardNearerEdge(span, target);
+};
+
+const PAGES_MOVED = { pageUp: 1, pageDown: -1, wheelUp: 0, wheelDown: 0 };
+
+const narrowedBounds = (bounds, { span, target, pagesUp }) => ({
+  below: span && target < span.top ? Math.max(bounds.below, pagesUp) : bounds.below,
+  above: span && target > span.bottom ? Math.min(bounds.above, pagesUp) : bounds.above,
+});
+
+const keptWithinBounds = (move, { below, above }, pagesUp) => {
+  const room = { pageUp: above - pagesUp - 1, pageDown: pagesUp - below - 1 }[move.key];
+  if (room === undefined || room >= move.times) return move;
+  if (room >= 1) return { key: move.key, times: room };
+  return { key: move.key === 'pageUp' ? 'wheelUp' : 'wheelDown', times: NUDGE_LINES };
 };
 
 function run([id, linesPath, lineNumber]) {
@@ -87,25 +129,30 @@ function run([id, linesPath, lineNumber]) {
   const lines = readLines(linesPath).map(normalized);
   const snippets = lines.map((line) => line.slice(0, SNIPPET_LENGTH));
   const target = Number(lineNumber) - 1;
-  const landmarks = landmarkIndexes(snippets);
+  const landmarks = landmarkIndexes(lines, snippets);
   const started = Date.now();
   const trace = (fields) => console.log(JSON.stringify({ ms: Date.now() - started, ...fields }));
   trace({ target: target + 1, snippet: snippets[target] });
   press(session, 'scrollToBottom', 1);
   let linesPerPage = null;
   let previous = null;
+  let pagesUp = 0;
+  let bounds = { below: -Infinity, above: Infinity };
   for (let jump = 0; jump < MAX_JUMPS; jump++) {
     const rows = withoutPinnedPrompt(visibleRows(session));
     const screen = normalized(rows.join('\n'));
     const span = visibleSpan(screen, snippets, landmarks);
-    if (isTargetOnScreen({ screen, span, snippets, target })) {
+    if (isTargetOnScreen({ screen, span, lines, snippets, target })) {
       trace({ jump, span: span && [span.top + 1, span.bottom + 1], found: rowsShowing(rows, lines[target]) });
       return `found ${rowsShowing(rows, lines[target])}`;
     }
-    linesPerPage = (previous && measuredLinesPerPage(previous, span)) || linesPerPage;
-    const move = nextMove(span, target, linesPerPage || (span && guessedLinesPerPage(span)));
-    trace({ jump, span: span && [span.top + 1, span.bottom + 1], linesPerPage, ...move });
+    linesPerPage = (previous && measuredLinesPerPage(previous, span, rows.length)) || linesPerPage;
+    bounds = narrowedBounds(bounds, { span, target, pagesUp });
+    const wanted = nextMove({ span, target, linesPerPage: linesPerPage || (span && guessedLinesPerPage(span)), previous });
+    const move = keptWithinBounds(wanted, bounds, pagesUp);
+    trace({ jump, span: span && [span.top + 1, span.bottom + 1], pagesUp, linesPerPage, ...move });
     press(session, move.key, move.times);
+    pagesUp += PAGES_MOVED[move.key] * move.times;
     previous = { span, move };
   }
   return `gave up after ${MAX_JUMPS} jumps`;

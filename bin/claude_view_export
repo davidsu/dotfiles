@@ -11,6 +11,14 @@ const DETAILED_VIEW_MARK = 'Showing detailed transcript';
 const PENDING_CHOICE_MARK = 'Esc to cancel';
 const POLL_SECONDS = 0.05;
 const WAIT_SECONDS = 3;
+const STARTED = Date.now();
+
+const trace = (step) => console.log(JSON.stringify({ export_ms: Date.now() - STARTED, step }));
+
+const noFile = (reason) => {
+  trace(reason);
+  return '';
+};
 
 const shell = (command) => {
   const app = Application.currentApplication();
@@ -18,8 +26,15 @@ const shell = (command) => {
   return app.doShellScript(command);
 };
 
-const sessionWithId = (id) =>
-  Application('iTerm2').windows().flatMap((window) => (window.tabs() || []).flatMap((tab) => tab.sessions())).find((session) => session.id() === id);
+const sessionsOf = (window) => {
+  try {
+    return window.tabs().flatMap((tab) => tab.sessions());
+  } catch (closingWindow) {
+    return [];
+  }
+};
+
+const sessionWithId = (id) => Application('iTerm2').windows().flatMap(sessionsOf).find((session) => session.id() === id);
 
 const screenShows = (session, mark) => session.contents().split('\n').slice(-session.rows() - 1).join('\n').includes(mark);
 
@@ -37,21 +52,30 @@ const waitFor = (isDone) => {
 
 const exportedFile = (session) => {
   const tty = session.tty();
-  if (!waitFor(() => editorFile(tty) !== '')) return '';
+  if (!waitFor(() => editorFile(tty) !== '')) return noFile('no editor opened');
   const file = editorFile(tty);
+  trace('editor open');
   typeInto(session, QUIT_EDITOR);
-  return waitFor(() => editorFile(tty) === '') ? file : '';
+  if (!waitFor(() => editorFile(tty) === '')) return noFile('editor did not quit');
+  trace('editor closed');
+  return file;
 };
 
 const leaveDetailedView = (session) => {
-  if (waitFor(() => screenShows(session, DETAILED_VIEW_MARK))) typeInto(session, TOGGLE_DETAILED_VIEW);
+  if (!waitFor(() => screenShows(session, DETAILED_VIEW_MARK))) {
+    trace('detailed view gone already');
+    return;
+  }
+  typeInto(session, TOGGLE_DETAILED_VIEW);
+  trace('left detailed view');
 };
 
 function run([id]) {
   const session = sessionWithId(id);
-  if (screenShows(session, PENDING_CHOICE_MARK)) return '';
+  if (screenShows(session, PENDING_CHOICE_MARK)) return noFile('Claude waits on a choice: skipped');
   typeInto(session, TOGGLE_DETAILED_VIEW);
-  if (!waitFor(() => screenShows(session, DETAILED_VIEW_MARK))) return '';
+  if (!waitFor(() => screenShows(session, DETAILED_VIEW_MARK))) return noFile('detailed view never showed');
+  trace('detailed view showing');
   typeInto(session, OPEN_IN_EDITOR);
   const file = exportedFile(session);
   leaveDetailedView(session);

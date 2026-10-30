@@ -9,6 +9,7 @@
 #                                                   and exits, so the window closes before the scroll starts
 #   claude_transcript_jump --scroll ID LINES NUMBER scroll the Claude tab (ID = its iTerm session) to line NUMBER of LINES, highlight it
 #   claude_transcript_jump --rows prompts|all LINES the picker's rows: `preview row<TAB>line number<TAB>text`
+#   claude_transcript_jump --lines TRANSCRIPT       the conversation lines it searches (`role<TAB>message<TAB>text`); bin/claude_transcript_jump_e2e
 set -euo pipefail
 export PATH="$HOME/.dotfiles/bin:/opt/homebrew/bin:$PATH"
 
@@ -87,7 +88,7 @@ PY
 
 prepare_preview() { # iterm session id, lines — writes LINES.view (what the preview shows), then LINES.map (each line's row in it)
   local export
-  export="$(claude_view_export "$1")"
+  export="$(claude_view_export "$1" || true)"
   if [ -n "$export" ]; then
     shaded_prompts "$export" > "$2.view"
     export_rows_of_lines "$2" "$export" > "$2.map.tmp"
@@ -124,7 +125,7 @@ wait_for_pick() { # choice file — until the floating picker exits (Esc leaves 
 pick_in_floating_window() { # lines — prints the chosen line number
   local choice
   choice="$(mktemp -t claude_transcript_choice)"
-  iterm_float --fraction 1 "$SELF --pick $1 --into $choice" && wait_for_pick "$choice" && cat "$choice"
+  iterm_float --fraction 1 --profile 'Transcript Picker' "$SELF --pick $1 --into $choice" && wait_for_pick "$choice" && cat "$choice"
   local outcome=$?
   rm -f "$choice"
   return "$outcome"
@@ -198,5 +199,6 @@ case "${1:-}" in
   --preview) preview_with_cursor_line "$2" "$3" ;;
   --rows) if [ "$2" = prompts ]; then prompt_rows "$3"; else all_rows "$3"; fi ;;
   --scroll) scroll_and_highlight "$2" "$3" "$4" ;;
-  *) sed -n '7,11p' "$0" >&2; exit 1 ;;
+  --lines) conversation_lines "$2" ;;
+  *) sed -n '7,12p' "$0" >&2; exit 1 ;;
 esac

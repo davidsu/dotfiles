@@ -1,0 +1,10 @@
+{
+  "Profiles": [
+    {
+      "Name": "Transcript Picker",
+      "Guid": "8DBD8D59-3EE5-4B57-A3BB-D6F51693A668",
+      "Dynamic Profile Parent Name": "Agent Picker",
+      "Normal Font": "JetBrainsMonoNFM-Regular 18"
+    }
+  ]
+}

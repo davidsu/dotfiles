@@ -1,19 +1,25 @@
 #!/usr/bin/env bash
-# iterm_float [--fraction F] COMMAND… — run a shell command in a floating, chromeless iTerm window centered on the screen
-# (the "Agent Picker" dynamic profile, F of the visible screen, default 0.9; the window closes when the command ends).
-# bin/claude_transcript_jump uses --fraction 1 (the whole visible screen).
+# iterm_float [--fraction F] [--profile P] COMMAND… — run a shell command in a floating, chromeless iTerm window centered on
+# the screen (dynamic profile P, default "Agent Picker"; F of the visible screen, default 0.9; the window closes when the
+# command ends). bin/claude_transcript_jump uses --fraction 1 (the whole visible screen) and the "Transcript Picker" profile.
 # Karabiner's cmd+ctrl+{t,c,b} run `iterm_float mru|chromehistory|chromebookmarks`; bin/iterm_agent_picker uses it too.
 # COMMAND is run by an interactive zsh, so aliases and the fzf functions from zsh/sources work.
 # Singleton: while a floating window is open, another call brings it to the front instead (exit 3).
 set -euo pipefail
 
-readonly FLOAT_PROFILE="Agent Picker"
+float_profile="Agent Picker"
 screen_fraction=0.9
-[ "${1:-}" = --fraction ] && { screen_fraction="$2"; shift 2; }
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --fraction) screen_fraction="$2"; shift 2 ;;
+    --profile) float_profile="$2"; shift 2 ;;
+    *) break ;;
+  esac
+done
 
-[ $# -gt 0 ] || { echo "usage: iterm_float [--fraction F] COMMAND…" >&2; exit 1; }
+[ $# -gt 0 ] || { echo "usage: iterm_float [--fraction F] [--profile P] COMMAND…" >&2; exit 1; }
 
-outcome="$(osascript -l JavaScript - "$FLOAT_PROFILE" "$screen_fraction" "zsh -ic $(printf '%q' "$*")" <<'JXA'
+outcome="$(osascript -l JavaScript - "$float_profile" "$screen_fraction" "zsh -ic $(printf '%q' "$*")" <<'JXA'
 ObjC.import('AppKit');
 const coverScreenCenter = (window, fraction) => {
   const screen = $.NSScreen.mainScreen.frame.size;
@@ -29,7 +35,7 @@ const coverScreenCenter = (window, fraction) => {
   };
 };
 const existingFloatingWindow = (iterm, profile) =>
-  iterm.windows().find((window) => window.currentSession().profileName() === profile);
+  iterm.windows().find((window) => window.currentSession() && window.currentSession().profileName() === profile);
 function run([profile, fraction, command]) {
   const iterm = Application('iTerm2');
   const open = existingFloatingWindow(iterm, profile);
