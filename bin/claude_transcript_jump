@@ -38,54 +38,84 @@ open_picker() {
   iterm_float "$SELF --pick $iterm_session $lines" || rm -f "$lines"
 }
 
-pick_line() { # lines — prints the chosen line
-  local number
-  number="$(nl -ba -w1 -s$'\t' "$1" | fzf --tac --layout=reverse --no-info --border=rounded \
+pick_line_number() { # lines
+  nl -ba -w1 -s$'\t' "$1" | fzf --tac --layout=reverse --no-info --border=rounded \
     --border-label=' Claude conversation ' --prompt='Line> ' --header='ENTER: scroll Claude to it | ESC: quit' \
     --delimiter=$'\t' --with-nth=2.. --accept-nth=1 \
     --preview="bat --color=always --style=plain --language=md --highlight-line {1} $1" \
-    --preview-window='up:50%:wrap:+{1}/2')" || return 1
-  sed -n "${number}p" "$1"
+    --preview-window='up:50%:wrap:+{1}/2'
 }
 
-scroll_claude_to() { # iterm session id, line
-  osascript -l JavaScript - "$1" "$2" <<'JXA'
+scroll_claude_to() { # iterm session id, lines, line number
+  osascript -l JavaScript - "$@" <<'JXA'
+ObjC.import('Foundation');
 const SCROLL_TO_BOTTOM = '\x1b[1;5F';
 const PAGE_UP = '\x1b[5~';
-const SETTLE_SECONDS = 0.05;
+const PAGE_DOWN = '\x1b[6~';
+const SETTLE_SECONDS = 0.1;
 const SNIPPET_LENGTH = 40;
+const LANDMARK_MIN_LENGTH = 15;
+const MAX_JUMPS = 40;
 
 const normalized = (text) => text.replace(/[`*_#>|│]/g, '').replace(/\s+/g, ' ').trim();
+
+const readLines = (path) => $.NSString.stringWithContentsOfFileEncodingError(path, $.NSUTF8StringEncoding, null).js.split('\n');
 
 const sessionWithId = (iterm, id) =>
   iterm.windows().flatMap((window) => window.tabs().flatMap((tab) => tab.sessions())).find((session) => session.id() === id);
 
-const visibleScreen = (session) => session.contents().split('\n').slice(-session.rows()).join('\n');
+const visibleScreen = (session) => normalized(session.contents().split('\n').slice(-session.rows()).join('\n'));
 
-const press = (session, keys) => {
-  session.write({ text: keys, newline: false });
+const press = (session, key, times) => {
+  session.write({ text: key.repeat(times), newline: false });
   delay(SETTLE_SECONDS);
 };
 
-function run([id, line]) {
+const occursOnce = (snippets, snippet) => snippets.indexOf(snippet) === snippets.lastIndexOf(snippet);
+
+const landmarkIndexes = (snippets) =>
+  snippets.map((snippet, idx) => idx).filter((idx) => snippets[idx].length >= LANDMARK_MIN_LENGTH && occursOnce(snippets, snippets[idx]));
+
+const visibleSpan = (screen, snippets, landmarks) => {
+  const visible = landmarks.filter((idx) => screen.includes(snippets[idx]));
+  return visible.length ? { top: visible[0], bottom: visible[visible.length - 1] } : null;
+};
+
+const isTargetOnScreen = ({ screen, span, snippets, target }) =>
+  screen.includes(snippets[target]) &&
+  (occursOnce(snippets, snippets[target]) || (span !== null && span.top <= target && target <= span.bottom));
+
+const pagesToTarget = (span, target) => {
+  const linesPerPage = span.bottom - span.top + 1;
+  return target < span.top
+    ? -Math.ceil((span.top - target) / linesPerPage)
+    : Math.ceil((target - span.bottom) / linesPerPage);
+};
+
+function run([id, linesPath, lineNumber]) {
   const session = sessionWithId(Application('iTerm2'), id);
-  const snippet = normalized(line).slice(0, SNIPPET_LENGTH);
-  press(session, SCROLL_TO_BOTTOM);
-  for (let screen = visibleScreen(session), previous = ''; screen !== previous; previous = screen, screen = visibleScreen(session)) {
-    if (normalized(screen).includes(snippet)) return 'found';
-    press(session, PAGE_UP);
+  const snippets = readLines(linesPath).map((line) => normalized(line).slice(0, SNIPPET_LENGTH));
+  const target = Number(lineNumber) - 1;
+  const landmarks = landmarkIndexes(snippets);
+  press(session, SCROLL_TO_BOTTOM, 1);
+  for (let jump = 0; jump < MAX_JUMPS; jump++) {
+    const screen = visibleScreen(session);
+    const span = visibleSpan(screen, snippets, landmarks);
+    if (isTargetOnScreen({ screen, span, snippets, target })) return `found after ${jump} jumps`;
+    const pages = span ? pagesToTarget(span, target) : -1;
+    press(session, pages < 0 ? PAGE_UP : PAGE_DOWN, Math.max(1, Math.abs(pages)));
   }
-  return 'reached the top without finding it';
+  return `gave up after ${MAX_JUMPS} jumps`;
 }
 JXA
 }
 
 pick_and_scroll() { # iterm session id, lines
-  local line
-  line="$(pick_line "$2")" || { rm -f "$2"; return 0; }
+  local number
+  number="$(pick_line_number "$2")" || { rm -f "$2"; return 0; }
+  echo "scrolling Claude to line $number: $(sed -n "${number}p" "$2")"
+  scroll_claude_to "$1" "$2" "$number"
   rm -f "$2"
-  echo "scrolling Claude to: $line"
-  scroll_claude_to "$1" "$line"
 }
 
 case "${1:-}" in
