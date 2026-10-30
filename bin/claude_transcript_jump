@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+# claude_transcript_jump — fuzzy-find a line of the Claude conversation in the current iTerm tab (like nvim's
+# <space>bl), then scroll that tab's Claude view to it. Enter scrolls, Esc closes.
+# Claude has no search, so the scroll types ctrl+End, then PageUp until the line is on screen.
+#   claude_transcript_jump                    cmd+ctrl+o: the picker in a floating window (bin/iterm_float)
+#   claude_transcript_jump --pick ID LINES    what runs inside the floating window (ID = the Claude tab's iTerm session)
+set -euo pipefail
+export PATH="$HOME/.dotfiles/bin:/opt/homebrew/bin:$PATH"
+
+readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
+
+notify() { osascript -e "display notification \"$1\" with title \"claude_transcript_jump\""; }
+
+front_iterm_session() { # prints `session id<TAB>tty`
+  osascript -e 'tell application "iTerm2" to tell current session of current window to return (id as text) & tab & tty'
+}
+
+claude_session_on_tty() { # tty — the Claude session id from its ~/.claude/sessions record
+  local pid
+  for pid in $(ps -t "${1#/dev/}" -o pid=); do
+    [ -f "$HOME/.claude/sessions/$pid.json" ] && jq -r .sessionId "$HOME/.claude/sessions/$pid.json" && return
+  done
+}
+
+conversation_lines() { # transcript.jsonl — the prompts and replies, as the Claude view shows them
+  jq -r 'select(.isSidechain != true and .isMeta != true and (.type == "user" or .type == "assistant"))
+    | .message.content | if type == "string" then . else (.[] | select(.type == "text") | .text) end
+    | select(startswith("<") | not)' "$1" | grep -v '^[[:space:]]*$'
+}
+
+open_picker() {
+  local iterm_session tty claude_session lines
+  IFS=$'\t' read -r iterm_session tty < <(front_iterm_session)
+  claude_session="$(claude_session_on_tty "$tty")"
+  [ -n "$claude_session" ] || { notify "No Claude session in this tab"; return 0; }
+  lines="$(mktemp -t claude_transcript)"
+  conversation_lines "$(compgen -G "$HOME/.claude/projects/*/$claude_session.jsonl" | head -1)" > "$lines"
+  iterm_float "$SELF --pick $iterm_session $lines" || rm -f "$lines"
+}
+
+pick_line() { # lines — prints the chosen line
+  local number
+  number="$(nl -ba -w1 -s$'\t' "$1" | fzf --tac --layout=reverse --no-info --border=rounded \
+    --border-label=' Claude conversation ' --prompt='Line> ' --header='ENTER: scroll Claude to it | ESC: quit' \
+    --delimiter=$'\t' --with-nth=2.. --accept-nth=1 \
+    --preview="bat --color=always --style=plain --language=md --highlight-line {1} $1" \
+    --preview-window='up:50%:wrap:+{1}/2')" || return 1
+  sed -n "${number}p" "$1"
+}
+
+scroll_claude_to() { # iterm session id, line
+  osascript -l JavaScript - "$1" "$2" <<'JXA'
+const SCROLL_TO_BOTTOM = '\x1b[1;5F';
+const PAGE_UP = '\x1b[5~';
+const SETTLE_SECONDS = 0.05;
+const SNIPPET_LENGTH = 40;
+
+const normalized = (text) => text.replace(/[`*_#>|│]/g, '').replace(/\s+/g, ' ').trim();
+
+const sessionWithId = (iterm, id) =>
+  iterm.windows().flatMap((window) => window.tabs().flatMap((tab) => tab.sessions())).find((session) => session.id() === id);
+
+const visibleScreen = (session) => session.contents().split('\n').slice(-session.rows()).join('\n');
+
+const press = (session, keys) => {
+  session.write({ text: keys, newline: false });
+  delay(SETTLE_SECONDS);
+};
+
+function run([id, line]) {
+  const session = sessionWithId(Application('iTerm2'), id);
+  const snippet = normalized(line).slice(0, SNIPPET_LENGTH);
+  press(session, SCROLL_TO_BOTTOM);
+  for (let screen = visibleScreen(session), previous = ''; screen !== previous; previous = screen, screen = visibleScreen(session)) {
+    if (normalized(screen).includes(snippet)) return 'found';
+    press(session, PAGE_UP);
+  }
+  return 'reached the top without finding it';
+}
+JXA
+}
+
+pick_and_scroll() { # iterm session id, lines
+  local line
+  line="$(pick_line "$2")" || { rm -f "$2"; return 0; }
+  rm -f "$2"
+  echo "scrolling Claude to: $line"
+  scroll_claude_to "$1" "$line"
+}
+
+case "${1:-}" in
+  "") open_picker ;;
+  --pick) pick_and_scroll "$2" "$3" ;;
+  *) sed -n '5,6p' "$0" >&2; exit 1 ;;
+esac

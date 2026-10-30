@@ -27,6 +27,17 @@
             ]
           },
           {
+            "description": "iTerm: cmd+ctrl+o → fuzzy-find a line of the Claude conversation in the current tab; Enter scrolls Claude to it",
+            "manipulators": [
+              {
+                "conditions": [{ "type": "frontmost_application_if", "bundle_identifiers": ["^com\\.googlecode\\.iterm2$"] }],
+                "from": { "key_code": "o", "modifiers": { "mandatory": ["command", "control"] } },
+                "to": [{ "shell_command": "$HOME/.dotfiles/bin/claude_transcript_jump >> $HOME/Library/Logs/claude_transcript_jump.log 2>&1" }],
+                "type": "basic"
+              }
+            ]
+          },
+          {
             "description": "iTerm: cmd+[ / cmd+] → back / forward through the tabs and panes you focused",
             "manipulators": [
               {
