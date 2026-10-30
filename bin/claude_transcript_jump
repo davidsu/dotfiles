@@ -2,15 +2,15 @@
 # claude_transcript_jump — fuzzy-find a line of the Claude conversation in the current iTerm tab (like nvim's
 # <space>bl), then scroll that tab's Claude view to it and highlight it (bin/iterm_select_rows). Enter scrolls, Esc closes.
 # Claude has no search, so the scroll types ctrl+End, then PageUp/PageDown bursts sized from the lines on screen.
-#   claude_transcript_jump                          cmd+ctrl+o: the picker in a floating window (bin/iterm_float)
-#   claude_transcript_jump --pick ID LINES          what runs inside the floating window (ID = the Claude tab's iTerm session);
-#                                                   hands the scroll to --scroll in the background so the window closes at once
-#   claude_transcript_jump --scroll ID LINES NUMBER scroll the Claude tab to line NUMBER of LINES and highlight it
+#   claude_transcript_jump                          cmd+ctrl+o: the picker in a floating window (bin/iterm_float), then the scroll
+#   claude_transcript_jump --pick LINES --into FILE what runs inside the floating window: writes the chosen line number to FILE
+#                                                   and exits, so the window closes before the scroll starts
+#   claude_transcript_jump --scroll ID LINES NUMBER scroll the Claude tab (ID = its iTerm session) to line NUMBER of LINES, highlight it
 set -euo pipefail
 export PATH="$HOME/.dotfiles/bin:/opt/homebrew/bin:$PATH"
 
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
-readonly LOG="$HOME/Library/Logs/claude_transcript_jump.log"
+readonly FLOAT_STARTUP_SECONDS=1
 
 notify() { osascript -e "display notification \"$1\" with title \"claude_transcript_jump\""; }
 
@@ -31,14 +31,30 @@ conversation_lines() { # transcript.jsonl — the prompts and replies, as the Cl
     | select(startswith("<") | not)' "$1" | grep -v '^[[:space:]]*$'
 }
 
+wait_for_pick() { # choice file — until the floating picker exits (Esc leaves the file empty)
+  sleep "$FLOAT_STARTUP_SECONDS"
+  while pgrep -fq -- "--into $1"; do sleep 0.1; done
+  [ -s "$1" ]
+}
+
+pick_in_floating_window() { # lines — prints the chosen line number
+  local choice
+  choice="$(mktemp -t claude_transcript_choice)"
+  iterm_float "$SELF --pick $1 --into $choice" && wait_for_pick "$choice" && cat "$choice"
+  local outcome=$?
+  rm -f "$choice"
+  return "$outcome"
+}
+
 open_picker() {
-  local iterm_session tty claude_session lines
+  local iterm_session tty claude_session lines number
   IFS=$'\t' read -r iterm_session tty < <(front_iterm_session)
   claude_session="$(claude_session_on_tty "$tty")"
   [ -n "$claude_session" ] || { notify "No Claude session in this tab"; return 0; }
   lines="$(mktemp -t claude_transcript)"
   conversation_lines "$(compgen -G "$HOME/.claude/projects/*/$claude_session.jsonl" | head -1)" > "$lines"
-  iterm_float "$SELF --pick $iterm_session $lines" || rm -f "$lines"
+  number="$(pick_in_floating_window "$lines")" || { rm -f "$lines"; return 0; }
+  scroll_and_highlight "$iterm_session" "$lines" "$number"
 }
 
 pick_line_number() { # lines
@@ -134,15 +150,15 @@ scroll_and_highlight() { # iterm session id, lines, line number
   iterm_select_rows "$1" "$first_row" "$last_row"
 }
 
-pick_then_scroll_in_background() { # iterm session id, lines
+pick_into() { # lines, choice file
   local number
-  number="$(pick_line_number "$2")" || { rm -f "$2"; return 0; }
-  nohup "$SELF" --scroll "$1" "$2" "$number" >> "$LOG" 2>&1 &
+  number="$(pick_line_number "$1")" || return 0
+  echo "$number" > "$2"
 }
 
 case "${1:-}" in
   "") open_picker ;;
-  --pick) pick_then_scroll_in_background "$2" "$3" ;;
+  --pick) pick_into "$2" "$4" ;;
   --scroll) scroll_and_highlight "$2" "$3" "$4" ;;
   *) sed -n '5,9p' "$0" >&2; exit 1 ;;
 esac
