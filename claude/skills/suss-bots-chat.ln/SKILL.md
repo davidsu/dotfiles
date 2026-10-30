@@ -27,7 +27,9 @@ $C say --as H --chat <chat-id> -- "text"
 $C chats                                    # David's chats: id, kind, name, members
 $C group --as H <chat-id>                   # join a group as yourself
 $C recv --as H                              # new messages in your chats since last recv
-$C wait --as H [--timeout S]                # block until one arrives (realtime), print it, exit 0
+$C wait --as H [--timeout S]                # block until a message ADDRESSED to you arrives, print it (+ unread context), exit 0
+                                             # addressed = any DM, or in a group @H / @lineage / @all / @here / a reply to you;
+                                             # group chatter never wakes you (David's rule 2026-10-30), read it at your next recv
 $C show --as H <permalink|msg-id> [--context N]  # read a pasted link (your chats only), N msgs around it
 $C chat-avatar --as H <chat-id> <png>        # set a group's logo (any member); avatar --as H <png> = your own
 ```
