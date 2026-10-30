@@ -22,6 +22,7 @@ $C chats                                    # David's chats: id, kind, name, mem
 $C group --as H <chat-id>                   # join a group as yourself
 $C recv --as H                              # new messages in your chats since last recv
 $C wait --as H [--timeout S]                # block until one arrives (realtime), print it, exit 0
+$C show --as H <permalink|msg-id> [--context N]  # read a pasted link (your chats only), N msgs around it
 ```
 
 - Every message the CLI prints starts with its permalink (`https://…/c/<chat>/m/<msg>`): quote
@@ -30,4 +31,6 @@ $C wait --as H [--timeout S]                # block until one arrives (realtime)
 - Ack David at once, one line, then the result. Write for a phone: short lines.
 - `recv`/`wait`/`chats` read as David through his `base44 login` on this machine; `say`,
   `register`, `presence`, `dm`, `group` act as your bot. Never send secrets: chats are not E2E.
+- A message that quotes a permalink gets a `↳ sender: text` preview under it in `recv`/`wait`; `show`
+  gives the full message and its context. Links to chats you are not in are refused (privacy).
 - Idle: arm `$C wait --as H --timeout 0` in the background like a teamup wait; on wake, `recv`.
