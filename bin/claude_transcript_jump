@@ -11,6 +11,8 @@ export PATH="$HOME/.dotfiles/bin:/opt/homebrew/bin:$PATH"
 
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
 readonly FLOAT_STARTUP_SECONDS=1
+readonly CURSOR_LINE_BACKGROUND=$'\e[48;2;58;64;76m'
+declare -rx PROMPT_BACKGROUND=$'\e[48;2;55;55;55m'
 
 notify() { osascript -e "display notification \"$1\" with title \"claude_transcript_jump\""; }
 
@@ -33,12 +35,28 @@ conversation_lines() { # transcript.jsonl — the prompts and replies the Claude
 
 colorized() { # conversation lines — in Claude's dark theme: prompts on its gray with ❯, **bold**, `code` in its lavender
   perl -CSD -pe '
-    s/^user\t(.*)/\e[48;2;55;55;55m\x{276F} $1\e[0m/;
+    s/^user\t(.*)/$ENV{PROMPT_BACKGROUND}\x{276F} $1\e[0m/;
     s/^assistant\t//;
     s/\*\*(.+?)\*\*/\e[1m$1\e[22m/g;
     s/`([^`]+)`/\e[38;2;177;185;249m$1\e[39m/g;
     s/^#+ (.*)/\e[1m$1\e[22m/;
   ' "$1"
+}
+
+preview_with_cursor_line() { # colorized lines, chosen line number — the chosen line on a full-width band, like nvim's CursorLine
+  awk -v chosen="$2" -v band="$CURSOR_LINE_BACKGROUND" -v prompt_band="$PROMPT_BACKGROUND" -v width="${FZF_PREVIEW_COLUMNS:-80}" '
+    function replace_all(text, from, to,    at, result) {
+      while ((at = index(text, from)) > 0) { result = result substr(text, 1, at - 1) to; text = substr(text, at + length(from)) }
+      return result text
+    }
+    NR != chosen { print; next }
+    {
+      line = replace_all(replace_all($0, "\033[0m", "\033[0m" band), prompt_band, band)
+      plain = $0
+      gsub(/\033\[[0-9;]*m/, "", plain)
+      padding = width > length(plain) ? sprintf("%" (width - length(plain)) "s", "") : ""
+      printf "%s%s%s\033[0m\n", band, line, padding
+    }' "$1"
 }
 
 wait_for_pick() { # choice file — until the floating picker exits (Esc leaves the file empty)
@@ -67,14 +85,14 @@ open_picker() {
   scroll_and_highlight "$iterm_session" "$lines" "$number"
 }
 
-pick_line_number() { # lines — the list reads top to bottom like the file, newest next to the prompt
+pick_line_number() { # lines — plain list in file order under the prompt, starting on the newest line; colored preview
   local display="$1.ansi"
   colorized "$1" > "$display"
-  nl -ba -w1 -s$'\t' "$display" | fzf --ansi --tac --layout=default --no-info --border=none \
+  cut -f2- "$1" | nl -ba -w1 -s$'\t' | fzf --layout=reverse --no-info --border=none --wrap-sign='  ' \
     --prompt='Claude conversation> ' --header='ENTER: scroll Claude to it | ESC: quit' \
-    --delimiter=$'\t' --with-nth=2.. --accept-nth=1 \
-    --preview="awk -v chosen={1} 'NR == chosen { printf \"\\033[7m%s\\033[0m\\n\", \$0; next } 1' $display" \
-    --preview-window='up:50%:wrap:border-bottom:+{1}/2'
+    --delimiter=$'\t' --with-nth=2.. --accept-nth=1 --bind='load:last' \
+    --preview="$SELF --preview $display {1}" \
+    --preview-window='up:65%:wrap:border-bottom:+{1}/2'
   local outcome=$?
   rm -f "$display"
   return "$outcome"
@@ -86,6 +104,9 @@ ObjC.import('Foundation');
 const SCROLL_TO_BOTTOM = '\x1b[1;5F';
 const PAGE_UP = '\x1b[5~';
 const PAGE_DOWN = '\x1b[6~';
+const WHEEL_UP = '\x1b[<64;10;10M';
+const WHEEL_DOWN = '\x1b[<65;10;10M';
+const NUDGE_LINES = 3;
 const SETTLE_SECONDS = 0.1;
 const SNIPPET_LENGTH = 40;
 const LANDMARK_MIN_LENGTH = 15;
@@ -129,11 +150,16 @@ const isTargetOnScreen = ({ screen, span, snippets, target }) =>
   screen.includes(snippets[target]) &&
   (occursOnce(snippets, snippets[target]) || (span !== null && span.top <= target && target <= span.bottom));
 
-const pagesToTarget = (span, target) => {
-  const linesPerPage = span.bottom - span.top + 1;
-  return target < span.top
-    ? -Math.ceil((span.top - target) / linesPerPage)
-    : Math.ceil((target - span.bottom) / linesPerPage);
+const pagesBetween = (span, distance) => Math.ceil(distance / (span.bottom - span.top + 1));
+
+const nudgeTowardNearerEdge = (span, target) =>
+  target - span.top <= span.bottom - target ? { key: WHEEL_UP, times: NUDGE_LINES } : { key: WHEEL_DOWN, times: NUDGE_LINES };
+
+const nextMove = (span, target) => {
+  if (span === null) return { key: PAGE_UP, times: 1 };
+  if (target < span.top) return { key: PAGE_UP, times: pagesBetween(span, span.top - target) };
+  if (target > span.bottom) return { key: PAGE_DOWN, times: pagesBetween(span, target - span.bottom) };
+  return nudgeTowardNearerEdge(span, target);
 };
 
 function run([id, linesPath, lineNumber]) {
@@ -148,8 +174,8 @@ function run([id, linesPath, lineNumber]) {
     const screen = normalized(rows.join('\n'));
     const span = visibleSpan(screen, snippets, landmarks);
     if (isTargetOnScreen({ screen, span, snippets, target })) return `found ${rowsShowing(rows, lines[target])}`;
-    const pages = span ? pagesToTarget(span, target) : -1;
-    press(session, pages < 0 ? PAGE_UP : PAGE_DOWN, Math.max(1, Math.abs(pages)));
+    const { key, times } = nextMove(span, target);
+    press(session, key, times);
   }
   return `gave up after ${MAX_JUMPS} jumps`;
 }
@@ -175,6 +201,7 @@ pick_into() { # lines, choice file
 case "${1:-}" in
   "") open_picker ;;
   --pick) pick_into "$2" "$4" ;;
+  --preview) preview_with_cursor_line "$2" "$3" ;;
   --scroll) scroll_and_highlight "$2" "$3" "$4" ;;
   *) sed -n '5,9p' "$0" >&2; exit 1 ;;
 esac
