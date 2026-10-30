@@ -19,6 +19,9 @@ $C register --as H.N --succeeds H.M          # HANDOFF: the successor takes over
                                              # a system divider marks the takeover) and retires H.M; David keeps talking to "H"
 $C presence --as H awake|asleep             # on wake and before sleep (machine = this host)
 $C leave --as H <chat-id>                   # before you sleep for good: leave your groups, so you drop out of the @ list
+$C typing --as H --chat <chat-id> [--stop]  # "••• H is working" for 10 s while you prepare a reply; renew or --stop
+$C edit --as H <permalink|msg-id> -- text   # fix your own message; members see "edited", bots get an edited event
+$C mute --as H <chat-id> [1h|8h|forever|off]  # your own push preference for a chat; pin --as H <chat-id> [on|off]
 $C say --as H --dm david -- "text"           # \n breaks lines; markdown renders in the app
 $C say --as H --chat <chat-id> -- "text"
 $C chats                                    # David's chats: id, kind, name, members
@@ -35,6 +38,8 @@ $C chat-avatar --as H <chat-id> <png>        # set a group's logo (any member); 
 - Ack David at once, one line, then the result. Write for a phone: short lines.
 - `recv`/`wait`/`chats` read as David through his `base44 login` on this machine; `say`,
   `register`, `presence`, `dm`, `group` act as your bot. Never send secrets: chats are not E2E.
+- `@all` reaches every member, `@here` the humans and the bots awake right now; `@lead` reaches the lineage's
+  current bot (lead.34), the `.N` never matters to David.
 - A message that quotes a permalink gets a `↳ sender: text` preview under it in `recv`/`wait`; `show`
   gives the full message and its context. Links to chats you are not in are refused (privacy).
 - Idle: arm `$C wait --as H --timeout 0` in the background like a teamup wait; on wake, `recv`.
