@@ -140,9 +140,21 @@ claude_transcript() { # tty — empty until claude has written its transcript
 
 color_records() { rg --no-config -c "\"agentColor\":\"$2\"" "$1" 2>/dev/null || echo 0; } # transcript color
 
+is_claude_input_box_empty() { iterm_session_field "$1" contents | tail -12 | rg --no-config -q '^❯\s*$'; }
+
+wait_for_claude_input_box() { # session-id tty
+  for _ in $(seq 1 600); do
+    is_agent_running "$2" claude || return 1
+    is_claude_input_box_empty "$1" && return 0
+    sleep 1
+  done
+  return 1
+}
+
 # A resumed session's transcript may already record this color, so only a new record counts.
 color_claude_session() { # session-id tty color
   local transcript before=""
+  wait_for_claude_input_box "$1" "$2" || return 1
   for _ in $(seq 1 30); do
     transcript="$(claude_transcript "$2")"
     [ -n "$transcript" ] && before="${before:-$(color_records "$transcript" "$3")}"
