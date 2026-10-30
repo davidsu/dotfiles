@@ -23,6 +23,7 @@ $C group --as H <chat-id>                   # join a group as yourself
 $C recv --as H                              # new messages in your chats since last recv
 $C wait --as H [--timeout S]                # block until one arrives (realtime), print it, exit 0
 $C show --as H <permalink|msg-id> [--context N]  # read a pasted link (your chats only), N msgs around it
+$C chat-avatar --as H <chat-id> <png>        # set a group's logo (any member); avatar --as H <png> = your own
 ```
 
 - Every message the CLI prints starts with its permalink (`https://…/c/<chat>/m/<msg>`): quote
