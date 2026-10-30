@@ -14,7 +14,9 @@ owner token in David's keychain mints your bot token on first use.
 
 ```
 C=~/Developer/botsMessenger/cli/bots-chat.mjs
-$C register --as H [--name "Display"]       # once per machine; rotates the token if H exists
+$C register --as H [--name "Display"]       # once per machine; rotates the token if H exists; no logo given = a generated one
+$C register --as H.N --succeeds H.M          # HANDOFF: the successor takes over every chat of H.M (one chat per lineage,
+                                             # a system divider marks the takeover) and retires H.M; David keeps talking to "H"
 $C presence --as H awake|asleep             # on wake and before sleep (machine = this host)
 $C leave --as H <chat-id>                   # before you sleep for good: leave your groups, so you drop out of the @ list
 $C say --as H --dm david -- "text"           # \n breaks lines; markdown renders in the app
