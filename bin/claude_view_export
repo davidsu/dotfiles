@@ -1,0 +1,59 @@
+#!/usr/bin/osascript -l JavaScript
+// claude_view_export — have the Claude in an iTerm session write its own text rendering of the chat, as ctrl+o then v
+// does, and print that file's path. Types ctrl+o, v into the session, quits the editor Claude opens on the file (vi),
+// then leaves the detailed view. Types nothing while Claude waits on a choice; v is typed only once the detailed view
+// shows, so it never lands in the prompt. Prints nothing when it could not get the file.
+//   claude_view_export <iterm-session-id>
+const TOGGLE_DETAILED_VIEW = '\x0f';
+const OPEN_IN_EDITOR = 'v';
+const QUIT_EDITOR = ':q!\r';
+const DETAILED_VIEW_MARK = 'Showing detailed transcript';
+const PENDING_CHOICE_MARK = 'Esc to cancel';
+const POLL_SECONDS = 0.05;
+const WAIT_SECONDS = 3;
+
+const shell = (command) => {
+  const app = Application.currentApplication();
+  app.includeStandardAdditions = true;
+  return app.doShellScript(command);
+};
+
+const sessionWithId = (id) =>
+  Application('iTerm2').windows().flatMap((window) => (window.tabs() || []).flatMap((tab) => tab.sessions())).find((session) => session.id() === id);
+
+const screenShows = (session, mark) => session.contents().split('\n').slice(-session.rows() - 1).join('\n').includes(mark);
+
+const typeInto = (session, text) => session.write({ text, newline: false });
+
+const editorFile = (tty) => shell(`ps -t ${tty.replace('/dev/', '')} -o command= | grep -o '/[^ ]*cc-transcript-[^ ]*\\.txt' || true`);
+
+const waitFor = (isDone) => {
+  for (let waited = 0; waited < WAIT_SECONDS; waited += POLL_SECONDS) {
+    if (isDone()) return true;
+    delay(POLL_SECONDS);
+  }
+  return false;
+};
+
+const exportedFile = (session) => {
+  const tty = session.tty();
+  if (!waitFor(() => editorFile(tty) !== '')) return '';
+  const file = editorFile(tty);
+  typeInto(session, QUIT_EDITOR);
+  return waitFor(() => editorFile(tty) === '') ? file : '';
+};
+
+const leaveDetailedView = (session) => {
+  if (waitFor(() => screenShows(session, DETAILED_VIEW_MARK))) typeInto(session, TOGGLE_DETAILED_VIEW);
+};
+
+function run([id]) {
+  const session = sessionWithId(id);
+  if (screenShows(session, PENDING_CHOICE_MARK)) return '';
+  typeInto(session, TOGGLE_DETAILED_VIEW);
+  if (!waitFor(() => screenShows(session, DETAILED_VIEW_MARK))) return '';
+  typeInto(session, OPEN_IN_EDITOR);
+  const file = exportedFile(session);
+  leaveDetailedView(session);
+  return file;
+}

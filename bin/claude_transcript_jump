@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 # claude_transcript_jump — fuzzy-find a line of the Claude conversation in the current iTerm tab (like nvim's
-# <space>bl), then scroll that tab's Claude view to it and highlight it (bin/iterm_select_rows). Enter scrolls, Esc closes.
+# <space>bl), then scroll that tab's Claude view to it (bin/claude_scroll_to_line) and highlight it (bin/iterm_select_rows).
 # The list starts on your prompts (one row per prompt); ctrl+w switches between them and every line of the chat.
-# Claude has no search, so the scroll types ctrl+End, then PageUp/PageDown bursts sized from the lines on screen.
+# The preview is Claude's own rendering of the chat (bin/claude_view_export, what ctrl+o then v writes), made while the
+# floating window opens; without it, the preview falls back to the conversation lines in Claude's colors.
 #   claude_transcript_jump                          cmd+ctrl+o: the picker in a floating window (bin/iterm_float), then the scroll
 #   claude_transcript_jump --pick LINES --into FILE what runs inside the floating window: writes the chosen line number to FILE
 #                                                   and exits, so the window closes before the scroll starts
 #   claude_transcript_jump --scroll ID LINES NUMBER scroll the Claude tab (ID = its iTerm session) to line NUMBER of LINES, highlight it
-#   claude_transcript_jump --rows prompts|all LINES the picker's rows: `line number<TAB>text`
+#   claude_transcript_jump --rows prompts|all LINES the picker's rows: `preview row<TAB>line number<TAB>text`
 set -euo pipefail
 export PATH="$HOME/.dotfiles/bin:/opt/homebrew/bin:$PATH"
 
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
 readonly FLOAT_STARTUP_SECONDS=1
+readonly PREVIEW_WAIT_TENTHS=100
 readonly CURSOR_LINE_BACKGROUND=$'\e[48;2;58;64;76m'
 declare -rx PROMPT_BACKGROUND=$'\e[48;2;55;55;55m'
 readonly PROMPTS_PROMPT='Your prompts> '
@@ -31,10 +33,16 @@ claude_session_on_tty() { # tty — the Claude session id from its ~/.claude/ses
   done
 }
 
-conversation_lines() { # transcript.jsonl — the prompts and replies the Claude view shows, one `user|assistant<TAB>message<TAB>line` each
-  jq -r 'select(.isSidechain != true and .isMeta != true and (.type == "user" or .type == "assistant"))
-    | .type as $role | .message.content | if type == "string" then . else (.[] | select(.type == "text") | .text) end
-    | select(startswith("<") | not) | split("\n")[] | select(test("\\S")) | "\($role)\t\(input_line_number)\t\(.)"' "$1"
+conversation_lines() { # transcript.jsonl — the prompts (typed or queued mid-reply) and replies on screen (the path from the last entry back through its parents), one `user|assistant<TAB>message<TAB>line` each
+  jq -rs 'map(select(.uuid != null)) | INDEX(.uuid) as $by_id
+    | [last(.[] | select(.uuid != null)) | recurse($by_id[.parentUuid // .logicalParentUuid // ""] // empty)] | reverse
+    | to_entries[] | .key as $message | .value
+    | select(.isSidechain != true and .isMeta != true)
+    | if .type == "attachment" and .attachment.type == "queued_command" then {role: "user", content: .attachment.prompt}
+      elif .type == "user" or .type == "assistant" then {role: .type, content: .message.content}
+      else empty end
+    | .role as $role | .content | if type == "string" then . else (.[]? | select(.type == "text") | .text) end
+    | select(startswith("<") or startswith("[Request interrupted") | not) | split("\n")[] | select(test("\\S")) | "\($role)\t\($message)\t\(.)"' "$1"
 }
 
 colorized() { # conversation lines — in Claude's dark theme: prompts on its gray with ❯, **bold**, `code` in its lavender
@@ -47,7 +55,51 @@ colorized() { # conversation lines — in Claude's dark theme: prompts on its gr
   ' "$1"
 }
 
-preview_with_cursor_line() { # colorized lines, chosen line number — the chosen line on a full-width band, like nvim's CursorLine
+shaded_prompts() { # Claude's export — your prompts on Claude's gray, as on screen
+  awk -v shade="$PROMPT_BACKGROUND" '
+    index($0, "❯ ") == 1 { in_prompt = 1 }
+    /^[[:space:]]*$/ { in_prompt = 0 }
+    { print (in_prompt ? shade $0 "\033[0m" : $0) }' "$1"
+}
+
+export_rows_of_lines() { # lines, Claude's export — for each line, the export row it starts on (in order; unmatched keep the last)
+  python3 -I - "$1" "$2" <<'PY'
+import re
+import sys
+
+SNIPPET_LENGTH = 30
+LOOKAHEAD_ROWS = 400
+
+
+def normalized(text):
+    return re.sub(r"\s+", " ", re.sub(r"[`*_#>|│⏺❯]", "", text)).strip()
+
+
+lines_path, export_path = sys.argv[1:3]
+snippets = [normalized(line.split("\t", 2)[2])[:SNIPPET_LENGTH] for line in open(lines_path, encoding="utf-8").read().splitlines()]
+rows = [normalized(row) for row in open(export_path, encoding="utf-8").read().splitlines()]
+row = 0
+for snippet in snippets:
+    row = next((idx for idx in range(row, min(len(rows), row + LOOKAHEAD_ROWS)) if snippet in rows[idx]), row)
+    print(row + 1)
+PY
+}
+
+prepare_preview() { # iterm session id, lines — writes LINES.view (what the preview shows), then LINES.map (each line's row in it)
+  local export
+  export="$(claude_view_export "$1")"
+  if [ -n "$export" ]; then
+    shaded_prompts "$export" > "$2.view"
+    export_rows_of_lines "$2" "$export" > "$2.map.tmp"
+    rm -f "$export"
+  else
+    colorized "$2" > "$2.view"
+    seq "$(wc -l < "$2")" > "$2.map.tmp"
+  fi
+  mv "$2.map.tmp" "$2.map"
+}
+
+preview_with_cursor_line() { # preview file, chosen row — the chosen row on a full-width band, like nvim's CursorLine
   awk -v chosen="$2" -v band="$CURSOR_LINE_BACKGROUND" -v prompt_band="$PROMPT_BACKGROUND" -v width="${FZF_PREVIEW_COLUMNS:-80}" '
     function replace_all(text, from, to,    at, result) {
       while ((at = index(text, from)) > 0) { result = result substr(text, 1, at - 1) to; text = substr(text, at + length(from)) }
@@ -84,21 +136,25 @@ open_picker() {
   claude_session="$(claude_session_on_tty "$tty")"
   [ -n "$claude_session" ] || { notify "No Claude session in this tab"; return 0; }
   lines="$(mktemp -t claude_transcript)"
+  trap "wait; rm -f '$lines' '$lines.view' '$lines.map'" EXIT
   conversation_lines "$(compgen -G "$HOME/.claude/projects/*/$claude_session.jsonl" | head -1)" > "$lines"
-  number="$(pick_in_floating_window "$lines")" || { rm -f "$lines"; return 0; }
+  prepare_preview "$iterm_session" "$lines" &
+  number="$(pick_in_floating_window "$lines")" || return 0
   scroll_and_highlight "$iterm_session" "$lines" "$number"
 }
 
-prompt_rows() { # lines — one row per prompt: the number of its first line, its lines joined
+prompt_rows() { # lines — one row per prompt: its first line, its lines joined
   awk -F'\t' '
-    $1 == "user" && $2 == message { text = text " " $3; next }
-    $1 == "user" { if (message) print first "\t" text; message = $2; first = NR; text = $3; next }
-    message { print first "\t" text; message = "" }
-    END { if (message) print first "\t" text }' "$1"
+    NR == FNR { row[FNR] = $1; next }
+    function print_prompt() { if (in_prompt) print row[first] "\t" first "\t" text; in_prompt = 0 }
+    $1 == "user" && in_prompt && $2 == message { text = text " " $3; next }
+    $1 == "user" { print_prompt(); in_prompt = 1; message = $2; first = FNR; text = $3; next }
+    { print_prompt() }
+    END { print_prompt() }' "$1.map" "$1"
 }
 
 all_rows() { # lines
-  cut -f3- "$1" | nl -ba -w1 -s$'\t'
+  awk 'NR == FNR { row[FNR] = $0; next } { text = $0; sub(/^[^\t]*\t[^\t]*\t/, "", text); print row[FNR] "\t" FNR "\t" text }' "$1.map" "$1"
 }
 
 switch_rows_binding() { # lines — ctrl+w flips between your prompts and the whole chat
@@ -106,112 +162,25 @@ switch_rows_binding() { # lines — ctrl+w flips between your prompts and the wh
     "reload($SELF --rows all $1)+change-prompt($ALL_PROMPT)" "reload($SELF --rows prompts $1)+change-prompt($PROMPTS_PROMPT)"
 }
 
-pick_line_number() { # lines — plain list in file order under the prompt, starting on the newest row; colored preview
-  local display="$1.ansi"
-  colorized "$1" > "$display"
+wait_for_preview() { # lines
+  local attempt
+  for attempt in $(seq "$PREVIEW_WAIT_TENTHS"); do [ -f "$1.map" ] && return 0; sleep 0.1; done
+  return 1
+}
+
+pick_line_number() { # lines — plain list in file order under the prompt, starting on the newest row; the preview above
+  wait_for_preview "$1" || return 1
   prompt_rows "$1" | fzf --layout=reverse --no-info --border=none --wrap-sign='  ' \
     --prompt="$PROMPTS_PROMPT" --header='ENTER: scroll Claude to it | CTRL-W: your prompts / whole chat | ESC: quit' \
-    --delimiter=$'\t' --with-nth=2.. --accept-nth=1 --bind='load:last' --bind="$(switch_rows_binding "$1")" \
-    --preview="$SELF --preview $display {1}" \
-    --preview-window='up:65%:wrap:border-bottom:+{1}/2'
-  local outcome=$?
-  rm -f "$display"
-  return "$outcome"
-}
-
-scroll_claude_to() { # iterm session id, lines, line number
-  osascript -l JavaScript - "$@" <<'JXA'
-ObjC.import('Foundation');
-const SCROLL_TO_BOTTOM = '\x1b[1;5F';
-const PAGE_UP = '\x1b[5~';
-const PAGE_DOWN = '\x1b[6~';
-const WHEEL_UP = '\x1b[<64;10;10M';
-const WHEEL_DOWN = '\x1b[<65;10;10M';
-const NUDGE_LINES = 3;
-const SETTLE_SECONDS = 0.1;
-const SNIPPET_LENGTH = 40;
-const LANDMARK_MIN_LENGTH = 15;
-const MAX_JUMPS = 40;
-
-const normalized = (text) => text.replace(/[`*_#>|│]/g, '').replace(/\s+/g, ' ').trim();
-
-const readLines = (path) =>
-  $.NSString.stringWithContentsOfFileEncodingError(path, $.NSUTF8StringEncoding, null).js.split('\n').map((line) => line.replace(/^[a-z]+\t\d+\t/, ''));
-
-const sessionWithId = (iterm, id) =>
-  iterm.windows().flatMap((window) => window.tabs().flatMap((tab) => tab.sessions())).find((session) => session.id() === id);
-
-const PINNED_PROMPT_MARK = '\u276F';
-
-const visibleRows = (session) => session.contents().replace(/\n$/, '').split('\n').slice(-session.rows());
-
-const withoutPinnedPrompt = (rows) => (rows[0].startsWith(PINNED_PROMPT_MARK) ? ['', ...rows.slice(1)] : rows);
-
-const isContinuationOf = (line, row) => normalized(row) !== '' && line.includes(normalized(row));
-
-const rowsShowing = (rows, line) => {
-  const first = rows.findIndex((row) => normalized(row).includes(line.slice(0, SNIPPET_LENGTH / 2)));
-  let last = first;
-  while (last + 1 < rows.length && isContinuationOf(line, rows[last + 1])) last++;
-  return `${first} ${last}`;
-};
-
-const press = (session, key, times) => {
-  session.write({ text: key.repeat(times), newline: false });
-  delay(SETTLE_SECONDS);
-};
-
-const occursOnce = (snippets, snippet) => snippets.indexOf(snippet) === snippets.lastIndexOf(snippet);
-
-const landmarkIndexes = (snippets) =>
-  snippets.map((snippet, idx) => idx).filter((idx) => snippets[idx].length >= LANDMARK_MIN_LENGTH && occursOnce(snippets, snippets[idx]));
-
-const visibleSpan = (screen, snippets, landmarks) => {
-  const visible = landmarks.filter((idx) => screen.includes(snippets[idx]));
-  return visible.length ? { top: visible[0], bottom: visible[visible.length - 1] } : null;
-};
-
-const isTargetOnScreen = ({ screen, span, snippets, target }) =>
-  screen.includes(snippets[target]) &&
-  (occursOnce(snippets, snippets[target]) || (span !== null && span.top <= target && target <= span.bottom));
-
-const pagesBetween = (span, distance) => Math.ceil(distance / (span.bottom - span.top + 1));
-
-const nudgeTowardNearerEdge = (span, target) =>
-  target - span.top <= span.bottom - target ? { key: WHEEL_UP, times: NUDGE_LINES } : { key: WHEEL_DOWN, times: NUDGE_LINES };
-
-const nextMove = (span, target) => {
-  if (span === null) return { key: PAGE_UP, times: 1 };
-  if (target < span.top) return { key: PAGE_UP, times: pagesBetween(span, span.top - target) };
-  if (target > span.bottom) return { key: PAGE_DOWN, times: pagesBetween(span, target - span.bottom) };
-  return nudgeTowardNearerEdge(span, target);
-};
-
-function run([id, linesPath, lineNumber]) {
-  const session = sessionWithId(Application('iTerm2'), id);
-  const lines = readLines(linesPath).map(normalized);
-  const snippets = lines.map((line) => line.slice(0, SNIPPET_LENGTH));
-  const target = Number(lineNumber) - 1;
-  const landmarks = landmarkIndexes(snippets);
-  press(session, SCROLL_TO_BOTTOM, 1);
-  for (let jump = 0; jump < MAX_JUMPS; jump++) {
-    const rows = withoutPinnedPrompt(visibleRows(session));
-    const screen = normalized(rows.join('\n'));
-    const span = visibleSpan(screen, snippets, landmarks);
-    if (isTargetOnScreen({ screen, span, snippets, target })) return `found ${rowsShowing(rows, lines[target])}`;
-    const { key, times } = nextMove(span, target);
-    press(session, key, times);
-  }
-  return `gave up after ${MAX_JUMPS} jumps`;
-}
-JXA
+    --delimiter=$'\t' --with-nth=3.. --accept-nth=2 --bind='load:last' --bind='change:first' --bind="$(switch_rows_binding "$1")" \
+    --preview="$SELF --preview $1.view {1}" \
+    --preview-window='up:65%:wrap:border-bottom:+{1}-2'
 }
 
 scroll_and_highlight() { # iterm session id, lines, line number
   local outcome first_row last_row
   echo "scrolling Claude to line $3: $(sed -n "${3}p" "$2")"
-  read -r outcome first_row last_row < <(scroll_claude_to "$@")
-  rm -f "$2"
+  read -r outcome first_row last_row < <(claude_scroll_to_line "$@")
   [ "$outcome" = found ] || { echo "not found: $outcome $first_row $last_row"; return 0; }
   [ "$first_row" -ge 0 ] || { echo "on screen, but no single row holds its start: not highlighted"; return 0; }
   iterm_select_rows "$1" "$first_row" "$last_row"
@@ -229,5 +198,5 @@ case "${1:-}" in
   --preview) preview_with_cursor_line "$2" "$3" ;;
   --rows) if [ "$2" = prompts ]; then prompt_rows "$3"; else all_rows "$3"; fi ;;
   --scroll) scroll_and_highlight "$2" "$3" "$4" ;;
-  *) sed -n '6,11p' "$0" >&2; exit 1 ;;
+  *) sed -n '7,11p' "$0" >&2; exit 1 ;;
 esac

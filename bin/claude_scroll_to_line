@@ -1,0 +1,112 @@
+#!/usr/bin/osascript -l JavaScript
+// claude_scroll_to_line — scroll the Claude view in an iTerm session to one line of its conversation, and print where it landed.
+//   claude_scroll_to_line <iterm-session-id> <lines> <line-number>
+// <lines> is claude_transcript_jump's `role<TAB>message<TAB>text` file. Claude has no search, so this types ctrl+End, then
+// PageUp/PageDown bursts sized from the conversation lines on screen, then mouse-wheel nudges for the last rows.
+// Prints `found <first-row> <last-row>` (rows of the visible screen) or why it gave up; a JSON line per jump goes to stderr.
+ObjC.import('Foundation');
+const KEYS = {
+  scrollToBottom: '\x1b[1;5F',
+  pageUp: '\x1b[5~',
+  pageDown: '\x1b[6~',
+  wheelUp: '\x1b[<64;10;10M',
+  wheelDown: '\x1b[<65;10;10M',
+};
+const NUDGE_LINES = 3;
+const MIN_LINES_PER_PAGE = 5;
+const SETTLE_SECONDS = 0.1;
+const SNIPPET_LENGTH = 40;
+const LANDMARK_MIN_LENGTH = 15;
+const MAX_JUMPS = 40;
+
+const normalized = (text) => text.replace(/[`*_#>|│]/g, '').replace(/\s+/g, ' ').trim();
+
+const readLines = (path) =>
+  $.NSString.stringWithContentsOfFileEncodingError(path, $.NSUTF8StringEncoding, null).js.split('\n').map((line) => line.replace(/^[a-z]+\t\d+\t/, ''));
+
+const sessionWithId = (iterm, id) =>
+  iterm.windows().flatMap((window) => (window.tabs() || []).flatMap((tab) => tab.sessions())).find((session) => session.id() === id);
+
+const PINNED_PROMPT_MARK = '\u276F';
+
+const visibleRows = (session) => session.contents().replace(/\n$/, '').split('\n').slice(-session.rows());
+
+const withoutPinnedPrompt = (rows) => (rows[0].startsWith(PINNED_PROMPT_MARK) ? ['', ...rows.slice(1)] : rows);
+
+const isContinuationOf = (line, row) => normalized(row) !== '' && line.includes(normalized(row));
+
+const rowsShowing = (rows, line) => {
+  const first = rows.findIndex((row) => normalized(row).includes(line.slice(0, SNIPPET_LENGTH / 2)));
+  let last = first;
+  while (last + 1 < rows.length && isContinuationOf(line, rows[last + 1])) last++;
+  return `${first} ${last}`;
+};
+
+const press = (session, key, times) => {
+  session.write({ text: KEYS[key].repeat(times), newline: false });
+  delay(SETTLE_SECONDS);
+};
+
+const occursOnce = (snippets, snippet) => snippets.indexOf(snippet) === snippets.lastIndexOf(snippet);
+
+const landmarkIndexes = (snippets) =>
+  snippets.map((snippet, idx) => idx).filter((idx) => snippets[idx].length >= LANDMARK_MIN_LENGTH && occursOnce(snippets, snippets[idx]));
+
+const visibleSpan = (screen, snippets, landmarks) => {
+  const visible = landmarks.filter((idx) => screen.includes(snippets[idx]));
+  return visible.length ? { top: visible[0], bottom: visible[visible.length - 1] } : null;
+};
+
+const isTargetOnScreen = ({ screen, span, snippets, target }) =>
+  screen.includes(snippets[target]) &&
+  (occursOnce(snippets, snippets[target]) || (span !== null && span.top <= target && target <= span.bottom));
+
+const pagesBetween = (distance, linesPerPage) => Math.ceil(distance / linesPerPage);
+
+const guessedLinesPerPage = (span) => Math.max(MIN_LINES_PER_PAGE, span.bottom - span.top + 1);
+
+const measuredLinesPerPage = (before, after) => {
+  const isPageMove = before.move.key === 'pageUp' || before.move.key === 'pageDown';
+  if (!isPageMove || before.span === null || after === null) return null;
+  const perPage = Math.abs(after.top - before.span.top) / before.move.times;
+  return perPage >= 1 ? perPage : null;
+};
+
+const nudgeTowardNearerEdge = (span, target) =>
+  target - span.top <= span.bottom - target ? { key: 'wheelUp', times: NUDGE_LINES } : { key: 'wheelDown', times: NUDGE_LINES };
+
+const nextMove = (span, target, linesPerPage) => {
+  if (span === null) return { key: 'pageUp', times: 1 };
+  if (target < span.top) return { key: 'pageUp', times: pagesBetween(span.top - target, linesPerPage) };
+  if (target > span.bottom) return { key: 'pageDown', times: pagesBetween(target - span.bottom, linesPerPage) };
+  return nudgeTowardNearerEdge(span, target);
+};
+
+function run([id, linesPath, lineNumber]) {
+  const session = sessionWithId(Application('iTerm2'), id);
+  const lines = readLines(linesPath).map(normalized);
+  const snippets = lines.map((line) => line.slice(0, SNIPPET_LENGTH));
+  const target = Number(lineNumber) - 1;
+  const landmarks = landmarkIndexes(snippets);
+  const started = Date.now();
+  const trace = (fields) => console.log(JSON.stringify({ ms: Date.now() - started, ...fields }));
+  trace({ target: target + 1, snippet: snippets[target] });
+  press(session, 'scrollToBottom', 1);
+  let linesPerPage = null;
+  let previous = null;
+  for (let jump = 0; jump < MAX_JUMPS; jump++) {
+    const rows = withoutPinnedPrompt(visibleRows(session));
+    const screen = normalized(rows.join('\n'));
+    const span = visibleSpan(screen, snippets, landmarks);
+    if (isTargetOnScreen({ screen, span, snippets, target })) {
+      trace({ jump, span: span && [span.top + 1, span.bottom + 1], found: rowsShowing(rows, lines[target]) });
+      return `found ${rowsShowing(rows, lines[target])}`;
+    }
+    linesPerPage = (previous && measuredLinesPerPage(previous, span)) || linesPerPage;
+    const move = nextMove(span, target, linesPerPage || (span && guessedLinesPerPage(span)));
+    trace({ jump, span: span && [span.top + 1, span.bottom + 1], linesPerPage, ...move });
+    press(session, move.key, move.times);
+    previous = { span, move };
+  }
+  return `gave up after ${MAX_JUMPS} jumps`;
+}
