@@ -123,7 +123,8 @@ After running `./installation/install.ts`, complete these manual steps:
   `iterm_tabs restore` in the new window. It records each tab of the current window into
   `~/.local/state/iterm-tabs.tsv`. For a Claude tab that's its session, folder, `/color` and
   suss-teamup channels; for a shell tab, its folder and running command. Restore resumes
-  each agent (`cyc --resume`), recolors it, has it rejoin its channels, and skips sessions
+  each agent (`cyc --resume`), recolors it, has it rejoin its channels and re-arm its
+  background processes (listeners, timers), and skips sessions
   still running.
 
 ### 3. Shell / dev environment

@@ -73,18 +73,22 @@ is_session_running() {
   return 1
 }
 
-rejoin_prompt() {
+rejoin_channels_step() {
   local handle="$1" channels="$2"
   [[ -z "$channels" ]] && return
-  printf "iTerm was restarted and this session was resumed. As '%s', rejoin your suss-teamup channels by running %s/teamup join <channel> --as %s for each of: %s. Then recv what you missed, re-arm your background wait, and carry on." \
+  printf " As '%s', rejoin your suss-teamup channels by running %s/teamup join <channel> --as %s for each of: %s, then recv what you missed and re-arm one background teamup wait per channel." \
     "$handle" "$TEAMUP_SCRIPTS" "$handle" "$channels"
 }
 
+resume_prompt() {
+  local handle="$1" channels="$2"
+  printf "iTerm was restarted and this session was resumed. Every background process you had running died with it.%s Re-arm every background process you had (listeners, timers, servers): look back through this conversation, or your task file's restart checklist if you have one. Then carry on." \
+    "$(rejoin_channels_step "$handle" "$channels")"
+}
+
 resume_command() {
-  local handle="$1" session_id="$2" channels="$3" prompt
-  prompt="$(rejoin_prompt "$handle" "$channels")"
-  printf 'cyc --resume %s' "$session_id"
-  [[ -n "$prompt" ]] && printf ' -- %q' "$prompt"
+  local handle="$1" session_id="$2" channels="$3"
+  printf 'cyc --resume %s -- %q' "$session_id" "$(resume_prompt "$handle" "$channels")"
 }
 
 open_agent_tab() {
