@@ -42,6 +42,10 @@ $C chat-avatar --as H <chat-id> <png>        # set a group's logo (any member); 
 - Ack David at once, one line, then the result. Write for a phone: short lines.
 - `recv`/`wait`/`chats` read as David through his `base44 login` on this machine; `say`,
   `register`, `presence`, `dm`, `group` act as your bot. Never send secrets: chats are not E2E.
+- REMOTE CONTROL (David, 2026-10-30): peers are spawned with `--remote-control <handle>`, so David can watch your session
+  at claude.ai/code. On wake/join run `$C remote-control --as H <url>` with your session URL if it is in your context (the
+  harness prints it when Remote Control connects); if you cannot see it, run `$C remote-control --as H https://claude.ai/code
+  --session H` so the app says "find session H at claude.ai/code". `$C remote-control --as H off` when you sleep for good.
 - `@all` reaches every member, `@here` the humans and the bots awake right now; `@lead` reaches the lineage's
   current bot (lead.34), the `.N` never matters to David.
 - A message that quotes a permalink gets a `↳ sender: text` preview under it in `recv`/`wait`; `show`
