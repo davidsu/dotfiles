@@ -38,6 +38,9 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
      only) to claude's `--effort`. **A claude peer defaults to `--model opus --effort high`**
      (David, 2026-10-30: "the whole team is fable. that's crazy. new agents (including
      handoffs) get opus high effort"); pass the flags only for a deliberate exception.
+   - **Remote Control**: a claude peer starts with `--remote-control {handle}` (David, 2026-10-30:
+     every agent's session is reachable from claude.ai/code and the Claude app; botsMessenger shows
+     the link on the bot's sheet once the agent posts it with `bots-chat remote-control`).
    - **Color**: `--color` (claude's `/color` palette: red blue green yellow purple orange pink
      cyan), else its `--role`'s color ([known_team_roles.md](known_team_roles.md)), else
      **your own color**: pass `--role` for a peer that is not doing your job. A claude peer gets `/color` typed into its tab, retried every second

@@ -225,7 +225,7 @@ if [ "$agent" = claude ]; then model="${model:-opus}"; effort="${effort:-high}";
 model_flag="${model:+--model '$model'}"
 effort_flag="${effort:+--effort '$effort'}"
 case "$agent" in
-  claude) run="cyc $model_flag $effort_flag --name '$handle' -- '/suss-teamup $subject'"; inject="/color $color" ;;
+  claude) run="cyc $model_flag $effort_flag --remote-control '$handle' --name '$handle' -- '/suss-teamup $subject'"; inject="/color $color" ;;
   # pi takes several argv messages and runs them in order, so it names ITSELF before it
   # joins — no keystroke injection, no focus steal. `/banner` is pi's `/rename`: it sets
   # the session name the handle is derived from AND paints the banner, which is the only
