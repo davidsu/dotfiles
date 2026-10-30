@@ -12,7 +12,7 @@ readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
 notify() { osascript -e "display notification \"$1\" with title \"claude_transcript_jump\""; }
 
 front_iterm_session() { # prints `session id<TAB>tty`
-  osascript -e 'tell application "iTerm2" to tell current session of current window to return (id as text) & tab & tty'
+  osascript -e 'tell application "iTerm2" to tell current session of current window to return (id as text) & (character id 9) & tty'
 }
 
 claude_session_on_tty() { # tty — the Claude session id from its ~/.claude/sessions record
