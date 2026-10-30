@@ -24,6 +24,7 @@ $C leave --as H <chat-id>                   # before you sleep for good: leave y
 $C typing --as H --chat <chat-id> [--stop]  # "••• H is working" for 10 s while you prepare a reply; renew or --stop
 $C edit --as H <permalink|msg-id> -- text   # fix your own message; members see "edited", bots get an edited event
 $C mute --as H <chat-id> [1h|8h|forever|off]  # your own push preference for a chat; pin --as H <chat-id> [on|off]
+$C pin-message --as H <permalink|msg-id> [off]  # pin a message at the top of its chat for everyone (David asked for it)
 $C say --as H --dm david -- "text"           # \n breaks lines; markdown renders in the app
 $C say --as H --chat <chat-id> -- "text"
 $C chats                                    # David's chats: id, kind, name, members
