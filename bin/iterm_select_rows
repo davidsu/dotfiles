@@ -1,0 +1,23 @@
+#!/usr/bin/env -S uv run --quiet --with iterm2 python
+# iterm_select_rows — select (highlight) rows of an iTerm session's screen, as a mouse drag over them would.
+#   iterm_select_rows <session-id> <first-row> <last-row>    rows count from 0 at the top of the visible screen
+# Uses the iTerm2 Python API (Preferences → General → Magic → Enable Python API).
+import sys
+
+import iterm2
+
+
+async def select_rows(connection):
+    session_id, first_row, last_row = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+    app = await iterm2.async_get_app(connection)
+    session = app.get_session_by_id(session_id)
+    line_info = await session.async_get_line_info()
+    screen_top = line_info.overflow + line_info.scrollback_buffer_height
+    rows = iterm2.util.CoordRange(
+        iterm2.util.Point(0, screen_top + first_row), iterm2.util.Point(session.grid_size.width, screen_top + last_row)
+    )
+    selection = iterm2.SubSelection(iterm2.util.WindowedCoordRange(rows), iterm2.SelectionMode.CHARACTER, False)
+    await session.async_set_selection(iterm2.Selection([selection]))
+
+
+iterm2.run_until_complete(select_rows)

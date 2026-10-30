@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 # claude_transcript_jump — fuzzy-find a line of the Claude conversation in the current iTerm tab (like nvim's
-# <space>bl), then scroll that tab's Claude view to it. Enter scrolls, Esc closes.
-# Claude has no search, so the scroll types ctrl+End, then PageUp until the line is on screen.
-#   claude_transcript_jump                    cmd+ctrl+o: the picker in a floating window (bin/iterm_float)
-#   claude_transcript_jump --pick ID LINES    what runs inside the floating window (ID = the Claude tab's iTerm session)
+# <space>bl), then scroll that tab's Claude view to it and highlight it (bin/iterm_select_rows). Enter scrolls, Esc closes.
+# Claude has no search, so the scroll types ctrl+End, then PageUp/PageDown bursts sized from the lines on screen.
+#   claude_transcript_jump                          cmd+ctrl+o: the picker in a floating window (bin/iterm_float)
+#   claude_transcript_jump --pick ID LINES          what runs inside the floating window (ID = the Claude tab's iTerm session);
+#                                                   hands the scroll to --scroll in the background so the window closes at once
+#   claude_transcript_jump --scroll ID LINES NUMBER scroll the Claude tab to line NUMBER of LINES and highlight it
 set -euo pipefail
 export PATH="$HOME/.dotfiles/bin:/opt/homebrew/bin:$PATH"
 
 readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
+readonly LOG="$HOME/Library/Logs/claude_transcript_jump.log"
 
 notify() { osascript -e "display notification \"$1\" with title \"claude_transcript_jump\""; }
 
@@ -64,7 +67,16 @@ const readLines = (path) => $.NSString.stringWithContentsOfFileEncodingError(pat
 const sessionWithId = (iterm, id) =>
   iterm.windows().flatMap((window) => window.tabs().flatMap((tab) => tab.sessions())).find((session) => session.id() === id);
 
-const visibleScreen = (session) => normalized(session.contents().split('\n').slice(-session.rows()).join('\n'));
+const visibleRows = (session) => session.contents().replace(/\n$/, '').split('\n').slice(-session.rows());
+
+const isContinuationOf = (line, row) => normalized(row) !== '' && line.includes(normalized(row));
+
+const rowsShowing = (rows, line) => {
+  const first = rows.findIndex((row) => normalized(row).includes(line.slice(0, SNIPPET_LENGTH / 2)));
+  let last = first;
+  while (last + 1 < rows.length && isContinuationOf(line, rows[last + 1])) last++;
+  return `${first} ${last}`;
+};
 
 const press = (session, key, times) => {
   session.write({ text: key.repeat(times), newline: false });
@@ -94,14 +106,16 @@ const pagesToTarget = (span, target) => {
 
 function run([id, linesPath, lineNumber]) {
   const session = sessionWithId(Application('iTerm2'), id);
-  const snippets = readLines(linesPath).map((line) => normalized(line).slice(0, SNIPPET_LENGTH));
+  const lines = readLines(linesPath).map(normalized);
+  const snippets = lines.map((line) => line.slice(0, SNIPPET_LENGTH));
   const target = Number(lineNumber) - 1;
   const landmarks = landmarkIndexes(snippets);
   press(session, SCROLL_TO_BOTTOM, 1);
   for (let jump = 0; jump < MAX_JUMPS; jump++) {
-    const screen = visibleScreen(session);
+    const rows = visibleRows(session);
+    const screen = normalized(rows.join('\n'));
     const span = visibleSpan(screen, snippets, landmarks);
-    if (isTargetOnScreen({ screen, span, snippets, target })) return `found after ${jump} jumps`;
+    if (isTargetOnScreen({ screen, span, snippets, target })) return `found ${rowsShowing(rows, lines[target])}`;
     const pages = span ? pagesToTarget(span, target) : -1;
     press(session, pages < 0 ? PAGE_UP : PAGE_DOWN, Math.max(1, Math.abs(pages)));
   }
@@ -110,16 +124,25 @@ function run([id, linesPath, lineNumber]) {
 JXA
 }
 
-pick_and_scroll() { # iterm session id, lines
+scroll_and_highlight() { # iterm session id, lines, line number
+  local outcome first_row last_row
+  echo "scrolling Claude to line $3: $(sed -n "${3}p" "$2")"
+  read -r outcome first_row last_row < <(scroll_claude_to "$@")
+  rm -f "$2"
+  [ "$outcome" = found ] || { echo "not found: $outcome $first_row $last_row"; return 0; }
+  [ "$first_row" -ge 0 ] || { echo "on screen, but no single row holds its start: not highlighted"; return 0; }
+  iterm_select_rows "$1" "$first_row" "$last_row"
+}
+
+pick_then_scroll_in_background() { # iterm session id, lines
   local number
   number="$(pick_line_number "$2")" || { rm -f "$2"; return 0; }
-  echo "scrolling Claude to line $number: $(sed -n "${number}p" "$2")"
-  scroll_claude_to "$1" "$2" "$number"
-  rm -f "$2"
+  nohup "$SELF" --scroll "$1" "$2" "$number" >> "$LOG" 2>&1 &
 }
 
 case "${1:-}" in
   "") open_picker ;;
-  --pick) pick_and_scroll "$2" "$3" ;;
-  *) sed -n '5,6p' "$0" >&2; exit 1 ;;
+  --pick) pick_then_scroll_in_background "$2" "$3" ;;
+  --scroll) scroll_and_highlight "$2" "$3" "$4" ;;
+  *) sed -n '5,9p' "$0" >&2; exit 1 ;;
 esac
