@@ -40,7 +40,7 @@ wait_for_pick() { # choice file — until the floating picker exits (Esc leaves 
 pick_in_floating_window() { # lines — prints the chosen line number
   local choice
   choice="$(mktemp -t claude_transcript_choice)"
-  iterm_float "$SELF --pick $1 --into $choice" && wait_for_pick "$choice" && cat "$choice"
+  iterm_float --fraction 1 "$SELF --pick $1 --into $choice" && wait_for_pick "$choice" && cat "$choice"
   local outcome=$?
   rm -f "$choice"
   return "$outcome"
@@ -58,11 +58,11 @@ open_picker() {
 }
 
 pick_line_number() { # lines
-  nl -ba -w1 -s$'\t' "$1" | fzf --tac --layout=reverse --no-info --border=rounded \
-    --border-label=' Claude conversation ' --prompt='Line> ' --header='ENTER: scroll Claude to it | ESC: quit' \
+  nl -ba -w1 -s$'\t' "$1" | fzf --tac --layout=reverse --no-info --border=none \
+    --prompt='Claude conversation> ' --header='ENTER: scroll Claude to it | ESC: quit' \
     --delimiter=$'\t' --with-nth=2.. --accept-nth=1 \
     --preview="bat --color=always --style=plain --language=md --highlight-line {1} $1" \
-    --preview-window='up:50%:wrap:+{1}/2'
+    --preview-window='up:50%:wrap:border-bottom:+{1}/2'
 }
 
 scroll_claude_to() { # iterm session id, lines, line number
