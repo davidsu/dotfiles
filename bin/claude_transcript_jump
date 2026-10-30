@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # claude_transcript_jump — fuzzy-find a line of the Claude conversation in the current iTerm tab (like nvim's
 # <space>bl), then scroll that tab's Claude view to it and highlight it (bin/iterm_select_rows). Enter scrolls, Esc closes.
+# The list starts on your prompts (one row per prompt); ctrl+w switches between them and every line of the chat.
 # Claude has no search, so the scroll types ctrl+End, then PageUp/PageDown bursts sized from the lines on screen.
 #   claude_transcript_jump                          cmd+ctrl+o: the picker in a floating window (bin/iterm_float), then the scroll
 #   claude_transcript_jump --pick LINES --into FILE what runs inside the floating window: writes the chosen line number to FILE
 #                                                   and exits, so the window closes before the scroll starts
 #   claude_transcript_jump --scroll ID LINES NUMBER scroll the Claude tab (ID = its iTerm session) to line NUMBER of LINES, highlight it
+#   claude_transcript_jump --rows prompts|all LINES the picker's rows: `line number<TAB>text`
 set -euo pipefail
 export PATH="$HOME/.dotfiles/bin:/opt/homebrew/bin:$PATH"
 
@@ -13,6 +15,8 @@ readonly SELF="$(realpath "${BASH_SOURCE[0]}")"
 readonly FLOAT_STARTUP_SECONDS=1
 readonly CURSOR_LINE_BACKGROUND=$'\e[48;2;58;64;76m'
 declare -rx PROMPT_BACKGROUND=$'\e[48;2;55;55;55m'
+readonly PROMPTS_PROMPT='Your prompts> '
+readonly ALL_PROMPT='Whole chat> '
 
 notify() { osascript -e "display notification \"$1\" with title \"claude_transcript_jump\""; }
 
@@ -27,16 +31,16 @@ claude_session_on_tty() { # tty — the Claude session id from its ~/.claude/ses
   done
 }
 
-conversation_lines() { # transcript.jsonl — the prompts and replies the Claude view shows, one `user|assistant<TAB>line` each
+conversation_lines() { # transcript.jsonl — the prompts and replies the Claude view shows, one `user|assistant<TAB>message<TAB>line` each
   jq -r 'select(.isSidechain != true and .isMeta != true and (.type == "user" or .type == "assistant"))
     | .type as $role | .message.content | if type == "string" then . else (.[] | select(.type == "text") | .text) end
-    | select(startswith("<") | not) | split("\n")[] | select(test("\\S")) | "\($role)\t\(.)"' "$1"
+    | select(startswith("<") | not) | split("\n")[] | select(test("\\S")) | "\($role)\t\(input_line_number)\t\(.)"' "$1"
 }
 
 colorized() { # conversation lines — in Claude's dark theme: prompts on its gray with ❯, **bold**, `code` in its lavender
   perl -CSD -pe '
-    s/^user\t(.*)/$ENV{PROMPT_BACKGROUND}\x{276F} $1\e[0m/;
-    s/^assistant\t//;
+    s/^user\t\d+\t(.*)/$ENV{PROMPT_BACKGROUND}\x{276F} $1\e[0m/;
+    s/^assistant\t\d+\t//;
     s/\*\*(.+?)\*\*/\e[1m$1\e[22m/g;
     s/`([^`]+)`/\e[38;2;177;185;249m$1\e[39m/g;
     s/^#+ (.*)/\e[1m$1\e[22m/;
@@ -85,12 +89,29 @@ open_picker() {
   scroll_and_highlight "$iterm_session" "$lines" "$number"
 }
 
-pick_line_number() { # lines — plain list in file order under the prompt, starting on the newest line; colored preview
+prompt_rows() { # lines — one row per prompt: the number of its first line, its lines joined
+  awk -F'\t' '
+    $1 == "user" && $2 == message { text = text " " $3; next }
+    $1 == "user" { if (message) print first "\t" text; message = $2; first = NR; text = $3; next }
+    message { print first "\t" text; message = "" }
+    END { if (message) print first "\t" text }' "$1"
+}
+
+all_rows() { # lines
+  cut -f3- "$1" | nl -ba -w1 -s$'\t'
+}
+
+switch_rows_binding() { # lines — ctrl+w flips between your prompts and the whole chat
+  printf 'ctrl-w:transform:[ "$FZF_PROMPT" = %q ] && echo %q || echo %q' "$PROMPTS_PROMPT" \
+    "reload($SELF --rows all $1)+change-prompt($ALL_PROMPT)" "reload($SELF --rows prompts $1)+change-prompt($PROMPTS_PROMPT)"
+}
+
+pick_line_number() { # lines — plain list in file order under the prompt, starting on the newest row; colored preview
   local display="$1.ansi"
   colorized "$1" > "$display"
-  cut -f2- "$1" | nl -ba -w1 -s$'\t' | fzf --layout=reverse --no-info --border=none --wrap-sign='  ' \
-    --prompt='Claude conversation> ' --header='ENTER: scroll Claude to it | ESC: quit' \
-    --delimiter=$'\t' --with-nth=2.. --accept-nth=1 --bind='load:last' \
+  prompt_rows "$1" | fzf --layout=reverse --no-info --border=none --wrap-sign='  ' \
+    --prompt="$PROMPTS_PROMPT" --header='ENTER: scroll Claude to it | CTRL-W: your prompts / whole chat | ESC: quit' \
+    --delimiter=$'\t' --with-nth=2.. --accept-nth=1 --bind='load:last' --bind="$(switch_rows_binding "$1")" \
     --preview="$SELF --preview $display {1}" \
     --preview-window='up:65%:wrap:border-bottom:+{1}/2'
   local outcome=$?
@@ -115,12 +136,16 @@ const MAX_JUMPS = 40;
 const normalized = (text) => text.replace(/[`*_#>|│]/g, '').replace(/\s+/g, ' ').trim();
 
 const readLines = (path) =>
-  $.NSString.stringWithContentsOfFileEncodingError(path, $.NSUTF8StringEncoding, null).js.split('\n').map((line) => line.replace(/^[a-z]+\t/, ''));
+  $.NSString.stringWithContentsOfFileEncodingError(path, $.NSUTF8StringEncoding, null).js.split('\n').map((line) => line.replace(/^[a-z]+\t\d+\t/, ''));
 
 const sessionWithId = (iterm, id) =>
   iterm.windows().flatMap((window) => window.tabs().flatMap((tab) => tab.sessions())).find((session) => session.id() === id);
 
+const PINNED_PROMPT_MARK = '\u276F';
+
 const visibleRows = (session) => session.contents().replace(/\n$/, '').split('\n').slice(-session.rows());
+
+const withoutPinnedPrompt = (rows) => (rows[0].startsWith(PINNED_PROMPT_MARK) ? ['', ...rows.slice(1)] : rows);
 
 const isContinuationOf = (line, row) => normalized(row) !== '' && line.includes(normalized(row));
 
@@ -170,7 +195,7 @@ function run([id, linesPath, lineNumber]) {
   const landmarks = landmarkIndexes(snippets);
   press(session, SCROLL_TO_BOTTOM, 1);
   for (let jump = 0; jump < MAX_JUMPS; jump++) {
-    const rows = visibleRows(session);
+    const rows = withoutPinnedPrompt(visibleRows(session));
     const screen = normalized(rows.join('\n'));
     const span = visibleSpan(screen, snippets, landmarks);
     if (isTargetOnScreen({ screen, span, snippets, target })) return `found ${rowsShowing(rows, lines[target])}`;
@@ -202,6 +227,7 @@ case "${1:-}" in
   "") open_picker ;;
   --pick) pick_into "$2" "$4" ;;
   --preview) preview_with_cursor_line "$2" "$3" ;;
+  --rows) if [ "$2" = prompts ]; then prompt_rows "$3"; else all_rows "$3"; fi ;;
   --scroll) scroll_and_highlight "$2" "$3" "$4" ;;
-  *) sed -n '5,9p' "$0" >&2; exit 1 ;;
+  *) sed -n '6,11p' "$0" >&2; exit 1 ;;
 esac
