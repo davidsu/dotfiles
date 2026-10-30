@@ -34,8 +34,10 @@ push) — don't wing it from memory. Planned: `sidecar`, `tester`, `reviewer`. A
      finds the session. A claude peer launches with `--name {handle}`; a pi peer gets a leading
      `/banner {handle}`; a codex peer launches bare, then spawn types `/rename {handle}` and the
      join prompt into its idle tab (codex runs no slash commands from argv).
-   - **Model**: `--model` goes to the agent's own `--model` flag (`--model fable`).
-   - **Effort**: `--effort` (claude only) goes to claude's `--effort` flag (`--effort high`).
+   - **Model + effort**: `--model` goes to the agent's own `--model` flag, `--effort` (claude
+     only) to claude's `--effort`. **A claude peer defaults to `--model opus --effort high`**
+     (David, 2026-10-30: "the whole team is fable. that's crazy. new agents (including
+     handoffs) get opus high effort"); pass the flags only for a deliberate exception.
    - **Color**: `--color` (claude's `/color` palette: red blue green yellow purple orange pink
      cyan), else its `--role`'s color ([known_team_roles.md](known_team_roles.md)), else
      **your own color**: pass `--role` for a peer that is not doing your job. A claude peer gets `/color` typed into its tab, retried every second

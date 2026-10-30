@@ -221,6 +221,7 @@ color="${color:-$(spawn_color)}"
 # skill globally as /suss-teamup; pi invokes skills as /skill:<name>. codex (the codex alias =
 # bypass flags) does NOT dispatch slash commands from argv — argv is a plain prompt —
 # so it gets a natural-language instruction naming the skill (from ~/.agents/skills).
+if [ "$agent" = claude ]; then model="${model:-opus}"; effort="${effort:-high}"; fi
 model_flag="${model:+--model '$model'}"
 effort_flag="${effort:+--effort '$effort'}"
 case "$agent" in

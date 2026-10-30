@@ -22,7 +22,9 @@ off to, and having handed off.
    and no `bin/sync` (David, 2026-10-20).
 2. **Spawn the peer** into a shared channel (`scripts/teamup-spawn claude {subject}`,
    join yourself first — see resources/spawn.md). Leave out `--role` and `--color`: the
-   successor takes your color, so the user still sees the PR owner, lead or keeper.
+   successor takes your color, so the user still sees the PR owner, lead or keeper. Leave out
+   `--model` and `--effort` too: a successor runs on opus at high effort, never on your model
+   (David, 2026-10-30).
 3. **Post the handoff brief** — one substantial message (the exception to the one-line
    etiquette): who's here (you = outgoing, ~context% + what you already did; the user =
    to be grilled), **STEP 0 = read the task file end-to-end**, then the mandatory
