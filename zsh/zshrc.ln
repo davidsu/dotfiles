@@ -24,3 +24,4 @@ if [ -f "$HOME/.b44/groups/mcp/.env" ]; then
   set -a; . "$HOME/.b44/groups/mcp/.env"; set +a   # auto-export so child processes (e.g. Claude Code) inherit the vars
 fi
 # <<< b44 mcp-secrets <<<
+export PATH=$PATH:$HOME/.maestro/bin
