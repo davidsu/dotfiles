@@ -4,7 +4,7 @@
 # the preview pane shows the row's live screen in color (or a parked agent's last words). ctrl+j / ctrl+k move, typing filters, ctrl+u / ctrl+d scroll the preview,
 # ctrl+o / ctrl+w / ctrl+t switch to the alive / available (wake) / tabs list (ctrl+a is readline's home), ctrl+x closes the row's tab
 # and keeps the picker open, Enter focuses the tab (waking a parked agent first), Esc closes.
-#   iterm_agent_picker [alive|available|tabs]   cmd+ctrl+g: open the floating window (bin/iterm_float)
+#   iterm_agent_picker [alive|available|tabs]   cmd+ctrl+a: open the floating window (bin/iterm_float)
 #   iterm_agent_picker --pick LIST              the picker inline, in this terminal (aliases alive-agents, available-agents,
 #                                               terminal-tabs); acts on the chosen row itself
 #   iterm_agent_picker --pick LIST --into FILE  what runs inside the floating window: writes the chosen row to FILE, the

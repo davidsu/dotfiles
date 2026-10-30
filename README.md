@@ -359,7 +359,7 @@ Cmd+Ctrl+R → Name + color the Claude Code or Codex session (or plain tab) in t
 > `/rename` name leads the footer. Codex can't show custom text there or above the prompt.
 
 ```
-Cmd+Ctrl+G → Floating fzf picker over iTerm: live agents, agents to wake, every tab (works from any app)
+Cmd+Ctrl+A → Floating fzf picker over iTerm: live agents, agents to wake, every tab (works from any app)
 ```
 > Runs `bin/iterm_agent_picker`: opens a chromeless iTerm window covering 90% of the screen (the `Agent Picker` dynamic
 > profile, `iterm2/dynamic-profiles/agent-picker.ln.json`: `Window Type` 12 = no title bar, `Disable Window Resizing`,

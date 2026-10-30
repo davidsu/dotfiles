@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# claude_transcript_jump_e2e — end-to-end test of cmd+ctrl+o (bin/claude_transcript_jump), the way you use it.
+# claude_transcript_jump_e2e — end-to-end test of cmd+ctrl+l (bin/claude_transcript_jump), the way you use it.
 # Copies a Claude transcript, resumes the copy in a new background iTerm tab (an idle Claude), then per case: focuses that
 # tab, runs claude_transcript_jump as Karabiner does, types a query into the floating picker, Enter, and checks the line
 # is highlighted in the Claude tab. Cases come from the transcript: the first, a middle and the last prompt, and a

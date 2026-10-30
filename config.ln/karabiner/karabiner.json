@@ -27,11 +27,11 @@
             ]
           },
           {
-            "description": "iTerm: cmd+ctrl+o → fuzzy-find a line of the Claude conversation in the current tab; Enter scrolls Claude to it",
+            "description": "iTerm: cmd+ctrl+l (lines) → fuzzy-find a line of the Claude conversation in the current tab; Enter scrolls Claude to it",
             "manipulators": [
               {
                 "conditions": [{ "type": "frontmost_application_if", "bundle_identifiers": ["^com\\.googlecode\\.iterm2$"] }],
-                "from": { "key_code": "o", "modifiers": { "mandatory": ["command", "control"] } },
+                "from": { "key_code": "l", "modifiers": { "mandatory": ["command", "control"] } },
                 "to": [{ "shell_command": "$HOME/.dotfiles/bin/claude_transcript_jump >> $HOME/Library/Logs/claude_transcript_jump.log 2>&1" }],
                 "type": "basic"
               }
@@ -55,10 +55,10 @@
             ]
           },
           {
-            "description": "Global: cmd+ctrl+g → floating fzf picker of the live Claude agents; Enter focuses its iTerm tab",
+            "description": "Global: cmd+ctrl+a (agents) → floating fzf picker of the live Claude agents; Enter focuses its iTerm tab",
             "manipulators": [
               {
-                "from": { "key_code": "g", "modifiers": { "mandatory": ["command", "control"] } },
+                "from": { "key_code": "a", "modifiers": { "mandatory": ["command", "control"] } },
                 "to": [{ "shell_command": "$HOME/.dotfiles/bin/iterm_agent_picker >> $HOME/Library/Logs/iterm_agent_picker.log 2>&1" }],
                 "type": "basic"
               }

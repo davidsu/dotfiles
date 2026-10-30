@@ -4,7 +4,7 @@
 # The list starts on your prompts (one row per prompt); ctrl+w switches between them and every line of the chat.
 # The preview is Claude's own rendering of the chat (bin/claude_view_export, what ctrl+o then v writes), made while the
 # floating window opens; without it, the preview falls back to the conversation lines in Claude's colors.
-#   claude_transcript_jump                          cmd+ctrl+o: the picker in a floating window (bin/iterm_float), then the scroll
+#   claude_transcript_jump                          cmd+ctrl+l: the picker in a floating window (bin/iterm_float), then the scroll
 #   claude_transcript_jump --pick LINES --into FILE what runs inside the floating window: writes the chosen line number to FILE
 #                                                   and exits, so the window closes before the scroll starts
 #   claude_transcript_jump --scroll ID LINES NUMBER scroll the Claude tab (ID = its iTerm session) to line NUMBER of LINES, highlight it
