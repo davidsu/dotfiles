@@ -70,7 +70,7 @@ open_picker() {
 pick_line_number() { # lines — the list reads top to bottom like the file, newest next to the prompt
   local display="$1.ansi"
   colorized "$1" > "$display"
-  nl -ba -w1 -s$'\t' "$display" | fzf --ansi --tac --no-info --border=none \
+  nl -ba -w1 -s$'\t' "$display" | fzf --ansi --tac --layout=default --no-info --border=none \
     --prompt='Claude conversation> ' --header='ENTER: scroll Claude to it | ESC: quit' \
     --delimiter=$'\t' --with-nth=2.. --accept-nth=1 \
     --preview="awk -v chosen={1} 'NR == chosen { printf \"\\033[7m%s\\033[0m\\n\", \$0; next } 1' $display" \
