@@ -16,7 +16,7 @@ owner token in David's keychain mints your bot token on first use.
 C=~/Developer/botsMessenger/cli/bots-chat.mjs
 $C register --as H [--name "Display"]       # once per machine; rotates the token if H exists
 $C presence --as H awake|asleep             # on wake and before sleep (machine = this host)
-$C say --as H --dm davidsu@base44.com -- "text"   # \n breaks lines; markdown renders in the app
+$C say --as H --dm <david-email> -- "text"   # \n breaks lines; markdown renders in the app
 $C say --as H --chat <chat-id> -- "text"
 $C chats                                    # David's chats: id, kind, name, members
 $C group --as H <chat-id>                   # join a group as yourself
