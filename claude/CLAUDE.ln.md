@@ -112,6 +112,16 @@ Talk to other agents over `/suss-teamup`: David watches those channels (they rea
 header line). Claude Code's native `SendMessage` is not banned, but use it only to tell a peer
 which `/suss-teamup` channel to join, then continue there.
 
+**Communicate through git and the task file, not chat** (David, 2026-10-31: the details already
+live in task files kept current, the chatter burns tokens and confuses agents; we always worked
+through git, code, good names and tickets). Agents sharing an effort, a repo or a suss-task:
+- Status (built, pushed, verified, root cause, sha, which test covers it) goes in the task file
+  and the commit message, nowhere else. Commit messages carry `shared: <file>` when another
+  owner's file changed and `gate: <test>` for the test that covers it; peers read `git log` on pull.
+- Send a message only when someone must act on it (a review, a lock, a slot, a veto, a blocker,
+  a question) or David must see it (a release, a link to refresh, a question for him).
+- No "I did X" / "pushed Y" / FYI posts, no restating what a file or commit already says.
+
 ## Going to sleep
 
 Told to go to sleep → `/suss-teamup sleep`.
