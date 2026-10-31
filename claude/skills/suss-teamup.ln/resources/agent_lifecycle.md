@@ -6,7 +6,7 @@ session, with its full context, in a new tab. Both are claude-on-iTerm only.
 
 ```
 S=~/.claude/skills/suss-teamup/scripts
-$S/teamup-sleep [--force] [<handle|id>...]   # leave its channels, close its tab; no argument: yourself
+$S/teamup-sleep [--force] --why R --wakes-on W [<handle|id>...]   # say why + what wakes it, leave its channels, close its tab; no argument: yourself
 $S/teamup-wake --list                        # who can be woken
 $S/teamup-wake --asleep <handle>             # exit 0 if it can be woken
 $S/teamup-wake <handle|id> [--channel C] [--role ROLE] [--color COLOR] [--after HANDLE]
@@ -18,9 +18,14 @@ $S/teamup-wake <handle|id> [--channel C] [--role ROLE] [--color COLOR] [--after 
    - commit and push everything (code and its task file), and say the commit on the remote
    - close throwaway browser tabs it opened (`browser_tabs close`, `[Welcome]` included; see `/suss-browser`), and stop any loop or timer it started
    - say on the channel `ready to sleep`, with its state in a line or two
+   - know **why** it sleeps and **what wakes it** (David, 2026-10-31: "When somebody is sleeping, I should know why
+     he went to sleep and what is going to wake him up"): done and waiting for review; blocked on David's decision;
+     waiting for an answer in Slack or a ticket comment; waiting for another PR to merge; waiting for computer
+     resources (an emulator slot, the deploy window). `teamup-sleep` refuses without `--why` and `--wakes-on`,
+     notes both on every channel the agent leaves, and `teamup-wake --list` shows them until it wakes.
 2. **Whoever sleeps it verifies first.** Check the pushed commit and the task file yourself
    (`git log origin/…`, the file on disk). Never take "done" on the agent's word.
-3. Run `teamup-sleep <handle>`. It hangs up the agent's claude by pid (SIGHUP, what a tab
+3. Run `teamup-sleep --why '<reason>' --wakes-on '<what wakes it>' <handle>`. It hangs up the agent's claude by pid (SIGHUP, what a tab
    close delivers: the session ends through its SessionEnd hooks, which `leave` its channels
    and record how to resume it), waits for the process to exit, `leave`s whatever is left,
    and closes its iTerm tab. The tab is closed last on purpose: iTerm's "Undo can revive a

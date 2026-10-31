@@ -257,7 +257,7 @@ expect_sleep_closes_tabs_during_churn() { # teamup-sleep's tab lookup, the same 
   for ((round = 1; round <= 5; round++)); do
     open_fake_agent "✳ stress.victim$round" >/dev/null
     sleep 2
-    output="$("$HERE/teamup-sleep" "stress.victim$round" 2>&1)"
+    output="$("$HERE/teamup-sleep" --why "stress test" --wakes-on "never" "stress.victim$round" 2>&1)"
     [[ "$output" == *"closed the tab of stress.victim$round"* ]] && closed=$((closed + 1)) || echo "  round $round: $output"
   done
   wait

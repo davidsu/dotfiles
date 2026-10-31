@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# teamup-sleep [--force|--force-with-no-mercy] [<handle|session-id>...] — put agents to sleep (no argument: the claude session running it): hang up each one's claude, leave its channels, close its iTerm tab.
+# teamup-sleep [--force|--force-with-no-mercy] --why R --wakes-on W [<handle|session-id>...] — put agents to sleep (no argument: the claude session running it): say why and what wakes it, hang up each one's claude, leave its channels, close its iTerm tab.
 # `leave` records how to resume it, so `teamup-wake <handle>` brings it back later.
 # Before running this, the agent has said "ready to sleep": its work is pushed and its
 # browser tabs are closed (resources/agent_lifecycle.md).
@@ -10,6 +10,7 @@ readonly TEAMUP="$HERE/teamup"
 readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
 readonly REGISTRY="$BASE/.sessions.tsv"
 readonly PARKED="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/parked.tsv"
+readonly SLEEPING="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/sleeping"
 readonly SESSION_ID_PATTERN='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
 readonly QUIET_SECONDS=60
 readonly DAVID_QUIET_SECONDS=300
@@ -190,8 +191,18 @@ finish_detached() { # handle pid tty — in its own process group, so the agent'
   bash -mc "nohup '$0' __finish '$1' '$2' '$3' >/dev/null 2>&1 &"
 }
 
-put_to_sleep() { # handle
+state_sleep_reason() { # handle why wakes-on — kept for teamup-wake --list, and said on every channel before the bye
+  local channel
+  mkdir -p "$SLEEPING"
+  printf 'why=%s\nwakes_on=%s\nat=%s\n' "$2" "$3" "$(date -u +%FT%TZ)" > "$SLEEPING/$1"
+  for channel in $(channels_of "$1"); do
+    "$TEAMUP" note "$channel" --as "$1" -- "💤 sleeping: $2 · wakes on: $3" >/dev/null
+  done
+}
+
+put_to_sleep() { # handle why wakes-on
   local pid tty=""; pid="$(claude_pid_of "$1")"
+  state_sleep_reason "$1" "$2" "$3"
   [ -n "$pid" ] && tty="$(tty_of_pid "$pid")" ||
     echo "teamup-sleep: no running claude session registered for $1; only closing its tab" >&2
   park_unregistered "$1"
@@ -206,7 +217,7 @@ put_to_sleep() { # handle
 # The tab David is typing in is never closed by --force or a self-sleep: an owner that slept
 # itself with --force once cut David off mid-request. --force overrides only is_busy;
 # --force-with-no-mercy, for a sleep David himself ordered, overrides both.
-sleep_if_allowed() { # handle flag ('' | --force | --force-with-no-mercy)
+sleep_if_allowed() { # handle flag ('' | --force | --force-with-no-mercy) why wakes-on
   if is_focused "$1"; then
     [ "$2" = --force-with-no-mercy ] || {
       echo "teamup-sleep: not closing $1: David is in its tab right now (focused, typed within 120 s). Only --force-with-no-mercy overrides this, and only when David himself ordered the sleep." >&2
@@ -221,20 +232,32 @@ sleep_if_allowed() { # handle flag ('' | --force | --force-with-no-mercy)
     }
     echo "teamup-sleep: $2: closing $1 although it is busy (above)" >&2
   fi
-  put_to_sleep "$1"
+  put_to_sleep "$1" "${3:-}" "${4:-}"
 }
 
 [[ "${BASH_SOURCE[0]}" != "$0" ]] && return 0
 
 [ "${1:-}" = __finish ] && { stop_leave_and_close "$2" "$3" "$4"; exit 0; }
 
-flag=""; [[ "${1:-}" == --force || "${1:-}" == --force-with-no-mercy ]] && { flag="$1"; shift; }
+readonly USAGE="usage: teamup-sleep [--force|--force-with-no-mercy] --why '<reason>' --wakes-on '<what wakes it>' [<handle|session-id>...]  (none: this claude session; --force-with-no-mercy only when David himself ordered the sleep)
+Every sleep says why and what wakes it (David 2026-10-31), e.g. --why 'au1 blocked: no Brave repro here' --wakes-on 'David picks a/b/c',
+or --wakes-on 'review of #123' | 'Gabi answers in Slack' | 'PR #456 merged' | 'a free emulator slot'."
+flag="" why="" wakes_on=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --force|--force-with-no-mercy) flag="$1"; shift ;;
+    --why)      why="${2:-}"; shift 2 ;;
+    --wakes-on) wakes_on="${2:-}"; shift 2 ;;
+    *) break ;;
+  esac
+done
+[ -n "$why" ] && [ -n "$wakes_on" ] || { echo "$USAGE" >&2; exit 2; }
 [ $# -gt 0 ] || set -- ${CLAUDE_CODE_SESSION_ID:-}
-[ $# -gt 0 ] || { echo "usage: teamup-sleep [--force|--force-with-no-mercy] [<handle|session-id>...]  (none: this claude session; --force-with-no-mercy only when David himself ordered the sleep)" >&2; exit 2; }
+[ $# -gt 0 ] || { echo "$USAGE" >&2; exit 2; }
 status=0
 for target in "$@"; do
   handle="$(handle_of "$target")"
   [ -n "$handle" ] || { echo "teamup-sleep: no claude session $target" >&2; status=1; continue; }
-  sleep_if_allowed "$handle" "$flag" || status=1
+  sleep_if_allowed "$handle" "$flag" "$why" "$wakes_on" || status=1
 done
 exit "$status"

@@ -12,6 +12,7 @@ set -uo pipefail
 readonly HERE="$(cd "$(dirname "$0")" && pwd)"
 readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
 readonly PARKED="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/parked.tsv"
+readonly SLEEPING="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/sleeping"
 readonly REGISTRY="$BASE/.sessions.tsv"
 readonly REJOIN_TIMEOUT_SECONDS=180
 
@@ -38,12 +39,18 @@ registry_record() { # handle — a crashed session never left, so only the regis
 
 wake_record() { local record; record="$(parked_record "$1")"; printf '%s' "${record:-$(registry_record "$1")}"; }
 
+sleep_reason_of() { # handle — the why and wakes-on it gave teamup-sleep
+  [ -f "$SLEEPING/$1" ] || return 0
+  awk -F= '$1=="why" { why=substr($0, 5) } $1=="wakes_on" { on=substr($0, 10) } END { printf "      💤 %s · wakes on: %s\n", why, on }' "$SLEEPING/$1"
+}
+
 list_asleep() {
   local handle session_id found=""
   while IFS=$'\t' read -r handle session_id _; do
     is_claude_session "$session_id" && ! is_session_running "$session_id" || continue
     found=yes
     wake_record "$handle" | awk -F'\t' '{ printf "  %-22s %s  in %s  (left %s)\n", $1, $4, $3, $5 }'
+    sleep_reason_of "$handle"
   done < <({ cat "$PARKED" 2>/dev/null; awk -F'\t' '$4!="" { print $3 "\t" $4 }' "$REGISTRY" 2>/dev/null; } | sort -u -t$'\t' -k1,1)
   [ -n "$found" ] || echo "nobody is asleep."
 }
@@ -88,6 +95,8 @@ wake() { # handle channel color role after
   [ -z "$channel" ] || print_waiting_messages "$1" "$channel"
   tab="$(term_spawn --app iterm --dir "$dir" --run "$(resume_command "$session_id" "$channel")" ${after:+--after "$after"} --background)"
   echo "waking $1 in $dir (session $session_id)${channel:+ to rejoin '$channel'}..."
+  sleep_reason_of "$1"
+  rm -f "$SLEEPING/$1"
   [ -z "$color" ] || "$HERE/teamup-spawn" __boot_iterm "$tab" claude "$color" ||
     die "$1 did not come up: look at its tab, usually a permission prompt the resumed session is stuck on"
   [ -n "$channel" ] || { echo "$1 is back (it was on no channel)."; return 0; }
