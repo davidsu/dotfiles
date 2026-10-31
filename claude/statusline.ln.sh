@@ -2,6 +2,8 @@
 input=$(cat)
 model=$(echo "$input" | jq -r '.model.display_name')
 used=$(echo "$input" | jq -r '.context_window.used_percentage // "0"')
+rate_limits=$(echo "$input" | jq -c '.rate_limits // empty')
+[ -n "$rate_limits" ] && echo "$rate_limits" > "$HOME/.local/state/claude-rate-limits.json"
 dir=$(pwd | awk -F/ '{if(NF<=2) print $0; else print "../"$(NF-1)"/"$NF}')
 
 # Joined teamup channels for this session (! = ask aimed at you, * = unread)
