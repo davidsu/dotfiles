@@ -9,7 +9,7 @@
 # teamup-wake --asleep <handle> — exit 0 if that agent can be woken.
 set -uo pipefail
 
-readonly HERE="$(cd "$(dirname "$0")" && pwd)"
+readonly HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly BASE="${SUSS_TEAMUP_DIR:-/tmp/suss-teamup}"
 readonly PARKED="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/parked.tsv"
 readonly SLEEPING="${XDG_STATE_HOME:-$HOME/.local/state}/suss-teamup/sleeping"
@@ -39,6 +39,8 @@ registry_record() { # handle — a crashed session never left, so only the regis
 
 wake_record() { local record; record="$(parked_record "$1")"; printf '%s' "${record:-$(registry_record "$1")}"; }
 
+record_field() { printf '%s\n' "$1" | awk -F'\t' -v n="$2" '{ print $n }'; } # record n — empty fields stay empty
+
 sleep_reason_of() { # handle — the why and wakes-on it gave teamup-sleep
   [ -f "$SLEEPING/$1" ] || return 0
   awk -F= '$1=="why" { why=substr($0, 5) } $1=="wakes_on" { on=substr($0, 10) } END { printf "      💤 %s · wakes on: %s\n", why, on }' "$SLEEPING/$1"
@@ -57,7 +59,7 @@ list_asleep() {
 
 can_wake() { # handle
   local session_id
-  IFS=$'\t' read -r _ session_id _ <<<"$(wake_record "$1")"
+  session_id="$(record_field "$(wake_record "$1")" 2)"
   [ -n "$session_id" ] && is_claude_session "$session_id" && ! is_session_running "$session_id"
 }
 
@@ -86,7 +88,7 @@ wake() { # handle channel color role after
   local record session_id dir channels channel tab log_lines color after="$5"
   record="$(wake_record "$1")"
   [ -n "$record" ] || die "nobody called '$1' can be woken (teamup-wake --list)"
-  IFS=$'\t' read -r _ session_id dir channels _ <<<"$record"
+  session_id="$(record_field "$record" 2)"; dir="$(record_field "$record" 3)"; channels="$(record_field "$record" 4)"
   is_claude_session "$session_id" || die "'$1' is not a claude session: only claude agents can be woken"
   channel="${2:-${channels%%,*}}"
   is_session_running "$session_id" && die "'$1' is already running (session $session_id): find its tab instead"
@@ -103,6 +105,8 @@ wake() { # handle channel color role after
   wait_for_join_ping "$channel" "$1" "$log_lines" && echo "$1 is back on '$channel'." ||
     die "$1 did not rejoin '$channel' within ${REJOIN_TIMEOUT_SECONDS}s: look at its tab, usually a permission prompt the resumed session is stuck on"
 }
+
+[[ "${BASH_SOURCE[0]}" != "$0" ]] && return 0
 
 case "${1:-}" in
   ""|-h|--help) echo "usage: teamup-wake <handle> [--channel C] [--role lead|owner|keeper|ROLE] [--color COLOR] [--after HANDLE] | --list | --asleep <handle>" >&2; exit 2 ;;
