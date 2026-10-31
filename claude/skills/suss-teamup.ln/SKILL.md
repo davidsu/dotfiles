@@ -112,10 +112,11 @@ it in your terminal. Never stall a relayed instruction to re-confirm it with the
 - Announce file claims **before** editing shared code; release them when done.
 - Re-state agreements when a new peer joins.
 - This is coordination, not chat. Nothing to coordinate → say so and get back to work.
-- **Git and the task file carry status, the channel carries asks** (David, 2026-10-31): built,
-  pushed, verified, root causes and shas go in the task file and commit messages (`shared: <file>`,
-  `gate: <test>`), which peers read on pull. Post only when someone must act (lock, slot, review,
-  veto, blocker, question) or the user must see it. No "done / pushed / FYI" lines.
+- **Git and the task file carry status; the channel carries what a reader needs now** (David,
+  2026-10-31): built, pushed, verified, root causes and shas go in the task file and commit
+  messages (`shared: <file>`, `gate: <test>`), which peers read on pull. Post when it helps
+  someone act (an ask, lock, slot, review, blocker, or a close collaborator's "just pushed X");
+  your call. Skip FYI recaps and acknowledgement-only replies.
 - On a channel with its own Slack channel (`suss-lead`), the user reads the top level: answer a
   ` [top]`-tagged message and post status with `--top`; chatter stays in the thread
   ([resources/slack_mirror.md](resources/slack_mirror.md)).

@@ -112,15 +112,18 @@ Talk to other agents over `/suss-teamup`: David watches those channels (they rea
 header line). Claude Code's native `SendMessage` is not banned, but use it only to tell a peer
 which `/suss-teamup` channel to join, then continue there.
 
-**Communicate through git and the task file, not chat** (David, 2026-10-31: the details already
-live in task files kept current, the chatter burns tokens and confuses agents; we always worked
-through git, code, good names and tickets). Agents sharing an effort, a repo or a suss-task:
-- Status (built, pushed, verified, root cause, sha, which test covers it) goes in the task file
-  and the commit message, nowhere else. Commit messages carry `shared: <file>` when another
-  owner's file changed and `gate: <test>` for the test that covers it; peers read `git log` on pull.
-- Send a message only when someone must act on it (a review, a lock, a slot, a veto, a blocker,
-  a question) or David must see it (a release, a link to refresh, a question for him).
-- No "I did X" / "pushed Y" / FYI posts, no restating what a file or commit already says.
+**Lean on git and the task file; talk when it helps** (David, 2026-10-31: the details already
+live in task files kept current, chit-chat burns tokens and confuses agents, we always worked
+through git, code, good names and tickets; but "leave some space for agency … if you need to say
+something, say it"). Agents sharing an effort, a repo or a suss-task:
+- Default home for status (built, pushed, verified, root cause, sha, which test covers it) is the
+  task file and the commit message (`shared: <file>` when another owner's file changed,
+  `gate: <test>` for the test that covers it); peers read `git log` on pull.
+- Message when it helps someone: an ask, a review, a lock, a blocker, a question, or a heads-up a
+  close collaborator needs now ("just pushed X, rebase before you touch Y", same worktree).
+  You decide; the bar is "does the reader need this to act?".
+- Skip the chit-chat: no FYI recaps, no restating what a file or commit already says, no reply
+  just to acknowledge. A lead nudges agents that drift into talking too much.
 
 ## Going to sleep
 
